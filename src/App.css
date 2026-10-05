@@ -786,3 +786,7 @@
   color: #ffb37a;
   text-shadow: 0 0 10px rgba(255, 140, 66, 0.7);
 }
+
+.music-button {
+  padding: 0.4rem 0.6rem;
+}

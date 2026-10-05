@@ -1,54 +1,74 @@
-# React + TypeScript + Vite
+# 🚀 Multiplication Rocket
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A space-rocket game for practicing the multiplication table (1–10), in **English and Hebrew**.
+Every correct answer fuels the rocket. Fill the tank and the rocket blasts off to the next
+planet. Faster answers burn hotter.
 
-Currently, two official plugins are available:
+![Gameplay](docs/game-en.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Download & play (no installation needed)
 
-## Expanding the ESLint configuration
+Grab the file for your computer from the **[latest release](https://github.com/idanbenzvi/multiplication-rocket/releases/latest)**:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Computer | File | How to open |
+|---|---|---|
+| **Windows** | `Multiplication-Rocket-…-win-x64.exe` | Double-click it. If Windows shows *"Windows protected your PC"*, click **More info → Run anyway** (the app isn't code-signed). |
+| **Mac** | `Multiplication-Rocket-…-mac-universal.dmg` | Open the `.dmg` and drag the app to Applications. The first time, **right-click the app → Open → Open** (the app isn't notarized by Apple). |
+| **Linux** | `Multiplication-Rocket-…-linux-x86_64.AppImage` | Right-click → Properties → allow executing as a program, then double-click. |
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+Progress is saved automatically on the computer.
+
+## How it works
+
+- **Fuel = speed × correctness.** A correct answer adds fuel. A fast answer (green **BIG BOOST** zone) adds much more. A wrong answer empties the tank, unless it was already full.
+- **No skipping facts you still miss.** Even with a full tank, the rocket won't launch while a recently missed fact is still unresolved. The game keeps asking it until it's fixed.
+- **Wrong answers teach.** A miss shows the fact as a grid (*x rows of y*) before moving on.
+- **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
+- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red).
+- **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
+
+| Hebrew + streak | Launch | Mastery map |
+|---|---|---|
+| ![On fire](docs/on-fire-he.png) | ![Launch](docs/launch-he.png) | ![Heatmap](docs/heatmap-he.png) |
+
+## Hebrew
+
+Click **עברית** in the top bar. The layout switches to right-to-left while equations and hint
+formulas stay left-to-right, as in Israeli school workbooks. All text lives in
+[`src/i18n/strings.ts`](src/i18n/strings.ts).
+
+## Music
+
+The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Toggle it
+with 🔊 in the top bar.
+
+## Development
+
+Requires [Node.js](https://nodejs.org) 20+.
+
+```bash
+npm install
+npm run dev      # play in the browser with hot reload
+npm run app      # run as a desktop app (Electron)
+npm run dist     # build a desktop executable for this OS into release/
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndrs/react-three-fiber)
+for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
+components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, ElectricBorder,
+ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
+[`src/components/reactbits/`](src/components/reactbits/).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Releasing a new version
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+Pushing a version tag builds Windows, Mac and Linux executables on GitHub Actions and attaches
+them to a GitHub Release:
+
+```bash
+npm version patch        # bumps package.json, e.g. 1.0.0 -> 1.0.1, and tags v1.0.1
+git push --follow-tags
 ```
+
+## License
+
+Code: [MIT](LICENSE). The app icon uses the 🚀 from [Noto Color Emoji](https://github.com/googlefonts/noto-emoji) (OFL).

@@ -13,6 +13,8 @@ const en = {
   resetConfirm: 'Reset all progress? This clears every streak and mastered fact.',
   langToggle: 'עברית',
   langToggleTitle: 'החלפה לעברית',
+  musicOn: 'Music: on',
+  musicOff: 'Music: off',
 
   fuel: 'FUEL',
   best: (n: number) => `best ${n}`,
@@ -73,6 +75,8 @@ const he: Strings = {
   resetConfirm: 'לאפס את כל ההתקדמות? כל הרצפים והתרגילים שנלמדו יימחקו.',
   langToggle: 'English',
   langToggleTitle: 'Switch to English',
+  musicOn: 'מוזיקה: פועלת',
+  musicOff: 'מוזיקה: כבויה',
 
   fuel: 'דלק',
   best: (n) => `שיא ${n}`,

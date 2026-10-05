@@ -8,6 +8,7 @@ import { StrategyHint } from './components/StrategyHint';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useLang, useT } from './i18n/useLang';
+import { useMusic } from './audio/useMusic';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
@@ -27,6 +28,8 @@ const BURST_BY_ZONE = {
 function App() {
   const t = useT();
   const toggleLang = useLang((s) => s.toggle);
+  const musicOn = useMusic((s) => s.on);
+  const toggleMusic = useMusic((s) => s.toggle);
   const sparkRef = useRef<ClickSparkHandle>(null);
   const progress = useGameStore((s) => s.progress);
   const question = useGameStore((s) => s.question);
@@ -116,6 +119,14 @@ function App() {
           <div className="hud-stat-chip">
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
+          <button
+            className="reset-button music-button"
+            onClick={toggleMusic}
+            title={musicOn ? t.musicOn : t.musicOff}
+            aria-label={musicOn ? t.musicOn : t.musicOff}
+          >
+            {musicOn ? '🔊' : '🔇'}
+          </button>
           <button className="reset-button lang-button" onClick={toggleLang} title={t.langToggleTitle}>
             {t.langToggle}
           </button>

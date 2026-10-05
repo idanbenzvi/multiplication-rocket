@@ -1,37 +1,92 @@
 {
   "name": "multiplication-rocket",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "app": "npm run build && electron .",
+    "dist": "npm run build && electron-builder"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@react-three/postprocessing": "^3.0.4",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@types/three": "^0.185.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
     "motion": "^14.0.0",
     "postprocessing": "^6.39.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "three": "^0.185.1",
-    "zustand": "^5.0.14"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.25.0",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "@types/three": "^0.185.4",
-    "@vitejs/plugin-react": "^4.4.1",
-    "eslint": "^9.25.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^16.0.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
-  }
+    "vite": "^6.3.5",
+    "zustand": "^5.0.14"
+  },
+  "description": "A space-rocket multiplication-table game for kids, in English and Hebrew.",
+  "author": "Idan Ben Zvi",
+  "license": "MIT",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "io.github.idanbenzvi.multiplication-rocket",
+    "productName": "Multiplication Rocket",
+    "artifactName": "Multiplication-Rocket-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "icon": "build/icon.png",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.education"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education",
+      "syncDesktopName": true
+    },
+    "publish": null
+  },
+  "desktopName": "multiplication-rocket.desktop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/idanbenzvi/multiplication-rocket.git"
+  },
+  "homepage": "https://github.com/idanbenzvi/multiplication-rocket"
 }
