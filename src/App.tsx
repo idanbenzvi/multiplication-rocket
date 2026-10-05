@@ -8,7 +8,10 @@ import { StrategyHint } from './components/StrategyHint';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useLang, useT } from './i18n/useLang';
-import { useMusic } from './audio/useMusic';
+import { sfx } from './audio/sfx';
+import { AudioControls } from './components/AudioControls';
+import { MilestoneBanner } from './components/MilestoneBanner';
+import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
@@ -18,18 +21,20 @@ import './App.css';
 const ANSWER_FEEDBACK_DELAY_MS = 900;
 
 // Correct-answer spark bursts scale with answer speed, so a fast answer
-// visibly "hits harder" than a slow one.
+// visibly "hits harder" than a slow one — and with the streak tier, so a
+// long run keeps getting more spectacular.
 const BURST_BY_ZONE = {
   fast: { color: '#ffd77a', count: 16, scale: 3.2 },
   mid: { color: '#ff9d76', count: 12, scale: 2.2 },
   slow: { color: '#c9a4de', count: 8, scale: 1.5 },
 } as const;
+const TIER_COLORS = ['#ffd77a', '#6ad7ff', '#ff6ad5', '#7ee08f'];
+const MILESTONE_BANNER_MS = 1700;
 
 function App() {
   const t = useT();
   const toggleLang = useLang((s) => s.toggle);
-  const musicOn = useMusic((s) => s.on);
-  const toggleMusic = useMusic((s) => s.toggle);
+  const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
   const progress = useGameStore((s) => s.progress);
   const question = useGameStore((s) => s.question);
@@ -54,6 +59,7 @@ function App() {
   useEffect(() => {
     if (!justLaunched) return;
     setShowWarp(true);
+    sfx.launch();
     const timeout = window.setTimeout(() => setShowWarp(false), 1200);
     return () => window.clearTimeout(timeout);
   }, [justLaunched]);
@@ -72,11 +78,46 @@ function App() {
   const handleAnswer = (value: number, elapsedMs: number) => {
     setLocked(true);
     const correct = submitAnswer(value, elapsedMs);
+    if (!correct) sfx.wrong();
     if (correct) {
+      const { progress: after, justLaunched: launching } = useGameStore.getState();
+      const streak = after.currentStreak;
+      const zone = speedZone(elapsedMs);
+      const tier = streakTier(streak);
+      // A launch resets the streak and plays its own sound (see the
+      // justLaunched effect), so only celebrate the answer itself otherwise.
+      if (!launching) sfx.correct(streak, zone === 'fast');
+
       const input = document.querySelector('.answer-input');
       if (input) {
         const r = input.getBoundingClientRect();
-        sparkRef.current?.burst(r.left + r.width / 2, r.top + r.height / 2, BURST_BY_ZONE[speedZone(elapsedMs)]);
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const base = BURST_BY_ZONE[zone];
+        sparkRef.current?.burst(x, y, { ...base, count: base.count + tier * 6, scale: base.scale + tier * 0.8 });
+        // From 3 in a row, a second ring in the tier's color.
+        if (tier > 0) {
+          window.setTimeout(
+            () => sparkRef.current?.burst(x, y, { color: TIER_COLORS[tier], count: 10 + tier * 6, scale: 2 + tier }),
+            120,
+          );
+        }
+      }
+
+      if (!launching && isMilestone(streak)) {
+        sfx.milestone(streak);
+        setMilestone(streak);
+        window.setTimeout(() => setMilestone((m) => (m === streak ? null : m)), MILESTONE_BANNER_MS);
+        // Fireworks: bursts popping all over the screen.
+        for (let i = 0; i < 6 + tier * 2; i++) {
+          window.setTimeout(() => {
+            sparkRef.current?.burst(window.innerWidth * (0.15 + Math.random() * 0.7), window.innerHeight * (0.15 + Math.random() * 0.5), {
+              color: TIER_COLORS[i % TIER_COLORS.length],
+              count: 14,
+              scale: 3 + Math.random() * 2,
+            });
+          }, i * 110);
+        }
       }
       // Wrong answers wait for an explicit "Continue" instead (see
       // handleContinueAfterWrong) so there's time to look at the grid
@@ -109,6 +150,7 @@ function App() {
       </div>
 
       {showWarp && <div className="warp-burst" />}
+      <MilestoneBanner streak={milestone} />
 
       <header className="hud-topbar">
         <div className="hud-logo">
@@ -119,14 +161,7 @@ function App() {
           <div className="hud-stat-chip">
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
-          <button
-            className="reset-button music-button"
-            onClick={toggleMusic}
-            title={musicOn ? t.musicOn : t.musicOff}
-            aria-label={musicOn ? t.musicOn : t.musicOff}
-          >
-            {musicOn ? '🔊' : '🔇'}
-          </button>
+          <AudioControls />
           <button className="reset-button lang-button" onClick={toggleLang} title={t.langToggleTitle}>
             {t.langToggle}
           </button>

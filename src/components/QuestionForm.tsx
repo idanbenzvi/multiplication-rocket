@@ -5,6 +5,7 @@ import { MultiplicationGrid } from './MultiplicationGrid';
 import { useT } from '../i18n/useLang';
 import ElectricBorder from './reactbits/ElectricBorder';
 import { AnimatePresence, motion } from 'motion/react';
+import { streakTier } from '../game/streak';
 
 interface Props {
   question: Question;
@@ -82,8 +83,11 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   const barPercent = Math.max(0, 100 - (Math.min(elapsedMs, SLOW_MS) / SLOW_MS) * 100);
   const onFire = streak >= ON_FIRE_STREAK;
   const heat = onFire ? fireLevel(streak) : 0;
-  // Stable per question, so the praise word doesn't reshuffle on every timer tick.
-  const praise = t.praise[question.askedAt % t.praise.length];
+  // Bigger streak = bigger word. Picked by askedAt so it's stable per
+  // question and doesn't reshuffle on every timer tick.
+  const tier = streakTier(streak);
+  const tierWords = t.praise[tier];
+  const praise = tierWords[question.askedAt % tierWords.length];
 
   return (
     <div className="hud-question-widget">
@@ -91,9 +95,9 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
         {feedback === 'correct' && (
           <motion.div
             key={question.askedAt}
-            className="praise-pop"
-            initial={{ opacity: 0, y: 20, scale: 0.5, rotate: -8 }}
-            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+            className={`praise-pop praise-tier-${tier}`}
+            initial={{ opacity: 0, y: 20, scale: 0.4, rotate: -8 - tier * 4 }}
+            animate={{ opacity: 1, y: 0, scale: 1 + tier * 0.12, rotate: 0 }}
             exit={{ opacity: 0, y: -30, scale: 1.3 }}
             transition={{ type: 'spring', stiffness: 500, damping: 18 }}
           >

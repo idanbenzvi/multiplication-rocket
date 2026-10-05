@@ -292,6 +292,8 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
       resizeObserver.disconnect();
+      // Local addition: don't leave a stale frame behind when deactivated.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
   }, [active, color, speed, chaos, borderRadius, octavedNoise, getRoundedRectPoint]);
 

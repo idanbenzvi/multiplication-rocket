@@ -13,8 +13,9 @@ const en = {
   resetConfirm: 'Reset all progress? This clears every streak and mastered fact.',
   langToggle: 'עברית',
   langToggleTitle: 'החלפה לעברית',
-  musicOn: 'Music: on',
-  musicOff: 'Music: off',
+  sound: 'Sound',
+  music: 'Music',
+  effects: 'Effects',
 
   fuel: 'FUEL',
   best: (n: number) => `best ${n}`,
@@ -29,7 +30,15 @@ const en = {
   gridCaption: (x: number, y: number) => `${x} rows × ${y} columns = ${x * y}`,
   streak: (n: number) => `${n} in a row!`,
   onFire: 'ON FIRE',
-  praise: ['Boom!', 'Nice!', 'Rocket brain!', 'Awesome!', 'Yes!', 'Super!', 'Zoom!'],
+  // Praise escalates with the streak: tier 0 = 1-2 in a row, 1 = 3-4, 2 = 5-9, 3 = 10+.
+  praise: [
+    ['Nice!', 'Yes!', 'Correct!', 'Good one!'],
+    ['Awesome!', 'Boom!', 'Zoom!', 'Super!'],
+    ['Rocket brain!', 'Superstar!', 'Amazing!', 'On a roll!'],
+    ['UNSTOPPABLE!', 'LEGENDARY!', 'MATH MASTER!', 'INCREDIBLE!'],
+  ],
+  milestoneTitle: (n: number) => `${n} in a row!`,
+  milestoneSubtitle: ['What a streak!', 'You are flying!', 'Nothing can stop you!', 'Hall of fame!'],
 
   showHint: 'Show hint',
   pressHToHide: 'Press H to hide',
@@ -75,8 +84,9 @@ const he: Strings = {
   resetConfirm: 'לאפס את כל ההתקדמות? כל הרצפים והתרגילים שנלמדו יימחקו.',
   langToggle: 'English',
   langToggleTitle: 'Switch to English',
-  musicOn: 'מוזיקה: פועלת',
-  musicOff: 'מוזיקה: כבויה',
+  sound: 'צלילים',
+  music: 'מוזיקה',
+  effects: 'אפקטים',
 
   fuel: 'דלק',
   best: (n) => `שיא ${n}`,
@@ -91,7 +101,14 @@ const he: Strings = {
   gridCaption: (x, y) => `${x} שורות × ${y} עמודות = ${x * y}`,
   streak: (n) => `${n} ברצף!`,
   onFire: 'בוער!',
-  praise: ['בום!', 'יפה!', 'מוח של טיל!', 'מדהים!', 'כן!', 'סופר!', 'זוּם!'],
+  praise: [
+    ['יפה!', 'כן!', 'נכון!', 'יופי!'],
+    ['מדהים!', 'בום!', 'זוּם!', 'סופר!'],
+    ['מוח של טיל!', 'כוכב על!', 'מטורף!', 'איזה רצף!'],
+    ['בלתי ניתן לעצירה!', 'אגדי!', 'אלוף הכפל!', 'פשוט מדהים!'],
+  ],
+  milestoneTitle: (n) => `${n} ברצף!`,
+  milestoneSubtitle: ['איזה רצף!', 'עפים על זה!', 'אי אפשר לעצור את זה!', 'להיכל התהילה!'],
 
   showHint: 'הצג רמז',
   pressHToHide: 'לחצו H כדי להסתיר',

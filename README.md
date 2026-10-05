@@ -1,8 +1,10 @@
 # 🚀 Multiplication Rocket
 
 A space-rocket game for practicing the multiplication table (1–10), in **English and Hebrew**.
-Every correct answer fuels the rocket. Fill the tank and the rocket blasts off to the next
-planet. Faster answers burn hotter.
+The rocket is always flying. Every correct answer fuels it and speeds it up, and a streak of
+correct answers makes it go faster still: stars stretch into streaks, the screen motion-blurs,
+and the engine plume grows hotter. A wrong answer makes it brake and slow down. Fill the tank to
+reach the destination planet, which grows in the sky as you get closer, and warp to the next one.
 
 ![Gameplay](docs/game-en.png)
 
@@ -26,6 +28,7 @@ Progress is saved automatically on the computer.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
 - **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red).
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
+- **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
 |---|---|---|
@@ -37,10 +40,11 @@ Click **עברית** in the top bar. The layout switches to right-to-left while 
 formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 [`src/i18n/strings.ts`](src/i18n/strings.ts).
 
-## Music
+## Sound
 
-The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Toggle it
-with 🔊 in the top bar.
+The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Click 🔊 in the
+top bar for separate **music** and **sound-effect** volume sliders (all the way down = off). The
+sound effects are synthesized in the browser with Web Audio, so there are no sample files.
 
 ## Development
 
@@ -57,7 +61,10 @@ Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndr
 for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
 components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, ElectricBorder,
 ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
-[`src/components/reactbits/`](src/components/reactbits/).
+[`src/components/reactbits/`](src/components/reactbits/). The engine plume is React Bits'
+LaserFlow shader, ported to run inside the 3D scene
+([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in
+[`src/game/flight.ts`](src/game/flight.ts).
 
 ### Releasing a new version
 
