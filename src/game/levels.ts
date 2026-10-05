@@ -16,39 +16,22 @@ function streakForLevel(level: number): number {
 // the child has gotten wrong, not from narrowing the number range.
 const FULL_FACTOR_RANGE: [number, number] = [1, 10];
 
-const DESTINATIONS: Array<{ name: string; emoji: string }> = [
-  { name: 'The Moon', emoji: '🌕' },
-  { name: 'Mars', emoji: '🔴' },
-  { name: 'The Asteroid Belt', emoji: '☄️' },
-  { name: 'Jupiter', emoji: '🟠' },
-  { name: 'Saturn', emoji: '🪐' },
-  { name: 'Uranus', emoji: '🔵' },
-  { name: 'Neptune', emoji: '🟦' },
-  { name: 'A Comet', emoji: '💫' },
-  { name: 'A Space Station', emoji: '🛰️' },
-  { name: 'An Alien Planet', emoji: '👽' },
-  { name: 'A Distant Galaxy', emoji: '🌌' },
-];
-
-function destinationForLevel(level: number): { name: string; emoji: string } {
-  const index = (level - 1) % DESTINATIONS.length;
-  const lap = Math.floor((level - 1) / DESTINATIONS.length);
-  const base = DESTINATIONS[index];
-  return lap === 0 ? base : { name: `${base.name} (Sector ${lap + 1})`, emoji: base.emoji };
-}
+// Display names live in i18n/strings.ts (Strings.destinations), same order.
+const DESTINATION_EMOJIS = ['🌕', '🔴', '☄️', '🟠', '🪐', '🔵', '🟦', '💫', '🛰️', '👽', '🌌'];
 
 const cache = new Map<number, LevelConfig>();
 
 export function getLevelConfig(level: number): LevelConfig {
   const cached = cache.get(level);
   if (cached) return cached;
-  const destination = destinationForLevel(level);
+  const index = (level - 1) % DESTINATION_EMOJIS.length;
   const config: LevelConfig = {
     level,
     streakToLaunch: streakForLevel(level),
     factorRange: FULL_FACTOR_RANGE,
-    destinationName: destination.name,
-    destinationEmoji: destination.emoji,
+    destinationIndex: index,
+    destinationSector: Math.floor((level - 1) / DESTINATION_EMOJIS.length) + 1,
+    destinationEmoji: DESTINATION_EMOJIS[index],
   };
   cache.set(level, config);
   return config;

@@ -80,10 +80,6 @@
   font-weight: 700;
   font-size: clamp(0.9rem, 2.6vw, 1.15rem);
   letter-spacing: 0.06em;
-  background: linear-gradient(90deg, #ff9d76, #ffb15e 55%, #c9a4de);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
   filter: drop-shadow(0 0 10px rgba(255, 157, 118, 0.3));
   white-space: nowrap;
 }
@@ -276,7 +272,7 @@
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.85rem;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -577,6 +573,8 @@
   padding: 2.2rem 1.8rem;
   text-align: center;
   max-width: 340px;
+  position: relative;
+  z-index: 1;
   border: 1px solid rgba(255, 157, 118, 0.4);
   box-shadow: 0 0 40px rgba(255, 157, 118, 0.2);
 }
@@ -586,11 +584,13 @@
   filter: drop-shadow(0 0 12px rgba(255, 215, 122, 0.55));
 }
 
-.launch-overlay-card h2 {
+.launch-overlay-title {
   font-family: var(--font-display);
-  color: #fdf3e7;
-  text-shadow: 0 0 14px rgba(255, 209, 158, 0.4);
-  margin: 0.4rem 0;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0.4rem auto;
+  backdrop-filter: none;
+  cursor: default;
 }
 
 .launch-overlay-card p {
@@ -603,25 +603,7 @@
   font-weight: 700;
 }
 
-.launch-overlay-button {
-  margin-top: 1rem;
-  background: linear-gradient(90deg, #ff9d76, #c9a4de);
-  color: #241b3f;
-  border: none;
-  border-radius: 999px;
-  padding: 0.75rem 1.8rem;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 0 22px rgba(255, 157, 118, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
 
-.launch-overlay-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 30px rgba(255, 157, 118, 0.65);
-}
 
 /* --- mastery heatmap --- */
 .heatmap-overlay {
@@ -688,22 +670,119 @@
   border: none;
 }
 
-.heatmap-button {
-  margin-top: 1.2rem;
-  background: linear-gradient(90deg, #ff9d76, #c9a4de);
-  color: #241b3f;
-  border: none;
-  border-radius: 999px;
-  padding: 0.7rem 1.7rem;
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 0 22px rgba(255, 157, 118, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+
+/* ==================== REACT BITS INTEGRATION ==================== */
+
+/* Hebrew needs a font that has the glyphs: Fredoka does, Quicksand doesn't. */
+:root[lang='he'] {
+  --font-body: 'Fredoka', 'Rubik', 'Segoe UI', system-ui, sans-serif;
 }
 
+.strategy-hint-math {
+  white-space: nowrap;
+}
+
+.lang-button {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* StarBorder buttons (launch "Next Mission", heatmap "Keep Practicing") */
+.launch-overlay-button,
+.heatmap-button {
+  margin-top: 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  transition: transform 0.15s ease;
+}
+.launch-overlay-button:hover,
 .heatmap-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 30px rgba(255, 157, 118, 0.65);
+  transform: translateY(-2px) scale(1.03);
+}
+.launch-overlay-button .inner-content,
+.heatmap-button .inner-content {
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.8rem 2rem;
+}
+
+/* Hyperspeed warp tunnel behind the launch card */
+.launch-warp {
+  position: absolute;
+  inset: 0;
+  animation: warpFadeIn 0.6s ease-out both;
+}
+@keyframes warpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.launch-warp-hint {
+  position: absolute;
+  bottom: 4vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: rgba(253, 243, 231, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* "On fire" electric border around the question card during a streak */
+.question-electric {
+  display: inline-block;
+}
+.on-fire-badge {
+  position: absolute;
+  top: -0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  color: #241b3f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  animation: firePulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes firePulse {
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(1.12); }
+}
+
+/* Praise word that pops above the card on a correct answer */
+.hud-question-widget {
+  position: relative;
+}
+.praise-pop {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  color: #ffd77a;
+  text-shadow: 0 0 18px rgba(255, 215, 122, 0.7), 0 3px 0 #b5562f;
+  pointer-events: none;
+  z-index: 6;
+}
+.praise-streak {
+  font-size: 0.95rem;
+  color: #ffb37a;
+  text-shadow: 0 0 10px rgba(255, 140, 66, 0.7);
 }

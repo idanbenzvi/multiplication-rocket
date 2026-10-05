@@ -1,4 +1,5 @@
 import { strategyFor } from '../game/strategy';
+import { useT } from '../i18n/useLang';
 
 interface Props {
   x: number;
@@ -8,20 +9,30 @@ interface Props {
 }
 
 export function StrategyHint({ x, y, visible, onToggle }: Props) {
+  const t = useT();
+
   if (!visible) {
     return (
       <button className="strategy-hint-chip" onClick={onToggle}>
-        💡 Show hint <span className="strategy-hint-key">(H)</span>
+        💡 {t.showHint} <span className="strategy-hint-key">(H)</span>
       </button>
     );
   }
 
-  const strategy = strategyFor(x, y);
+  const strategy = strategyFor(x, y, t);
 
   return (
-    <button className="strategy-hint" onClick={onToggle} title="Press H to hide">
+    <button className="strategy-hint" onClick={onToggle} title={t.pressHToHide}>
       <span className="strategy-hint-icon">💡</span>
-      <span className="strategy-hint-text">{strategy.summary}</span>
+      <span className="strategy-hint-text">
+        {strategy.text}
+        {strategy.text && strategy.math && ' '}
+        {strategy.math && (
+          <bdi dir="ltr" className="strategy-hint-math">
+            {strategy.math}
+          </bdi>
+        )}
+      </span>
       <span className="strategy-hint-key">(H)</span>
     </button>
   );

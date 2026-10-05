@@ -27,6 +27,7 @@ export interface LevelConfig {
   level: number;
   streakToLaunch: number;
   factorRange: [number, number];
-  destinationName: string;
+  destinationIndex: number; // into Strings.destinations — names are translated at render time
+  destinationSector: number; // 1 on the first lap through the destinations, 2+ after
   destinationEmoji: string;
 }

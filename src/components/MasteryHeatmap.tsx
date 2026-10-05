@@ -1,4 +1,7 @@
 import type { FactStat } from '../game/types';
+import { useT } from '../i18n/useLang';
+import GradientText from './reactbits/GradientText';
+import StarBorder from './reactbits/StarBorder';
 
 interface Props {
   mastery: Record<string, FactStat>;
@@ -20,13 +23,18 @@ function cellStyle(stat: FactStat | undefined): { background: string; color: str
 }
 
 export function MasteryHeatmap({ mastery, onContinue }: Props) {
+  const t = useT();
   return (
     <div className="heatmap-overlay">
       <div className="heatmap-card">
-        <h2>Your Multiplication Map</h2>
-        <p className="heatmap-subtitle">Green = mastered &middot; Red = needs more practice</p>
+        <h2>
+          <GradientText colors={['#7ec4b0', '#ffd77a', '#ff9d76', '#7ec4b0']} animationSpeed={5}>
+            {t.heatmapTitle}
+          </GradientText>
+        </h2>
+        <p className="heatmap-subtitle">{t.heatmapSubtitle}</p>
 
-        <div className="heatmap-grid-wrap">
+        <div className="heatmap-grid-wrap" dir="ltr">
           <table className="heatmap-grid">
             <thead>
               <tr>
@@ -56,9 +64,18 @@ export function MasteryHeatmap({ mastery, onContinue }: Props) {
           </table>
         </div>
 
-        <button className="heatmap-button" onClick={onContinue}>
-          Keep Practicing
-        </button>
+        <StarBorder
+          className="heatmap-button"
+          color="#7ec4b0"
+          speed="4s"
+          thickness={3}
+          backgroundColor="#1f3a36"
+          textColor="#d8f3ea"
+          borderColor="rgba(126, 196, 176, 0.4)"
+          onClick={onContinue}
+        >
+          {t.keepPracticing}
+        </StarBorder>
       </div>
     </div>
   );
