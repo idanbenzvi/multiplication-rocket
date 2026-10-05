@@ -127,6 +127,26 @@ export const sfx = {
     tone(c, 262, t + 0.16, 0.32, { type: 'triangle', gain: 0.12, glideTo: 220 });
   },
 
+  /** Wormhole round: a correct drill picked. Rises with each find (1..3). */
+  pick(found: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, noteFreq(3 + found * 2), t, 0.25, { gain: 0.2, glideTo: noteFreq(4 + found * 2) });
+    tone(c, noteFreq(6 + found * 2), t + 0.05, 0.3, { gain: 0.12, type: 'triangle' });
+  },
+
+  /** Flying through the wormhole: a swirling rising sweep with a sparkle tail. */
+  wormhole() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    noiseBurst(c, t, 2.4, 150, 6000, 0.16);
+    tone(c, 90, t, 2.2, { type: 'sawtooth', gain: 0.045, glideTo: 1400, attack: 0.3 });
+    tone(c, 135, t + 0.1, 2.1, { type: 'triangle', gain: 0.06, glideTo: 2100, attack: 0.3 });
+    for (let i = 0; i < 8; i++) tone(c, noteFreq(6 + i), t + 1.6 + i * 0.05, 0.4, { gain: 0.08 });
+  },
+
   /** Reaching the destination: rising engine whoosh plus a bright chord. */
   launch() {
     const c = audio();

@@ -28,11 +28,16 @@ Progress is saved automatically on the computer.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
 - **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red).
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
+- **Wormhole challenges 🌀.** Every 6th question becomes a bonus round: a target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
 |---|---|---|
 | ![On fire](docs/on-fire-he.png) | ![Launch](docs/launch-he.png) | ![Heatmap](docs/heatmap-he.png) |
+
+| Wormhole challenge | Flying through |
+|---|---|
+| ![Wormhole challenge](docs/wormhole-challenge.png) | ![Wormhole flight](docs/wormhole-flight.png) |
 
 ## Hebrew
 
@@ -59,8 +64,8 @@ npm run dist     # build a desktop executable for this OS into release/
 
 Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndrs/react-three-fiber)
 for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
-components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, ElectricBorder,
-ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
+components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, LightTunnel,
+ElectricBorder, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
 [`src/components/reactbits/`](src/components/reactbits/). The engine plume is React Bits'
 LaserFlow shader, ported to run inside the 3D scene
 ([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in

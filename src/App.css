@@ -889,3 +889,200 @@
   color: #fff6e0;
   text-shadow: 0 0 16px rgba(255, 215, 122, 0.8), 0 3px 0 #b5562f;
 }
+
+/* ==================== WORMHOLE CHALLENGE ==================== */
+.wormhole-challenge {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.wormhole-header {
+  position: absolute;
+  /* below the top bar, including a level banner that has wrapped to two rows */
+  top: 112px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 1.6rem 0.8rem;
+  border-radius: 22px;
+  background: rgba(20, 14, 36, 0.78);
+  border: 1px solid rgba(177, 140, 255, 0.45);
+  box-shadow: 0 0 34px rgba(106, 215, 255, 0.25), inset 0 0 24px rgba(177, 140, 255, 0.15);
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+.wormhole-ahead {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: #8fe3ff;
+}
+.wormhole-target {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3rem, 10vw, 4.6rem);
+  line-height: 1;
+  backdrop-filter: none;
+  cursor: default;
+}
+.wormhole-instructions {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fdf3e7;
+}
+.wormhole-challenge.is-collapsed .wormhole-instructions {
+  color: #ffb3b3;
+}
+.wormhole-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.wormhole-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(126, 224, 143, 0.6);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.wormhole-dot.is-on {
+  background: #7ee08f;
+  box-shadow: 0 0 12px #7ee08f;
+}
+.wormhole-progress-text {
+  margin-inline-start: 0.3rem;
+  font-size: 0.8rem;
+  color: #cdeab0;
+}
+.wormhole-keys {
+  font-size: 0.7rem;
+  color: #a898bf;
+}
+
+.drill-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.drill-bubble {
+  position: relative;
+  width: clamp(88px, 15vw, 124px);
+  height: clamp(88px, 15vw, 124px);
+  border-radius: 50%;
+  border: 2px solid rgba(143, 227, 255, 0.7);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.35), rgba(106, 215, 255, 0.18) 40%, rgba(82, 39, 255, 0.28) 100%);
+  box-shadow: 0 0 22px rgba(106, 215, 255, 0.45), inset 0 0 18px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.2rem, 3.4vw, 1.7rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drill-bubble:disabled {
+  cursor: default;
+}
+.drill-bubble.is-found {
+  border-color: #7ee08f;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.4), rgba(126, 224, 143, 0.35) 45%, rgba(40, 120, 70, 0.45) 100%);
+  box-shadow: 0 0 30px rgba(126, 224, 143, 0.85);
+}
+.drill-bubble.is-missed {
+  border-color: #ff6b6b;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.2), rgba(255, 107, 107, 0.3) 45%, rgba(120, 30, 40, 0.45) 100%);
+  box-shadow: 0 0 18px rgba(255, 107, 107, 0.6);
+}
+.drill-key {
+  position: absolute;
+  top: 8%;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.drill-mark {
+  position: absolute;
+  bottom: 6%;
+  font-size: 1.1rem;
+}
+
+/* ==================== WORMHOLE FLY-THROUGH ==================== */
+.wormhole-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+.wormhole-flight.is-prewarm {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+}
+.wormhole-portal {
+  position: absolute;
+  inset: 0;
+  background: #0b0820;
+  box-shadow: inset 0 0 120px rgba(177, 140, 255, 0.6);
+}
+.wormhole-tunnel {
+  position: absolute;
+  inset: 0;
+}
+.wormhole-rocket {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: min(18vw, 120px);
+  margin-left: calc(min(18vw, 120px) / -2);
+  margin-top: calc(min(18vw, 120px) * -1);
+  filter: drop-shadow(0 0 18px rgba(255, 106, 213, 0.8));
+}
+.wormhole-boost {
+  position: absolute;
+  top: 18%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 8vw, 4rem);
+  color: #fff;
+  text-shadow: 0 0 24px #ff6ad5, 0 0 48px #6ad7ff, 0 4px 0 #5227ff;
+}
+.wormhole-boost-x {
+  color: #ffd77a;
+}
+.wormhole-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, #ffffff 0%, #e8e0ff 60%, #c9b8ff 100%);
+}
+.wormhole-exit-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, #ffffff 0%, #e8e0ff 60%, #c9b8ff 100%);
+  animation: wormholeExit 0.8s ease-out forwards;
+}
+@keyframes wormholeExit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

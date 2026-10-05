@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { Fact, FactStat, Progress } from './types';
 import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, randomizeOrder } from './facts';
 import { getLevelConfig } from './levels';
-import { speedFactor } from './scoring';
+import { MAX_SPEED_FACTOR, speedFactor } from './scoring';
+import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { localProgressStore } from '../storage/progressStore';
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
@@ -23,6 +24,11 @@ interface GameState {
   justLaunched: boolean;
   sessionMistakes: number;
   showHeatmap: boolean;
+  /** an active Wormhole challenge replaces the question while non-null */
+  challenge: Challenge | null;
+  /** true while the fly-through animation plays (the boost lands at its end) */
+  inWormhole: boolean;
+  questionsSinceChallenge: number;
   init: () => void;
   submitAnswer: (value: number, elapsedMs: number) => boolean;
   advanceQuestion: () => void;
@@ -30,6 +36,33 @@ interface GameState {
   requestHeatmap: () => void;
   dismissHeatmap: () => void;
   resetProgress: () => void;
+  /** player picked all the right drills: start the fly-through */
+  enterWormhole: () => void;
+  /** fly-through finished: apply the double boost (may launch) */
+  exitWormhole: () => void;
+  /** too many wrong picks: the wormhole collapses, back to normal questions */
+  collapseWormhole: () => void;
+}
+
+// Fuel bookkeeping shared by normal answers and the wormhole boost. A full
+// tank isn't enough on its own — launch is withheld while any fact is still
+// "struggling" (a recent miss that hasn't been corrected yet). This is the
+// mastery gate: it stops a lucky fast streak (or a wormhole) from leveling
+// someone past facts they're still actually getting wrong.
+function addFuel(progress: Progress, mastery: Record<string, FactStat>, gain: number) {
+  let fuel = Math.min(100, progress.fuel + gain);
+  let level = progress.level;
+  let launchesCompleted = progress.launchesCompleted;
+  let currentStreak = progress.currentStreak;
+  let launched = false;
+  if (fuel >= 100 && getStrugglingFactKeys(mastery).length === 0) {
+    launched = true;
+    launchesCompleted += 1;
+    level += 1;
+    currentStreak = 0;
+    fuel = 0;
+  }
+  return { fuel, level, launchesCompleted, currentStreak, launched };
 }
 
 function newQuestion(progress: Progress, avoidKey?: string): Question {
@@ -49,6 +82,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   justLaunched: false,
   sessionMistakes: 0,
   showHeatmap: false,
+  challenge: null,
+  inWormhole: false,
+  questionsSinceChallenge: 0,
 
   init: () => {
     const progress = localProgressStore.load();
@@ -60,6 +96,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       justLaunched: false,
       sessionMistakes: 0,
       showHeatmap: false,
+      challenge: null,
+      inWormhole: false,
+      questionsSinceChallenge: 0,
     });
   },
 
@@ -100,19 +139,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       const factor = speedFactor(elapsedMs);
       const baseIncrement = 100 / level.streakToLaunch;
       gainPercent = baseIncrement * factor;
-      fuel = Math.min(100, fuel + gainPercent);
-
-      // A full tank isn't enough on its own — launch is withheld while any
-      // fact is still "struggling" (a recent miss that hasn't been corrected
-      // yet). This is the mastery gate: it stops a lucky fast streak from
-      // leveling someone past facts they're still actually getting wrong.
-      if (fuel >= 100 && getStrugglingFactKeys(nextMastery).length === 0) {
-        launched = true;
-        launchesCompleted += 1;
-        levelNum += 1;
-        currentStreak = 0;
-        fuel = 0;
-      }
+      const result = addFuel({ ...progress, currentStreak }, nextMastery, gainPercent);
+      fuel = result.fuel;
+      levelNum = result.level;
+      launchesCompleted = result.launchesCompleted;
+      currentStreak = result.currentStreak;
+      launched = result.launched;
     } else {
       currentStreak = 0;
       // A banked full tank is safe from an unrelated mistake — only clearing
@@ -159,9 +191,54 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   advanceQuestion: () => {
-    const { progress, question, justLaunched, showHeatmap } = get();
+    const { progress, question, justLaunched, showHeatmap, questionsSinceChallenge } = get();
     if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
-    set({ question: newQuestion(progress, question?.fact.key), feedback: null, flare: 0 });
+    const count = questionsSinceChallenge + 1;
+    if (count >= CHALLENGE_EVERY) {
+      set({ challenge: buildChallenge(progress.level), questionsSinceChallenge: 0, feedback: null, flare: 0 });
+      return;
+    }
+    set({
+      question: newQuestion(progress, question?.fact.key),
+      questionsSinceChallenge: count,
+      feedback: null,
+      flare: 0,
+    });
+  },
+
+  enterWormhole: () => {
+    if (!get().challenge) return;
+    set({ inWormhole: true });
+  },
+
+  exitWormhole: () => {
+    const { progress } = get();
+    // "Double boost": twice what the fastest possible normal answer earns.
+    const gain = (100 / getLevelConfig(progress.level).streakToLaunch) * MAX_SPEED_FACTOR * 2;
+    const result = addFuel(progress, progress.mastery, gain);
+    const nextProgress: Progress = {
+      ...progress,
+      fuel: result.fuel,
+      level: result.level,
+      launchesCompleted: result.launchesCompleted,
+      currentStreak: result.currentStreak,
+    };
+    localProgressStore.save(nextProgress);
+    set({
+      progress: nextProgress,
+      challenge: null,
+      inWormhole: false,
+      justLaunched: result.launched,
+      lastGainPercent: gain,
+      question: newQuestion(nextProgress),
+      feedback: null,
+      flare: 0,
+    });
+  },
+
+  collapseWormhole: () => {
+    const { progress } = get();
+    set({ challenge: null, inWormhole: false, question: newQuestion(progress), feedback: null, flare: 0 });
   },
 
   dismissLaunch: () => {
@@ -189,6 +266,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       justLaunched: false,
       sessionMistakes: 0,
       showHeatmap: false,
+      challenge: null,
+      inWormhole: false,
+      questionsSinceChallenge: 0,
     });
   },
 }));

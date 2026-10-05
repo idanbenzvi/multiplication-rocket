@@ -53,6 +53,15 @@ const en = {
   nextMission: 'Next Mission',
   holdToBoost: 'Hold to boost 🚀',
 
+  wormholeAhead: 'Wormhole ahead!',
+  wormholeInstructions: (n: number) => `Pick the 3 drills that equal ${n}`,
+  wormholePicked: (k: number) => `${k} / 3 found`,
+  wormholeKeys: 'or press 1–5',
+  wormholeOneLeft: 'Careful — one more miss closes the wormhole!',
+  wormholeCollapsed: 'The wormhole closed. Next time!',
+  wormholeBoost: 'DOUBLE BOOST!',
+  drillLabel: (x: number, y: number) => `${x} times ${y}`,
+
   heatmapTitle: 'Your Multiplication Map',
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   keepPracticing: 'Keep Practicing',
@@ -122,6 +131,15 @@ const he: Strings = {
   nextStop: 'התחנה הבאה:',
   nextMission: 'למשימה הבאה',
   holdToBoost: 'לחצו והחזיקו לבוסט 🚀',
+
+  wormholeAhead: 'חור תולעת לפנינו!',
+  wormholeInstructions: (n) => `בחרו את 3 התרגילים ששווים ${n}`,
+  wormholePicked: (k) => `נמצאו ${k} מתוך 3`,
+  wormholeKeys: 'או הקישו 1–5',
+  wormholeOneLeft: 'זהירות — עוד טעות אחת וחור התולעת ייסגר!',
+  wormholeCollapsed: 'חור התולעת נסגר. בפעם הבאה!',
+  wormholeBoost: 'בוסט כפול!',
+  drillLabel: (x, y) => `${x} כפול ${y}`,
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',

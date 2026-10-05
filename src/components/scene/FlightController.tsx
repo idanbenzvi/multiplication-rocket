@@ -32,6 +32,8 @@ export function FlightController() {
   useEffect(
     () =>
       useGameStore.subscribe((state, prev) => {
+        // Diving into a wormhole: a huge surge that carries out the other side.
+        if (state.inWormhole && !prev.inWormhole) flight.boost = 1.1;
         if (state.feedback === prev.feedback || state.feedback === null) return;
         if (state.feedback === 'correct') {
           // Faster answers flare bigger (store's flare is 0..1), so they kick harder.

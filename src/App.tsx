@@ -11,6 +11,8 @@ import { useLang, useT } from './i18n/useLang';
 import { sfx } from './audio/sfx';
 import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
+import { WormholeChallenge } from './components/WormholeChallenge';
+import { WormholeFlight } from './components/WormholeFlight';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -46,6 +48,12 @@ function App() {
   const advanceQuestion = useGameStore((s) => s.advanceQuestion);
   const dismissLaunch = useGameStore((s) => s.dismissLaunch);
   const requestHeatmap = useGameStore((s) => s.requestHeatmap);
+  const challenge = useGameStore((s) => s.challenge);
+  const inWormhole = useGameStore((s) => s.inWormhole);
+  const enterWormhole = useGameStore((s) => s.enterWormhole);
+  const exitWormhole = useGameStore((s) => s.exitWormhole);
+  const collapseWormhole = useGameStore((s) => s.collapseWormhole);
+  const [exitFlash, setExitFlash] = useState(0);
   const dismissHeatmap = useGameStore((s) => s.dismissHeatmap);
   const resetProgress = useGameStore((s) => s.resetProgress);
   const [locked, setLocked] = useState(false);
@@ -142,6 +150,14 @@ function App() {
 
   const displayLevel = justLaunched ? progress.level - 1 : progress.level;
 
+  const handleWormholeDone = () => {
+    exitWormhole();
+    setExitFlash((n) => n + 1); // keyed, so each exit replays the fade
+  };
+
+  const burstAt = (x: number, y: number, color: string) =>
+    sparkRef.current?.burst(x, y, { color, count: 18, scale: 3 });
+
   return (
     <ClickSpark ref={sparkRef} sparkColor="#ffd77a" sparkSize={12} sparkRadius={22} sparkCount={10}>
     <div className="app-root">
@@ -150,6 +166,7 @@ function App() {
       </div>
 
       {showWarp && <div className="warp-burst" />}
+      {exitFlash > 0 && <div key={exitFlash} className="wormhole-exit-flash" />}
       <MilestoneBanner streak={milestone} />
 
       <header className="hud-topbar">
@@ -180,7 +197,19 @@ function App() {
         mastery={progress.mastery}
       />
 
-      {question && !justLaunched && !showHeatmap && (
+      {challenge && !inWormhole && !justLaunched && !showHeatmap && (
+        <WormholeChallenge
+          key={challenge.createdAt}
+          challenge={challenge}
+          onSuccess={enterWormhole}
+          onCollapse={collapseWormhole}
+          onBurst={burstAt}
+        />
+      )}
+
+      {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
+
+      {question && !challenge && !justLaunched && !showHeatmap && (
         <div className="hud-question-zone">
           <StrategyHint
             x={question.x}
