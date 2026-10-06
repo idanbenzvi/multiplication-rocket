@@ -44,16 +44,15 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
 - **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings).
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
 - **Wormhole challenges 🌀.** Every 6th question becomes a bonus round: a target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
-- **Asteroid Belt run ☄️.** When you reach the Asteroid Belt (level 3, and again in later sectors), you have to blast your way out. Rows of asteroids carrying numbers fly at the ship. The drill sits in the glass prism on the ship's nose. Steer with ← → (or the on-screen buttons) to the asteroid with the answer and fire with Space: the laser splits through the prism and blows it apart. A wrong shot deflects and the right asteroid lights up, so you steer to it and try again. Clear 6 rows (more in later sectors) to break out and complete the level. Belt answers count toward the mastery map.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
 |---|---|---|
 | ![On fire](docs/on-fire-he.png) | ![Launch](docs/launch-he.png) | ![Heatmap](docs/heatmap-he.png) |
 
-| Wormhole challenge | Flying through | Asteroid Belt run |
-|---|---|---|
-| ![Wormhole challenge](docs/wormhole-challenge.png) | ![Wormhole flight](docs/wormhole-flight.png) | ![Asteroid Belt run](docs/asteroid-belt.png) |
+| Wormhole challenge | Flying through |
+|---|---|
+| ![Wormhole challenge](docs/wormhole-challenge.png) | ![Wormhole flight](docs/wormhole-flight.png) |
 
 ## Hebrew
 

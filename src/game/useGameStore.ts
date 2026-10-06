@@ -4,7 +4,6 @@ import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, rando
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
-import { isBeltLevel } from './asteroidBelt';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 
@@ -33,8 +32,6 @@ interface GameState {
   /** true while the fly-through animation plays (the boost lands at its end) */
   inWormhole: boolean;
   questionsSinceChallenge: number;
-  /** the Asteroid Belt run is in progress (replaces questions until won) */
-  beltRun: boolean;
   init: () => void;
   submitAnswer: (value: number, elapsedMs: number) => boolean;
   advanceQuestion: () => void;
@@ -48,10 +45,6 @@ interface GameState {
   exitWormhole: () => void;
   /** too many wrong picks: the wormhole collapses, back to normal questions */
   collapseWormhole: () => void;
-  /** a fact attempted in the belt: counts toward mastery, not fuel/streak */
-  recordBeltAnswer: (factKey: string, correct: boolean) => void;
-  /** broke out of the belt: this completes the level (launch) */
-  finishBelt: () => void;
 }
 
 function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean) {
@@ -85,18 +78,11 @@ function addFuel(progress: Progress, mastery: Record<string, FactStat>, gain: nu
   let launchesCompleted = progress.launchesCompleted;
   let currentStreak = progress.currentStreak;
   let launched = false;
-  let enterBelt = false;
   if (fuel >= 100 && getStrugglingFactKeys(mastery).length === 0) {
-    if (isBeltLevel(progress.level)) {
-      // Arrived at the belt: the tank stays full and the run starts; breaking
-      // out is what launches (finishBelt).
-      enterBelt = true;
-    } else {
-      launched = true;
-      ({ level, launchesCompleted, currentStreak, fuel } = launchFrom(progress));
-    }
+    launched = true;
+    ({ level, launchesCompleted, currentStreak, fuel } = launchFrom(progress));
   }
-  return { fuel, level, launchesCompleted, currentStreak, launched, enterBelt };
+  return { fuel, level, launchesCompleted, currentStreak, launched };
 }
 
 function newQuestion(progress: Progress, avoidKey?: string): Question {
@@ -120,14 +106,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   challenge: null,
   inWormhole: false,
   questionsSinceChallenge: 0,
-  beltRun: false,
 
   init: () => {
     const progress = localProgressStore.load();
-    // Reloaded mid-run (or with a full tank on a belt level): go straight
-    // back into the belt rather than asking for another answer first.
-    const beltRun =
-      isBeltLevel(progress.level) && progress.fuel >= 100 && getStrugglingFactKeys(progress.mastery).length === 0;
     set({
       progress,
       question: newQuestion(progress),
@@ -139,7 +120,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       questionsSinceChallenge: 0,
-      beltRun,
     });
   },
 
@@ -158,7 +138,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     let totalCorrectAnswers = progress.totalCorrectAnswers;
     let fuel = progress.fuel;
     let launched = false;
-    let enterBelt = false;
     let gainPercent = 0;
 
     if (isCorrect) {
@@ -175,7 +154,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted = result.launchesCompleted;
       currentStreak = result.currentStreak;
       launched = result.launched;
-      enterBelt = result.enterBelt;
     } else {
       currentStreak = 0;
       // A banked full tank is safe from an unrelated mistake — only clearing
@@ -214,7 +192,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       flare: isCorrect ? Math.min(1, gainPercent / (100 / level.streakToLaunch) / 1.75) : 0,
       lastGainPercent: gainPercent,
       justLaunched: launched,
-      beltRun: enterBelt || get().beltRun,
       sessionMistakes: triggerHeatmap ? 0 : nextMistakes,
       showHeatmap: triggerHeatmap ? true : get().showHeatmap,
       heatmapAuto: triggerHeatmap ? true : get().heatmapAuto,
@@ -228,7 +205,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   advanceQuestion: () => {
     const { progress, question, justLaunched, showHeatmap, questionsSinceChallenge } = get();
-    if (justLaunched || showHeatmap || get().beltRun) return; // overlays own their own dismissal flow
+    if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
       set({ challenge: buildChallenge(progress.level), questionsSinceChallenge: 0, feedback: null, flare: 0 });
@@ -265,7 +242,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       justLaunched: result.launched,
-      beltRun: result.enterBelt || get().beltRun,
       lastGainPercent: gain,
       question: newQuestion(nextProgress),
       feedback: null,
@@ -273,19 +249,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  recordBeltAnswer: (factKey, correct) => {
-    const { progress } = get();
-    const nextProgress = { ...progress, mastery: recordAttempt(progress.mastery, factKey, correct) };
-    localProgressStore.save(nextProgress);
-    set({ progress: nextProgress });
-  },
-
-  finishBelt: () => {
-    const { progress } = get();
-    const nextProgress: Progress = { ...progress, ...launchFrom(progress) };
-    localProgressStore.save(nextProgress);
-    set({ progress: nextProgress, beltRun: false, justLaunched: true, question: newQuestion(nextProgress), feedback: null, flare: 0 });
-  },
 
   collapseWormhole: () => {
     const { progress } = get();
@@ -320,7 +283,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       questionsSinceChallenge: 0,
-      beltRun: false,
     });
   },
 }));

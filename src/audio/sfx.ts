@@ -163,43 +163,6 @@ export const sfx = {
     for (let i = 0; i < 8; i++) tone(c, noteFreq(6 + i), t + 1.6 + i * 0.05, 0.4, { gain: 0.08 });
   },
 
-  /** Belt: laser shot through the prism — a quick descending zap. */
-  laser() {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    const t = c.currentTime + 0.005;
-    tone(c, 1800, t, 0.16, { type: 'square', gain: 0.05, glideTo: 420 });
-    tone(c, 2700, t, 0.12, { type: 'sine', gain: 0.06, glideTo: 900 });
-  },
-
-  /** Belt: right asteroid blasted — crunchy boom plus a bright "clear" ding. */
-  explode(clears: number) {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    const t = c.currentTime + 0.02;
-    noiseBurst(c, t, 0.55, 1800, 120, 0.3);
-    tone(c, 90, t, 0.4, { type: 'triangle', gain: 0.25, glideTo: 40 });
-    tone(c, noteFreq(Math.min(clears + 2, 12)), t + 0.12, 0.45, { gain: 0.18 });
-  },
-
-  /** Belt: shot the wrong asteroid — the laser glances off. */
-  deflect() {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    const t = c.currentTime + 0.01;
-    tone(c, 1320, t, 0.25, { type: 'triangle', gain: 0.1, glideTo: 1250 });
-    tone(c, 1980, t + 0.02, 0.2, { type: 'sine', gain: 0.06 });
-  },
-
-  /** Belt: a row reached the ship — a thud, softened so it's not scary. */
-  impact() {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    const t = c.currentTime + 0.01;
-    noiseBurst(c, t, 0.35, 600, 90, 0.22);
-    tone(c, 70, t, 0.35, { type: 'sine', gain: 0.3, glideTo: 45 });
-  },
-
   /** Reaching the destination: rising engine whoosh plus a bright chord. */
   launch() {
     const c = audio();

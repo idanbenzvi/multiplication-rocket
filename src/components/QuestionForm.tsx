@@ -6,7 +6,7 @@ import { useT } from '../i18n/useLang';
 import ElectricBorder from './reactbits/ElectricBorder';
 import { AnimatePresence, motion } from 'motion/react';
 import { streakTier } from '../game/streak';
-import { distractors } from '../game/asteroidBelt';
+import { distractors } from '../game/distractors';
 import type { AnswerMode, TypedCheck } from '../settings/useSettings';
 import { NumPad } from './NumPad';
 
@@ -154,9 +154,11 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
       if (disabled || feedback) return;
       setValue((v) => (v.length >= MAX_DIGITS ? v : v + d));
     },
-    [disabled, feedback],
+    [disabled, feedback, setValue],
   );
-  const backspace = useCallback(() => setValue((v) => v.slice(0, -1)), []);
+  // setValue is per-question; a stale copy would write the digits under the
+  // previous question and wipe the whole answer instead of one digit.
+  const backspace = useCallback(() => setValue((v) => v.slice(0, -1)), [setValue]);
 
   const choose = useCallback(
     (v: number) => {

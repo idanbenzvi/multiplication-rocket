@@ -41,17 +41,3 @@ export const flight = {
   /** reduced-motion users get much less shake and blur */
   motionScale: 1,
 };
-
-/** a one-off surge (a belt asteroid blasted, etc.) */
-export function kick(amount: number) {
-  flight.boost = Math.min(1.1, flight.boost + amount);
-}
-
-/** a collision: knock the camera/rocket and kill any boost */
-export function bump() {
-  flight.jolt = 1;
-  flight.boost = 0;
-}
-
-/** cruising pace inside the asteroid belt: brisk, but not a blur */
-export const BELT_SPEED = 0.5;

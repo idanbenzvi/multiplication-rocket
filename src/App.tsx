@@ -16,7 +16,6 @@ import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
 import { WormholeChallenge } from './components/WormholeChallenge';
 import { WormholeFlight } from './components/WormholeFlight';
-import { AsteroidBelt } from './components/AsteroidBelt';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -60,8 +59,6 @@ function App() {
   const exitWormhole = useGameStore((s) => s.exitWormhole);
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
-  const beltRun = useGameStore((s) => s.beltRun);
-  const finishBelt = useGameStore((s) => s.finishBelt);
   const dismissHeatmap = useGameStore((s) => s.dismissHeatmap);
   const resetProgress = useGameStore((s) => s.resetProgress);
   const [locked, setLocked] = useState(false);
@@ -167,8 +164,8 @@ function App() {
     setExitFlash((n) => n + 1); // keyed, so each exit replays the fade
   };
 
-  const burstAt = (x: number, y: number, color: string, scale = 3) =>
-    sparkRef.current?.burst(x, y, { color, count: 18, scale });
+  const burstAt = (x: number, y: number, color: string) =>
+    sparkRef.current?.burst(x, y, { color, count: 18, scale: 3 });
 
   return (
     <ClickSpark ref={sparkRef} sparkColor="#ffd77a" sparkSize={12} sparkRadius={22} sparkCount={10}>
@@ -191,7 +188,7 @@ function App() {
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
           <AudioControls />
-          <button className="reset-button" onClick={requestHeatmap} disabled={beltRun}>
+          <button className="reset-button" onClick={requestHeatmap}>
             {t.stopAndReview}
           </button>
           <SettingsMenu onReset={handleReset} />
@@ -202,14 +199,9 @@ function App() {
         fuelPercent={progress.fuel}
         bestStreak={progress.bestStreak}
         mastery={progress.mastery}
-        hideCallout={beltRun}
       />
 
-      {beltRun && !justLaunched && (
-        <AsteroidBelt key={progress.level} level={progress.level} onComplete={finishBelt} onBurst={burstAt} />
-      )}
-
-      {challenge && !beltRun && !inWormhole && !justLaunched && !showHeatmap && (
+      {challenge && !inWormhole && !justLaunched && !showHeatmap && (
         <WormholeChallenge
           key={challenge.createdAt}
           challenge={challenge}
@@ -221,7 +213,7 @@ function App() {
 
       {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
 
-      {question && !beltRun && !challenge && !justLaunched && !showHeatmap && (
+      {question && !challenge && !justLaunched && !showHeatmap && (
         <div className="hud-question-zone">
           <StrategyHint
             x={question.x}
