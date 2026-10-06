@@ -226,7 +226,7 @@ const LightTunnel: React.FC<LightTunnelProps> = ({
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5) // local change: 2 → 1.5 for tablets
     });
 
     const gl = renderer.gl;

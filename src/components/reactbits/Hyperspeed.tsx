@@ -964,7 +964,8 @@ class App {
       alpha: true
     });
     this.renderer.setSize(initW, initH, false);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    // Local change: cap at 1.5x so retina tablets/phones don't render 4-9x the pixels.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     this.composer = new EffectComposer(this.renderer);
     container.appendChild(this.renderer.domElement);

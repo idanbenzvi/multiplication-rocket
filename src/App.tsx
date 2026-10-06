@@ -7,7 +7,9 @@ import { LevelBanner } from './components/LevelBanner';
 import { StrategyHint } from './components/StrategyHint';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
-import { useLang, useT } from './i18n/useLang';
+import { useT } from './i18n/useLang';
+import { SettingsMenu } from './components/SettingsMenu';
+import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
 import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
@@ -36,7 +38,7 @@ const MILESTONE_BANNER_MS = 1700;
 
 function App() {
   const t = useT();
-  const toggleLang = useLang((s) => s.toggle);
+  const answerMode = useSettings((s) => s.answerMode);
   const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
   const progress = useGameStore((s) => s.progress);
@@ -182,15 +184,10 @@ function App() {
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
           <AudioControls />
-          <button className="reset-button lang-button" onClick={toggleLang} title={t.langToggleTitle}>
-            {t.langToggle}
-          </button>
           <button className="reset-button" onClick={requestHeatmap} disabled={beltRun}>
             {t.stopAndReview}
           </button>
-          <button className="reset-button" onClick={handleReset}>
-            {t.reset}
-          </button>
+          <SettingsMenu onReset={handleReset} />
         </div>
       </header>
 
@@ -232,6 +229,8 @@ function App() {
             onAnswer={handleAnswer}
             onContinue={handleContinueAfterWrong}
             streak={progress.currentStreak}
+            mode={answerMode}
+            touch={isTouchDevice}
           />
         </div>
       )}

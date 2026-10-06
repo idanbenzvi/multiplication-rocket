@@ -24,6 +24,14 @@ Grab the file for your computer from the **[latest release](https://github.com/i
 
 Progress is saved automatically on the computer.
 
+### Tablets and phones
+
+The browser version is made for touch. Answers are multiple choice by default (tap one of four),
+or switch **⚙️ Settings → Answer by → Typing** for a big on-screen number pad. Either way there's no
+Enter key: a typed answer checks itself as soon as it has enough digits. To make it feel like an
+app, use **Share → Add to Home Screen** (iPad/iPhone) or **⋮ → Add to Home screen** (Android).
+It then opens full-screen with its own icon.
+
 ## How it works
 
 - **Fuel = speed × correctness.** A correct answer adds fuel. A fast answer (green **BIG BOOST** zone) adds much more. A wrong answer empties the tank, unless it was already full.

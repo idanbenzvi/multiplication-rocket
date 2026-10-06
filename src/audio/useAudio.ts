@@ -80,11 +80,11 @@ music.volume = useAudio.getState().musicVolume;
 // music starts on the first click/keypress rather than on load.
 function startOnFirstGesture() {
   applyMusic(useAudio.getState().musicVolume);
-  window.removeEventListener('pointerdown', startOnFirstGesture);
-  window.removeEventListener('keydown', startOnFirstGesture);
+  for (const type of GESTURES) window.removeEventListener(type, startOnFirstGesture);
 }
-window.addEventListener('pointerdown', startOnFirstGesture);
-window.addEventListener('keydown', startOnFirstGesture);
+// iOS Safari only unlocks media inside touchend/click, not pointerdown.
+const GESTURES = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
+for (const type of GESTURES) window.addEventListener(type, startOnFirstGesture);
 
 // In the Electron app autoplay is allowed, so this starts the music right
 // away; in a browser it's rejected silently and the gesture listener above

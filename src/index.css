@@ -16,6 +16,13 @@ body,
 
 body {
   margin: 0;
+  /* tablets/phones: no double-tap zoom, no pull-to-refresh or rubber-band
+     scrolling mid-game, no long-press text selection on buttons */
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
   background: #241b3f;
   color: #fdf3e7;
   font-family: var(--font-body);
@@ -29,4 +36,9 @@ input {
 
 button {
   cursor: pointer;
+}
+
+input {
+  -webkit-user-select: text;
+  user-select: text;
 }

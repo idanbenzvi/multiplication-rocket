@@ -47,7 +47,9 @@ export function RocketScene() {
   const destination = getLevelConfig(displayLevel).destinationIndex;
 
   return (
-    <Canvas>
+    // dpr capped at 1.5: on retina tablets/phones full resolution would cost
+    // 4-9x the pixels for the bloom, blur and plume shaders, for little gain.
+    <Canvas dpr={[1, 1.5]}>
       <FlightController />
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
       <fog attach="fog" args={[sky.fog, 10, 60]} />

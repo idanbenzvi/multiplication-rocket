@@ -16,6 +16,22 @@ function audio(): AudioContext | null {
   }
 }
 
+// iOS keeps a Web Audio context silent until it's resumed inside a user
+// gesture (and won't count a sound triggered later from a timer), so resume
+// it — and play one silent sample — on the first touch or key.
+function unlock() {
+  const c = audio();
+  if (c) {
+    const src = c.createBufferSource();
+    src.buffer = c.createBuffer(1, 1, c.sampleRate);
+    src.connect(c.destination);
+    src.start();
+  }
+  for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock);
+}
+const UNLOCK_EVENTS = ['touchend', 'click', 'keydown'] as const;
+for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock);
+
 function volume(): number {
   return useAudio.getState().effectsVolume;
 }
