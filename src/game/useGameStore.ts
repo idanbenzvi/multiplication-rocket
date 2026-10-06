@@ -37,6 +37,8 @@ interface GameState {
   bonusRound: Exclude<BonusKind, 'wormhole'> | null;
   /** which bonus kind comes next in the rotation */
   bonusIndex: number;
+  /** bumped on every new bonus round; used as its React key so each one starts fresh */
+  bonusNonce: number;
   init: () => void;
   submitAnswer: (value: number, elapsedMs: number) => boolean;
   advanceQuestion: () => void;
@@ -55,6 +57,12 @@ interface GameState {
    * the mastery map, add its fuel (may launch), back to normal questions.
    */
   finishBonusRound: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
+  /** dev mode only: jump straight into a bonus round */
+  devStartBonus: (kind: BonusKind) => void;
+  /** dev mode only: complete the level now (launch overlay + warp) */
+  devLaunch: () => void;
+  /** dev mode only: set the tank to a given fuel level */
+  devSetFuel: (fuel: number) => void;
 }
 
 function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean) {
@@ -118,6 +126,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   questionsSinceChallenge: 0,
   bonusRound: null,
   bonusIndex: 0,
+  bonusNonce: 0,
 
   init: () => {
     const progress = localProgressStore.load();
@@ -225,7 +234,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const kind = BONUS_ROTATION[bonusIndex % BONUS_ROTATION.length];
       const next = { questionsSinceChallenge: 0, bonusIndex: bonusIndex + 1, feedback: null, flare: 0 };
       if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level) });
-      else set({ ...next, bonusRound: kind });
+      else set({ ...next, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
       return;
     }
     set({
@@ -290,6 +299,27 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
     });
+  },
+
+  devStartBonus: (kind) => {
+    const { progress } = get();
+    const clear = { justLaunched: false, showHeatmap: false, inWormhole: false, feedback: null, flare: 0 };
+    if (kind === 'wormhole') set({ ...clear, bonusRound: null, challenge: buildChallenge(progress.level) });
+    else set({ ...clear, challenge: null, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
+  },
+
+  devLaunch: () => {
+    const { progress } = get();
+    const nextProgress: Progress = { ...progress, ...launchFrom(progress) };
+    localProgressStore.save(nextProgress);
+    set({ progress: nextProgress, justLaunched: true, challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
+  },
+
+  devSetFuel: (fuel) => {
+    const { progress } = get();
+    const nextProgress: Progress = { ...progress, fuel };
+    localProgressStore.save(nextProgress);
+    set({ progress: nextProgress });
   },
 
   collapseWormhole: () => {

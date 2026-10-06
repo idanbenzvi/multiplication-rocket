@@ -1,0 +1,60 @@
+import { useEffect, useState } from 'react';
+import { useGameStore } from '../game/useGameStore';
+import { DEV_COLLECT_EVENT } from '../dev/devMode';
+
+interface Shortcut {
+  key: string;
+  label: string;
+  run: () => void;
+}
+
+// Only mounted with ?devmode=true. Shift+key shortcuts (and tappable rows,
+// for tablets) jump to any special round or game state.
+export function DevPanel() {
+  const [open, setOpen] = useState(true);
+  const store = useGameStore;
+
+  const shortcuts: Shortcut[] = [
+    { key: 'W', label: 'Wormhole', run: () => store.getState().devStartBonus('wormhole') },
+    { key: 'M', label: 'Meteor Shower', run: () => store.getState().devStartBonus('meteor') },
+    { key: 'C', label: 'Constellation', run: () => store.getState().devStartBonus('constellation') },
+    { key: 'B', label: 'Fleet Battle (blast)', run: () => store.getState().devStartBonus('battle') },
+    { key: 'K', label: 'Battle: collect all cannons', run: () => window.dispatchEvent(new Event(DEV_COLLECT_EVENT)) },
+    { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
+    { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
+    { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
+  ];
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const hit = shortcuts.find((s) => e.code === `Key${s.key}`);
+      if (!hit) return;
+      e.preventDefault();
+      e.stopPropagation();
+      hit.run();
+    };
+    // capture phase: runs before the game's own key handlers
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  });
+
+  return (
+    <div className={`dev-panel ${open ? '' : 'is-closed'}`} dir="ltr">
+      <button type="button" className="dev-panel-toggle" onClick={() => setOpen((o) => !o)}>
+        DEV {open ? '▾' : '▸'}
+      </button>
+      {open && (
+        <ul>
+          {shortcuts.map((s) => (
+            <li key={s.key}>
+              <button type="button" onClick={s.run}>
+                <kbd>⇧{s.key}</kbd> {s.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

@@ -47,7 +47,7 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
   - **Wormhole 🌀.** A target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
   - **Meteor Shower ☄️.** A drill shows at the top and numbered meteors fall across the sky. Tap the one with the answer before it burns up. A wrong tap cracks that meteor and makes the right one glow. Each hit in a row makes the next meteors fall faster. Five drills per round, each first-try hit adds fuel, and the answers count toward the mastery map.
   - **Build-a-Constellation ✨.** Make a number by dragging across a grid of stars to frame a rectangle. A live label reads "3 rows × 4 = 12", and the right size lights up as a constellation. It shows what multiplication *is* (rows times columns) and that one number can be built different ways. After two misses, a dotted outline hints at an answer.
-  - **Fleet Battle ⚔️.** The view warps to forward-looking and an enemy fleet appears on the horizon, say 👾 24. Fly around (← ↑ → ↓ or drag) to collect the laser cannons, here 4. Then: "Each ship carries 4 cannons. How many ships do we need for 24 enemies?" Answer 6 and six ships fly in, link up and blast the whole fleet. Only the exact answer wins. Too few ships leave enemies standing ("5 ships × 4 = 20: 4 enemies left!"), and too many overload the beam ("7 ships × 4 = 28: 4 cannons too many!"). After three tries the right fleet is shown doing it. It's a first taste of division: the missing factor.
+  - **Fleet Battle ⚔️.** The view warps to forward-looking and an enemy fleet appears on the horizon, say 👾 24. Fly around (← ↑ → ↓ or drag) to collect the laser cannons, here 4. Then: "Each ship carries 4 cannons. How many ships do we need for 24 enemies?" Answer 6 and six ships fly in and circle your ship faster and faster inside a blazing ring while a power meter charges. Then one huge beam fires, flinging every enemy away in all directions, with one flying straight at you. Only the exact answer wins. Too few ships leave enemies standing ("5 ships × 4 = 20: 4 enemies left!"), and too many overload the beam ("7 ships × 4 = 28: 4 cannons too many!"). After three tries the right fleet is shown doing it. It's a first taste of division: the missing factor.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
@@ -108,6 +108,26 @@ Aurora, ElectricBorder, ClickSpark, CountUp, ShinyText, GradientText, StarBorder
 LaserFlow shader, ported to run inside the 3D scene
 ([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in
 [`src/game/flight.ts`](src/game/flight.ts).
+
+### Dev mode
+
+Add `?devmode=true` to the URL, for example `npm run dev` then http://localhost:5173/?devmode=true, or
+https://idanbenzvi.github.io/multiplication-rocket/?devmode=true. A small **DEV** panel appears
+in the corner. Its rows can be tapped on tablets, or use the shortcuts:
+
+| Shortcut | Does |
+|---|---|
+| Shift+W | Wormhole challenge |
+| Shift+M | Meteor Shower |
+| Shift+C | Build-a-Constellation |
+| Shift+B | Fleet Battle |
+| Shift+K | Fleet Battle: collect all cannons |
+| Shift+L | Complete the level (launch warp) |
+| Shift+F | Fuel to 95% |
+| Shift+P | Practice map |
+
+Dev actions affect the current pilot's real saved progress (for example Shift+L really levels up),
+so use a separate test pilot.
 
 ### Releasing a new version
 

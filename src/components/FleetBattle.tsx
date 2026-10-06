@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildBattle, MAX_BATTLE_TRIES } from '../game/bonusRounds';
@@ -10,6 +9,7 @@ import { useT } from '../i18n/useLang';
 import { useSettings, isTouchDevice } from '../settings/useSettings';
 import { useProfiles } from '../profiles/useProfiles';
 import { NumPad } from './NumPad';
+import { DEV_COLLECT_EVENT } from '../dev/devMode';
 import GradientText from './reactbits/GradientText';
 
 interface Props {
@@ -22,10 +22,13 @@ interface Props {
 type Phase = 'warp' | 'collect' | 'question' | 'attack' | 'result' | 'summary';
 
 const WARP_MS = 2200;
-const ARRIVE_MS = 1100; // reinforcements flying in
-const LINK_MS = 600; // beams joining the fleet
-const FIRE_MS = 500; // lasers in flight
+const ARRIVE_MS = 1100; // reinforcements flying in to the orbit ring
+const ORBIT_MS = 2600; // circling the player's ship, faster and faster
+const BLAST_MS = 1300; // the big beam
+const SCATTER_MS = 2600; // enemies flung away (one at the viewer)
+const VIEWER_S = 1.5; // how long the one flying at the screen takes
 const RESULT_MS = 2600;
+const HUB = { x: 0.5, y: 0.72 }; // where the player's ship sits for the finale
 const SUMMARY_MS = 2200;
 const SHIP_SPEED = 0.62; // fraction of min(viewport) per second
 const FUEL_FIRST_TRY = 2.5; // × one normal correct answer
@@ -189,7 +192,9 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const [fleet, setFleet] = useState(0); // ships sent this attempt
   const [message, setMessage] = useState<{ text: string; good: boolean } | null>(null);
   const [destroyed, setDestroyed] = useState(0);
-  const [attackStep, setAttackStep] = useState<'arrive' | 'link' | 'fire' | 'done'>('arrive');
+  const [attackStep, setAttackStep] = useState<'arrive' | 'orbit' | 'blast' | 'fizzle' | 'done'>('arrive');
+  const attackStart = useRef(0);
+  const blastStart = useRef(0);
   const [, setFrame] = useState(0);
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
   const firstTryCorrect = useRef(false);
@@ -271,6 +276,21 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   }, []);
 
   const collected = cannons.filter((c) => c.taken).length;
+
+  // dev mode: Shift+K grabs every cannon at once
+  useEffect(() => {
+    const grab = () => {
+      if (phase !== 'collect') return;
+      cannons.forEach((_, i) => takenRef.current.add(i));
+      setCannons((cs) => cs.map((c) => ({ ...c, taken: true })));
+      later(() => {
+        setPhase('question');
+        ship.current = { x: 0.5, y: 0.82 };
+      }, 300);
+    };
+    window.addEventListener(DEV_COLLECT_EVENT, grab);
+    return () => window.removeEventListener(DEV_COLLECT_EVENT, grab);
+  }, [phase, cannons, later]);
 
   // frame loop: move the ship, pick up cannons
   useEffect(() => {
@@ -382,47 +402,55 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   };
 
   // ---- the attack ----
+  // Reinforcements fly in and circle the player's ship faster and faster
+  // while a power meter charges to ships × cannons. The exact count unleashes
+  // one huge beam that flings every enemy away (one straight at the viewer);
+  // any other count fizzles, showing why.
   const launchAttack = (n: number, attempt: number, isDemo: boolean) => {
     setFleet(n);
     setDestroyed(0);
     setMessage(null);
     setAttackStep('arrive');
     setPhase('attack');
+    attackStart.current = performance.now();
+    blastStart.current = 0;
     warpSpeed.current = 0.6;
-    later(() => setAttackStep('link'), ARRIVE_MS);
     later(() => {
-      setAttackStep('fire');
-      sfx.boom(4);
-    }, ARRIVE_MS + LINK_MS);
+      setAttackStep('orbit');
+      sfx.wormhole(); // the rising whoosh of the spin-up
+    }, ARRIVE_MS);
     later(() => {
       const shots = n * battle.cannons;
       const exact = n === battle.ships;
-      // Only the exact fleet wins. Too few destroys what it can (and the rest
-      // stand there, highlighted); too many overloads the linked beam and
-      // fizzles — otherwise it would look like a win.
-      const hit = exact ? battle.enemies : shots < battle.enemies ? shots : 0;
-      setDestroyed(hit);
-      setAttackStep('done');
-      // a few bursts across the fleet
-      for (let i = 0; i < Math.min(6, hit); i++) {
-        const e = enemies[Math.floor((i / 6) * hit)];
-        onBurst(e.x * w, (enemyTop + e.r * rowGap) * h, ['#ffd77a', '#ff6ad5', '#6ad7ff'][i % 3]);
-      }
       if (exact) {
-        sfx.milestone(15);
-        haptics.correct(6);
-        kick(1);
-        setMessage({ text: isDemo ? t.battleShowAnswer(battle.ships, battle.cannons, battle.enemies) : t.battleWin, good: true });
-        setPhase('result');
+        setAttackStep('blast');
+        blastStart.current = performance.now();
+        warpSpeed.current = 1.6;
+        sfx.boom(10);
+        haptics.correct(8);
+        kick(1.1);
+        onBurst(HUB.x * w, HUB.y * h - 40, '#ffffff');
         later(() => {
-          setPhase('summary');
+          setDestroyed(battle.enemies);
+          sfx.milestone(15);
+        }, 350);
+        later(() => {
+          setAttackStep('done');
+          warpSpeed.current = 0.5;
+          setMessage({ text: isDemo ? t.battleShowAnswer(battle.ships, battle.cannons, battle.enemies) : t.battleWin, good: true });
+          setPhase('result');
           later(() => {
-            const fuel = isDemo ? 0 : firstTryCorrect.current ? base * FUEL_FIRST_TRY : base * FUEL_LATER;
-            onDone({ fuelGain: fuel, answers: answers.current });
-          }, SUMMARY_MS);
-        }, RESULT_MS);
+            setPhase('summary');
+            later(() => {
+              const fuel = isDemo ? 0 : firstTryCorrect.current ? base * FUEL_FIRST_TRY : base * FUEL_LATER;
+              onDone({ fuelGain: fuel, answers: answers.current });
+            }, SUMMARY_MS);
+          }, RESULT_MS);
+        }, BLAST_MS + SCATTER_MS);
         return;
       }
+      // Not the right fleet: the charge fizzles.
+      setAttackStep('fizzle');
       sfx.wrong();
       haptics.thump();
       const text =
@@ -437,14 +465,26 @@ export function FleetBattle({ onDone, onBurst }: Props) {
           // ends by demonstrating the answer.
           launchAttack(battle.ships, attempt, true);
         } else {
-          setDestroyed(0);
           setTyped('');
           setFleet(0);
           setPhase('question');
         }
       }, RESULT_MS + 400);
-    }, ARRIVE_MS + LINK_MS + FIRE_MS);
+    }, ARRIVE_MS + ORBIT_MS);
   };
+
+  // How each enemy gets flung when the beam hits: a random direction and
+  // spin, and one of them comes straight at the viewer.
+  const scatter = useMemo(
+    () =>
+      enemies.map(() => {
+        const a = Math.random() * Math.PI * 2;
+        const speed = 0.9 + Math.random() * 1.4;
+        return { vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - 0.3, spin: (Math.random() - 0.5) * 1440 };
+      }),
+    [enemies],
+  );
+  const viewerEnemy = useMemo(() => Math.floor(enemies.length / 2), [enemies.length]);
 
   // multiple-choice options for "how many ships?"
   const choices = useMemo(() => {
@@ -457,17 +497,49 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const shipPx = { x: ship.current.x * w, y: ship.current.y * h };
   const shipSize = Math.min(96, unit * 0.16);
 
-  // fleet formation: up to 5 per row, from the bottom
-  const fleetSize = Math.min(64, (w * 0.7) / Math.min(5, Math.max(1, fleet)));
-  const formation = Array.from({ length: fleet }, (_, i) => {
-    const row = Math.floor(i / 5);
-    const inRow = Math.min(5, fleet - row * 5);
-    const col = i % 5;
-    return { x: 0.5 + (col - (inRow - 1) / 2) * Math.min(0.17, 0.8 / inRow), y: 0.86 - row * 0.12 };
+  // the orbit: ships fly in to a ring around the hub, then circle it with
+  // an exponentially rising angular speed
+  const fleetSize = Math.min(58, unit * 0.1);
+  const tAttack = (performance.now() - attackStart.current) / 1000;
+  const orbitT = Math.max(0, tAttack - ARRIVE_MS / 1000);
+  const spinning = attackStep === 'orbit' || attackStep === 'fizzle' || attackStep === 'blast';
+  // angle(t) = ∫ ω, with ω = ω0·e^(k t): fast and then *really* fast
+  const OMEGA0 = 1.2;
+  const OMEGA_K = 1.25;
+  const orbitAngle = spinning ? (OMEGA0 / OMEGA_K) * (Math.exp(OMEGA_K * Math.min(orbitT, 3.2)) - 1) : 0;
+  const ringR = { x: unit * 0.24, y: unit * 0.11 }; // an ellipse: a ring seen at an angle
+  const fleetPos = Array.from({ length: fleet }, (_, i) => {
+    const a = orbitAngle + (i / Math.max(1, fleet)) * Math.PI * 2;
+    const ring = { x: HUB.x * w + Math.cos(a) * ringR.x, y: HUB.y * h + Math.sin(a) * ringR.y };
+    if (attackStep !== 'arrive') return { ...ring, depth: Math.sin(a) };
+    const k = Math.min(1, tAttack / (ARRIVE_MS / 1000));
+    const e = 1 - Math.pow(1 - k, 3);
+    const startX = w * (0.15 + (0.7 * (i + 0.5)) / Math.max(1, fleet));
+    return { x: startX + (ring.x - startX) * e, y: h + 80 + (ring.y - h - 80) * e, depth: Math.sin(a) };
   });
+  const charge = fleet * battle.cannons;
+  const chargeShown = attackStep === 'arrive' ? 0 : Math.min(1, orbitT / (ORBIT_MS / 1000)) * charge;
+  const shake = spinning && attackStep !== 'fizzle' ? Math.min(6, orbitT * orbitT * 0.9) : 0;
+  const tBlast = blastStart.current ? (performance.now() - blastStart.current) / 1000 : 0;
+  // Halo + orbit ring brightness, 0..1: builds with the spin, white-hot at the
+  // blast, flickering dimly on a fizzle.
+  const glow =
+    attackStep === 'blast'
+      ? Math.max(0.5, 1 - tBlast / 1.6)
+      : attackStep === 'fizzle'
+        ? 0.25 + Math.random() * 0.15
+        : attackStep === 'orbit'
+          ? Math.pow(Math.min(1, orbitT / (ORBIT_MS / 1000)), 1.4)
+          : 0;
 
   return (
-    <div className="battle" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={() => (pointerTarget.current = null)}>
+    <div
+      className="battle"
+      onPointerDown={onPointer}
+      onPointerMove={onPointer}
+      onPointerUp={() => (pointerTarget.current = null)}
+      style={shake ? { translate: `${(Math.random() - 0.5) * shake}px ${(Math.random() - 0.5) * shake}px` } : undefined}
+    >
       <canvas ref={canvasRef} className="battle-warp" />
 
       <div className="battle-header" ref={headerRef}>
@@ -487,16 +559,59 @@ export function FleetBattle({ onDone, onBurst }: Props) {
 
       {/* the enemy fleet on the horizon */}
       {enemies.map((e, i) => {
-        const gone = i < destroyed;
-        const targeted = attackStep === 'fire' && i < fleet * battle.cannons;
-        const leftover = phase === 'result' && !message?.good && i >= destroyed;
+        const baseX = e.x * w;
+        const baseY = (enemyTop + e.r * rowGap) * h;
+        // flung away once the beam hits
+        const flung = Math.max(0, tBlast - 0.25);
+        if (blastStart.current && flung > 0) {
+          if (flung > SCATTER_MS / 1000 + 0.2) return null;
+          if (i === viewerEnemy) {
+            // this one comes straight at the screen
+            const k = Math.min(1, flung / VIEWER_S);
+            const ease = k * k;
+            return (
+              <div
+                key={i}
+                className="enemy enemy-at-viewer"
+                style={{
+                  left: baseX + (w / 2 - baseX) * ease,
+                  top: baseY + (h * 0.5 - baseY) * ease,
+                  scale: 1 + ease * 28,
+                  rotate: `${ease * 40}deg`,
+                  opacity: k < 0.85 ? 1 : Math.max(0, 1 - (k - 0.85) / 0.15),
+                }}
+              >
+                <Saucer size={enemySize} />
+              </div>
+            );
+          }
+          const sc = scatter[i];
+          const dist = flung * unit;
+          return (
+            <div
+              key={i}
+              className="enemy enemy-flung"
+              style={{
+                left: baseX + sc.vx * dist,
+                top: baseY + sc.vy * dist + flung * flung * unit * 0.2,
+                rotate: `${sc.spin * flung}deg`,
+                scale: 1 + flung * 0.6,
+                opacity: Math.max(0, 1 - flung / (SCATTER_MS / 1000)),
+              }}
+            >
+              <Saucer size={enemySize} />
+            </div>
+          );
+        }
+        const fizzling = attackStep === 'fizzle';
+        const arriving = phase === 'warp' || phase === 'collect';
         return (
           <div
             key={i}
-            className={`enemy ${gone ? 'is-gone' : ''} ${leftover ? 'is-leftover' : ''} ${targeted ? 'is-targeted' : ''}`}
+            className={`enemy ${arriving ? 'is-arriving' : ''} ${fizzling ? 'is-leftover' : ''}`}
             style={{
-              left: e.x * w,
-              top: (enemyTop + e.r * rowGap) * h + Math.sin(now * 1.4 + e.jitter) * 3,
+              left: baseX,
+              top: baseY + Math.sin(now * 1.4 + e.jitter) * 3,
               animationDelay: `${(i % 7) * 40}ms`,
             }}
           >
@@ -569,54 +684,83 @@ export function FleetBattle({ onDone, onBurst }: Props) {
         </div>
       )}
 
-      {/* reinforcements: fly in, link up, fire */}
+      {/* the finale: hub ship, the fleet orbiting it, the power meter, the beam */}
       {(phase === 'attack' || phase === 'result') && fleet > 0 && (
         <>
-          <svg className="battle-beams" width={w} height={h}>
-            {(attackStep === 'link' || attackStep === 'fire') &&
-              formation.slice(1).map((p, i) => (
-                <line
-                  key={`l${i}`}
-                  className="fleet-link"
-                  x1={formation[i].x * w}
-                  y1={formation[i].y * h}
-                  x2={p.x * w}
-                  y2={p.y * h}
+          {attackStep === 'blast' && (
+            <div className="mega-beam" style={{ left: HUB.x * w, height: HUB.y * h }}>
+              <div className="mega-beam-core" />
+              {Array.from({ length: 34 }, (_, i) => (
+                <span
+                  key={i}
+                  className="rising-line"
+                  style={{
+                    left: `${50 + (((i * 37) % 100) - 50) * 0.9}%`,
+                    width: 2 + (i % 4),
+                    animationDuration: `${0.22 + ((i * 13) % 10) * 0.035}s`,
+                    animationDelay: `${((i * 7) % 10) * 0.03}s`,
+                    background: `linear-gradient(to top, transparent, ${['#ffffff', '#ff6ad5', '#6ad7ff', '#ffd77a'][i % 4]} 40%, transparent)`,
+                  }}
                 />
               ))}
-            {attackStep === 'fire' &&
-              formation.flatMap((p, s) =>
-                Array.from({ length: battle.cannons }, (_, c) => {
-                  const shot = s * battle.cannons + c;
-                  const target = enemies[Math.min(shot, enemies.length - 1)];
-                  // Overloaded (too many ships): every shot fizzles.
-                  const wasted = shot >= battle.enemies || fleet * battle.cannons > battle.enemies;
-                  return (
-                    <line
-                      key={`f${s}-${c}`}
-                      className={`fleet-shot ${wasted ? 'is-wasted' : ''}`}
-                      x1={p.x * w + (c - (battle.cannons - 1) / 2) * 6}
-                      y1={p.y * h - fleetSize * 0.4}
-                      x2={wasted ? p.x * w + (c - 2) * 30 : target.x * w}
-                      y2={wasted ? h * enemyTop - 40 : (enemyTop + target.r * rowGap) * h}
-                    />
-                  );
-                }),
-              )}
-          </svg>
-          {formation.map((p, i) => (
-            <motion.div
-              key={i}
-              className="fleet-ship"
-              initial={{ left: p.x * w, top: h + 80 }}
-              animate={{ left: p.x * w, top: p.y * h }}
-              transition={{ type: 'spring', stiffness: 120, damping: 16, delay: i * 0.06 }}
-            >
-              <RearShip size={fleetSize} color={i === 0 ? '#ff9d76' : '#7ec4b0'} />
-              {i === 0 && avatar && <span className="player-ship-avatar" style={{ fontSize: fleetSize * 0.2 }}>{avatar}</span>}
-              <span className="fleet-ship-cannons">{'⚡'.repeat(battle.cannons)}</span>
-            </motion.div>
-          ))}
+            </div>
+          )}
+          {attackStep === 'blast' && tBlast < 0.5 && <div className="blast-flash" style={{ opacity: 1 - tBlast / 0.5 }} />}
+
+          {/* the halo and the blazing orbit ring — brighter the faster they spin */}
+          {glow > 0 && (
+            <>
+              <div
+                className="hub-halo"
+                style={{
+                  left: HUB.x * w,
+                  top: HUB.y * h,
+                  width: unit * (0.25 + glow * 0.75),
+                  height: unit * (0.25 + glow * 0.75),
+                  opacity: 0.35 + glow * 0.65,
+                }}
+              />
+              <svg className="orbit-ring" width={w} height={h} style={{ opacity: 0.3 + glow * 0.7 }}>
+                <ellipse cx={HUB.x * w} cy={HUB.y * h} rx={ringR.x} ry={ringR.y} className="orbit-ring-glow" strokeWidth={10 + glow * 30} />
+                <ellipse cx={HUB.x * w} cy={HUB.y * h} rx={ringR.x} ry={ringR.y} className="orbit-ring-mid" strokeWidth={4 + glow * 10} />
+                <ellipse cx={HUB.x * w} cy={HUB.y * h} rx={ringR.x} ry={ringR.y} className="orbit-ring-core" strokeWidth={1.5 + glow * 3} />
+              </svg>
+            </>
+          )}
+
+          {/* orbiting fleet: those "behind" the hub (upper half of the ring) draw under it */}
+          {fleetPos.map((p, i) =>
+            p.depth < 0 ? (
+              <div key={i} className={`fleet-ship ${orbitT > 1.2 ? 'is-streaking' : ''}`} style={{ left: p.x, top: p.y, zIndex: 1, scale: 0.85 }}>
+                <RearShip size={fleetSize} color="#7ec4b0" />
+                <span className="fleet-ship-cannons">{'⚡'.repeat(battle.cannons)}</span>
+              </div>
+            ) : null,
+          )}
+          <div className={`player-ship hub-ship ${spinning ? 'is-charging' : ''}`} style={{ left: HUB.x * w, top: HUB.y * h, zIndex: 2 }}>
+            <RearShip size={Math.min(110, unit * 0.18)} />
+            {avatar && <span className="player-ship-avatar" style={{ fontSize: Math.min(110, unit * 0.18) * 0.2 }}>{avatar}</span>}
+          </div>
+          {fleetPos.map((p, i) =>
+            p.depth >= 0 ? (
+              <div key={i} className={`fleet-ship ${orbitT > 1.2 ? 'is-streaking' : ''}`} style={{ left: p.x, top: p.y, zIndex: 3 }}>
+                <RearShip size={fleetSize} color="#7ec4b0" />
+                <span className="fleet-ship-cannons">{'⚡'.repeat(battle.cannons)}</span>
+              </div>
+            ) : null,
+          )}
+
+          {attackStep !== 'arrive' && attackStep !== 'done' && (
+            <div className={`power-meter ${attackStep === 'fizzle' ? 'is-fizzle' : ''}`}>
+              <div
+                className="power-meter-fill"
+                style={{ width: `${Math.min(100, (chargeShown / battle.enemies) * 100)}%` }}
+              />
+              <span className="power-meter-text">
+                ⚡ <bdi dir="ltr">{Math.round(chargeShown)} / {battle.enemies}</bdi>
+              </span>
+            </div>
+          )}
         </>
       )}
 

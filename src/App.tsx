@@ -21,6 +21,8 @@ import { WormholeFlight } from './components/WormholeFlight';
 import { MeteorShower } from './components/MeteorShower';
 import { Constellation } from './components/Constellation';
 import { FleetBattle } from './components/FleetBattle';
+import { DevPanel } from './components/DevPanel';
+import { DEV_MODE } from './dev/devMode';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -67,6 +69,7 @@ function App() {
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
   const bonusRound = useGameStore((s) => s.bonusRound);
+  const bonusNonce = useGameStore((s) => s.bonusNonce);
   const finishBonusRound = useGameStore((s) => s.finishBonusRound);
   const dismissHeatmap = useGameStore((s) => s.dismissHeatmap);
   const resetProgress = useGameStore((s) => s.resetProgress);
@@ -226,17 +229,18 @@ function App() {
       />
 
       <ProfileGate />
+      {DEV_MODE && <DevPanel />}
 
       {!gateOpen && (
         <>
           {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
-            <MeteorShower onDone={finishBonusRound} onBurst={burstAt} />
+            <MeteorShower key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
           )}
           {bonusRound === 'battle' && !justLaunched && !showHeatmap && (
-            <FleetBattle onDone={finishBonusRound} onBurst={burstAt} />
+            <FleetBattle key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
           )}
           {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
-            <Constellation onDone={finishBonusRound} onBurst={burstAt} />
+            <Constellation key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
           )}
 
           {challenge && !inWormhole && !justLaunched && !showHeatmap && (
