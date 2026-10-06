@@ -20,6 +20,7 @@ import { WormholeChallenge } from './components/WormholeChallenge';
 import { WormholeFlight } from './components/WormholeFlight';
 import { MeteorShower } from './components/MeteorShower';
 import { Constellation } from './components/Constellation';
+import { FleetBattle } from './components/FleetBattle';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -230,6 +231,9 @@ function App() {
         <>
           {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
             <MeteorShower onDone={finishBonusRound} onBurst={burstAt} />
+          )}
+          {bonusRound === 'battle' && !justLaunched && !showHeatmap && (
+            <FleetBattle onDone={finishBonusRound} onBurst={burstAt} />
           )}
           {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
             <Constellation onDone={finishBonusRound} onBurst={burstAt} />

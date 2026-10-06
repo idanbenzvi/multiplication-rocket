@@ -1976,3 +1976,245 @@
   font-size: calc(min(18vw, 120px) * 0.18);
   line-height: 1;
 }
+
+/* ==================== FLEET BATTLE ==================== */
+.battle {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  touch-action: none;
+  overflow: hidden;
+  animation: dimIn 0.6s ease-out both;
+}
+.battle-warp {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.battle-header {
+  position: absolute;
+  top: calc(var(--hud-top, 96px) + 8px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 94vw;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  padding: 0.45rem 1.2rem;
+  border-radius: 22px;
+  background: rgba(20, 14, 36, 0.8);
+  border: 1px solid rgba(255, 106, 213, 0.4);
+  font-family: var(--font-display);
+  font-weight: 700;
+  z-index: 3;
+}
+.battle-title {
+  color: #ff9be6;
+}
+.battle-enemies {
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  color: #fff;
+  text-shadow: 0 0 14px rgba(159, 224, 168, 0.7);
+}
+.battle-cannons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.battle-cannon-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid rgba(255, 106, 213, 0.6);
+}
+.battle-cannon-pip.is-on {
+  background: #ff6ad5;
+  box-shadow: 0 0 10px #ff6ad5;
+}
+.battle-cannons-text {
+  margin-inline-start: 0.3rem;
+  font-size: 0.8rem;
+  color: #ffd6f4;
+}
+.enemy {
+  position: absolute;
+  translate: -50% -50%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(159, 224, 168, 0.45));
+  animation: enemyIn 0.8s ease-out both;
+}
+@keyframes enemyIn {
+  from { opacity: 0; scale: 0.2; }
+  to { opacity: 1; scale: 1; }
+}
+.enemy.is-targeted {
+  filter: drop-shadow(0 0 10px #ffd77a);
+}
+.enemy.is-gone {
+  animation: enemyBoom 0.55s ease-out forwards;
+}
+@keyframes enemyBoom {
+  0% { opacity: 1; scale: 1; filter: brightness(3) drop-shadow(0 0 16px #ffd77a); }
+  100% { opacity: 0; scale: 2.2; }
+}
+.enemy.is-leftover {
+  animation: leftoverPulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes leftoverPulse {
+  from { filter: drop-shadow(0 0 4px #ff6b6b); scale: 1; }
+  to { filter: drop-shadow(0 0 14px #ff6b6b); scale: 1.15; }
+}
+.cannon {
+  position: absolute;
+  translate: -50% -50%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(255, 106, 213, 0.8));
+  animation: cannonSpin 3s linear infinite;
+}
+@keyframes cannonSpin {
+  from { rotate: -12deg; }
+  50% { rotate: 12deg; }
+  to { rotate: -12deg; }
+}
+.battle-steer {
+  position: absolute;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: rgba(253, 243, 231, 0.7);
+  pointer-events: none;
+}
+.player-ship,
+.fleet-ship {
+  position: absolute;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  filter: drop-shadow(0 0 14px rgba(106, 215, 255, 0.55));
+}
+.player-ship::after,
+.fleet-ship::after {
+  content: '';
+  position: absolute;
+  bottom: -14%;
+  width: 40%;
+  height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at top, #fff 0%, #6ad7ff 40%, transparent 75%);
+  filter: blur(2px);
+  animation: enginePulse 0.12s linear infinite alternate;
+}
+@keyframes enginePulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+.player-ship-avatar {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  translate: -50% -50%;
+  line-height: 1;
+}
+.player-ship-cannons,
+.fleet-ship-cannons {
+  font-size: 0.75rem;
+  letter-spacing: -0.15em;
+  filter: drop-shadow(0 0 4px #ff6ad5);
+}
+.battle-question {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(18% + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.2rem;
+  border-radius: 22px;
+  background: rgba(26, 19, 46, 0.9);
+  border: 1px solid rgba(255, 157, 118, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 4;
+}
+.battle-question-text {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.05rem, 3.4vw, 1.3rem);
+  color: #fdf3e7;
+}
+.battle-answer {
+  font-size: 2.2rem;
+}
+.battle-beams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.fleet-link {
+  stroke: #6ad7ff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px #6ad7ff);
+  stroke-dasharray: 8 6;
+  animation: linkFlow 0.4s linear infinite;
+}
+@keyframes linkFlow {
+  to { stroke-dashoffset: -14; }
+}
+.fleet-shot {
+  stroke: #ff6ad5;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px #ff6ad5) drop-shadow(0 0 2px #fff);
+  animation: shotIn 0.5s ease-out both;
+}
+.fleet-shot.is-wasted {
+  stroke: rgba(255, 215, 122, 0.6);
+  stroke-dasharray: 6 8;
+}
+@keyframes shotIn {
+  from { opacity: 0; }
+  30% { opacity: 1; }
+  to { opacity: 0.25; }
+}
+.battle-message {
+  position: absolute;
+  top: 46%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 90vw;
+  padding: 0.7rem 1.3rem;
+  border-radius: 18px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 3.6vw, 1.5rem);
+  background: rgba(20, 14, 36, 0.85);
+  z-index: 4;
+  animation: roundCardIn 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.battle-message.is-good {
+  color: #7ee08f;
+  border: 1px solid rgba(126, 224, 143, 0.5);
+}
+.battle-message.is-bad {
+  color: #ffb3b3;
+  border: 1px solid rgba(255, 107, 107, 0.5);
+}

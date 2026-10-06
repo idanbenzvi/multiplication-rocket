@@ -5,8 +5,8 @@ import { distractors } from './distractors';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them.
-export type BonusKind = 'wormhole' | 'meteor' | 'constellation';
-export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation'];
+export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle';
+export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle'];
 
 // ---------- Meteor Shower ----------
 
@@ -88,4 +88,35 @@ export function buildConstellationTargets(progress: Progress): ConstellationTarg
     targets.push({ target: fact.product, hint: { rows: fact.a, cols: fact.b } });
   }
   return targets;
+}
+
+// ---------- Fleet Battle ----------
+
+export const MIN_CANNONS = 2;
+export const MAX_CANNONS = 7;
+export const MAX_BATTLE_TRIES = 3;
+
+export interface Battle {
+  factKey: string;
+  /** cannons each ship carries (the ones the player collects) */
+  cannons: number;
+  /** the answer: how many ships are needed */
+  ships: number;
+  enemies: number;
+}
+
+// One factor becomes the cannons per ship (2-7, few enough to fly around and
+// collect), the other the number of ships the child has to work out:
+// cannons × ships = enemies.
+export function buildBattle(progress: Progress): Battle {
+  const facts = pool(progress).filter(
+    (f) => (f.a >= MIN_CANNONS && f.a <= MAX_CANNONS && f.b >= 2) || (f.b >= MIN_CANNONS && f.b <= MAX_CANNONS && f.a >= 2),
+  );
+  const fact = pickNextFact(facts, progress.mastery);
+  const aFits = fact.a >= MIN_CANNONS && fact.a <= MAX_CANNONS;
+  const bFits = fact.b >= MIN_CANNONS && fact.b <= MAX_CANNONS;
+  const cannonsIsA = aFits && bFits ? Math.random() < 0.5 : aFits;
+  const cannons = cannonsIsA ? fact.a : fact.b;
+  const ships = cannonsIsA ? fact.b : fact.a;
+  return { factKey: fact.key, cannons, ships, enemies: cannons * ships };
 }
