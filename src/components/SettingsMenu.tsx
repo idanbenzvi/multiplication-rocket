@@ -88,7 +88,8 @@ export function SettingsMenu({ onReset }: Props) {
                   </div>
                 </section>
 
-                {answerMode === 'type' && (
+                {/* Touch devices only: on a computer, typed answers always wait for Enter. */}
+                {answerMode === 'type' && isTouchDevice && (
                   <section className="settings-section">
                     <div className="settings-label">{t.typedCheckLabel}</div>
                     <div className="settings-segment" role="radiogroup" aria-label={t.typedCheckLabel}>

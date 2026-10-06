@@ -29,8 +29,8 @@ Progress is saved automatically on the computer.
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),
 or switch **⚙️ Settings → Answer by → Typing** for a big on-screen number pad. In **⚙️ Settings**
 you can also choose when a typed answer is checked: **right away** (as soon as all its digits are
-in) or **when you tap the screen** (or press ✓). On a computer, typed answers wait for **Enter**
-by default, so a typo can be fixed first. On Android, right answers give a revving buzz and
+in) or **when you tap the screen** (or press ✓). On a computer, typed answers always wait for
+**Enter**, so a typo can be fixed first. On Android, right answers give a revving buzz and
 mistakes a thump; this can be switched off in Settings. iPhone and iPad browsers don't support
 vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
 **⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon.

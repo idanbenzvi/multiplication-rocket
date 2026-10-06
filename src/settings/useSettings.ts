@@ -23,8 +23,8 @@ function defaults(): Saved {
     // Tapping one of four answers is the natural default on a tablet; typing
     // (with a real keyboard) on a computer.
     answerMode: isTouchDevice ? 'choice' : 'type',
-    // On a computer you finish with Enter (and can fix a typo first); on a
-    // tablet the on-screen keypad checks right away unless changed.
+    // On a computer you always finish with Enter (and can fix a typo first);
+    // on a tablet the on-screen keypad checks right away unless changed.
     typedCheck: isTouchDevice ? 'auto' : 'confirm',
     mistakeReview: false,
     vibration: true,
@@ -39,7 +39,13 @@ function load(): Saved {
     const parsed = JSON.parse(raw) as Partial<Saved>;
     return {
       answerMode: parsed.answerMode === 'type' || parsed.answerMode === 'choice' ? parsed.answerMode : base.answerMode,
-      typedCheck: parsed.typedCheck === 'auto' || parsed.typedCheck === 'confirm' ? parsed.typedCheck : base.typedCheck,
+      // Computers always confirm with Enter, even if "right away" was saved
+      // by an earlier version — only touch devices get the choice.
+      typedCheck: !isTouchDevice
+        ? 'confirm'
+        : parsed.typedCheck === 'auto' || parsed.typedCheck === 'confirm'
+          ? parsed.typedCheck
+          : base.typedCheck,
       mistakeReview: typeof parsed.mistakeReview === 'boolean' ? parsed.mistakeReview : base.mistakeReview,
       vibration: typeof parsed.vibration === 'boolean' ? parsed.vibration : base.vibration,
     };
@@ -68,7 +74,7 @@ export const useSettings = create<SettingsState>((set, get) => {
   return {
     ...load(),
     setAnswerMode: (answerMode) => update({ answerMode }),
-    setTypedCheck: (typedCheck) => update({ typedCheck }),
+    setTypedCheck: (typedCheck) => update({ typedCheck: isTouchDevice ? typedCheck : 'confirm' }),
     setMistakeReview: (mistakeReview) => update({ mistakeReview }),
     setVibration: (vibration) => update({ vibration }),
   };
