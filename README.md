@@ -8,6 +8,10 @@ reach the destination planet, which grows in the sky as you get closer, and warp
 
 ![Gameplay](docs/game-en.png)
 
+## Play in your browser
+
+**[idanbenzvi.github.io/multiplication-rocket](https://idanbenzvi.github.io/multiplication-rocket/)**. Nothing to install. Works on computers and tablets.
+
 ## Download & play (no installation needed)
 
 Grab the file for your computer from the **[latest release](https://github.com/idanbenzvi/multiplication-rocket/releases/latest)**:
