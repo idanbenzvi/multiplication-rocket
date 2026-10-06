@@ -11,6 +11,7 @@ import { useT } from './i18n/useLang';
 import { SettingsMenu } from './components/SettingsMenu';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
+import { haptics } from './audio/haptics';
 import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
 import { WormholeChallenge } from './components/WormholeChallenge';
@@ -39,6 +40,7 @@ const MILESTONE_BANNER_MS = 1700;
 function App() {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
+  const typedCheck = useSettings((s) => s.typedCheck);
   const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
   const progress = useGameStore((s) => s.progress);
@@ -46,6 +48,7 @@ function App() {
   const feedback = useGameStore((s) => s.feedback);
   const justLaunched = useGameStore((s) => s.justLaunched);
   const showHeatmap = useGameStore((s) => s.showHeatmap);
+  const heatmapAuto = useGameStore((s) => s.heatmapAuto);
   const init = useGameStore((s) => s.init);
   const submitAnswer = useGameStore((s) => s.submitAnswer);
   const advanceQuestion = useGameStore((s) => s.advanceQuestion);
@@ -91,7 +94,10 @@ function App() {
   const handleAnswer = (value: number, elapsedMs: number) => {
     setLocked(true);
     const correct = submitAnswer(value, elapsedMs);
-    if (!correct) sfx.wrong();
+    if (!correct) {
+      sfx.wrong();
+      haptics.thump();
+    }
     if (correct) {
       const { progress: after, justLaunched: launching } = useGameStore.getState();
       const streak = after.currentStreak;
@@ -100,6 +106,7 @@ function App() {
       // A launch resets the streak and plays its own sound (see the
       // justLaunched effect), so only celebrate the answer itself otherwise.
       if (!launching) sfx.correct(streak, zone === 'fast');
+      haptics.correct(streak);
 
       const input = document.querySelector('.answer-input');
       if (input) {
@@ -230,6 +237,7 @@ function App() {
             onContinue={handleContinueAfterWrong}
             streak={progress.currentStreak}
             mode={answerMode}
+            typedCheck={typedCheck}
             touch={isTouchDevice}
           />
         </div>
@@ -240,7 +248,7 @@ function App() {
       )}
 
       {showHeatmap && !justLaunched && (
-        <MasteryHeatmap mastery={progress.mastery} onContinue={dismissHeatmap} />
+        <MasteryHeatmap mastery={progress.mastery} onContinue={dismissHeatmap} auto={heatmapAuto} />
       )}
     </div>
     </ClickSpark>

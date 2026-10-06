@@ -5,6 +5,7 @@ import { buildRow, clearsNeeded, LANES, rowDuration, type Row } from '../game/as
 import { bump, kick } from '../game/flight';
 import { useGameStore } from '../game/useGameStore';
 import { sfx } from '../audio/sfx';
+import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import { rocketSvg } from './scene/illustrations';
 import { colorForLevel } from './scene/palette';
@@ -207,6 +208,7 @@ export function AsteroidBelt({ level, onComplete, onBurst }: Props) {
         statusAt.current = now;
         setShowAnswer(true);
         sfx.impact();
+        haptics.thump();
         bump();
         recordMiss();
         later(spawnRow, AFTER_HIT_MS);
@@ -257,12 +259,14 @@ export function AsteroidBelt({ level, onComplete, onBurst }: Props) {
         consecutive.current += 1;
         if (!missedThisRow.current) useGameStore.getState().recordBeltAnswer(row.factKey, true);
         sfx.explode(clearsNow);
+        haptics.correct(clearsNow);
         kick(0.35);
         onBurst(target.x, target.y, '#ffd77a', 3.5);
         later(() => onBurst(target.x, target.y, '#ff6ad5', 2.5), 90);
         later(() => advance(clearsNow), AFTER_CLEAR_MS);
       } else {
         sfx.deflect();
+        haptics.thump();
         bump();
         setMissedLane(row.correctLane);
         setWrongHint(true);

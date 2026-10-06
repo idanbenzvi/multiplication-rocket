@@ -7,7 +7,7 @@ import ElectricBorder from './reactbits/ElectricBorder';
 import { AnimatePresence, motion } from 'motion/react';
 import { streakTier } from '../game/streak';
 import { distractors } from '../game/asteroidBelt';
-import type { AnswerMode } from '../settings/useSettings';
+import type { AnswerMode, TypedCheck } from '../settings/useSettings';
 import { NumPad } from './NumPad';
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   onContinue: () => void;
   streak: number;
   mode: AnswerMode;
+  /** typed answers: judged as soon as enough digits are in, or on Enter / ✓ / tap */
+  typedCheck: TypedCheck;
   /** finger-first device: typing uses the on-screen keypad, not the OS keyboard */
   touch: boolean;
 }
@@ -53,9 +55,23 @@ function shuffled<T>(items: T[]): T[] {
   return a;
 }
 
-export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, touch }: Props) {
+export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, typedCheck, touch }: Props) {
   const t = useT();
-  const [value, setValue] = useState('');
+  // The typed digits are stored *with the question they were typed for*.
+  // Clearing them in an effect when a new question arrives isn't enough:
+  // for one render the new question is in place while the old digits are
+  // still there, and the auto-check would judge e.g. last question's "49"
+  // against the new one — marking it wrong before the child even saw it.
+  const [entry, setEntry] = useState({ askedAt: question.askedAt, digits: '' });
+  const value = entry.askedAt === question.askedAt ? entry.digits : '';
+  const setValue = useCallback(
+    (next: string | ((v: string) => string)) =>
+      setEntry((e) => {
+        const current = e.askedAt === question.askedAt ? e.digits : '';
+        return { askedAt: question.askedAt, digits: typeof next === 'function' ? next(current) : next };
+      }),
+    [question.askedAt],
+  );
   const [picked, setPicked] = useState<number | null>(null);
   const answer = question.fact.product;
   const usePad = mode === 'type' && touch;
@@ -73,7 +89,6 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
 
   // Reset the timer only when a genuinely new question arrives.
   useEffect(() => {
-    setValue('');
     setPicked(null);
     setElapsedMs(0);
     // Focusing the input on a touch device would pop up the OS keyboard over
@@ -108,13 +123,31 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
     [disabled, feedback, onAnswer, question.askedAt],
   );
 
-  // Typing checks itself: once as many digits as the answer has are in, it's
-  // judged — right moves on, wrong counts as a mistake. No Enter needed
-  // (though Enter still submits early on a keyboard).
+  // "Right away" checking: once as many digits as the answer has are in,
+  // it's judged — right moves on, wrong counts as a mistake. In "confirm"
+  // mode nothing happens until Enter / the ✓ key / a tap on the screen.
   useEffect(() => {
-    if (mode !== 'type' || value === '' || disabled || feedback) return;
+    if (mode !== 'type' || typedCheck !== 'auto' || value === '' || disabled || feedback) return;
     if (value.length >= String(answer).length) submit(Number(value));
-  }, [mode, value, answer, disabled, feedback, submit]);
+  }, [mode, typedCheck, value, answer, disabled, feedback, submit]);
+
+  // Confirm mode on a touch device: a tap anywhere on the screen (outside the
+  // keypad and other buttons) submits what's typed.
+  const confirmByTap = usePad && typedCheck === 'confirm';
+  useEffect(() => {
+    if (!confirmByTap || value === '' || disabled || feedback) return;
+    const onTap = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest('button, a, input, [role="dialog"]')) return;
+      submit(Number(value));
+    };
+    // Registered on the next tick so the tap that typed the last digit
+    // doesn't immediately count as the confirming tap.
+    const id = window.setTimeout(() => document.addEventListener('pointerup', onTap), 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener('pointerup', onTap);
+    };
+  }, [confirmByTap, value, disabled, feedback, submit]);
 
   const typeDigit = useCallback(
     (d: string) => {
@@ -249,7 +282,15 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
           )}
 
           {usePad && feedback !== 'wrong' && (
-            <NumPad onDigit={typeDigit} onBackspace={backspace} disabled={disabled || !!feedback} />
+            <>
+              <NumPad
+                onDigit={typeDigit}
+                onBackspace={backspace}
+                onConfirm={typedCheck === 'confirm' ? () => value !== '' && submit(Number(value)) : undefined}
+                disabled={disabled || !!feedback}
+              />
+              {confirmByTap && value !== '' && !feedback && <div className="tap-to-check">{t.tapToCheck}</div>}
+            </>
           )}
 
           {feedback === 'wrong' && (

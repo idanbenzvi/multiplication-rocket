@@ -6,6 +6,7 @@ import { MAX_SPEED_FACTOR, speedFactor } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { isBeltLevel } from './asteroidBelt';
 import { localProgressStore } from '../storage/progressStore';
+import { useSettings } from '../settings/useSettings';
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
 
@@ -25,6 +26,8 @@ interface GameState {
   justLaunched: boolean;
   sessionMistakes: number;
   showHeatmap: boolean;
+  /** the map opened by itself after a run of mistakes (vs. "Stop & Review") */
+  heatmapAuto: boolean;
   /** an active Wormhole challenge replaces the question while non-null */
   challenge: Challenge | null;
   /** true while the fly-through animation plays (the boost lands at its end) */
@@ -113,6 +116,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   justLaunched: false,
   sessionMistakes: 0,
   showHeatmap: false,
+  heatmapAuto: false,
   challenge: null,
   inWormhole: false,
   questionsSinceChallenge: 0,
@@ -198,7 +202,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     // automatically — the counter is session-only, not persisted, since it's
     // just a "time for a check-in" pacing signal, not long-term progress.
     const nextMistakes = isCorrect ? get().sessionMistakes : get().sessionMistakes + 1;
-    const triggerHeatmap = !isCorrect && nextMistakes >= MISTAKES_BEFORE_HEATMAP;
+    // Opt-in (settings): opening a board unprompted mid-game is confusing
+    // unless the player asked for it.
+    const triggerHeatmap =
+      !isCorrect && nextMistakes >= MISTAKES_BEFORE_HEATMAP && useSettings.getState().mistakeReview;
 
     set({
       progress: nextProgress,
@@ -210,6 +217,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       beltRun: enterBelt || get().beltRun,
       sessionMistakes: triggerHeatmap ? 0 : nextMistakes,
       showHeatmap: triggerHeatmap ? true : get().showHeatmap,
+      heatmapAuto: triggerHeatmap ? true : get().heatmapAuto,
       // Keep showing the just-answered question (with its feedback color) until
       // advanceQuestion() is called — swapping it here would erase the color
       // flash before the player ever sees it.
@@ -290,7 +298,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   requestHeatmap: () => {
-    set({ showHeatmap: true });
+    set({ showHeatmap: true, heatmapAuto: false });
   },
 
   dismissHeatmap: () => {

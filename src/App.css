@@ -1602,3 +1602,30 @@
     transform-origin: left center;
   }
 }
+
+/* ==================== CONFIRM-TO-CHECK & PRACTICE-MAP NOTE ==================== */
+.numpad-ok {
+  border-color: rgba(126, 224, 143, 0.6);
+  background: rgba(126, 224, 143, 0.2);
+  color: #cdeab0;
+}
+.tap-to-check {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ffd77a;
+  animation: tapHint 1s ease-in-out infinite alternate;
+}
+@keyframes tapHint {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+.heatmap-why {
+  margin: 0.2rem 0 0.4rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #ffd77a;
+}
+.settings-toggle {
+  width: 100%;
+}

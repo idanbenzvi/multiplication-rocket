@@ -27,10 +27,13 @@ Progress is saved automatically on the computer.
 ### Tablets and phones
 
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),
-or switch **⚙️ Settings → Answer by → Typing** for a big on-screen number pad. Either way there's no
-Enter key: a typed answer checks itself as soon as it has enough digits. To make it feel like an
-app, use **Share → Add to Home Screen** (iPad/iPhone) or **⋮ → Add to Home screen** (Android).
-It then opens full-screen with its own icon.
+or switch **⚙️ Settings → Answer by → Typing** for a big on-screen number pad. In **⚙️ Settings**
+you can also choose when a typed answer is checked: **right away** (as soon as all its digits are
+in) or **when you tap the screen** (or press ✓). On a computer, typed answers wait for **Enter**
+by default, so a typo can be fixed first. On Android, right answers give a revving buzz and
+mistakes a thump; this can be switched off in Settings. iPhone and iPad browsers don't support
+vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
+**⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon.
 
 ## How it works
 
@@ -38,7 +41,7 @@ It then opens full-screen with its own icon.
 - **No skipping facts you still miss.** Even with a full tank, the rocket won't launch while a recently missed fact is still unresolved. The game keeps asking it until it's fixed.
 - **Wrong answers teach.** A miss shows the fact as a grid (*x rows of y*) before moving on.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
-- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red).
+- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings).
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
 - **Wormhole challenges 🌀.** Every 6th question becomes a bonus round: a target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
 - **Asteroid Belt run ☄️.** When you reach the Asteroid Belt (level 3, and again in later sectors), you have to blast your way out. Rows of asteroids carrying numbers fly at the ship. The drill sits in the glass prism on the ship's nose. Steer with ← → (or the on-screen buttons) to the asteroid with the answer and fire with Space: the laser splits through the prism and blows it apart. A wrong shot deflects and the right asteroid lights up, so you steer to it and try again. Clear 6 rows (more in later sectors) to break out and complete the level. Belt answers count toward the mastery map.

@@ -6,6 +6,8 @@ import StarBorder from './reactbits/StarBorder';
 interface Props {
   mastery: Record<string, FactStat>;
   onContinue: () => void;
+  /** opened by itself after a run of mistakes: say so */
+  auto?: boolean;
 }
 
 const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -22,7 +24,7 @@ function cellStyle(stat: FactStat | undefined): { background: string; color: str
   };
 }
 
-export function MasteryHeatmap({ mastery, onContinue }: Props) {
+export function MasteryHeatmap({ mastery, onContinue, auto = false }: Props) {
   const t = useT();
   return (
     <div className="heatmap-overlay">
@@ -32,6 +34,7 @@ export function MasteryHeatmap({ mastery, onContinue }: Props) {
             {t.heatmapTitle}
           </GradientText>
         </h2>
+        {auto && <p className="heatmap-why">{t.heatmapWhy}</p>}
         <p className="heatmap-subtitle">{t.heatmapSubtitle}</p>
 
         <div className="heatmap-grid-wrap" dir="ltr">

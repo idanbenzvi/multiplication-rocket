@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { useSettings, type AnswerMode } from '../settings/useSettings';
+import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../settings/useSettings';
 import { useLang, useT } from '../i18n/useLang';
+import { canVibrate, haptics } from '../audio/haptics';
 
 interface Props {
   onReset: () => void;
 }
 
 const MODES: AnswerMode[] = ['choice', 'type'];
+const CHECKS: TypedCheck[] = ['auto', 'confirm'];
 
 // ⚙️ in the top bar: answer mode (typing vs multiple choice), language and
 // resetting progress — kept out of the top bar itself so it fits on phones.
@@ -18,6 +20,16 @@ export function SettingsMenu({ onReset }: Props) {
   const toggleLang = useLang((s) => s.toggle);
   const answerMode = useSettings((s) => s.answerMode);
   const setAnswerMode = useSettings((s) => s.setAnswerMode);
+  const typedCheck = useSettings((s) => s.typedCheck);
+  const setTypedCheck = useSettings((s) => s.setTypedCheck);
+  const mistakeReview = useSettings((s) => s.mistakeReview);
+  const setMistakeReview = useSettings((s) => s.setMistakeReview);
+  const vibration = useSettings((s) => s.vibration);
+  const setVibration = useSettings((s) => s.setVibration);
+  const checkName = (c: TypedCheck) =>
+    c === 'auto' ? t.typedCheckAuto : isTouchDevice ? t.typedCheckConfirmTouch : t.typedCheckConfirmKeys;
+  const checkHint = (c: TypedCheck) =>
+    c === 'auto' ? t.typedCheckAutoHint : isTouchDevice ? t.typedCheckConfirmTouchHint : t.typedCheckConfirmKeysHint;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -74,6 +86,58 @@ export function SettingsMenu({ onReset }: Props) {
                       </button>
                     ))}
                   </div>
+                </section>
+
+                {answerMode === 'type' && (
+                  <section className="settings-section">
+                    <div className="settings-label">{t.typedCheckLabel}</div>
+                    <div className="settings-segment" role="radiogroup" aria-label={t.typedCheckLabel}>
+                      {CHECKS.map((c) => (
+                        <button
+                          key={c}
+                          role="radio"
+                          aria-checked={typedCheck === c}
+                          className={`settings-option ${typedCheck === c ? 'is-on' : ''}`}
+                          onClick={() => setTypedCheck(c)}
+                        >
+                          <span className="settings-option-name">{checkName(c)}</span>
+                          <span className="settings-option-hint">{checkHint(c)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Only where the device can actually vibrate (not iPhone/iPad). */}
+                {canVibrate && (
+                  <section className="settings-section">
+                    <div className="settings-label">{t.vibrationLabel}</div>
+                    <button
+                      role="switch"
+                      aria-checked={vibration}
+                      className={`settings-option settings-toggle ${vibration ? 'is-on' : ''}`}
+                      onClick={() => {
+                        setVibration(!vibration);
+                        if (!vibration) haptics.correct(); // preview when switching on
+                      }}
+                    >
+                      <span className="settings-option-name">{vibration ? t.on : t.off}</span>
+                      <span className="settings-option-hint">{t.vibrationHint}</span>
+                    </button>
+                  </section>
+                )}
+
+                <section className="settings-section">
+                  <div className="settings-label">{t.mistakeReviewLabel}</div>
+                  <button
+                    role="switch"
+                    aria-checked={mistakeReview}
+                    className={`settings-option settings-toggle ${mistakeReview ? 'is-on' : ''}`}
+                    onClick={() => setMistakeReview(!mistakeReview)}
+                  >
+                    <span className="settings-option-name">{mistakeReview ? t.on : t.off}</span>
+                    <span className="settings-option-hint">{t.mistakeReviewHint}</span>
+                  </button>
                 </section>
 
                 <section className="settings-section">

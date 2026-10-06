@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import type { Challenge, Drill } from '../game/wormhole';
 import { CORRECT_PICKS, WRONG_PICKS_ALLOWED } from '../game/wormhole';
 import { sfx } from '../audio/sfx';
+import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 
@@ -44,12 +45,15 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
       const next = [...found, drill.id];
       setFound(next);
       sfx.pick(next.length);
+      if (next.length >= CORRECT_PICKS) haptics.correct(5);
+      else haptics.tick();
       if (rect) onBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#7ee08f');
       if (next.length >= CORRECT_PICKS) window.setTimeout(onSuccess, SUCCESS_DELAY_MS);
     } else {
       const next = [...missed, drill.id];
       setMissed(next);
       sfx.wrong();
+      haptics.thump();
       if (next.length > WRONG_PICKS_ALLOWED) {
         setCollapsed(true);
         window.setTimeout(onCollapse, COLLAPSE_DELAY_MS);

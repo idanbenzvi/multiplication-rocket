@@ -3,6 +3,8 @@ import { useT } from '../i18n/useLang';
 interface Props {
   onDigit: (d: string) => void;
   onBackspace: () => void;
+  /** confirm mode: a ✓ key that submits what's typed */
+  onConfirm?: () => void;
   disabled: boolean;
 }
 
@@ -13,9 +15,10 @@ const ROWS = [
 ];
 
 // Big on-screen number pad for touch devices, so answering never summons the
-// OS keyboard (which covers half a tablet screen). Answers check themselves
-// once enough digits are in, so there's no Enter key.
-export function NumPad({ onDigit, onBackspace, disabled }: Props) {
+// OS keyboard (which covers half a tablet screen). In "right away" mode
+// answers check themselves; in confirm mode the ✓ key (or a tap on the
+// screen) submits.
+export function NumPad({ onDigit, onBackspace, onConfirm, disabled }: Props) {
   const t = useT();
   return (
     <div className="numpad" dir="ltr">
@@ -24,7 +27,13 @@ export function NumPad({ onDigit, onBackspace, disabled }: Props) {
           {d}
         </button>
       ))}
-      <span />
+      {onConfirm ? (
+        <button type="button" className="numpad-key numpad-ok" onClick={onConfirm} disabled={disabled} aria-label={t.check}>
+          ✓
+        </button>
+      ) : (
+        <span />
+      )}
       <button type="button" className="numpad-key" onClick={() => onDigit('0')} disabled={disabled}>
         0
       </button>
