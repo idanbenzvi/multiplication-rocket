@@ -86,6 +86,20 @@ const en = {
   drillLabel: (x: number, y: number) => `${x} times ${y}`,
 
 
+  meteorTitle: 'Meteor shower!',
+  meteorIntro: 'Tap the meteor with the answer before it burns up!',
+  meteorFindGlow: 'Find the glowing meteor!',
+  meteorBurned: 'It burned up! Next one…',
+  meteorSummary: (k: number, n: number) => `${k} / ${n} meteors blasted!`,
+  constellationTitle: 'Build a constellation!',
+  constellationIntro: 'Drag across the stars to make a rectangle of the right size',
+  constellationMake: 'Make',
+  constellationDrag: 'Drag from one corner to the other',
+  constellationNeed: (n: number) => `need ${n}`,
+  constellationHint: 'Hint: try the dotted shape',
+  constellationSummary: (k: number, n: number) => `${k} / ${n} constellations!`,
+  skip: 'Skip',
+
   heatmapTitle: 'Your Multiplication Map',
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
@@ -189,6 +203,20 @@ const he: Strings = {
   wormholeBoost: 'בוסט כפול!',
   drillLabel: (x, y) => `${x} כפול ${y}`,
 
+
+  meteorTitle: 'מטר מטאורים!',
+  meteorIntro: 'הקישו על המטאור עם התשובה לפני שהוא נשרף!',
+  meteorFindGlow: 'חפשו את המטאור הזוהר!',
+  meteorBurned: 'הוא נשרף! הבא בתור…',
+  meteorSummary: (k, n) => `פוצצו ${k} מתוך ${n} מטאורים!`,
+  constellationTitle: 'בונים קבוצת כוכבים!',
+  constellationIntro: 'גררו על הכוכבים כדי לבנות מלבן בגודל הנכון',
+  constellationMake: 'בנו',
+  constellationDrag: 'גררו מפינה אחת לפינה שמולה',
+  constellationNeed: (n) => `צריך ${n}`,
+  constellationHint: 'רמז: נסו את הצורה המנוקדת',
+  constellationSummary: (k, n) => `${k} מתוך ${n} קבוצות כוכבים!`,
+  skip: 'דלג',
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',

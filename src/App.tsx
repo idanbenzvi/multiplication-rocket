@@ -16,6 +16,8 @@ import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
 import { WormholeChallenge } from './components/WormholeChallenge';
 import { WormholeFlight } from './components/WormholeFlight';
+import { MeteorShower } from './components/MeteorShower';
+import { Constellation } from './components/Constellation';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -59,6 +61,8 @@ function App() {
   const exitWormhole = useGameStore((s) => s.exitWormhole);
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
+  const bonusRound = useGameStore((s) => s.bonusRound);
+  const finishBonusRound = useGameStore((s) => s.finishBonusRound);
   const dismissHeatmap = useGameStore((s) => s.dismissHeatmap);
   const resetProgress = useGameStore((s) => s.resetProgress);
   const [locked, setLocked] = useState(false);
@@ -68,6 +72,20 @@ function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // The top bar's height varies (it wraps to two rows on phones, and the
+  // level banner can wrap too), so overlays position themselves below it
+  // via --hud-top instead of guessing a fixed offset.
+  const topbarRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = topbarRef.current;
+    if (!el) return;
+    const apply = () => document.documentElement.style.setProperty('--hud-top', `${Math.ceil(el.getBoundingClientRect().bottom)}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!justLaunched) return;
@@ -178,7 +196,7 @@ function App() {
       {exitFlash > 0 && <div key={exitFlash} className="wormhole-exit-flash" />}
       <MilestoneBanner streak={milestone} />
 
-      <header className="hud-topbar">
+      <header className="hud-topbar" ref={topbarRef}>
         <div className="hud-logo">
           🚀 <ShinyText text={t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
         </div>
@@ -201,6 +219,13 @@ function App() {
         mastery={progress.mastery}
       />
 
+      {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
+        <MeteorShower onDone={finishBonusRound} onBurst={burstAt} />
+      )}
+      {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
+        <Constellation onDone={finishBonusRound} onBurst={burstAt} />
+      )}
+
       {challenge && !inWormhole && !justLaunched && !showHeatmap && (
         <WormholeChallenge
           key={challenge.createdAt}
@@ -213,7 +238,7 @@ function App() {
 
       {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
 
-      {question && !challenge && !justLaunched && !showHeatmap && (
+      {question && !challenge && !bonusRound && !justLaunched && !showHeatmap && (
         <div className="hud-question-zone">
           <StrategyHint
             x={question.x}

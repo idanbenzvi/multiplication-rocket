@@ -1338,3 +1338,358 @@
 .settings-toggle {
   width: 100%;
 }
+
+/* ==================== BONUS ROUNDS: shared ==================== */
+.round-card {
+  position: fixed;
+  top: 34%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 92vw;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.2rem 2rem;
+  border-radius: 28px;
+  background: radial-gradient(ellipse at center, rgba(20, 14, 36, 0.82) 0%, rgba(20, 14, 36, 0.55) 70%, transparent 100%);
+  text-align: center;
+  pointer-events: none;
+  animation: roundCardIn 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes roundCardIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+.round-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 7vw, 3.4rem);
+  backdrop-filter: none;
+  cursor: default;
+}
+.round-card-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1rem, 2.8vw, 1.25rem);
+  color: #fdf3e7;
+}
+.round-card-stars {
+  font-size: 2.2rem;
+}
+.meteor-pips {
+  display: flex;
+  gap: 0.3rem;
+}
+.meteor-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 122, 0.55);
+}
+.meteor-pip.is-done {
+  background: #7ee08f;
+  border-color: #7ee08f;
+  box-shadow: 0 0 10px #7ee08f;
+}
+.meteor-pip.is-now {
+  border-color: #ffd77a;
+  box-shadow: 0 0 10px rgba(255, 215, 122, 0.8);
+}
+
+/* ==================== METEOR SHOWER ==================== */
+.meteor-round {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  touch-action: none;
+}
+.meteor-header,
+.constellation-header {
+  position: absolute;
+  top: calc(var(--hud-top, 96px) + 8px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 94vw;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  padding: 0.5rem 1.3rem;
+  border-radius: 22px;
+  background: rgba(20, 14, 36, 0.78);
+  border: 1px solid rgba(255, 215, 122, 0.35);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  z-index: 6;
+}
+.meteor-title,
+.constellation-title {
+  color: #ffd77a;
+}
+.meteor-drill {
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  color: #fff;
+  text-shadow: 0 0 16px rgba(255, 215, 122, 0.6);
+}
+.meteor-hint {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #ffb3b3;
+}
+.meteor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  -webkit-tap-highlight-color: transparent;
+}
+.meteor-tail {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 46%;
+  height: 230%;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+  border-radius: 50% 50% 40% 40%;
+  background: linear-gradient(to top, rgba(255, 220, 140, 0.95), rgba(255, 140, 66, 0.7) 30%, rgba(255, 106, 213, 0.25) 70%, transparent);
+  filter: blur(3px);
+  animation: tailFlicker 0.15s linear infinite alternate;
+  pointer-events: none;
+}
+@keyframes tailFlicker {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+.meteor-rock {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: rockSpin 6s linear infinite;
+}
+@keyframes rockSpin {
+  to { transform: rotate(360deg); }
+}
+.meteor-number {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fff;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.14em #2b2033;
+  line-height: 1;
+}
+.meteor.is-answer {
+  filter: drop-shadow(0 0 14px #ffd77a) drop-shadow(0 0 28px rgba(255, 215, 122, 0.7));
+  animation: answerPulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes answerPulse {
+  from { scale: 1; }
+  to { scale: 1.12; }
+}
+.meteor.is-hit {
+  animation: meteorBlast 0.5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes meteorBlast {
+  to { scale: 2.2; opacity: 0; filter: brightness(2.5); }
+}
+.meteor.is-cracked {
+  filter: grayscale(0.4) sepia(0.6) hue-rotate(-30deg) saturate(3);
+  animation: meteorCrack 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes meteorCrack {
+  0% { translate: 0 0; }
+  20% { translate: -8px 0; }
+  40% { translate: 8px 0; }
+  100% { opacity: 0.25; scale: 0.8; }
+}
+
+/* ==================== BUILD-A-CONSTELLATION ==================== */
+.constellation-round {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+}
+.constellation-play {
+  position: absolute;
+  top: calc(var(--hud-top, 96px) + 64px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+.constellation-target {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 4.5vw, 2rem);
+  color: #fdf3e7;
+}
+.constellation-number {
+  font-size: clamp(2.6rem, 9vw, 3.8rem);
+  line-height: 1;
+  backdrop-filter: none;
+  cursor: default;
+}
+.star-grid {
+  position: relative;
+  touch-action: none;
+  border-radius: 18px;
+  background: rgba(20, 14, 36, 0.55);
+  box-shadow: inset 0 0 40px rgba(82, 39, 255, 0.25);
+  cursor: crosshair;
+}
+.star {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #cfc6ff;
+  box-shadow: 0 0 6px rgba(207, 198, 255, 0.8);
+  opacity: 0.55;
+  animation: starTwinkle 2.8s ease-in-out infinite alternate;
+  pointer-events: none;
+  transition: background 0.12s ease, scale 0.12s ease;
+}
+@keyframes starTwinkle {
+  from { opacity: 0.35; }
+  to { opacity: 0.75; }
+}
+.star.is-on {
+  opacity: 1;
+  animation: none;
+  scale: 1.6;
+  background: #fff;
+  box-shadow: 0 0 10px #fff, 0 0 18px #6ad7ff;
+}
+.star.is-lit {
+  opacity: 1;
+  animation: none;
+  scale: 2;
+  background: #ffd77a;
+  box-shadow: 0 0 12px #ffd77a, 0 0 26px #ff9d76;
+}
+.star-frame {
+  position: absolute;
+  border-radius: 10px;
+  border: 2px dashed rgba(106, 215, 255, 0.7);
+  background: rgba(106, 215, 255, 0.08);
+  pointer-events: none;
+}
+.star-frame.is-match {
+  border-style: solid;
+  border-color: #7ee08f;
+  background: rgba(126, 224, 143, 0.12);
+}
+.star-frame.is-lit {
+  border-style: solid;
+  border-color: #ffd77a;
+  background: rgba(255, 215, 122, 0.12);
+  box-shadow: 0 0 30px rgba(255, 215, 122, 0.5);
+}
+.star-hint {
+  position: absolute;
+  border-radius: 10px;
+  border: 2px dotted rgba(255, 215, 122, 0.55);
+  pointer-events: none;
+  animation: tapHint 1s ease-in-out infinite alternate;
+}
+.star-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.star-lines line {
+  stroke: rgba(255, 215, 122, 0.75);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px #ffd77a);
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: drawLine 0.8s ease-out forwards;
+}
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+.constellation-readout {
+  min-height: 1.6em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
+  color: #fdf3e7;
+}
+.constellation-readout.is-match {
+  color: #7ee08f;
+  text-shadow: 0 0 14px rgba(126, 224, 143, 0.7);
+}
+.constellation-readout.is-wrong {
+  color: #ffb3b3;
+}
+.constellation-need {
+  font-size: 0.75em;
+}
+.constellation-help {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+  color: #c8bcd9;
+}
+.constellation-skip {
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 157, 118, 0.45);
+  background: rgba(36, 27, 63, 0.8);
+  color: #f2c9a8;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.collected-more {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #c9a4de;
+  margin-inline-end: 0.2rem;
+}
+
+/* Bonus rounds dim the flying scene so the meteors / star grid stand out. */
+.meteor-round::before,
+.constellation-round::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 11, 28, 0.45);
+  pointer-events: none;
+  animation: dimIn 0.4s ease-out both;
+}
+@keyframes dimIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.star-grid {
+  background: rgba(20, 14, 36, 0.85);
+}

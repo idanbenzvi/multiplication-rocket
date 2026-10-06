@@ -4,6 +4,7 @@ import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, rando
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
+import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 
@@ -32,6 +33,10 @@ interface GameState {
   /** true while the fly-through animation plays (the boost lands at its end) */
   inWormhole: boolean;
   questionsSinceChallenge: number;
+  /** a Meteor Shower or Constellation round in progress (replaces the question) */
+  bonusRound: Exclude<BonusKind, 'wormhole'> | null;
+  /** which bonus kind comes next in the rotation */
+  bonusIndex: number;
   init: () => void;
   submitAnswer: (value: number, elapsedMs: number) => boolean;
   advanceQuestion: () => void;
@@ -45,6 +50,11 @@ interface GameState {
   exitWormhole: () => void;
   /** too many wrong picks: the wormhole collapses, back to normal questions */
   collapseWormhole: () => void;
+  /**
+   * A Meteor Shower / Constellation round finished: record its answers in
+   * the mastery map, add its fuel (may launch), back to normal questions.
+   */
+  finishBonusRound: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
 }
 
 function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean) {
@@ -106,6 +116,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   challenge: null,
   inWormhole: false,
   questionsSinceChallenge: 0,
+  bonusRound: null,
+  bonusIndex: 0,
 
   init: () => {
     const progress = localProgressStore.load();
@@ -120,6 +132,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       questionsSinceChallenge: 0,
+      bonusRound: null,
     });
   },
 
@@ -208,7 +221,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
-      set({ challenge: buildChallenge(progress.level), questionsSinceChallenge: 0, feedback: null, flare: 0 });
+      const { bonusIndex } = get();
+      const kind = BONUS_ROTATION[bonusIndex % BONUS_ROTATION.length];
+      const next = { questionsSinceChallenge: 0, bonusIndex: bonusIndex + 1, feedback: null, flare: 0 };
+      if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level) });
+      else set({ ...next, bonusRound: kind });
       return;
     }
     set({
@@ -250,6 +267,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
 
+  finishBonusRound: ({ fuelGain, answers }) => {
+    const { progress } = get();
+    let mastery = progress.mastery;
+    for (const a of answers) mastery = recordAttempt(mastery, a.factKey, a.correct);
+    const result = addFuel({ ...progress, mastery }, mastery, fuelGain);
+    const nextProgress: Progress = {
+      ...progress,
+      mastery,
+      fuel: result.fuel,
+      level: result.level,
+      launchesCompleted: result.launchesCompleted,
+      currentStreak: result.currentStreak,
+    };
+    localProgressStore.save(nextProgress);
+    set({
+      progress: nextProgress,
+      bonusRound: null,
+      justLaunched: result.launched,
+      lastGainPercent: fuelGain,
+      question: newQuestion(nextProgress),
+      feedback: null,
+      flare: 0,
+    });
+  },
+
   collapseWormhole: () => {
     const { progress } = get();
     set({ challenge: null, inWormhole: false, question: newQuestion(progress), feedback: null, flare: 0 });
@@ -283,6 +325,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       questionsSinceChallenge: 0,
+      bonusRound: null,
     });
   },
 }));

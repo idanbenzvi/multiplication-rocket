@@ -163,6 +163,25 @@ export const sfx = {
     for (let i = 0; i < 8; i++) tone(c, noteFreq(6 + i), t + 1.6 + i * 0.05, 0.4, { gain: 0.08 });
   },
 
+  /** Meteor Shower: the right meteor blasted — boom plus a ding that climbs with the run. */
+  boom(run: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.5, 1600, 120, 0.28);
+    tone(c, 95, t, 0.35, { type: 'triangle', gain: 0.22, glideTo: 45 });
+    tone(c, noteFreq(Math.min(run + 2, 12)), t + 0.1, 0.45, { gain: 0.18 });
+  },
+
+  /** Constellation completed: a sparkling rising chord. */
+  constellation() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    [0, 2, 4, 7, 9].forEach((n, i) => tone(c, noteFreq(n + 3), t + i * 0.06, 0.7, { gain: 0.15 }));
+    noiseBurst(c, t + 0.2, 0.7, 4000, 10000, 0.04);
+  },
+
   /** Reaching the destination: rising engine whoosh plus a bright chord. */
   launch() {
     const c = audio();

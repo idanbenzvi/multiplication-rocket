@@ -41,3 +41,14 @@ export const flight = {
   /** reduced-motion users get much less shake and blur */
   motionScale: 1,
 };
+
+/** a one-off surge (a meteor blasted, a constellation completed, …) */
+export function kick(amount: number) {
+  flight.boost = Math.min(1.1, flight.boost + amount);
+}
+
+/** a knock: shake the camera/rocket and kill any boost */
+export function bump() {
+  flight.jolt = 1;
+  flight.boost = 0;
+}
