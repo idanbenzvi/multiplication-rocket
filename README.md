@@ -61,6 +61,19 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
 |---|---|
 | ![Meteor Shower](docs/meteor-shower.png) | ![Build-a-Constellation](docs/constellation.png) |
 
+## Pilot profiles (siblings)
+
+Each child can have their own pilot: a name plus an animal avatar (🐶🐱🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐧🦄🐙).
+Every pilot has separate progress: level, fuel, streaks and practice map. With more than one
+pilot, the game opens on **"Who's flying today?"**. Switch pilots, add a new one, or edit or delete
+one from the avatar button in the top bar. **Reset** in Settings only resets the current pilot.
+Everything is stored on the device; nothing is sent anywhere. Progress from before profiles existed
+is kept and becomes the first pilot.
+
+Answer mode, language and sound are shared by everyone on the device.
+
+<img src="docs/pilots.png" alt="Who's flying today? pilot picker" width="280">
+
 ## Hebrew
 
 Click **עברית** in the top bar. The layout switches to right-to-left while equations and hint

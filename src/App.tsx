@@ -9,6 +9,8 @@ import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useT } from './i18n/useLang';
 import { SettingsMenu } from './components/SettingsMenu';
+import { PilotButton, ProfileGate } from './components/Profiles';
+import { activeProfile, pilotName, useProfileGateOpen } from './profiles/useProfiles';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
 import { haptics } from './audio/haptics';
@@ -41,6 +43,8 @@ const MILESTONE_BANNER_MS = 1700;
 function App() {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
+  // Until a pilot is picked/created the game itself stays hidden.
+  const gateOpen = useProfileGateOpen();
   const typedCheck = useSettings((s) => s.typedCheck);
   const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
@@ -170,7 +174,7 @@ function App() {
   };
 
   const handleReset = () => {
-    if (window.confirm(t.resetConfirm)) {
+    if (window.confirm(t.resetConfirm(pilotName(activeProfile(), t.defaultPilotName)))) {
       resetProgress();
     }
   };
@@ -202,6 +206,7 @@ function App() {
         </div>
         <LevelBanner level={displayLevel} />
         <div className="hud-topbar-right">
+          <PilotButton />
           <div className="hud-stat-chip">
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
@@ -219,53 +224,59 @@ function App() {
         mastery={progress.mastery}
       />
 
-      {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
-        <MeteorShower onDone={finishBonusRound} onBurst={burstAt} />
-      )}
-      {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
-        <Constellation onDone={finishBonusRound} onBurst={burstAt} />
-      )}
+      <ProfileGate />
 
-      {challenge && !inWormhole && !justLaunched && !showHeatmap && (
-        <WormholeChallenge
-          key={challenge.createdAt}
-          challenge={challenge}
-          onSuccess={enterWormhole}
-          onCollapse={collapseWormhole}
-          onBurst={burstAt}
-        />
-      )}
+      {!gateOpen && (
+        <>
+          {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
+            <MeteorShower onDone={finishBonusRound} onBurst={burstAt} />
+          )}
+          {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
+            <Constellation onDone={finishBonusRound} onBurst={burstAt} />
+          )}
 
-      {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
+          {challenge && !inWormhole && !justLaunched && !showHeatmap && (
+            <WormholeChallenge
+              key={challenge.createdAt}
+              challenge={challenge}
+              onSuccess={enterWormhole}
+              onCollapse={collapseWormhole}
+              onBurst={burstAt}
+            />
+          )}
 
-      {question && !challenge && !bonusRound && !justLaunched && !showHeatmap && (
-        <div className="hud-question-zone">
-          <StrategyHint
-            x={question.x}
-            y={question.y}
-            visible={hintVisible}
-            onToggle={() => setHintVisible((v) => !v)}
-          />
-          <QuestionForm
-            question={question}
-            feedback={feedback}
-            disabled={locked}
-            onAnswer={handleAnswer}
-            onContinue={handleContinueAfterWrong}
-            streak={progress.currentStreak}
-            mode={answerMode}
-            typedCheck={typedCheck}
-            touch={isTouchDevice}
-          />
-        </div>
-      )}
+          {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
 
-      {justLaunched && (
-        <LaunchOverlay completedLevel={progress.level - 1} onContinue={dismissLaunch} />
-      )}
+          {question && !challenge && !bonusRound && !justLaunched && !showHeatmap && (
+            <div className="hud-question-zone">
+              <StrategyHint
+                x={question.x}
+                y={question.y}
+                visible={hintVisible}
+                onToggle={() => setHintVisible((v) => !v)}
+              />
+              <QuestionForm
+                question={question}
+                feedback={feedback}
+                disabled={locked}
+                onAnswer={handleAnswer}
+                onContinue={handleContinueAfterWrong}
+                streak={progress.currentStreak}
+                mode={answerMode}
+                typedCheck={typedCheck}
+                touch={isTouchDevice}
+              />
+            </div>
+          )}
 
-      {showHeatmap && !justLaunched && (
-        <MasteryHeatmap mastery={progress.mastery} onContinue={dismissHeatmap} auto={heatmapAuto} />
+          {justLaunched && (
+            <LaunchOverlay completedLevel={progress.level - 1} onContinue={dismissLaunch} />
+          )}
+
+          {showHeatmap && !justLaunched && (
+            <MasteryHeatmap mastery={progress.mastery} onContinue={dismissHeatmap} auto={heatmapAuto} />
+          )}
+        </>
       )}
     </div>
     </ClickSpark>

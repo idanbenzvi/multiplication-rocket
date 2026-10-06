@@ -1693,3 +1693,269 @@
 .star-grid {
   background: rgba(20, 14, 36, 0.85);
 }
+
+/* ==================== PILOT PROFILES ==================== */
+.profile-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: radial-gradient(ellipse at 50% 30%, rgba(82, 39, 255, 0.35), rgba(15, 11, 28, 0.88) 70%);
+  backdrop-filter: blur(4px);
+}
+.profile-gate > * {
+  width: min(560px, 100%);
+  margin: auto;
+}
+.profile-sheet {
+  width: min(560px, 100%);
+}
+.profile-hero {
+  display: block;
+  margin: 0 auto 1rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.9rem, 6.5vw, 2.8rem);
+  text-align: center;
+  backdrop-filter: none;
+  cursor: default;
+}
+.pilot-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+.pilot-card {
+  position: relative;
+  min-height: 150px;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(42, 32, 72, 0.9);
+  color: #fdf3e7;
+  padding: 0;
+}
+.pilot-card.is-active {
+  border-color: #ff9d76;
+  box-shadow: 0 0 20px rgba(255, 157, 118, 0.35);
+}
+.pilot-card-main,
+.pilot-card-new {
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.9rem 0.6rem;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  transition: transform 0.12s ease;
+}
+.pilot-card-main:active,
+.pilot-card-new:active {
+  transform: scale(0.96);
+}
+.pilot-card-new {
+  border: 2px dashed rgba(255, 215, 122, 0.45);
+  background: rgba(255, 215, 122, 0.06);
+}
+.pilot-card-avatar {
+  font-size: 3.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+.pilot-card-new .pilot-card-avatar {
+  color: #ffd77a;
+}
+.pilot-card-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.pilot-card-stats {
+  font-size: 0.8rem;
+  color: #c8bcd9;
+}
+.pilot-card-edit {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1rem;
+}
+
+.profile-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.3rem;
+  border-radius: 24px;
+  background: #2a2048;
+  border: 1px solid rgba(255, 157, 118, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.profile-sheet .profile-editor {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+.profile-title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  color: #fdf3e7;
+}
+.profile-preview {
+  display: flex;
+  justify-content: center;
+}
+.profile-avatar-big {
+  font-size: 4.2rem;
+  line-height: 1.1;
+  animation: avatarBob 2.4s ease-in-out infinite;
+}
+@keyframes avatarBob {
+  50% { transform: translateY(-6px) rotate(-4deg); }
+}
+.profile-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: #c9a4de;
+}
+.profile-name-input {
+  min-height: 52px;
+  padding: 0 1rem;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 157, 118, 0.45);
+  background: rgba(45, 34, 74, 0.8);
+  color: #fdf3e7;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  outline: none;
+}
+.profile-name-input:focus {
+  border-color: #ffd77a;
+  box-shadow: 0 0 16px rgba(255, 215, 122, 0.3);
+}
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.4rem;
+}
+@media (max-width: 480px) {
+  .avatar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.avatar-option {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: clamp(1.7rem, 6vw, 2.1rem);
+  line-height: 1;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.avatar-option.is-on {
+  border-color: #ffd77a;
+  background: rgba(255, 215, 122, 0.15);
+  transform: scale(1.08);
+}
+.profile-primary {
+  min-height: 54px;
+  margin-top: 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff9d76, #c9a4de);
+  color: #241b3f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.profile-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.profile-secondary {
+  min-height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #e2d5ef;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.profile-delete-link {
+  align-self: center;
+  border: none;
+  background: none;
+  color: #ffb3b3;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+.profile-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 107, 107, 0.1);
+  color: #ffd0d0;
+  text-align: center;
+}
+.profile-confirm-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.profile-confirm-buttons > * {
+  flex: 1;
+}
+
+.pilot-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 160px;
+  padding-inline: 0.5rem 0.8rem;
+}
+.pilot-button-avatar {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.pilot-button-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  /* phones: the avatar alone identifies the pilot */
+  .pilot-button-name {
+    display: none;
+  }
+  .pilot-button {
+    padding-inline: 0.55rem;
+  }
+}

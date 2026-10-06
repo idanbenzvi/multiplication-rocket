@@ -1,6 +1,12 @@
 import type { Progress } from '../game/types';
+import { progressKeyFor, useProfiles } from '../profiles/useProfiles';
 
-const STORAGE_KEY = 'multiplication-rocket:progress:v1';
+// Progress is saved per pilot profile. Before a profile exists (the very
+// first launch, while the welcome screen is up) it falls back to a scratch key.
+function storageKey(): string {
+  const { activeId } = useProfiles.getState();
+  return activeId ? progressKeyFor(activeId) : 'multiplication-rocket:progress:v1:unassigned';
+}
 
 export function defaultProgress(): Progress {
   return {
@@ -29,7 +35,7 @@ export interface ProgressStore {
 export const localProgressStore: ProgressStore = {
   load() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey());
       if (!raw) return defaultProgress();
       const parsed = JSON.parse(raw) as Partial<Progress>;
       if (parsed.version !== 1) return defaultProgress();
@@ -39,9 +45,17 @@ export const localProgressStore: ProgressStore = {
     }
   },
   save(progress) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    try {
+      localStorage.setItem(storageKey(), JSON.stringify(progress));
+    } catch {
+      // storage blocked/full: progress lasts for this session only
+    }
   },
   reset() {
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(storageKey());
+    } catch {
+      // ignore
+    }
   },
 };
