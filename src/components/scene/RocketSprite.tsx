@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
-import { rocketSvg } from './illustrations';
+import { ROCKET_PORTHOLE, rocketSvg } from './illustrations';
+import { useProfiles } from '../../profiles/useProfiles';
 import { useSvgTexture } from './spriteTexture';
 
 interface Props {
@@ -18,7 +19,10 @@ const HEIGHT = 2.3;
 export function RocketSprite({ level }: Props) {
   const accent = useMemo(() => colorForLevel(level), [level]);
   const svg = useMemo(() => rocketSvg(accent), [accent]);
-  const texture = useSvgTexture(svg, 260, 520);
+  // The active pilot's animal looks out of the porthole.
+  const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const porthole = useMemo(() => (avatar ? { ...ROCKET_PORTHOLE, emoji: avatar } : undefined), [avatar]);
+  const texture = useSvgTexture(svg, 260, 520, porthole);
 
   if (!texture) return null;
 

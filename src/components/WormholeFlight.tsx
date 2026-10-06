@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { sfx } from '../audio/sfx';
 import { useT } from '../i18n/useLang';
-import { rocketSvg } from './scene/illustrations';
+import { ROCKET_PORTHOLE, rocketSvg } from './scene/illustrations';
+import { useProfiles } from '../profiles/useProfiles';
 import { colorForLevel } from './scene/palette';
 import LightTunnel from './reactbits/LightTunnel';
 
@@ -27,6 +28,7 @@ const DURATION_S = 3.1;
 // separate warm-up context — it has to be this same instance.
 export function WormholeFlight({ level, active, onDone }: Props) {
   const t = useT();
+  const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
   const rocketSrc = useMemo(
     () => `data:image/svg+xml;utf8,${encodeURIComponent(rocketSvg(colorForLevel(level)))}`,
     [level],
@@ -78,14 +80,26 @@ export function WormholeFlight({ level, active, onDone }: Props) {
 
       {active && (
         <>
-          <motion.img
+          <motion.div
             className="wormhole-rocket"
-            src={rocketSrc}
-            alt=""
             initial={{ y: '32vh', scale: 1, opacity: 0, rotate: 0 }}
             animate={{ y: ['32vh', '30vh', '-4vh'], scale: [1, 1, 0.08], opacity: [0, 1, 1], rotate: [0, -4, 12] }}
             transition={{ duration: 2.1, delay: 0.5, times: [0, 0.2, 1], ease: 'easeIn' }}
-          />
+          >
+            <img src={rocketSrc} alt="" />
+            {avatar && (
+              <span
+                className="rocket-porthole-avatar"
+                style={{
+                  left: `${ROCKET_PORTHOLE.x * 100}%`,
+                  top: `${ROCKET_PORTHOLE.y * 100}%`,
+                  width: `${ROCKET_PORTHOLE.radius * 200}%`,
+                }}
+              >
+                {avatar}
+              </span>
+            )}
+          </motion.div>
 
           <motion.div
             className="wormhole-boost"

@@ -1,7 +1,7 @@
 # 🚀 Multiplication Rocket
 
 A space-rocket game for practicing the multiplication table (1–10), in **English and Hebrew**.
-The rocket is always flying. Every correct answer fuels it and speeds it up, and a streak of
+The rocket is always flying, under northern-lights curtains that change color every level. Every correct answer fuels it and speeds it up, and a streak of
 correct answers makes it go faster still: stars stretch into streaks, the screen motion-blurs,
 and the engine plume grows hotter. A wrong answer makes it brake and slow down. Fill the tank to
 reach the destination planet, which grows in the sky as you get closer, and warp to the next one.
@@ -70,6 +70,8 @@ one from the avatar button in the top bar. **Reset** in Settings only resets the
 Everything is stored on the device; nothing is sent anywhere. Progress from before profiles existed
 is kept and becomes the first pilot.
 
+The pilot's animal also rides in the rocket's porthole.
+
 Answer mode, language and sound are shared by everyone on the device.
 
 <img src="docs/pilots.png" alt="Who's flying today? pilot picker" width="280">
@@ -100,7 +102,7 @@ npm run dist     # build a desktop executable for this OS into release/
 Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndrs/react-three-fiber)
 for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
 components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, LightTunnel,
-ElectricBorder, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
+Aurora, ElectricBorder, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
 [`src/components/reactbits/`](src/components/reactbits/). The engine plume is React Bits'
 LaserFlow shader, ported to run inside the 3D scene
 ([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in

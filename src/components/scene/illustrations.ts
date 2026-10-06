@@ -6,6 +6,10 @@
 
 const INK = '#2b2033';
 
+// The rocket's porthole glass in the artwork below (viewBox 200×400:
+// circle cx=100 cy=188 r=23), as fractions — where the pilot's avatar goes.
+export const ROCKET_PORTHOLE = { x: 100 / 200, y: 188 / 400, radius: 23 / 200 };
+
 export function rocketSvg(accent: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400">
     <path d="M60 255 L18 345 L72 315 Z" fill="#5b4a63" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>

@@ -1959,3 +1959,20 @@
     padding-inline: 0.55rem;
   }
 }
+.wormhole-rocket img {
+  display: block;
+  width: 100%;
+}
+/* the pilot's avatar in the porthole (same spot as in the 3D rocket's texture) */
+.rocket-porthole-avatar {
+  position: absolute;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  font-size: calc(min(18vw, 120px) * 0.18);
+  line-height: 1;
+}

@@ -12,6 +12,7 @@ import { SpeedStreaks } from './SpeedStreaks';
 import { DestinationPlanet } from './DestinationPlanet';
 import { SpeedBlur } from './SpeedBlur';
 import { GradientSky } from './GradientSky';
+import { AuroraSky } from './AuroraSky';
 import { skyForLevel } from './palette';
 
 // The distant star sphere turns around the camera's horizontal axis so the
@@ -47,6 +48,7 @@ export function RocketScene() {
     <Canvas dpr={[1, 1.5]}>
       <FlightController />
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
+      <AuroraSky level={displayLevel} />
       <fog attach="fog" args={[sky.fog, 10, 60]} />
       <DriftingStars />
       <DestinationPlanet key={destination} destinationIndex={destination} />
