@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
-import { flight, targetSpeed } from '../../game/flight';
+import { BELT_SPEED, flight, targetSpeed } from '../../game/flight';
 
 const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
 const LOOK_AT = new Vector3(0, 0.5, 0);
@@ -48,15 +48,15 @@ export function FlightController() {
 
   useFrame(({ clock }, rawDelta) => {
     const dt = Math.min(rawDelta, 0.1); // a tab switch shouldn't teleport the speed
-    const { progress, justLaunched } = useGameStore.getState();
+    const { progress, justLaunched, beltRun } = useGameStore.getState();
 
-    const target = targetSpeed(progress.fuel, progress.currentStreak, justLaunched);
+    const target = beltRun ? BELT_SPEED : targetSpeed(progress.fuel, progress.currentStreak, justLaunched);
     const rate = target > flight.speed ? ACCEL_RATE : BRAKE_RATE;
     flight.speed += (target - flight.speed) * (1 - Math.exp(-rate * dt));
     flight.boost *= Math.exp(-BOOST_DECAY * dt);
     flight.jolt *= Math.exp(-JOLT_DECAY * dt);
     flight.effective = flight.speed + flight.boost;
-    flight.approach = justLaunched ? 1 : progress.fuel / 100;
+    flight.approach = justLaunched ? 1 : beltRun ? 0 : progress.fuel / 100;
 
     // Camera: FOV widens with speed (the classic racing-game speed cue), plus
     // a high-frequency rumble at speed and a hard knock on a wrong answer.

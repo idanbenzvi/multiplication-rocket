@@ -7,6 +7,8 @@ interface Props {
   fuelPercent: number;
   bestStreak: number;
   mastery: Record<string, FactStat>;
+  /** hide the "nail these to launch" note (e.g. the launch gate already passed) */
+  hideCallout?: boolean;
 }
 
 const MAX_LISTED = 3;
@@ -15,9 +17,9 @@ const MAX_LISTED = 3;
 // rises from the bulb at the bottom, which reads as "gauge" rather than
 // "website loading bar" and gives the HUD a left-edge anchor point. It stays
 // on the left in Hebrew too: it's a physical instrument, not reading order.
-export function FuelGauge({ fuelPercent, bestStreak, mastery }: Props) {
+export function FuelGauge({ fuelPercent, bestStreak, mastery, hideCallout = false }: Props) {
   const t = useT();
-  const struggling = fuelPercent >= 100 ? getStrugglingFactKeys(mastery) : [];
+  const struggling = fuelPercent >= 100 && !hideCallout ? getStrugglingFactKeys(mastery) : [];
   const percent = Math.round(fuelPercent);
 
   return (

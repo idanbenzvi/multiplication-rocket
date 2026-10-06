@@ -11,6 +11,7 @@ import { FlyingRocket } from './FlyingRocket';
 import { SpeedStreaks } from './SpeedStreaks';
 import { DestinationPlanet } from './DestinationPlanet';
 import { SpeedBlur } from './SpeedBlur';
+import { BeltDebris } from './BeltDebris';
 import { GradientSky } from './GradientSky';
 import { skyForLevel } from './palette';
 
@@ -34,6 +35,10 @@ function DriftingStars() {
 export function RocketScene() {
   const progress = useGameStore((s) => s.progress);
   const justLaunched = useGameStore((s) => s.justLaunched);
+  // In the Asteroid Belt run the HUD layer draws the ship (it steers between
+  // lanes there), so the scene drops its own rocket and planet and fills
+  // with tumbling debris instead.
+  const beltRun = useGameStore((s) => s.beltRun);
 
   // While the launch overlay is up, progress.level has already advanced —
   // keep rendering the level that's mid-launch until the player dismisses it.
@@ -47,9 +52,9 @@ export function RocketScene() {
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
       <fog attach="fog" args={[sky.fog, 10, 60]} />
       <DriftingStars />
-      <DestinationPlanet key={destination} destinationIndex={destination} />
+      {!beltRun && <DestinationPlanet key={destination} destinationIndex={destination} />}
       <SpeedStreaks />
-      <FlyingRocket level={displayLevel} />
+      {beltRun ? <BeltDebris /> : <FlyingRocket level={displayLevel} />}
 
       <EffectComposer>
         <Bloom
