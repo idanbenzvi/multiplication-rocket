@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { flight } from '../../game/flight';
 
 // Northern-lights curtains across the top of the sky. The shader is React
 // Bits' Aurora (https://reactbits.dev/backgrounds/aurora), ported into the
 // r3f scene as a full-screen layer that sits just in front of the sky
 // gradient — behind the planet, stars and rocket — instead of as a separate
-// canvas over the game. Each level gets its own palette, and the curtains
-// ripple faster as the rocket picks up speed.
+// canvas over the game. Each level gets its own palette. Kept deliberately
+// slow, low and faint: it's ambience, and anything livelier competes with
+// the game for attention.
 
 const PALETTES: Array<[string, string, string]> = [
   ['#3fffb2', '#5227ff', '#ff6ad5'], // green · violet · pink
@@ -151,10 +151,10 @@ export function AuroraSky({ level }: Props) {
         fog: false,
         uniforms: {
           uTime: { value: 0 },
-          uAmplitude: { value: 1.0 },
+          uAmplitude: { value: 0.55 }, // upstream default 1.0: lower, gentler waves
           uColorStops: { value: auroraPaletteFor(level).map((c) => new THREE.Color(c)) },
-          uBlend: { value: 0.5 },
-          uIntensity: { value: 0.55 },
+          uBlend: { value: 0.75 }, // softer, more diffuse curtain edges
+          uIntensity: { value: 0.4 },
         },
       }),
     // created once; colors are eased toward the level's palette each frame
@@ -165,14 +165,12 @@ export function AuroraSky({ level }: Props) {
   useFrame((_, rawDelta) => {
     const dt = Math.min(rawDelta, 0.1);
     const u = material.uniforms;
-    // Time advanced by speed (not multiplied), so speeding up never makes
-    // the curtains jump — they just flow faster.
-    u.uTime.value += dt * (0.6 + Math.min(flight.effective, 1.3) * 1.6) * 6;
-    // Melt into the new level's palette over a couple of seconds.
-    const k = 1 - Math.exp(-1.2 * dt);
+    // A slow, constant drift — a quarter of upstream's default pace, and not
+    // tied to flight speed (that made it surge and jitter with every answer).
+    u.uTime.value += dt * 0.25;
+    // Melt into the new level's palette over a few seconds.
+    const k = 1 - Math.exp(-0.6 * dt);
     (u.uColorStops.value as THREE.Color[]).forEach((c, i) => c.lerp(target[i], k));
-    // A touch brighter at speed.
-    u.uIntensity.value = 0.65 + Math.min(flight.effective, 1.2) * 0.25;
   });
 
   return (
