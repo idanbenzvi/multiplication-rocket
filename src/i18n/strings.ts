@@ -137,6 +137,10 @@ const en = {
   strandedWin: 'Fleet refueled: lightspeed! 🚀',
   strandedGuess: 'Power up',
 
+  reviewPeekTitle: 'Your multiplication map',
+  reviewPeekStats: (m: number, p: number, n: number) => `${m} mastered · ${p} to practice · ${n} not tried yet`,
+  reviewPeekHint: 'Click for the full review',
+
   heatmapTitle: 'Your Multiplication Map',
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
@@ -291,6 +295,10 @@ const he: Strings = {
   strandedReveal: (x) => `לכולן משותף ${x}!`,
   strandedWin: 'הצי תודלק: מהירות האור! 🚀',
   strandedGuess: 'הטעינו',
+
+  reviewPeekTitle: 'מפת הכפל שלך',
+  reviewPeekStats: (m, p, n) => `${m} שולטים · ${p} לתרגול · ${n} עוד לא נוסו`,
+  reviewPeekHint: 'לחצו לחזרה המלאה',
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',

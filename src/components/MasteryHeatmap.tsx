@@ -1,4 +1,5 @@
 import type { FactStat } from '../game/types';
+import { masteryCellStyle as cellStyle } from '../game/masteryStats';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
@@ -11,18 +12,6 @@ interface Props {
 }
 
 const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
-
-function cellStyle(stat: FactStat | undefined): { background: string; color: string } {
-  if (!stat || stat.attempts === 0) {
-    return { background: 'rgba(255,255,255,0.05)', color: '#5f6b8c' };
-  }
-  const ratio = stat.correct / stat.attempts;
-  const hue = ratio * 120; // 0 = red, 120 = green
-  return {
-    background: `hsl(${hue}, 70%, 32%)`,
-    color: `hsl(${hue}, 90%, 85%)`,
-  };
-}
 
 export function MasteryHeatmap({ mastery, onContinue, auto = false }: Props) {
   const t = useT();

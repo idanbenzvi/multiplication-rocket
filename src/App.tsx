@@ -9,6 +9,7 @@ import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useT } from './i18n/useLang';
 import { SettingsMenu } from './components/SettingsMenu';
+import { ReviewButton } from './components/ReviewButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
 import { activeProfile, pilotName, useProfileGateOpen } from './profiles/useProfiles';
 import { isTouchDevice, useSettings } from './settings/useSettings';
@@ -216,9 +217,7 @@ function App() {
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>
           <AudioControls />
-          <button className="reset-button" onClick={requestHeatmap}>
-            {t.stopAndReview}
-          </button>
+          <ReviewButton mastery={progress.mastery} onClick={requestHeatmap} />
           <SettingsMenu onReset={handleReset} />
         </div>
       </header>
