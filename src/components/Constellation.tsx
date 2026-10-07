@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { gameTimeout } from '../game/gameClock';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildConstellationTargets, GRID_COLS, GRID_ROWS } from '../game/bonusRounds';
@@ -66,11 +67,11 @@ export function Constellation({ onDone, onBurst }: Props) {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const gridRef = useRef<HTMLDivElement>(null);
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
-  const timers = useRef<number[]>([]);
+  const timers = useRef<Array<() => void>>([]);
   const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, ms));
+    timers.current.push(gameTimeout(fn, ms));
   }, []);
-  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
+  useEffect(() => () => timers.current.forEach((cancel) => cancel()), []);
 
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -79,8 +80,8 @@ export function Constellation({ onDone, onBurst }: Props) {
   }, []);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setPhase('building'), INTRO_MS);
-    return () => window.clearTimeout(id);
+    const cancel = gameTimeout(() => setPhase('building'), INTRO_MS);
+    return cancel;
   }, []);
 
   const target = targets[index];

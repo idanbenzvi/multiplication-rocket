@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { gameNow } from '../game/gameClock';
 import type { Question } from '../game/useGameStore';
 import { FAST_MS, SLOW_MS, speedZone } from '../game/scoring';
 import { MultiplicationGrid } from './MultiplicationGrid';
@@ -102,7 +103,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   useEffect(() => {
     if (disabled) return;
     const start = question.askedAt;
-    const id = window.setInterval(() => setElapsedMs(Date.now() - start), 100);
+    const id = window.setInterval(() => setElapsedMs(gameNow() - start), 100);
     return () => window.clearInterval(id);
   }, [question.askedAt, disabled]);
 
@@ -118,7 +119,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   const submit = useCallback(
     (v: number) => {
       if (disabled || feedback) return;
-      onAnswer(v, Date.now() - question.askedAt);
+      onAnswer(v, gameNow() - question.askedAt);
     },
     [disabled, feedback, onAnswer, question.askedAt],
   );
@@ -205,7 +206,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   // question and doesn't reshuffle on every timer tick.
   const tier = streakTier(streak);
   const tierWords = t.praise[tier];
-  const praise = tierWords[question.askedAt % tierWords.length];
+  const praise = tierWords[Math.floor(question.askedAt) % tierWords.length];
 
   return (
     <div className="hud-question-widget">

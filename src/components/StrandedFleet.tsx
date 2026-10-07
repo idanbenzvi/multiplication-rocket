@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { gameNow, gameTimeout } from '../game/gameClock';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildStranded, MAX_STRANDED_GUESSES, STRANDED_SHIPS, strandedMultiplier } from '../game/bonusRounds';
@@ -91,12 +92,12 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
   const firstGuessRight = useRef(false);
   const shownAtWin = useRef(STRANDED_SHIPS);
-  const phaseStart = useRef(performance.now());
-  const timers = useRef<number[]>([]);
+  const phaseStart = useRef(gameNow());
+  const timers = useRef<Array<() => void>>([]);
   const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, ms));
+    timers.current.push(gameTimeout(fn, ms));
   }, []);
-  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
+  useEffect(() => () => timers.current.forEach((cancel) => cancel()), []);
 
   const warpSpeed = useRef(1.4); // lightspeed on the way in
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -108,11 +109,11 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
     let raf = 0;
     const loop = () => {
       if (ripple) {
-        const r = ((performance.now() - ripple.t0) / 1000) * ripple.speed;
+        const r = ((gameNow() - ripple.t0) / 1000) * ripple.speed;
         SLOTS.forEach((sl, i) => {
           if (litAt.current[i] !== undefined) return;
           if (r >= Math.hypot(sl.x * w - ripple.x, sl.y * h - ripple.y)) {
-            litAt.current[i] = performance.now();
+            litAt.current[i] = gameNow();
             const n = Object.keys(litAt.current).length;
             sfx.pick(Math.min(3, n));
             haptics.tick();
@@ -129,38 +130,38 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
 
   // lightspeed in → drop to cruise → ships start drifting in
   useEffect(() => {
-    const id = window.setTimeout(() => {
+    const cancel = gameTimeout(() => {
       warpSpeed.current = 0.3;
       setPhase('reveal');
       setShown(1);
     }, WARP_MS);
-    return () => window.clearTimeout(id);
+    return cancel;
   }, []);
 
   // one more ship every few seconds while guessing is open
   useEffect(() => {
     if (phase !== 'reveal' || shown >= STRANDED_SHIPS) return;
-    const id = window.setTimeout(() => setShown((n) => Math.min(STRANDED_SHIPS, n + 1)), SHIP_EVERY_MS);
-    return () => window.clearTimeout(id);
+    const cancel = gameTimeout(() => setShown((n) => Math.min(STRANDED_SHIPS, n + 1)), SHIP_EVERY_MS);
+    return cancel;
   }, [phase, shown]);
 
   const powerUp = useCallback(
     (demo: boolean) => {
       setShown(STRANDED_SHIPS);
       setPhase('fuel');
-      phaseStart.current = performance.now();
+      phaseStart.current = gameNow();
       setMessage({ text: t.strandedReveal(round.hidden), good: true });
       // the pulse leaves from wherever the (swaying) ship is right now
-      const now0 = performance.now() / 1000;
+      const now0 = gameNow() / 1000;
       const px = (0.5 + Math.sin(now0 * 0.8) * 0.06 + Math.sin(now0 * 2.3) * 0.012) * w;
       const py = 0.86 * h;
       const farthest = Math.max(...SLOTS.map((sl) => Math.hypot(sl.x * w - px, sl.y * h - py)));
       litAt.current = {};
-      setRipple({ t0: performance.now(), x: px, y: py, speed: farthest / RIPPLE_REACH_S });
+      setRipple({ t0: gameNow(), x: px, y: py, speed: farthest / RIPPLE_REACH_S });
       sfx.wormhole();
       later(() => {
         setPhase('jump');
-        phaseStart.current = performance.now();
+        phaseStart.current = gameNow();
         warpSpeed.current = 3.2;
         sfx.launch();
         haptics.correct(8);
@@ -238,8 +239,8 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   }, [round.hidden]);
 
   // ---- render ----
-  const now = performance.now() / 1000;
-  const tPhase = (performance.now() - phaseStart.current) / 1000;
+  const now = gameNow() / 1000;
+  const tPhase = (gameNow() - phaseStart.current) / 1000;
   const shipSize = Math.min(64, unit * 0.11);
   const strandedSize = Math.min(58, unit * 0.1);
 
@@ -275,7 +276,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
             const m = round.multipliers[i];
             const product = round.hidden * m;
             const powered = litAt.current[i] !== undefined;
-          const boosting = powered && performance.now() - litAt.current[i] < 700;
+          const boosting = powered && gameNow() - litAt.current[i] < 700;
             const drift = Math.sin(now * 0.7 + i) * 6;
             const jumpY = phase === 'jump' ? -Math.pow(tPhase, 2) * h * 1.6 : 0;
             const jumpStretch = phase === 'jump' ? 1 + tPhase * 3 : 1;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { gameNow, gameTimeout } from '../game/gameClock';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildBattle, MAX_BATTLE_TRIES } from '../game/bonusRounds';
@@ -82,11 +83,11 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const [, setFrame] = useState(0);
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
   const firstTryCorrect = useRef(false);
-  const timers = useRef<number[]>([]);
+  const timers = useRef<Array<() => void>>([]);
   const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, ms));
+    timers.current.push(gameTimeout(fn, ms));
   }, []);
-  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
+  useEffect(() => () => timers.current.forEach((cancel) => cancel()), []);
 
   // ---- layout ----
   const headerRef = useRef<HTMLDivElement>(null);
@@ -137,7 +138,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
 
   // warp in → place cannons → collect
   useEffect(() => {
-    const id = window.setTimeout(() => {
+    const cancel = gameTimeout(() => {
       warpSpeed.current = 0.35;
       const placed: Cannon[] = [];
       for (let i = 0; i < battle.cannons; i++) {
@@ -154,7 +155,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       setCannons(placed);
       setPhase('collect');
     }, WARP_MS);
-    return () => window.clearTimeout(id);
+    return cancel;
     // once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -179,7 +180,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   // frame loop: move the ship, pick up cannons
   useEffect(() => {
     let raf = 0;
-    let last = performance.now();
+    let last = gameNow();
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
@@ -303,7 +304,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
     setMessage(null);
     setAttackStep('arrive');
     setPhase('attack');
-    attackStart.current = performance.now();
+    attackStart.current = gameNow();
     blastStart.current = 0;
     warpSpeed.current = 0.6;
     later(() => {
@@ -315,7 +316,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       const exact = n === battle.ships;
       if (exact) {
         setAttackStep('blast');
-        blastStart.current = performance.now();
+        blastStart.current = gameNow();
         warpSpeed.current = 1.6;
         sfx.boom(10);
         haptics.correct(8);
@@ -384,14 +385,14 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   }, [battle.ships]);
 
   // ---- render ----
-  const now = performance.now() / 1000;
+  const now = gameNow() / 1000;
   const shipPx = { x: ship.current.x * w, y: ship.current.y * h };
   const shipSize = Math.min(96, unit * 0.16);
 
   // the orbit: ships fly in to a ring around the hub, then circle it with
   // an exponentially rising angular speed
   const fleetSize = Math.min(58, unit * 0.1);
-  const tAttack = (performance.now() - attackStart.current) / 1000;
+  const tAttack = (gameNow() - attackStart.current) / 1000;
   const orbitT = Math.max(0, tAttack - ARRIVE_MS / 1000);
   const spinning = attackStep === 'orbit' || attackStep === 'fizzle' || attackStep === 'blast';
   // angle(t) = ∫ ω, with ω = ω0·e^(k t): fast and then *really* fast
@@ -411,7 +412,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const charge = fleet * battle.cannons;
   const chargeShown = attackStep === 'arrive' ? 0 : Math.min(1, orbitT / (ORBIT_MS / 1000)) * charge;
   const shake = spinning && attackStep !== 'fizzle' ? Math.min(6, orbitT * orbitT * 0.9) : 0;
-  const tBlast = blastStart.current ? (performance.now() - blastStart.current) / 1000 : 0;
+  const tBlast = blastStart.current ? (gameNow() - blastStart.current) / 1000 : 0;
   // Halo + orbit ring brightness, 0..1: builds with the spin, white-hot at the
   // blast, flickering dimly on a fizzle.
   const glow =

@@ -24,6 +24,8 @@ Grab the file for your computer from the **[latest release](https://github.com/i
 
 Progress is saved automatically on the computer.
 
+Leaving the game (another tab or app, minimizing, locking the tablet) pauses it: music and sounds stop, the answer timer and any bonus round freeze, and a tap or key press carries on exactly where you left off.
+
 ### Tablets and phones
 
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),

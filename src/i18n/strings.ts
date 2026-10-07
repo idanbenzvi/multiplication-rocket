@@ -141,6 +141,9 @@ const en = {
   reviewPeekStats: (m: number, p: number, n: number) => `${m} mastered · ${p} to practice · ${n} not tried yet`,
   reviewPeekHint: 'Click for the full review',
 
+  pausedTitle: 'Paused',
+  pausedHint: 'Tap or press any key to keep flying',
+
   heatmapTitle: 'Your Multiplication Map',
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
@@ -299,6 +302,9 @@ const he: Strings = {
   reviewPeekTitle: 'מפת הכפל שלך',
   reviewPeekStats: (m, p, n) => `${m} שולטים · ${p} לתרגול · ${n} עוד לא נוסו`,
   reviewPeekHint: 'לחצו לחזרה המלאה',
+
+  pausedTitle: 'מושהה',
+  pausedHint: 'הקישו או לחצו על מקש כלשהו כדי להמשיך לטוס',
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',

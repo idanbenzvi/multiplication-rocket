@@ -32,6 +32,15 @@ function unlock() {
 const UNLOCK_EVENTS = ['touchend', 'click', 'keydown'] as const;
 for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock);
 
+/** game paused: silence anything still ringing out */
+export function suspendSfx() {
+  void ctx?.suspend().catch(() => {});
+}
+
+export function resumeSfx() {
+  void ctx?.resume().catch(() => {});
+}
+
 function volume(): number {
   return useAudio.getState().effectsVolume;
 }

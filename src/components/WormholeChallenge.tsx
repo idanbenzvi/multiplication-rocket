@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { gameTimeout } from '../game/gameClock';
 import { motion } from 'motion/react';
 import type { Challenge, Drill } from '../game/wormhole';
 import { CORRECT_PICKS, WRONG_PICKS_ALLOWED } from '../game/wormhole';
@@ -48,7 +49,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
       if (next.length >= CORRECT_PICKS) haptics.correct(5);
       else haptics.tick();
       if (rect) onBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#7ee08f');
-      if (next.length >= CORRECT_PICKS) window.setTimeout(onSuccess, SUCCESS_DELAY_MS);
+      if (next.length >= CORRECT_PICKS) gameTimeout(onSuccess, SUCCESS_DELAY_MS);
     } else {
       const next = [...missed, drill.id];
       setMissed(next);
@@ -56,7 +57,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
       haptics.thump();
       if (next.length > WRONG_PICKS_ALLOWED) {
         setCollapsed(true);
-        window.setTimeout(onCollapse, COLLAPSE_DELAY_MS);
+        gameTimeout(onCollapse, COLLAPSE_DELAY_MS);
       }
     }
   };

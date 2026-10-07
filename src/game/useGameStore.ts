@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { gameNow } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
 import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, randomizeOrder } from './facts';
 import { getLevelConfig } from './levels';
@@ -108,7 +109,7 @@ function newQuestion(progress: Progress, avoidKey?: string): Question {
   const pool = buildFactPool(level.factorRange[0], level.factorRange[1]);
   const fact = pickNextFact(pool, progress.mastery, avoidKey);
   const { x, y } = randomizeOrder(fact);
-  return { fact, x, y, askedAt: Date.now() };
+  return { fact, x, y, askedAt: gameNow() };
 }
 
 export const useGameStore = create<GameState>((set, get) => ({

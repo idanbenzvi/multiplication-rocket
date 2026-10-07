@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { gameNow, gameTimeout } from '../game/gameClock';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildMeteorDrills, METEOR_DRILLS, type MeteorDrill } from '../game/bonusRounds';
@@ -93,11 +94,11 @@ export function MeteorShower({ onDone, onBurst }: Props) {
   const drillStart = useRef(0);
   const consecutive = useRef(0);
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
-  const timers = useRef<number[]>([]);
+  const timers = useRef<Array<() => void>>([]);
   const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, ms));
+    timers.current.push(gameTimeout(fn, ms));
   }, []);
-  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
+  useEffect(() => () => timers.current.forEach((cancel) => cancel()), []);
 
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -113,7 +114,7 @@ export function MeteorShower({ onDone, onBurst }: Props) {
       setMeteors(layoutMeteors(drills[i], consecutive.current));
       setMissedThis(false);
       setBurned(false);
-      drillStart.current = performance.now();
+      drillStart.current = gameNow();
       setPhase('falling');
     },
     [drills],
@@ -133,8 +134,8 @@ export function MeteorShower({ onDone, onBurst }: Props) {
   );
 
   useEffect(() => {
-    const id = window.setTimeout(() => startDrill(0), INTRO_MS);
-    return () => window.clearTimeout(id);
+    const cancel = gameTimeout(() => startDrill(0), INTRO_MS);
+    return cancel;
   }, [startDrill]);
 
   const progressOf = (m: Meteor, now: number) => (now - drillStart.current - m.delayMs) / m.durationMs;
@@ -148,7 +149,7 @@ export function MeteorShower({ onDone, onBurst }: Props) {
     if (phase !== 'falling') return;
     let raf = 0;
     const loop = () => {
-      const now = performance.now();
+      const now = gameNow();
       const answerMeteor = meteors.find((m) => m.value === drill.answer);
       if (answerMeteor && answerMeteor.state === 'falling' && progressOf(answerMeteor, now) > 1) {
         setPhase('resolved');
@@ -201,7 +202,7 @@ export function MeteorShower({ onDone, onBurst }: Props) {
     }
   };
 
-  const now = performance.now();
+  const now = gameNow();
 
   return (
     <div className="meteor-round">

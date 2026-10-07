@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { gameTimeout } from '../game/gameClock';
 import { motion } from 'motion/react';
 import { sfx } from '../audio/sfx';
 import { useT } from '../i18n/useLang';
@@ -37,8 +38,8 @@ export function WormholeFlight({ level, active, onDone }: Props) {
   useEffect(() => {
     if (!active) return;
     sfx.wormhole();
-    const id = window.setTimeout(onDone, DURATION_S * 1000);
-    return () => window.clearTimeout(id);
+    const cancel = gameTimeout(onDone, DURATION_S * 1000);
+    return cancel;
     // onDone is stable for the life of this overlay
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);

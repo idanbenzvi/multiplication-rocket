@@ -76,6 +76,16 @@ export const useAudio = create<AudioState>((set, get) => ({
 
 music.volume = useAudio.getState().musicVolume;
 
+/** game paused (player left the tab/app): stop the music */
+export function pauseMusic() {
+  music.pause();
+}
+
+/** game resumed: music back on, if it isn't turned all the way down */
+export function resumeMusic() {
+  applyMusic(useAudio.getState().musicVolume);
+}
+
 // Browsers block autoplay until the player interacts with the page, so the
 // music starts on the first click/keypress rather than on load.
 function startOnFirstGesture() {

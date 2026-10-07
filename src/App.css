@@ -2635,3 +2635,49 @@
   font-size: 0.7rem;
   color: #a898bf;
 }
+
+/* ==================== PAUSED (player left the tab/app) ==================== */
+.app-root.is-paused *,
+.app-root.is-paused *::before,
+.app-root.is-paused *::after {
+  animation-play-state: paused !important;
+}
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 11, 28, 0.72);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.6rem 2.2rem;
+  border-radius: 24px;
+  background: rgba(36, 27, 63, 0.92);
+  border: 1px solid rgba(255, 157, 118, 0.4);
+  text-align: center;
+}
+.pause-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+.pause-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  color: #fdf3e7;
+}
+.pause-hint {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: #c8bcd9;
+  animation: tapHint 1s ease-in-out infinite alternate;
+}

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { usePause } from '../game/gameClock';
 
 // ---------- forward-warp starfield (2D canvas) ----------
 
@@ -31,6 +32,12 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
     resize();
     window.addEventListener('resize', resize);
     const draw = (now: number) => {
+      if (usePause.getState().paused) {
+        // frozen while the game is paused (and nothing to draw)
+        last = now;
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const w = canvas.width;

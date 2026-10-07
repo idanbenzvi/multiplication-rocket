@@ -4,6 +4,7 @@ import { Stars } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import type { Group } from 'three';
 import { useGameStore } from '../../game/useGameStore';
+import { usePause } from '../../game/gameClock';
 import { getLevelConfig } from '../../game/levels';
 import { flight } from '../../game/flight';
 import { FlightController } from './FlightController';
@@ -35,6 +36,8 @@ function DriftingStars() {
 export function RocketScene() {
   const progress = useGameStore((s) => s.progress);
   const justLaunched = useGameStore((s) => s.justLaunched);
+  // paused (player left the tab/app): stop rendering the scene entirely
+  const paused = usePause((s) => s.paused);
 
   // While the launch overlay is up, progress.level has already advanced —
   // keep rendering the level that's mid-launch until the player dismisses it.
@@ -45,7 +48,7 @@ export function RocketScene() {
   return (
     // dpr capped at 1.5: on retina tablets/phones full resolution would cost
     // 4-9x the pixels for the bloom, blur and plume shaders, for little gain.
-    <Canvas dpr={[1, 1.5]}>
+    <Canvas dpr={[1, 1.5]} frameloop={paused ? 'never' : 'always'}>
       <FlightController />
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
       <AuroraSky level={displayLevel} />

@@ -24,6 +24,8 @@ import { Constellation } from './components/Constellation';
 import { FleetBattle } from './components/FleetBattle';
 import { StrandedFleet } from './components/StrandedFleet';
 import { DevPanel } from './components/DevPanel';
+import { PauseController } from './components/PauseController';
+import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
@@ -48,6 +50,7 @@ const MILESTONE_BANNER_MS = 1700;
 function App() {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
+  const paused = usePause((s) => s.paused);
   // Until a pilot is picked/created the game itself stays hidden.
   const gateOpen = useProfileGateOpen();
   const typedCheck = useSettings((s) => s.typedCheck);
@@ -197,7 +200,7 @@ function App() {
 
   return (
     <ClickSpark ref={sparkRef} sparkColor="#ffd77a" sparkSize={12} sparkRadius={22} sparkCount={10}>
-    <div className="app-root">
+    <div className={`app-root ${paused ? 'is-paused' : ''}`}>
       <div className="starfield-layer">
         <RocketScene />
       </div>
@@ -229,6 +232,7 @@ function App() {
       />
 
       <ProfileGate />
+      <PauseController />
       {DEV_MODE && <DevPanel />}
 
       {!gateOpen && (

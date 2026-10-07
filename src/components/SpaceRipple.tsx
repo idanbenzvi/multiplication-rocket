@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { gameNow } from '../game/gameClock';
 import { useRippleStatus } from '../dev/rippleStatus';
 
 interface Props {
   /** the canvas whose picture gets rippled (the warp starfield) */
   source: React.RefObject<HTMLCanvasElement | null>;
-  /** performance.now() when the pulse left the ship; 0 = no ripple */
+  /** gameNow() when the pulse left the ship; 0 = no ripple */
   startedAt: number;
   /** where it starts, in this element's CSS pixels (top-left origin) */
   origin: { x: number; y: number };
@@ -183,7 +184,7 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
         canvas.width = Math.round(cssW * dpr);
         canvas.height = Math.round(cssH * dpr);
       }
-      const t = (performance.now() - t0) / 1000;
+      const t = (gameNow() - t0) / 1000;
       // done once every ring has left the screen
       if (t * sp - 280 > Math.hypot(cssW, cssH) * 1.1) {
         canvas.style.visibility = 'hidden';
