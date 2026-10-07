@@ -32,8 +32,8 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
     resize();
     window.addEventListener('resize', resize);
     const draw = (now: number) => {
-      if (usePause.getState().paused) {
-        // frozen while the game is paused (and nothing to draw)
+      if (usePause.getState().away) {
+        // frozen while the player is away from the game
         last = now;
         raf = requestAnimationFrame(draw);
         return;

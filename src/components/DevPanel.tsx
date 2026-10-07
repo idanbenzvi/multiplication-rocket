@@ -27,6 +27,7 @@ export function DevPanel() {
     { key: 'G', label: 'Answer the round correctly', run: () => window.dispatchEvent(new Event(DEV_SOLVE_EVENT)) },
     { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
     { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
+    { key: 'A', label: 'Deep Space Academy', run: () => store.getState().openAcademy() },
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
   ];
 

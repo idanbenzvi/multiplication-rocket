@@ -10,7 +10,13 @@ import { create } from 'zustand';
 let pausedTotal = 0;
 let pausedAt: number | null = null;
 
-export const usePause = create<{ paused: boolean }>(() => ({ paused: false }));
+// Why the game is paused. 'away' = the player left the tab/app (shows the
+// paused screen); 'academy' = the Deep Space Academy is open over the game.
+// The clock runs only when there's no reason left.
+export type PauseReason = 'away' | 'academy';
+const reasons = new Set<PauseReason>();
+
+export const usePause = create<{ paused: boolean; away: boolean }>(() => ({ paused: false, away: false }));
 
 /** milliseconds of *game* time (frozen while paused) */
 export function gameNow(): number {
@@ -45,7 +51,9 @@ export function gameTimeout(fn: () => void, ms: number): () => void {
   };
 }
 
-export function pauseGame() {
+export function pauseGame(reason: PauseReason = 'away') {
+  reasons.add(reason);
+  usePause.setState({ away: reasons.has('away') });
   if (pausedAt !== null) return;
   pausedAt = performance.now();
   for (const t of timers) {
@@ -56,8 +64,10 @@ export function pauseGame() {
   usePause.setState({ paused: true });
 }
 
-export function resumeGame() {
-  if (pausedAt === null) return;
+export function resumeGame(reason: PauseReason = 'away') {
+  reasons.delete(reason);
+  usePause.setState({ away: reasons.has('away') });
+  if (reasons.size > 0 || pausedAt === null) return;
   pausedTotal += performance.now() - pausedAt;
   pausedAt = null;
   for (const t of timers) arm(t);

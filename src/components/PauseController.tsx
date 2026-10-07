@@ -11,11 +11,12 @@ import { useT } from '../i18n/useLang';
 // where it left off.
 export function PauseController() {
   const t = useT();
-  const paused = usePause((s) => s.paused);
+  // only leaving the game shows this screen (the Academy pauses silently)
+  const paused = usePause((s) => s.away);
 
   useEffect(() => {
     const pause = () => {
-      pauseGame();
+      pauseGame('away');
       pauseMusic();
       suspendSfx();
     };
@@ -35,7 +36,7 @@ export function PauseController() {
     const resume = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
-      resumeGame();
+      resumeGame('away');
       resumeSfx();
       resumeMusic();
     };

@@ -65,6 +65,36 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
 |---|---|---|
 | ![Meteor Shower](docs/meteor-shower.png) | ![Build-a-Constellation](docs/constellation.png) | ![Fleet Battle](docs/fleet-battle.png) |
 
+## Deep Space Academy 🪐 (hidden)
+
+**Tap the rocket's window three times quickly** to warp into the Deep Space Academy: a calm
+screen that teaches multiplication from the ground up, for a child who has never met "×". The
+game waits while it's open. Every step can be read aloud (🔊) in English or Hebrew, so
+pre-readers can follow.
+
+The lessons follow the order the research on early multiplication supports:
+
+1. **Equal groups.** Buses of 4 aliens; tap to count them all. Children's own starting model is
+   equal groups and counting ([Mulligan & Mitchelmore, *Young children's intuitive models of
+   multiplication and division*](https://researchers.mq.edu.au/en/publications/young-childrens-intuitive-models-of-multiplication-and-division-2/);
+   [Mathematics Education Research Journal, 2022](https://link.springer.com/10.1007/s13394-022-00413-1)).
+2. **Adding the same number:** `4 + 4 + 4`, then skip counting on a number line. Repeated
+   addition is children's most common intuitive model, so it's the bridge, not the destination.
+3. **The × sign** as a shortcut for "groups of": the first number is how many groups, the second
+   is how many in each.
+4. **Arrays.** The aliens park in rows; each row is an equal group, and the whole array is a group
+   of groups ([Barmby, Harries, Higgins & Suggate 2009, *The array representation and primary
+   children's understanding and reasoning in multiplication*](https://dro.dur.ac.uk/5458);
+   [Outhred, PME28](https://emis.univie.ac.at/proceedings/PME28/RR/RR018_Outhred.pdf)).
+5. **Turn it around.** Rotating the array shows `3 × 4 = 4 × 3`: a reasoning strategy that halves
+   what has to be learned, in line with strategy-based fact fluency rather than rote drilling
+   ([Baroody's phases, via NCTM/Georgia Standards](https://www.georgiastandards.org/Georgia-Standards/Documents/3rd-Math-Fluency-NCTM-2015.pdf);
+   [Wisconsin DPI fact-fluency progression](https://dpi.wi.gov/sites/default/files/imce/math/files/Fact_Fluency_Infographic_-_FINAL.pdf)).
+6. **Your turn**, with support that fades: build 2 groups of 3 with buttons, then read a dot
+   picture, then a symbols-only problem with an optional "show me". This is the
+   concrete → representational → abstract sequence
+   ([meta-analytic review of CRA, University of Kentucky](https://scholars.uky.edu/en/publications/a-meta-analytic-review-of-the-concrete-representational-abstract-/)).
+
 ## Pilot profiles (siblings)
 
 Each child can have their own pilot: a name plus an animal avatar (🐶🐱🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐧🦄🐙).
@@ -129,6 +159,7 @@ in the corner. Its rows can be tapped on tablets, or use the shortcuts:
 | Shift+G | Answer the current Stranded Fleet / Fleet Battle correctly |
 | Shift+L | Complete the level (launch warp) |
 | Shift+F | Fuel to 95% |
+| Shift+A | Deep Space Academy |
 | Shift+P | Practice map |
 
 The panel's last line shows whether the Stranded Fleet energy pulse is running as a WebGL shader or has fallen back to CSS rings (with the reason), which is useful if the pulse looks wrong on a device.

@@ -25,6 +25,7 @@ import { FleetBattle } from './components/FleetBattle';
 import { StrandedFleet } from './components/StrandedFleet';
 import { DevPanel } from './components/DevPanel';
 import { PauseController } from './components/PauseController';
+import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
 import { isMilestone, streakTier } from './game/streak';
@@ -50,7 +51,9 @@ const MILESTONE_BANNER_MS = 1700;
 function App() {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
-  const paused = usePause((s) => s.paused);
+  const paused = usePause((s) => s.away);
+  const academyOpen = useGameStore((s) => s.academyOpen);
+  const closeAcademy = useGameStore((s) => s.closeAcademy);
   // Until a pilot is picked/created the game itself stays hidden.
   const gateOpen = useProfileGateOpen();
   const typedCheck = useSettings((s) => s.typedCheck);
@@ -232,6 +235,7 @@ function App() {
       />
 
       <ProfileGate />
+      {academyOpen && <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />}
       <PauseController />
       {DEV_MODE && <DevPanel />}
 

@@ -40,6 +40,8 @@ interface GameState {
   bonusIndex: number;
   /** bumped on every new bonus round; used as its React key so each one starts fresh */
   bonusNonce: number;
+  /** the Deep Space Academy (learn multiplication from scratch) is open */
+  academyOpen: boolean;
   init: () => void;
   submitAnswer: (value: number, elapsedMs: number) => boolean;
   advanceQuestion: () => void;
@@ -58,6 +60,9 @@ interface GameState {
    * the mastery map, add its fuel (may launch), back to normal questions.
    */
   finishBonusRound: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
+  /** open the Deep Space Academy, if nothing else is going on */
+  openAcademy: () => void;
+  closeAcademy: () => void;
   /** dev mode only: jump straight into a bonus round */
   devStartBonus: (kind: BonusKind) => void;
   /** dev mode only: complete the level now (launch overlay + warp) */
@@ -128,6 +133,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   bonusRound: null,
   bonusIndex: 0,
   bonusNonce: 0,
+  academyOpen: false,
 
   init: () => {
     const progress = localProgressStore.load();
@@ -300,6 +306,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
     });
+  },
+
+  openAcademy: () => {
+    const s = get();
+    if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
+    set({ academyOpen: true });
+  },
+
+  closeAcademy: () => {
+    set({ academyOpen: false });
   },
 
   devStartBonus: (kind) => {
