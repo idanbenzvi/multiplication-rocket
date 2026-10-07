@@ -5,8 +5,8 @@ import { distractors } from './distractors';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them.
-export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle';
-export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle'];
+export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded';
+export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded'];
 
 // ---------- Meteor Shower ----------
 
@@ -119,4 +119,33 @@ export function buildBattle(progress: Progress): Battle {
   const cannons = cannonsIsA ? fact.a : fact.b;
   const ships = cannonsIsA ? fact.b : fact.a;
   return { factKey: fact.key, cannons, ships, enemies: cannons * ships };
+}
+
+// ---------- Stranded Fleet ----------
+
+export const STRANDED_SHIPS = 5;
+export const MAX_STRANDED_GUESSES = 3;
+
+export interface Stranded {
+  /** the fact the hidden number was picked through (for mastery) */
+  factKey: string;
+  /** the number every drill shares: [ ] × m = hidden × m */
+  hidden: number;
+  /** the other factor on each ship, in the order the ships arrive */
+  multipliers: number[];
+}
+
+// The hidden number comes from a fact the child finds hard (the usual
+// weighting), and that fact's other factor is always one of the drills.
+export function buildStranded(progress: Progress): Stranded {
+  const facts = pool(progress).filter((f) => f.a >= 2);
+  const fact = pickNextFact(facts, progress.mastery);
+  const [hidden, partner] = Math.random() < 0.5 ? [fact.a, fact.b] : [fact.b, fact.a];
+  const others = shuffle([2, 3, 4, 5, 6, 7, 8, 9, 10].filter((m) => m !== partner)).slice(0, STRANDED_SHIPS - 1);
+  return { factKey: fact.key, hidden, multipliers: shuffle([partner, ...others]) };
+}
+
+/** fuel bonus by how many ships were showing when guessed right: 1 → 3×, 5 → 1× */
+export function strandedMultiplier(shipsShown: number): number {
+  return 1 + (STRANDED_SHIPS - Math.max(1, Math.min(STRANDED_SHIPS, shipsShown))) * 0.5;
 }

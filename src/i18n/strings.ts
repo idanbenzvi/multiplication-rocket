@@ -127,6 +127,16 @@ const en = {
   battleShowAnswer: (s: number, k: number, n: number) => `${s} ships × ${k} cannons = ${n}`,
   battleWin: 'Enemy fleet destroyed! 💥',
 
+  strandedTitle: 'Stranded fleet!',
+  strandedIntro: "These ships are out of fuel. Find the number they all share and power them up!",
+  strandedFind: 'What number goes in every [ ]?',
+  strandedShips: (k: number, n: number) => `Ships ${k} / ${n}`,
+  strandedBonus: (m: number) => `⚡ ×${m} fuel bonus`,
+  strandedWrong: (g: number) => `${g} doesn't fit every ship. Look again!`,
+  strandedReveal: (x: number) => `They all share ${x}!`,
+  strandedWin: 'Fleet refueled: lightspeed! 🚀',
+  strandedGuess: 'Power up',
+
   heatmapTitle: 'Your Multiplication Map',
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
@@ -271,6 +281,16 @@ const he: Strings = {
   battleTooMany: (s, k, extra) => `${s} חלליות × ${k} = ${s * k}: ${extra} תותחים מיותרים! נסו פחות חלליות`,
   battleShowAnswer: (s, k, n) => `${s} חלליות × ${k} תותחים = ${n}`,
   battleWin: 'צי האויב הושמד! 💥',
+
+  strandedTitle: 'צי תקוע!',
+  strandedIntro: 'לחלליות האלה נגמר הדלק. מצאו את המספר המשותף לכולן והטעינו אותן!',
+  strandedFind: 'איזה מספר מתאים לכל [ ]?',
+  strandedShips: (k, n) => `חלליות ${k} / ${n}`,
+  strandedBonus: (m) => `⚡ בונוס דלק ×${m}`,
+  strandedWrong: (g) => `${g} לא מתאים לכל החלליות. הסתכלו שוב!`,
+  strandedReveal: (x) => `לכולן משותף ${x}!`,
+  strandedWin: 'הצי תודלק: מהירות האור! 🚀',
+  strandedGuess: 'הטעינו',
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',

@@ -11,7 +11,8 @@ interface Shortcut {
 // Only mounted with ?devmode=true. Shift+key shortcuts (and tappable rows,
 // for tablets) jump to any special round or game state.
 export function DevPanel() {
-  const [open, setOpen] = useState(true);
+  // collapsed by default on phones, where it would cover the answer buttons
+  const [open, setOpen] = useState(() => window.innerWidth >= 600);
   const store = useGameStore;
 
   const shortcuts: Shortcut[] = [
@@ -19,6 +20,7 @@ export function DevPanel() {
     { key: 'M', label: 'Meteor Shower', run: () => store.getState().devStartBonus('meteor') },
     { key: 'C', label: 'Constellation', run: () => store.getState().devStartBonus('constellation') },
     { key: 'B', label: 'Fleet Battle (blast)', run: () => store.getState().devStartBonus('battle') },
+    { key: 'S', label: 'Stranded Fleet', run: () => store.getState().devStartBonus('stranded') },
     { key: 'K', label: 'Battle: collect all cannons', run: () => window.dispatchEvent(new Event(DEV_COLLECT_EVENT)) },
     { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
     { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
@@ -41,14 +43,29 @@ export function DevPanel() {
 
   return (
     <div className={`dev-panel ${open ? '' : 'is-closed'}`} dir="ltr">
-      <button type="button" className="dev-panel-toggle" onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className="dev-panel-toggle"
+        onClick={(e) => {
+          e.currentTarget.blur();
+          setOpen((o) => !o);
+        }}
+      >
         DEV {open ? '▾' : '▸'}
       </button>
       {open && (
         <ul>
           {shortcuts.map((s) => (
             <li key={s.key}>
-              <button type="button" onClick={s.run}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  // Drop focus, or the game's Enter (submit an answer) would
+                  // "click" this button again and restart the round.
+                  e.currentTarget.blur();
+                  s.run();
+                }}
+              >
                 <kbd>⇧{s.key}</kbd> {s.label}
               </button>
             </li>

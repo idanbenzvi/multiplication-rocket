@@ -2425,3 +2425,116 @@
   color: #ffd77a;
   font: inherit;
 }
+
+/* ==================== STRANDED FLEET ==================== */
+.stranded {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  animation: dimIn 0.6s ease-out both;
+}
+.stranded-view {
+  position: absolute;
+  inset: -6%; /* oversized, so the roll never shows an edge */
+  transform-origin: 50% 60%;
+}
+.stranded-view .battle-warp {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stranded-screen {
+  position: absolute;
+}
+.stranded-header {
+  z-index: 6;
+}
+.stranded-bonus {
+  font-size: 0.85rem;
+  color: #ffd77a;
+  text-shadow: 0 0 10px rgba(255, 215, 122, 0.7);
+}
+.stranded-ship {
+  position: absolute;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  pointer-events: none;
+  filter: grayscale(0.6) brightness(0.75);
+  transition: filter 0.4s ease;
+  animation: strandedIn 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes strandedIn {
+  from { opacity: 0; scale: 0.2; translate: -50% -140%; }
+  to { opacity: 1; scale: 1; translate: -50% -50%; }
+}
+.stranded-ship.is-powered {
+  filter: drop-shadow(0 0 16px #6ad7ff) brightness(1.3);
+}
+.stranded-ship.is-powered::after {
+  content: '';
+  position: absolute;
+  bottom: -8%;
+  width: 34%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at top, #fff, #6ad7ff 40%, transparent 75%);
+  filter: blur(2px);
+  animation: enginePulse 0.12s linear infinite alternate;
+}
+.holo-drill {
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(106, 215, 255, 0.7);
+  background: repeating-linear-gradient(0deg, rgba(106, 215, 255, 0.16) 0 2px, rgba(106, 215, 255, 0.06) 2px 4px);
+  color: #c9f2ff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2.6vw, 1.2rem);
+  white-space: nowrap;
+  text-shadow: 0 0 8px #6ad7ff;
+  box-shadow: 0 0 14px rgba(106, 215, 255, 0.35);
+  animation: holoFlicker 2.6s steps(1) infinite;
+}
+@keyframes holoFlicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.55; }
+  95% { opacity: 0.9; }
+  97% { opacity: 0.6; }
+}
+.holo-blank {
+  color: #ffd77a;
+  text-shadow: 0 0 10px #ffd77a;
+}
+.holo-drill b {
+  color: #7ee08f;
+  text-shadow: 0 0 10px #7ee08f;
+}
+.holo-drill.is-ok {
+  border-color: #7ee08f;
+  color: #d8ffe0;
+}
+.holo-drill.is-bad {
+  border-color: #ff6b6b;
+  color: #ffd0d0;
+  background: rgba(255, 107, 107, 0.15);
+  animation: shake 0.35s ease;
+}
+.pilot-ship {
+  transition: none;
+}
+.fuel-line {
+  stroke: #6ad7ff;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 8;
+  filter: drop-shadow(0 0 8px #6ad7ff) drop-shadow(0 0 3px #fff);
+  animation: linkFlow 0.35s linear infinite;
+}
+.stranded-question {
+  bottom: calc(20% + env(safe-area-inset-bottom));
+}

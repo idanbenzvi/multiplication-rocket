@@ -21,6 +21,7 @@ import { WormholeFlight } from './components/WormholeFlight';
 import { MeteorShower } from './components/MeteorShower';
 import { Constellation } from './components/Constellation';
 import { FleetBattle } from './components/FleetBattle';
+import { StrandedFleet } from './components/StrandedFleet';
 import { DevPanel } from './components/DevPanel';
 import { DEV_MODE } from './dev/devMode';
 import { isMilestone, streakTier } from './game/streak';
@@ -238,6 +239,9 @@ function App() {
           )}
           {bonusRound === 'battle' && !justLaunched && !showHeatmap && (
             <FleetBattle key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
+          )}
+          {bonusRound === 'stranded' && !justLaunched && !showHeatmap && (
+            <StrandedFleet key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
           )}
           {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
             <Constellation key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
