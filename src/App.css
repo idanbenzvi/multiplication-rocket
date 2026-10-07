@@ -3544,3 +3544,12 @@
     display: none;
   }
 }
+.about-inline-link {
+  color: #ffb37a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.about-inline-link:hover {
+  color: #ffd2ad;
+}

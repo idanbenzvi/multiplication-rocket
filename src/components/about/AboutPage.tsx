@@ -53,6 +53,13 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
         </button>
         <h2 id="about-title">{t.hello}</h2>
         <p>{t.me}</p>
+        <p>
+          {t.loomBefore}
+          <a className="about-inline-link" href={t.loomUrl} target="_blank" rel="noreferrer" dir="ltr">
+            Loom
+          </a>
+          {t.loomAfter}
+        </p>
         <h3>{t.gameTitle}</h3>
         <p>{t.game1}</p>
         <p>{t.game2}</p>
