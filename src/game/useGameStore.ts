@@ -8,6 +8,7 @@ import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
+import { useProfiles } from '../profiles/useProfiles';
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
 
@@ -312,6 +313,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const s = get();
     if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
     set({ academyOpen: true });
+    // this pilot has found the secret: stop the porthole's "tap me" shimmer
+    const { activeId, update } = useProfiles.getState();
+    if (activeId) update(activeId, { academySeen: true });
   },
 
   closeAcademy: () => {

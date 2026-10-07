@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useGameStore } from '../../game/useGameStore';
+import { PortholeShimmer } from './PortholeShimmer';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
 import { ROCKET_PORTHOLE, rocketSvg } from './illustrations';
@@ -23,6 +24,8 @@ export function RocketSprite({ level }: Props) {
   const svg = useMemo(() => rocketSvg(accent), [accent]);
   // The active pilot's animal looks out of the porthole.
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  // until this pilot has found the Academy, the window shimmers to invite taps
+  const academySeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.academySeen);
   const porthole = useMemo(() => (avatar ? { ...ROCKET_PORTHOLE, emoji: avatar } : undefined), [avatar]);
   const texture = useSvgTexture(svg, 260, 520, porthole);
 
@@ -52,6 +55,13 @@ export function RocketSprite({ level }: Props) {
         <planeGeometry args={[WIDTH, HEIGHT]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.05} toneMapped={false} />
       </mesh>
+      {!academySeen && (
+        <PortholeShimmer
+          x={(ROCKET_PORTHOLE.x - 0.5) * WIDTH}
+          y={(0.5 - ROCKET_PORTHOLE.y) * HEIGHT}
+          radius={ROCKET_PORTHOLE.radius * WIDTH}
+        />
+      )}
     </Billboard>
   );
 }

@@ -9,6 +9,8 @@ export interface Profile {
   name: string;
   avatar: string;
   createdAt: number;
+  /** has opened the Deep Space Academy (the porthole stops shimmering) */
+  academySeen?: boolean;
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -70,7 +72,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }
