@@ -29,7 +29,7 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
         <Dither
           waveColor={[0.45, 0.32, 0.95]}
           backgroundColor={[0.03, 0.02, 0.09]}
-          waveSpeed={0.04}
+          waveSpeed={0.01}
           waveFrequency={3}
           waveAmplitude={0.3}
           colorNum={4}
