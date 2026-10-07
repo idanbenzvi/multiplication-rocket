@@ -1,5 +1,6 @@
 // Dither background from React Bits (https://reactbits.dev/backgrounds/dither), MIT.
-// Changes: wrapEffect hoisted out of render; inline size instead of Dither.css.
+// Changes: wrapEffect hoisted out of render; inline size instead of Dither.css;
+// uniforms updated on the material itself (see useFrame).
 import { useRef, useEffect, forwardRef } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { EffectComposer, wrapEffect } from '@react-three/postprocessing';
@@ -229,7 +230,8 @@ function DitheredWaves({
     const dpr = gl.getPixelRatio();
     const newWidth = Math.floor(size.width * dpr);
     const newHeight = Math.floor(size.height * dpr);
-    const currentRes = waveUniformsRef.current.resolution.value;
+    const material = mesh.current?.material as THREE.ShaderMaterial | undefined;
+    const currentRes = ((material?.uniforms ?? waveUniformsRef.current) as WaveUniforms).resolution.value;
     if (currentRes.x !== newWidth || currentRes.y !== newHeight) {
       currentRes.set(newWidth, newHeight);
     }
@@ -238,7 +240,11 @@ function DitheredWaves({
   const prevColor = useRef([...waveColor]);
   const prevBackgroundColor = useRef([...backgroundColor]);
   useFrame(({ clock }) => {
-    const u = waveUniformsRef.current;
+    // Write to the uniforms the material actually holds: they can be a copy
+    // of waveUniformsRef (they are with fiber 9 / three 0.185), in which case
+    // updating the ref leaves the waves frozen at time 0.
+    const material = mesh.current?.material as THREE.ShaderMaterial | undefined;
+    const u = (material?.uniforms ?? waveUniformsRef.current) as WaveUniforms;
 
     if (!disableAnimation) {
       u.time.value = clock.getElapsedTime();
