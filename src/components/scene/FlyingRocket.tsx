@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { flight } from '../../game/flight';
+import { flight, rocketWorld } from '../../game/flight';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
 
@@ -37,6 +37,8 @@ export function FlyingRocket({ level }: Props) {
       bob + surge + Math.cos(t * 57) * vibration,
       0,
     );
+    rocketWorld.x = group.position.x;
+    rocketWorld.y = group.position.y;
     group.rotation.z = Math.sin(t * 0.9) * 0.03 - s * 0.04 + Math.sin(t * 19) * flight.jolt * 0.06 * m;
   });
 

@@ -67,7 +67,7 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
 
 ## Deep Space Academy 🪐 (hidden)
 
-**Tap the rocket's window three times quickly** to warp into the Deep Space Academy. Until a pilot has found it, their window shimmers (a pulsing halo, a glint sweeping across the glass) to invite the taps. The Academy is a calm
+**Tap the rocket's window three times quickly** to warp into the Deep Space Academy. Until a pilot has found it, their window shimmers (a pulsing halo, a glint sweeping across the glass) to invite the taps. Each tap pulls the camera closer to the ship, and the third dives through the window into the Academy. If the taps stop, the camera eases back out. The Academy is a calm
 screen that teaches multiplication from the ground up, for a child who has never met "×". The
 game waits while it's open. Every step can be read aloud (🔊) in English or Hebrew, so
 pre-readers can follow.

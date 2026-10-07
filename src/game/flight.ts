@@ -52,3 +52,15 @@ export function bump() {
   flight.jolt = 1;
   flight.boost = 0;
 }
+
+// ---- tapping the porthole: the camera zooms in a step per tap ----
+
+/** where the rocket group is this frame (FlyingRocket writes it) */
+export const rocketWorld = { x: 0, y: 0 };
+
+/** tap stage 0-3; diveAt = performance.now() when the third tap started the dive */
+export const portholeZoom = { level: 0, lastTap: 0, diveAt: 0 };
+/** without another tap within this, the zoom eases back out */
+export const ZOOM_RESET_MS = 1400;
+/** the final rush into the window, before the Academy opens */
+export const DIVE_MS = 950;

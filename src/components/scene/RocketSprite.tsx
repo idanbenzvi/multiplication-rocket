@@ -2,6 +2,9 @@ import { useMemo, useRef } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useGameStore } from '../../game/useGameStore';
 import { PortholeShimmer } from './PortholeShimmer';
+import { DIVE_MS, portholeZoom, ZOOM_RESET_MS } from '../../game/flight';
+import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
 import { ROCKET_PORTHOLE, rocketSvg } from './illustrations';
@@ -30,7 +33,9 @@ export function RocketSprite({ level }: Props) {
   const texture = useSvgTexture(svg, 260, 520, porthole);
 
   // Secret door: three quick taps on the porthole open the Deep Space Academy.
-  const taps = useRef<number[]>([]);
+  // Each tap pulls the camera a step closer to the window (FlightController
+  // follows portholeZoom); the third dives into it, then the Academy opens.
+  const diving = useRef(false);
   const onTap = (e: ThreeEvent<MouseEvent>) => {
     const uv = e.uv;
     if (!uv) return;
@@ -39,11 +44,28 @@ export function RocketSprite({ level }: Props) {
     const dy = (uv.y - (1 - ROCKET_PORTHOLE.y)) * HEIGHT;
     if (Math.hypot(dx, dy) > ROCKET_PORTHOLE.radius * WIDTH * 1.8) return;
     e.stopPropagation();
+    if (diving.current) return;
+    const s = useGameStore.getState();
+    // only from normal flight (not over a bonus round, launch or review)
+    if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
     const now = performance.now();
-    taps.current = [...taps.current.filter((t) => now - t < 1200), now];
-    if (taps.current.length >= 3) {
-      taps.current = [];
-      useGameStore.getState().openAcademy();
+    const z = portholeZoom;
+    if (now - z.lastTap > ZOOM_RESET_MS) z.level = 0;
+    z.level = Math.min(3, z.level + 1);
+    z.lastTap = now;
+    sfx.pick(z.level);
+    haptics.tick();
+    if (z.level >= 3) {
+      diving.current = true;
+      z.diveAt = now;
+      window.setTimeout(() => {
+        useGameStore.getState().openAcademy();
+        // back to normal: the camera eases out again once the scene resumes
+        z.level = 0;
+        z.diveAt = 0;
+        z.lastTap = 0;
+        diving.current = false;
+      }, DIVE_MS);
     }
   };
 
