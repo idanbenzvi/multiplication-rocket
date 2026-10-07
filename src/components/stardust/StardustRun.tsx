@@ -12,6 +12,7 @@ import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { Stardust } from './Stardust';
+import { AuroraBackdrop } from './AuroraBackdrop';
 import type { FluidApi } from './StardustFluid';
 
 interface Props {
@@ -110,6 +111,7 @@ export function StardustRun({ onDone, onBurst }: Props) {
   const run = useMemo(() => buildStardust(useGameStore.getState().progress), []);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
   const { table, startM, steps } = run;
+  const level = useGameStore((s) => s.progress.level);
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
@@ -325,6 +327,7 @@ export function StardustRun({ onDone, onBurst }: Props) {
   return (
     <div className="stardust">
       <canvas ref={warpRef} className="battle-warp" />
+      <AuroraBackdrop level={level} />
       <Stardust apiRef={fluid} />
 
       {/* the path, the hops already made (+7 each), and the next one, dashed */}
