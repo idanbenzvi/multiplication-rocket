@@ -198,7 +198,7 @@ const en = {
   about: {
     open: 'About',
     hello: "Hi, I'm Idan Ben-Zvi 👋",
-    me: "I'm a software developer with a B.A. in psychology and education. This game is where those two worlds meet: how kids learn, and the code that can help them.",
+    me: "I'm a software developer with an M.Sc. in computer science and a B.A. in psychology and education. This game is where those two worlds meet: how kids learn, and the code that can help them.",
     gameTitle: 'About Multiplication Rocket',
     game1: 'Multiplication Rocket turns the times tables into a space mission. Every right answer fuels the rocket, streaks speed it up, and bonus rounds keep things exciting.',
     game2: "Behind the fun, the game keeps track of which facts are still tricky and brings them back more often, so practice goes where it's needed. It's free, has no ads, and everything stays on your device.",
@@ -485,7 +485,7 @@ const he: Strings = {
   about: {
     open: 'אודות',
     hello: 'היי, אני עידן בן-צבי 👋',
-    me: 'אני מפתח תוכנה, בוגר תואר ראשון בפסיכולוגיה ובחינוך. במשחק הזה שני העולמות נפגשים: איך ילדים לומדים, והקוד שיכול לעזור להם.',
+    me: 'אני מפתח תוכנה, בעל תואר שני במדעי המחשב ותואר ראשון בפסיכולוגיה ובחינוך. במשחק הזה שני העולמות נפגשים: איך ילדים לומדים, והקוד שיכול לעזור להם.',
     gameTitle: 'על טיל הכפל',
     game1: 'טיל הכפל הופך את לוח הכפל למשימה בחלל. כל תשובה נכונה ממלאת את הטיל בדלק, רצפים מאיצים אותו, וסבבי בונוס שומרים על ההתרגשות.',
     game2: 'מאחורי הכיף, המשחק עוקב אחרי התרגילים שעדיין קשים ומחזיר אותם לעיתים קרובות יותר, כך שהתרגול מגיע לאן שצריך. המשחק חינמי, בלי פרסומות, והכול נשמר רק במכשיר שלכם.',
