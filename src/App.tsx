@@ -10,6 +10,7 @@ import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useT } from './i18n/useLang';
 import { SettingsMenu } from './components/SettingsMenu';
 import { ReviewButton } from './components/ReviewButton';
+import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
 import { activeProfile, pilotName, useProfileGateOpen } from './profiles/useProfiles';
 import { isTouchDevice, useSettings } from './settings/useSettings';
@@ -225,6 +226,7 @@ function App() {
           <AudioControls />
           <ReviewButton mastery={progress.mastery} onClick={requestHeatmap} />
           <SettingsMenu onReset={handleReset} />
+          <AboutButton />
         </div>
       </header>
 
