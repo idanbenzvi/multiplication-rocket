@@ -3122,3 +3122,314 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ==================== PARENT DASHBOARD ==================== */
+/* Neutral dark surfaces (the validated dark chart surface), text in text
+   tokens, series 1 = blue, series 2 = orange (validated pair), status green/
+   red only on the ▲▼ marks next to their words. */
+.pd-overlay {
+  --pd-surface: #1a1a19;
+  --pd-panel: #121211;
+  --pd-text: #ffffff;
+  --pd-text-2: #c3c2b7;
+  --pd-muted: #8f8e88;
+  --pd-grid: #2f2f2d;
+  --pd-series-1: #3987e5;
+  --pd-series-2: #d95926;
+  --pd-good: #0ca30c;
+  --pd-bad: #d03b3b;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  overflow-y: auto;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  background: rgba(8, 8, 10, 0.92);
+  color: var(--pd-text);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.pd-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.1rem 1.4rem;
+  border-radius: 20px;
+  background: var(--pd-panel);
+  border: 1px solid #2a2a28;
+}
+.pd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pd-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+.pd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.2rem;
+  margin: 0.8rem 0 1rem;
+}
+.pd-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.pd-pill {
+  min-height: 38px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid #3a3a37;
+  background: transparent;
+  color: var(--pd-text-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.pd-pill.is-on {
+  background: #2c2c2a;
+  border-color: #5a5a55;
+  color: var(--pd-text);
+}
+.pd-empty {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--pd-text-2);
+  font-size: 1.05rem;
+}
+.pd-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.7rem;
+}
+.pd-tile {
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  background: var(--pd-surface);
+}
+.pd-tile-label {
+  font-size: 0.82rem;
+  color: var(--pd-text-2);
+}
+.pd-tile-value {
+  margin: 0.15rem 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+.pd-tile-hint {
+  font-size: 0.75rem;
+  color: var(--pd-muted);
+}
+.pd-delta {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--pd-text-2);
+}
+.pd-delta-mark.is-good {
+  color: var(--pd-good);
+}
+.pd-delta-mark.is-bad {
+  color: var(--pd-bad);
+}
+.pd-delta-ctx {
+  color: var(--pd-muted);
+}
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr));
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+.pd-card {
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  background: var(--pd-surface);
+}
+.pd-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.pd-card-title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--pd-text);
+}
+.pd-link {
+  border: none;
+  background: none;
+  color: var(--pd-text-2);
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+.pd-legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--pd-text-2);
+}
+.pd-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+.pd-swatch.is-correct {
+  background: var(--pd-series-1);
+}
+.pd-swatch.is-wrong {
+  background: var(--pd-series-2);
+}
+.pd-chart {
+  position: relative;
+  direction: ltr;
+}
+.pd-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pd-grid line,
+.pd-chart .pd-grid {
+  stroke: var(--pd-grid);
+  stroke-width: 1;
+}
+.pd-axis {
+  fill: var(--pd-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.pd-line {
+  fill: none;
+  stroke: var(--pd-series-1);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.pd-dot {
+  fill: var(--pd-series-1);
+  stroke: var(--pd-surface);
+  stroke-width: 2;
+}
+.pd-crosshair {
+  stroke: #55554f;
+  stroke-width: 1;
+}
+.pd-bar-correct {
+  fill: var(--pd-series-1);
+}
+.pd-bar-wrong {
+  fill: var(--pd-series-2);
+}
+.pd-tooltip {
+  position: absolute;
+  top: 0;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  background: #2c2c2a;
+  border: 1px solid #44443f;
+  color: var(--pd-text);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pd-table-wrap {
+  max-height: 220px;
+  overflow: auto;
+}
+.pd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.pd-table th,
+.pd-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--pd-grid);
+  text-align: start;
+}
+.pd-table th {
+  color: var(--pd-text-2);
+  font-weight: 600;
+}
+.pd-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+.pd-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pd-facts li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--pd-grid);
+}
+.pd-fact {
+  min-width: 4.2em;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.pd-meter {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: #2c2c2a;
+  overflow: hidden;
+}
+.pd-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--pd-series-1);
+}
+.pd-fact-num {
+  font-size: 0.8rem;
+  color: var(--pd-text-2);
+  white-space: nowrap;
+}
+.pd-muted {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--pd-muted);
+}
+.pd-reading {
+  margin-top: 0.8rem;
+}
+.pd-reading ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--pd-text-2);
+  line-height: 1.5;
+}
+.pd-reading b {
+  color: var(--pd-text);
+}
+.pd-gate-q {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #fdf3e7;
+}
+.pd-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}

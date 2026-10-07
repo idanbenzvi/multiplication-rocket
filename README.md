@@ -110,6 +110,25 @@ Answer mode, language and sound are shared by everyone on the device.
 
 <img src="docs/pilots.png" alt="Who's flying today? pilot picker" width="280">
 
+## Parent dashboard 👪
+
+**⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A
+quick grown-up math question keeps kids out. Pick a pilot and a range (last 7
+days, last 30 days, or all time). Each number is compared with the period just
+before it.
+
+- **Accuracy**: the share of answers that were right, per day.
+- **Correct vs wrong**: daily answer counts.
+- **Typical answer time**: the median time of correct answers. Falling times
+  with steady accuracy mean the facts are becoming automatic.
+- **Rushing**: wrong answers given in under 2 seconds, a sign of guessing
+  instead of thinking.
+- **Consistency**: how much daily accuracy swings from day to day.
+- **Facts mastered**, the **hardest facts right now**, and the **most improved** facts.
+
+Every chart has a table view. History is kept on the device only, per pilot,
+and starts from v1.6. Answers from before that version weren't recorded.
+
 ## Hebrew
 
 Click **עברית** in the top bar. The layout switches to right-to-left while equations and hint

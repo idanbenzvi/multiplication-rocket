@@ -9,6 +9,7 @@ import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 import { useProfiles } from '../profiles/useProfiles';
+import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
 
@@ -160,6 +161,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const level = getLevelConfig(progress.level);
 
     const nextMastery = recordAttempt(progress.mastery, question.fact.key, isCorrect);
+    appendToLog(useProfiles.getState().activeId, [
+      { fact: question.fact.key, correct: isCorrect, ms: elapsedMs, source: 'question' },
+    ]);
 
     let currentStreak = progress.currentStreak;
     let bestStreak = progress.bestStreak;
@@ -285,7 +289,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 
   finishBonusRound: ({ fuelGain, answers }) => {
-    const { progress } = get();
+    const { progress, bonusRound } = get();
+    const source: AnswerSource = bonusRound ?? 'question';
+    appendToLog(
+      useProfiles.getState().activeId,
+      answers.map((a) => ({ fact: a.factKey, correct: a.correct, ms: null, source })),
+    );
     let mastery = progress.mastery;
     for (const a of answers) mastery = recordAttempt(mastery, a.factKey, a.correct);
     const result = addFuel({ ...progress, mastery }, mastery, fuelGain);
@@ -364,6 +373,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetProgress: () => {
     localProgressStore.reset();
+    // a reset is a fresh start: the dashboard's history goes too
+    const activeId = useProfiles.getState().activeId;
+    if (activeId) clearLog(activeId);
     const progress = localProgressStore.load();
     set({
       progress,

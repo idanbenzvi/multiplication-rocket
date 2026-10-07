@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../settings/useSettings';
 import { useLang, useT } from '../i18n/useLang';
 import { canVibrate, haptics } from '../audio/haptics';
+import { ParentDashboard, ParentGate } from './parents/ParentDashboard';
 
 interface Props {
   onReset: () => void;
@@ -31,6 +32,7 @@ export function SettingsMenu({ onReset }: Props) {
   const checkHint = (c: TypedCheck) =>
     c === 'auto' ? t.typedCheckAutoHint : isTouchDevice ? t.typedCheckConfirmTouchHint : t.typedCheckConfirmKeysHint;
   const [open, setOpen] = useState(false);
+  const [parents, setParents] = useState<'gate' | 'dashboard' | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -158,6 +160,19 @@ export function SettingsMenu({ onReset }: Props) {
                 </section>
 
                 <section className="settings-section">
+                  <button
+                    type="button"
+                    className="settings-option settings-toggle"
+                    onClick={() => {
+                      setOpen(false);
+                      setParents('gate');
+                    }}
+                  >
+                    <span className="settings-option-name">{t.parents.open}</span>
+                  </button>
+                </section>
+
+                <section className="settings-section">
                   <div className="settings-label">{t.progressSection}</div>
                   <button
                     className="settings-danger"
@@ -179,6 +194,8 @@ export function SettingsMenu({ onReset }: Props) {
         </AnimatePresence>,
       document.body,
       )}
+      {parents === 'gate' && <ParentGate onPass={() => setParents('dashboard')} onCancel={() => setParents(null)} />}
+      {parents === 'dashboard' && <ParentDashboard onClose={() => setParents(null)} />}
     </>
   );
 }
