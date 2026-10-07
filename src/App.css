@@ -3498,6 +3498,18 @@
 .about-card p {
   margin: 0 0 0.7rem;
 }
+.about-closing {
+  margin: 1.2rem 0 0.4rem;
+  padding: 0.9rem 1.1rem 0.2rem;
+  border-inline-start: 3px solid #ffb37a;
+  border-radius: 4px 12px 12px 4px;
+  background: rgba(255, 179, 122, 0.08);
+  font-style: italic;
+  color: #f3e6da;
+}
+[dir='rtl'] .about-closing {
+  border-radius: 12px 4px 4px 12px;
+}
 .about-close {
   position: absolute;
   top: 14px;

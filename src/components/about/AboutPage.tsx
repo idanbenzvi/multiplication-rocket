@@ -63,6 +63,10 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
         <h3>{t.gameTitle}</h3>
         <p>{t.game1}</p>
         <p>{t.game2}</p>
+        <div className="about-closing">
+          <p>{t.closing}</p>
+          <p>{t.thanks}</p>
+        </div>
         <a className="about-github" href={GITHUB_URL} target="_blank" rel="noreferrer">
           <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
             <path
