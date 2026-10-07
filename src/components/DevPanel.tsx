@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../game/useGameStore';
+import { useAchievements } from '../game/useAchievements';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { useRippleStatus } from '../dev/rippleStatus';
 
@@ -30,6 +31,7 @@ export function DevPanel() {
     { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
     { key: 'A', label: 'Deep Space Academy', run: () => store.getState().openAcademy() },
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
+    { key: 'E', label: 'Earn the next badge', run: () => useAchievements.getState().devEarnNext() },
   ];
 
   useEffect(() => {

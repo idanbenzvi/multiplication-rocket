@@ -3,13 +3,14 @@ import { gameNow } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
 import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, randomizeOrder } from './facts';
 import { getLevelConfig } from './levels';
-import { MAX_SPEED_FACTOR, speedFactor } from './scoring';
+import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 import { useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
+import { useAchievements } from './useAchievements';
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
 
@@ -152,6 +153,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       questionsSinceChallenge: 0,
       bonusRound: null,
     });
+    useAchievements.getState().track({ type: 'progress' }, progress);
   },
 
   submitAnswer: (value: number, elapsedMs: number) => {
@@ -209,6 +211,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     localProgressStore.save(nextProgress);
+    // A comeback: a fact that was "struggling" is back on track thanks to this answer.
+    const struggling = (m: Record<string, FactStat>) => getStrugglingFactKeys(m).includes(question.fact.key);
+    useAchievements.getState().track(
+      {
+        type: 'answer',
+        correct: isCorrect,
+        fast: isCorrect && speedZone(elapsedMs) === 'fast',
+        comeback: isCorrect && struggling(progress.mastery) && !struggling(nextMastery),
+      },
+      nextProgress,
+    );
 
     // Five mistakes (since the last time the heatmap was shown) trigger it
     // automatically — the counter is session-only, not persisted, since it's
@@ -275,6 +288,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentStreak: result.currentStreak,
     };
     localProgressStore.save(nextProgress);
+    useAchievements.getState().track({ type: 'bonus', kind: 'wormhole', perfect: false }, nextProgress);
     set({
       progress: nextProgress,
       challenge: null,
@@ -307,6 +321,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentStreak: result.currentStreak,
     };
     localProgressStore.save(nextProgress);
+    if (bonusRound) {
+      const perfect = answers.length > 0 && answers.every((a) => a.correct);
+      useAchievements.getState().track({ type: 'bonus', kind: bonusRound, perfect }, nextProgress);
+    }
     set({
       progress: nextProgress,
       bonusRound: null,
@@ -342,6 +360,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { progress } = get();
     const nextProgress: Progress = { ...progress, ...launchFrom(progress) };
     localProgressStore.save(nextProgress);
+    useAchievements.getState().track({ type: 'progress' }, nextProgress);
     set({ progress: nextProgress, justLaunched: true, challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
   },
 
@@ -376,6 +395,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // a reset is a fresh start: the dashboard's history goes too
     const activeId = useProfiles.getState().activeId;
     if (activeId) clearLog(activeId);
+    useAchievements.getState().reset();
     const progress = localProgressStore.load();
     set({
       progress,

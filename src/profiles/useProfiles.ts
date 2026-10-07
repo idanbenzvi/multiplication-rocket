@@ -103,6 +103,7 @@ export const useProfiles = create<ProfilesState>((set, get) => {
       try {
         localStorage.removeItem(progressKeyFor(id));
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
+        localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
       } catch {
         // ignore
       }

@@ -18,6 +18,8 @@ import { sfx } from './audio/sfx';
 import { haptics } from './audio/haptics';
 import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
+import { BadgesButton } from './components/badges/BadgesPage';
+import { BadgeToast } from './components/badges/BadgeToast';
 import { WormholeChallenge } from './components/WormholeChallenge';
 import { WormholeFlight } from './components/WormholeFlight';
 import { MeteorShower } from './components/MeteorShower';
@@ -213,6 +215,7 @@ function App() {
       {showWarp && <div className="warp-burst" />}
       {exitFlash > 0 && <div key={exitFlash} className="wormhole-exit-flash" />}
       <MilestoneBanner streak={milestone} />
+      {!gateOpen && <BadgeToast />}
 
       <header className="hud-topbar" ref={topbarRef}>
         <div className="hud-logo">
@@ -221,6 +224,7 @@ function App() {
         <LevelBanner level={displayLevel} />
         <div className="hud-topbar-right">
           <PilotButton />
+          <BadgesButton />
           <div className="hud-stat-chip">
             ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
           </div>

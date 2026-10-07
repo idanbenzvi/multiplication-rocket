@@ -4,6 +4,8 @@ import { useT, useLang } from '../../i18n/useLang';
 import type { Strings } from '../../i18n/strings';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { sfx } from '../../audio/sfx';
+import { useAchievements } from '../../game/useAchievements';
+import { useGameStore } from '../../game/useGameStore';
 import { haptics } from '../../audio/haptics';
 import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
@@ -645,6 +647,7 @@ export function DeepSpaceAcademy({ onClose, onBurst }: Props) {
   // a little celebration on the last screen
   useEffect(() => {
     if (current.id !== 'done') return;
+    useAchievements.getState().track({ type: 'academy' }, useGameStore.getState().progress);
     sfx.milestone(10);
     for (let i = 0; i < 8; i++) {
       window.setTimeout(
