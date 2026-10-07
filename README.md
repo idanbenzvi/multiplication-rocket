@@ -124,9 +124,12 @@ in the corner. Its rows can be tapped on tablets, or use the shortcuts:
 | Shift+B | Fleet Battle |
 | Shift+S | Stranded Fleet |
 | Shift+K | Fleet Battle: collect all cannons |
+| Shift+G | Answer the current Stranded Fleet / Fleet Battle correctly |
 | Shift+L | Complete the level (launch warp) |
 | Shift+F | Fuel to 95% |
 | Shift+P | Practice map |
+
+The panel's last line shows whether the Stranded Fleet energy pulse is running as a WebGL shader or has fallen back to CSS rings (with the reason), which is useful if the pulse looks wrong on a device.
 
 Dev actions affect the current pilot's real saved progress (for example Shift+L really levels up),
 so use a separate test pilot.

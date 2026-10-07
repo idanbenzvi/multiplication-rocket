@@ -2546,3 +2546,37 @@
 .stranded-question {
   bottom: calc(20% + env(safe-area-inset-bottom));
 }
+
+/* CSS stand-in for the space ripple when WebGL isn't available */
+.ripple-fallback {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.ripple-fallback span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 6px solid rgba(160, 230, 255, 0.95);
+  box-shadow: 0 0 30px 10px rgba(106, 215, 255, 0.7), inset 0 0 24px 6px rgba(255, 106, 213, 0.6);
+  opacity: 0;
+  animation-name: rippleRing;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+@keyframes rippleRing {
+  0% { width: 2px; height: 2px; opacity: 1; }
+  80% { opacity: 0.8; }
+  100% { width: var(--ripple-end); height: var(--ripple-end); opacity: 0; }
+}
+.dev-status {
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.3rem 0;
+  border-top: 1px solid rgba(255, 215, 122, 0.3);
+  color: #c9f2ff;
+}

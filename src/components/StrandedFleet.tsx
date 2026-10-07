@@ -13,6 +13,7 @@ import { RearShip } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
 import GradientText from './reactbits/GradientText';
 import { SpaceRipple } from './SpaceRipple';
+import { DEV_SOLVE_EVENT } from '../dev/devMode';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -210,6 +211,13 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
     },
     [phase, guesses, round, shown, powerUp, later, t],
   );
+
+  // dev mode: Shift+G guesses right
+  useEffect(() => {
+    const solve = () => guess(round.hidden);
+    window.addEventListener(DEV_SOLVE_EVENT, solve);
+    return () => window.removeEventListener(DEV_SOLVE_EVENT, solve);
+  }, [guess, round.hidden]);
 
   // keyboard typing (desktop / tablets with keyboards)
   useEffect(() => {

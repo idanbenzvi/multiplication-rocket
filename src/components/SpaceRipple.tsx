@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRippleStatus } from '../dev/rippleStatus';
 
 interface Props {
   /** the canvas whose picture gets rippled (the warp starfield) */
@@ -90,6 +91,10 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
 
 export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // If WebGL or the shader isn't available, draw CSS rings instead — the
+  // pulse must never just be invisible.
+  const [fallback, setFallback] = useState(false);
+  const setStatus = useRippleStatus((s) => s.set);
   // latest props for the render loop, without restarting it
   const live = useRef({ startedAt, origin, speed });
   live.current = { startedAt, origin, speed };
@@ -98,7 +103,11 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const gl = canvas.getContext('webgl', { premultipliedAlpha: false, antialias: false });
-    if (!gl) return; // no WebGL: the round still works, just without the ripple
+    if (!gl) {
+      setStatus('fallback', 'WebGL unavailable');
+      setFallback(true);
+      return;
+    }
 
     let program: WebGLProgram;
     try {
@@ -108,10 +117,13 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
       gl.linkProgram(program);
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'link error');
     } catch (e) {
-      console.warn('SpaceRipple disabled:', e);
+      console.warn('SpaceRipple: shader failed, using CSS rings:', e);
+      setStatus('fallback', String((e as Error)?.message ?? e).slice(0, 120));
+      setFallback(true);
       return;
     }
     gl.useProgram(program);
+    setStatus('webgl');
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -135,6 +147,26 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
       speed: gl.getUniformLocation(program, 'uSpeed'),
     };
 
+    // Warm-up: many drivers (ANGLE on Windows, SwiftShader…) only really
+    // compile a shader on its first draw. Do that draw now, invisibly, while
+    // the round is starting — otherwise the compile stalls the very first
+    // frame of the pulse, and the rings have swept past before anything shows.
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    gl.uniform2f(u.res, 1, 1);
+    gl.uniform2f(u.origin, 0, 0);
+    gl.uniform1f(u.time, 0.5);
+    gl.uniform1f(u.speed, 1);
+    gl.viewport(0, 0, 1, 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.finish();
+
+    // The starfield is copied into the texture at half resolution through a
+    // small 2D canvas: a quarter of the pixels per frame. Copying the full
+    // canvas every frame stalled slow GPUs long enough for the whole pulse to
+    // be over before its first frame appeared.
+    const small = document.createElement('canvas');
+    const smallCtx = small.getContext('2d');
+
     let raf = 0;
     const draw = () => {
       raf = requestAnimationFrame(draw);
@@ -146,7 +178,7 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
       }
       const cssW = canvas.clientWidth;
       const cssH = canvas.clientHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = 1; // full-screen shader: native CSS resolution is plenty for a soft glow
       if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
         canvas.width = Math.round(cssW * dpr);
         canvas.height = Math.round(cssH * dpr);
@@ -159,7 +191,27 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
       }
       canvas.style.visibility = 'visible';
       gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      try {
+        const sw = Math.max(1, Math.round(src.width / 2));
+        const sh = Math.max(1, Math.round(src.height / 2));
+        if (small.width !== sw || small.height !== sh) {
+          small.width = sw;
+          small.height = sh;
+        }
+        if (smallCtx) {
+          smallCtx.drawImage(src, 0, 0, sw, sh);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, small);
+        } else {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+        }
+      } catch (e) {
+        // e.g. a browser refusing the canvas as a texture: switch to CSS rings
+        setStatus('fallback', `texture: ${String((e as Error)?.message ?? e).slice(0, 100)}`);
+        setFallback(true);
+        cancelAnimationFrame(raf);
+        canvas.style.visibility = 'hidden';
+        return;
+      }
       gl.uniform2f(u.res, cssW, cssH);
       gl.uniform2f(u.origin, o.x, cssH - o.y); // GL's y points up
       gl.uniform1f(u.time, t);
@@ -171,7 +223,26 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
       cancelAnimationFrame(raf);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [source]);
+  }, [source, setStatus]);
 
-  return <canvas ref={canvasRef} className="space-ripple" />;
+  return (
+    <>
+      <canvas ref={canvasRef} className="space-ripple" />
+      {fallback && startedAt > 0 && (
+        <div className="ripple-fallback" style={{ left: origin.x, top: origin.y }}>
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              style={{
+                animationDelay: `${(i * 140) / speed}s`,
+                // the ring reaches the farthest ship (~speed × 1.1 s away) in step with the game
+                ['--ripple-end' as string]: `${speed * 2.8 * 2}px`,
+                animationDuration: '2.8s',
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
 }

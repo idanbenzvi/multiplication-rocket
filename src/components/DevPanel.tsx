@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../game/useGameStore';
-import { DEV_COLLECT_EVENT } from '../dev/devMode';
+import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
+import { useRippleStatus } from '../dev/rippleStatus';
 
 interface Shortcut {
   key: string;
@@ -14,6 +15,7 @@ export function DevPanel() {
   // collapsed by default on phones, where it would cover the answer buttons
   const [open, setOpen] = useState(() => window.innerWidth >= 600);
   const store = useGameStore;
+  const ripple = useRippleStatus();
 
   const shortcuts: Shortcut[] = [
     { key: 'W', label: 'Wormhole', run: () => store.getState().devStartBonus('wormhole') },
@@ -22,6 +24,7 @@ export function DevPanel() {
     { key: 'B', label: 'Fleet Battle (blast)', run: () => store.getState().devStartBonus('battle') },
     { key: 'S', label: 'Stranded Fleet', run: () => store.getState().devStartBonus('stranded') },
     { key: 'K', label: 'Battle: collect all cannons', run: () => window.dispatchEvent(new Event(DEV_COLLECT_EVENT)) },
+    { key: 'G', label: 'Answer the round correctly', run: () => window.dispatchEvent(new Event(DEV_SOLVE_EVENT)) },
     { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
     { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
@@ -70,6 +73,10 @@ export function DevPanel() {
               </button>
             </li>
           ))}
+          <li className="dev-status">
+            ripple:{' '}
+            {ripple.status === 'webgl' ? 'WebGL ✓' : ripple.status === 'fallback' ? `fallback (${ripple.reason})` : 'not started yet'}
+          </li>
         </ul>
       )}
     </div>

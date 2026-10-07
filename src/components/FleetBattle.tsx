@@ -9,7 +9,7 @@ import { useT } from '../i18n/useLang';
 import { useSettings, isTouchDevice } from '../settings/useSettings';
 import { useProfiles } from '../profiles/useProfiles';
 import { NumPad } from './NumPad';
-import { DEV_COLLECT_EVENT } from '../dev/devMode';
+import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { CannonPickup, RearShip, Saucer } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
 import GradientText from './reactbits/GradientText';
@@ -255,6 +255,13 @@ export function FleetBattle({ onDone, onBurst }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [phase, tries, battle],
   );
+
+  // dev mode: Shift+G answers correctly (once the question is up)
+  useEffect(() => {
+    const solve = () => sendShips(battle.ships);
+    window.addEventListener(DEV_SOLVE_EVENT, solve);
+    return () => window.removeEventListener(DEV_SOLVE_EVENT, solve);
+  }, [sendShips, battle.ships]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
