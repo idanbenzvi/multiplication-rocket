@@ -38,6 +38,8 @@ export function RocketScene() {
   const justLaunched = useGameStore((s) => s.justLaunched);
   // paused (player left the tab/app): stop rendering the scene entirely
   const paused = usePause((s) => s.paused);
+  // Stardust Run covers the screen and runs a heavy fluid simulation: give it the GPU
+  const hidden = useGameStore((s) => s.bonusRound === 'stardust');
 
   // While the launch overlay is up, progress.level has already advanced —
   // keep rendering the level that's mid-launch until the player dismisses it.
@@ -48,7 +50,7 @@ export function RocketScene() {
   return (
     // dpr capped at 1.5: on retina tablets/phones full resolution would cost
     // 4-9x the pixels for the bloom, blur and plume shaders, for little gain.
-    <Canvas dpr={[1, 1.5]} frameloop={paused ? 'never' : 'always'}>
+    <Canvas dpr={[1, 1.5]} frameloop={paused || hidden ? 'never' : 'always'}>
       <FlightController />
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
       <AuroraSky level={displayLevel} />

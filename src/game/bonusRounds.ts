@@ -5,8 +5,8 @@ import { distractors } from './distractors';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them.
-export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded';
-export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded'];
+export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust';
+export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust'];
 
 // ---------- Meteor Shower ----------
 
@@ -148,4 +148,84 @@ export function buildStranded(progress: Progress): Stranded {
 /** fuel bonus by how many ships were showing when guessed right: 1 → 3×, 5 → 1× */
 export function strandedMultiplier(shipsShown: number): number {
   return 1 + (STRANDED_SHIPS - Math.max(1, Math.min(STRANDED_SHIPS, shipsShown))) * 0.5;
+}
+
+// ---------- Stardust Run ----------
+
+export const STARDUST_MIN_JUMPS = 3;
+export const STARDUST_MAX_JUMPS = 4;
+
+export interface StardustStep {
+  factKey: string;
+  /** this stop's multiplier: the question is table × m */
+  m: number;
+  answer: number;
+  /** four choices, smallest at the top */
+  choices: number[];
+}
+
+export interface StardustRun {
+  /** the times table being walked, 2-9 */
+  table: number;
+  /** the stop the ship starts on (already lit): table × startM */
+  startM: number;
+  steps: StardustStep[];
+}
+
+function factKeyOf(a: number, b: number): string {
+  return a <= b ? `${a}x${b}` : `${b}x${a}`;
+}
+
+// The wrong choices are the slips a child skip-counting actually makes:
+// jumping one stop too far, landing one or two off, adding the multiplier
+// instead of the table, or slipping a ten. Choices are listed smallest
+// first, so the answer's slot is picked at random (and the slips chosen to
+// fit around it); otherwise "too far" slips would always put it near the top.
+function stardustChoices(table: number, m: number): number[] {
+  const answer = table * m;
+  const prev = table * (m - 1);
+  const slips = [table * (m + 1), answer + 1, answer - 1, answer + 2, answer - 2, prev + m, answer + 10, answer - 10, prev + 1];
+  const unique = [...new Set(slips)].filter((v) => v > 0 && v !== answer);
+  const below = shuffle(unique.filter((v) => v < answer));
+  const above = shuffle(unique.filter((v) => v > answer));
+  const slot = Math.min(below.length, Math.floor(Math.random() * 4));
+  const picked = [...below.slice(0, slot), ...above.slice(0, 3 - slot)];
+  // not enough slips on one side (tiny answers): pad with nearby numbers
+  for (let d = 3; picked.length < 3; d++) {
+    for (const v of [answer + d, answer - d]) if (v > 0 && picked.length < 3 && !picked.includes(v)) picked.push(v);
+  }
+  return [answer, ...picked].sort((a, b) => a - b);
+}
+
+// The table comes from a fact the child finds hard (the usual weighting), and
+// the run of 3-4 jumps passes through that fact.
+export function buildStardust(progress: Progress): StardustRun {
+  const facts = pool(progress).filter((f) => (f.a >= 2 && f.a <= 9) || (f.b >= 2 && f.b <= 9));
+  const fact = pickNextFact(facts, progress.mastery);
+  const aOk = fact.a >= 2 && fact.a <= 9;
+  const bOk = fact.b >= 2 && fact.b <= 9;
+  const tableIsA = aOk && bOk ? Math.random() < 0.5 : aOk;
+  const table = tableIsA ? fact.a : fact.b;
+  const partner = tableIsA ? fact.b : fact.a;
+  const jumps = STARDUST_MIN_JUMPS + Math.floor(Math.random() * (STARDUST_MAX_JUMPS - STARDUST_MIN_JUMPS + 1));
+  // stops run startM+1 … startM+jumps, all within 2-10, including the partner when it can
+  const lo = Math.max(1, partner - jumps);
+  const hi = Math.min(10 - jumps, partner - 1);
+  const startM = hi >= lo ? lo + Math.floor(Math.random() * (hi - lo + 1)) : 1 + Math.floor(Math.random() * (10 - jumps));
+  const steps: StardustStep[] = [];
+  for (let k = 1; k <= jumps; k++) {
+    const m = startM + k;
+    steps.push({ factKey: factKeyOf(table, m), m, answer: table * m, choices: stardustChoices(table, m) });
+  }
+  return { table, startM, steps };
+}
+
+/** a pattern worth remembering for each table (shown at the end of the run) */
+export type TablePattern = 'evenEnds' | 'digits369' | 'ends50' | 'tenMinus' | 'digitSum9';
+export function tablePattern(table: number): TablePattern {
+  if (table === 5) return 'ends50';
+  if (table === 9) return 'digitSum9';
+  if (table === 3) return 'digits369';
+  if (table === 7) return 'tenMinus';
+  return 'evenEnds';
 }

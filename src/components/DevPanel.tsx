@@ -23,6 +23,7 @@ export function DevPanel() {
     { key: 'C', label: 'Constellation', run: () => store.getState().devStartBonus('constellation') },
     { key: 'B', label: 'Fleet Battle (blast)', run: () => store.getState().devStartBonus('battle') },
     { key: 'S', label: 'Stranded Fleet', run: () => store.getState().devStartBonus('stranded') },
+    { key: 'D', label: 'Stardust Run', run: () => store.getState().devStartBonus('stardust') },
     { key: 'K', label: 'Battle: collect all cannons', run: () => window.dispatchEvent(new Event(DEV_COLLECT_EVENT)) },
     { key: 'G', label: 'Answer the round correctly', run: () => window.dispatchEvent(new Event(DEV_SOLVE_EVENT)) },
     { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
