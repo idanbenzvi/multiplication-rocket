@@ -2527,13 +2527,21 @@
 .pilot-ship {
   transition: none;
 }
-.fuel-line {
-  stroke: #6ad7ff;
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 10 8;
-  filter: drop-shadow(0 0 8px #6ad7ff) drop-shadow(0 0 3px #fff);
-  animation: linkFlow 0.35s linear infinite;
+.space-ripple {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+}
+/* a stranded ship the moment the pulse reaches it: a flash and a bounce */
+.stranded-ship.is-boosting {
+  animation: shipBoost 0.7s ease-out;
+}
+@keyframes shipBoost {
+  0% { scale: 1; filter: brightness(3.5) drop-shadow(0 0 30px #fff) drop-shadow(0 0 50px #6ad7ff); }
+  35% { scale: 1.35; }
+  100% { scale: 1; filter: drop-shadow(0 0 16px #6ad7ff) brightness(1.3); }
 }
 .stranded-question {
   bottom: calc(20% + env(safe-area-inset-bottom));

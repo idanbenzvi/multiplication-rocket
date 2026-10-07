@@ -12,6 +12,7 @@ import { NumPad } from './NumPad';
 import { RearShip } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
 import GradientText from './reactbits/GradientText';
+import { SpaceRipple } from './SpaceRipple';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -27,7 +28,8 @@ type Phase = 'warp' | 'reveal' | 'checking' | 'fuel' | 'jump' | 'summary';
 const WARP_MS = 2400;
 const SHIP_EVERY_MS = 1600; // a new stranded ship flies in
 const CHECK_MS = 2000; // showing why a wrong guess fails
-const FUEL_MS = 1800;
+const FUEL_MS = 2100;
+const RIPPLE_REACH_S = 1.1; // the pulse reaches the farthest stranded ship in this time
 const JUMP_MS = 1700;
 const SUMMARY_MS = 2200;
 
@@ -80,7 +82,10 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const [guesses, setGuesses] = useState(0);
   const [checking, setChecking] = useState<number | null>(null); // the wrong guess being checked
   const [message, setMessage] = useState<{ text: string; good: boolean } | null>(null);
-  const [lit, setLit] = useState(0); // ships powered up so far
+  // The energy pulse: when it left the ship, from where, and how fast. Each
+  // stranded ship powers up the moment the ring reaches it.
+  const [ripple, setRipple] = useState<{ t0: number; x: number; y: number; speed: number } | null>(null);
+  const litAt = useRef<Record<number, number>>({});
   const [, setFrame] = useState(0);
   const answers = useRef<Array<{ factKey: string; correct: boolean }>>([]);
   const firstGuessRight = useRef(false);
@@ -96,16 +101,30 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useWarpCanvas(canvasRef, 0.33, warpSpeed);
 
-  // re-render every frame (ship wobble, drifting fleet)
+  // re-render every frame (ship wobble, drifting fleet); power each ship as
+  // the pulse's leading ring reaches it
   useEffect(() => {
     let raf = 0;
     const loop = () => {
+      if (ripple) {
+        const r = ((performance.now() - ripple.t0) / 1000) * ripple.speed;
+        SLOTS.forEach((sl, i) => {
+          if (litAt.current[i] !== undefined) return;
+          if (r >= Math.hypot(sl.x * w - ripple.x, sl.y * h - ripple.y)) {
+            litAt.current[i] = performance.now();
+            const n = Object.keys(litAt.current).length;
+            sfx.pick(Math.min(3, n));
+            haptics.tick();
+            onBurst(sl.x * w, sl.y * h, '#6ad7ff');
+          }
+        });
+      }
       setFrame((f) => (f + 1) % 1_000_000);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [ripple, SLOTS, w, h, onBurst]);
 
   // lightspeed in → drop to cruise → ships start drifting in
   useEffect(() => {
@@ -130,16 +149,14 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
       setPhase('fuel');
       phaseStart.current = performance.now();
       setMessage({ text: t.strandedReveal(round.hidden), good: true });
-      // fuel lines light the ships one by one
-      for (let i = 0; i < STRANDED_SHIPS; i++) {
-        later(() => {
-          setLit(i + 1);
-          sfx.pick(Math.min(3, i + 1));
-          haptics.tick();
-          const s = SLOTS[i];
-          onBurst(s.x * w, s.y * h, '#6ad7ff');
-        }, 250 + i * 260);
-      }
+      // the pulse leaves from wherever the (swaying) ship is right now
+      const now0 = performance.now() / 1000;
+      const px = (0.5 + Math.sin(now0 * 0.8) * 0.06 + Math.sin(now0 * 2.3) * 0.012) * w;
+      const py = 0.86 * h;
+      const farthest = Math.max(...SLOTS.map((sl) => Math.hypot(sl.x * w - px, sl.y * h - py)));
+      litAt.current = {};
+      setRipple({ t0: performance.now(), x: px, y: py, speed: farthest / RIPPLE_REACH_S });
+      sfx.wormhole();
       later(() => {
         setPhase('jump');
         phaseStart.current = performance.now();
@@ -158,7 +175,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
         }, SUMMARY_MS);
       }, FUEL_MS + JUMP_MS);
     },
-    [round.hidden, t, later, onBurst, onDone, base, w, h],
+    [round.hidden, t, later, onDone, base, w, h, SLOTS],
   );
 
   const guess = useCallback(
@@ -233,25 +250,24 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
     <div className="stranded">
       <div className="stranded-view" style={{ rotate: `${roll}deg` }}>
         <canvas ref={canvasRef} className="battle-warp" />
+        {/* the energy pulse rippling through space: redraws the starfield above,
+            bent by the expanding rings (hidden when there's no pulse) */}
+        <SpaceRipple
+          source={canvasRef}
+          startedAt={ripple?.t0 ?? 0}
+          origin={{ x: (ripple?.x ?? 0) + w * 0.06, y: (ripple?.y ?? 0) + h * 0.06 }}
+          speed={ripple?.speed ?? 1}
+        />
         {/* The view is drawn 6% bigger than the screen on every side, so its
             edges never show as it rolls; this layer is exactly screen-sized
             and placed back over the screen, so positions stay in screen pixels. */}
         <div className="stranded-screen" style={{ left: w * 0.06, top: h * 0.06, width: w, height: h }}>
-
-          {/* fuel lines from the pilot to each stranded ship */}
-          {(phase === 'fuel' || phase === 'jump') && (
-            <svg className="battle-beams" width={w} height={h}>
-              {SLOTS.slice(0, lit).map((s, i) => (
-                <line key={i} className="fuel-line" x1={pilot.x} y1={pilot.y - shipSize * 0.3} x2={s.x * w} y2={s.y * h} />
-              ))}
-            </svg>
-          )}
-
           {/* the stranded fleet */}
           {SLOTS.slice(0, shown).map((slot, i) => {
             const m = round.multipliers[i];
             const product = round.hidden * m;
-            const powered = i < lit;
+            const powered = litAt.current[i] !== undefined;
+          const boosting = powered && performance.now() - litAt.current[i] < 700;
             const drift = Math.sin(now * 0.7 + i) * 6;
             const jumpY = phase === 'jump' ? -Math.pow(tPhase, 2) * h * 1.6 : 0;
             const jumpStretch = phase === 'jump' ? 1 + tPhase * 3 : 1;
@@ -259,7 +275,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
             return (
               <div
                 key={i}
-                className={`stranded-ship ${powered ? 'is-powered' : ''}`}
+                className={`stranded-ship ${powered ? 'is-powered' : ''} ${boosting ? 'is-boosting' : ''}`}
                 style={{ left: slot.x * w, top: slot.y * h + drift + jumpY, scale: `1 ${jumpStretch}` }}
               >
                 <div className={`holo-drill ${check ? (check.ok ? 'is-ok' : 'is-bad') : ''}`} dir="ltr">
