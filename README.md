@@ -111,6 +111,33 @@ Answer mode, language and sound are shared by everyone on the device.
 
 <img src="docs/pilots.png" alt="Who's flying today? pilot picker" width="280">
 
+## Crew Flight 👩‍🚀👨‍🚀 (two players)
+
+Two pilots fly **one rocket together on one device**, taking turns. Open it from the pilot picker
+(**Fly together**, shown when there are 2+ pilots), pick the two pilots, and give each a seat:
+
+- **🚀 Pilot.** The usual timed times-table drills, weighted towards that pilot's hard facts.
+- **🧭 Navigator.** For a younger child: picture questions about equal groups ("3 groups of
+  4 stars. How many stars?") with four big answers and a 🔊 read-aloud button. The facts start
+  at factors up to 5 and widen to 6 and 7 as the navigator masters them. A miss counts the groups
+  up together (4, 8, 12).
+
+The pilot further along is suggested as Pilot, and two equals can both fly as Pilots. Every right
+answer pours fuel into **one shared tank**, coloured by who added it. A navigator's answer is worth
+as much as a pilot's average-speed one, so the younger child's part of the launch is just as big. A
+wrong answer brakes the rocket but never drains a sibling's fuel.
+
+Every 4th turn is **Docking 🛰️**: the station shows a number (say 24), and each child secretly
+taps one number on **their own half** of the screen. The picks stay hidden (🔒) until both are in,
+then `4 × 6 = 24` docks the rockets. To win, the two have to agree out loud first ("you take 4,
+I'll take 6"). There are three tries, and an earlier dock is worth more fuel (3× / 2× / 1×). After
+three misses, the ways to make the number are shown.
+
+Answers count as practice for each child: they go into each pilot's own practice map and the
+parent dashboard. A full tank launches the crew. Each pair of pilots has its own crew level,
+separate from their solo levels. **Land** ends the flight with a summary for both, then it's back to solo
+play. Design notes: [`docs/plans/2026-10-08-crew-flight.md`](docs/plans/2026-10-08-crew-flight.md).
+
 ## Parent dashboard 👪
 
 **⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A
@@ -149,6 +176,7 @@ Requires [Node.js](https://nodejs.org) 20+.
 ```bash
 npm install
 npm run dev      # play in the browser with hot reload
+npm test         # unit tests for the game logic (vitest)
 npm run app      # run as a desktop app (Electron)
 npm run dist     # build a desktop executable for this OS into release/
 ```
