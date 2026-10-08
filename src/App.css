@@ -4149,3 +4149,17 @@
     display: block;
   }
 }
+
+/* the test build at …/preview/ (see storage/previewNamespace.ts) */
+.preview-badge {
+  margin-inline-start: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  background: #ff6ad5;
+  color: #241b3f;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}

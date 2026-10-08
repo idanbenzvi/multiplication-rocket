@@ -36,6 +36,7 @@ import { SplitSky } from './components/sky/SplitSky';
 import { useCrewStore } from './game/useCrewStore';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
+import { IS_PREVIEW } from './storage/previewNamespace';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -226,6 +227,7 @@ function App() {
       <header className="hud-topbar" ref={topbarRef}>
         <div className="hud-logo">
           🚀 <ShinyText text={t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
+          {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
         {!crewActive && <LevelBanner level={displayLevel} />}
         <div className="hud-topbar-right">
