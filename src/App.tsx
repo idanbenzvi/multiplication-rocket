@@ -32,6 +32,7 @@ import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
 import { CrewFlight } from './components/crew/CrewFlight';
 import { CrewSetup } from './components/crew/CrewSetup';
+import { SplitSky } from './components/sky/SplitSky';
 import { useCrewStore } from './game/useCrewStore';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
@@ -253,6 +254,7 @@ function App() {
 
       <ProfileGate />
       <CrewSetup />
+      {!gateOpen && <SplitSky />}
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen && <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />}
       <PauseController />
