@@ -74,7 +74,7 @@ function SetupSheet() {
           const seat = seats[id] ?? 'pilot';
           return (
             <div key={id} className="settings-section crew-seat-row" style={{ '--seat': SEAT_COLORS[i] } as React.CSSProperties}>
-              <div className="settings-label" dir="auto">
+              <div className="settings-label">
                 {p?.avatar} {pilotName(p, t.defaultPilotName)} · {t.crew.seat}
               </div>
               <div className="settings-segment settings-segment-row">

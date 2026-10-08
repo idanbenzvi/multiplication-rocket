@@ -397,6 +397,7 @@ const en = {
       eclipse: { name: 'Eclipse Hunters', hint: 'Count your moon round its orbit, then find when both moons line up' },
     },
     eclipse: {
+      round: (k: number, n: number) => `Eclipse ${k} / ${n}`,
       myMoon: (p: number) => `Your moon goes round every ${p} ticks`,
       orbitPrompt: (p: number) => `Count its orbits: +${p} each time. Which tick is next?`,
       partnerProgress: (name: string, k: number, n: number) => `${name}: ${k} of ${n} orbits`,
@@ -845,6 +846,7 @@ const he: Strings = {
       eclipse: { name: 'ציידי הליקוי', hint: 'סופרים את ההקפות של הירח, ומוצאים מתי שני הירחים מתיישרים' },
     },
     eclipse: {
+      round: (k, n) => `ליקוי ${k} מתוך ${n}`,
       myMoon: (p) => `הירח שלך מקיף את הכוכב כל ${p} פעימות`,
       orbitPrompt: (p) => `סופרים את ההקפות: כל פעם עוד ${p}. מה הפעימה הבאה?`,
       partnerProgress: (name, k, n) => `${name}: ${k} מתוך ${n} הקפות`,

@@ -186,7 +186,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
         transition={{ type: 'spring', stiffness: 360, damping: 22 }}
       >
         <span className="crew-turn-avatar">{pilot?.avatar}</span>
-        <span dir="auto">{t.crew.turnOf(pilotName(pilot, t.defaultPilotName))}</span>
+        <span>{t.crew.turnOf(pilotName(pilot, t.defaultPilotName))}</span>
         <span className="crew-turn-seat">{seat === 'navigator' ? t.crew.seatNavigator : t.crew.seatPilot}</span>
       </motion.div>
       {seat === 'navigator' ? (

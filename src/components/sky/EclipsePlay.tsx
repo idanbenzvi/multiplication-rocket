@@ -97,10 +97,10 @@ export function EclipsePlay({ state }: { state: EclipseState }) {
 
   return (
     <div className="sky-play">
-      <div className="sky-round">{t.sky.round(state.roundIndex + 1, state.rounds.length)}</div>
+      <div className="sky-round">{t.sky.eclipse.round(state.roundIndex + 1, state.rounds.length)}</div>
       <div className="ecl-top">
         <div className="ecl-mymoon">🌙 {t.sky.eclipse.myMoon(period)}</div>
-        <div className="ecl-partner" dir="auto">
+        <div className="ecl-partner">
           {partner?.avatar} {t.sky.eclipse.partnerProgress(partnerName, Math.min(theirs.step, round.steps[other(mySide)]), round.steps[other(mySide)])}
         </div>
       </div>

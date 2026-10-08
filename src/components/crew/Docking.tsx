@@ -162,7 +162,7 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
           const shown = revealed ? mine : null;
           return (
             <div key={seat} className="dock-pad" style={{ '--seat': SEAT_COLORS[seat] } as React.CSSProperties}>
-              <div className="dock-pad-who" dir="auto">
+              <div className="dock-pad-who">
                 <span className="dock-pad-avatar">{p?.avatar}</span> {t.crew.dockPick(pilotName(p, t.defaultPilotName))}
               </div>
               {mine === null ? (

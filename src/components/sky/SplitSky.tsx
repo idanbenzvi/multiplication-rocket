@@ -228,7 +228,7 @@ function Lobby() {
 function Chip({ label, rows, cols, mine }: { label: string; rows: number; cols: number; mine?: boolean }) {
   return (
     <div className={`sky-chip ${mine ? 'is-mine' : ''}`}>
-      <span className="sky-chip-label" dir="auto">
+      <span className="sky-chip-label">
         {label}
       </span>
       <bdi dir="ltr" className="sky-chip-math">
@@ -347,7 +347,7 @@ function SplitPlay({ state }: { state: SkyState }) {
                   <span className="equation-operand">?</span>
                 </div>
                 {mine.misses > 0 && (
-                  <div className="sky-hint" dir="auto">
+                  <div className="sky-hint">
                     {t.sky.hintAdd(round.rows * round.cols.left, round.rows * round.cols.right)}
                   </div>
                 )}
