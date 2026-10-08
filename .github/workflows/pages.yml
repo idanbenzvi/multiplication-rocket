@@ -1,5 +1,8 @@
 # Publishes the web version to GitHub Pages on every push to master:
 #   https://idanbenzvi.github.io/multiplication-rocket/
+# and, when a "preview" branch exists, its test build alongside it:
+#   https://idanbenzvi.github.io/multiplication-rocket/preview/
+# (a push to preview re-runs this through preview.yml on that branch).
 name: Deploy to GitHub Pages
 
 on:
@@ -31,6 +34,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Build the preview branch into /preview/
+        run: |
+          if git ls-remote --exit-code --heads origin preview; then
+            git fetch --depth=1 origin preview
+            git worktree add ../preview FETCH_HEAD
+            cd ../preview
+            npm ci
+            VITE_PREVIEW=1 npm run build
+            cp -r dist "$GITHUB_WORKSPACE/dist/preview"
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
