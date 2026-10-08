@@ -57,8 +57,9 @@ Every 4th turn is a **Docking** round, played by both at once:
 - Targets are products with at least two factor pairs within 1–10 (so there's something to
   agree on), picked through the pilot's mastery weighting. When a navigator is on board, one
   factor of some valid pair is always ≤ 5, so the younger child can find a part.
-- Every docking attempt is recorded for **both** players under the canonical key of the pair they
-  picked, if it's a real fact. Only a successful dock counts as correct.
+- A successful dock is recorded as a correct answer for **both** players, under the fact they
+  docked with. A miss isn't recorded: `5 × 6 = 30` is right, just not the station's number, so it
+  isn't evidence of a gap.
 
 ### Ending a mission
 

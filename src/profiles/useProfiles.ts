@@ -104,6 +104,13 @@ export const useProfiles = create<ProfilesState>((set, get) => {
         localStorage.removeItem(progressKeyFor(id));
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
         localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
+        // their crews (keys end in "<idA>+<idB>", see game/useCrewStore.ts)
+        const crews: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('multiplication-rocket:crew:v1:') && key.split(':').pop()!.split('+').includes(id)) crews.push(key);
+        }
+        for (const key of crews) localStorage.removeItem(key);
       } catch {
         // ignore
       }
