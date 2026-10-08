@@ -113,6 +113,8 @@ interface CrewState {
   missionLaunches: number;
   docks: number;
   stats: [MemberStats, MemberStats];
+  /** the tank filled: the launch shows once the current turn has played out */
+  pendingLaunch: boolean;
   /** the launch overlay is showing */
   launching: boolean;
   /** the end-of-flight summary is showing */
@@ -166,28 +168,29 @@ const freshMission = {
     { correct: 0, answered: 0 },
     { correct: 0, answered: 0 },
   ] as [MemberStats, MemberStats],
+  pendingLaunch: false,
   launching: false,
   summary: false,
 };
 
 export const useCrewStore = create<CrewState>((set, get) => {
-  // Pours fuel into the shared tank, launching when it's full.
+  // Pours fuel into the shared tank. A full tank launches once the current
+  // turn has played out (see beginLaunch), so its celebration isn't cut short.
   const pour = (amounts: [number, number]) => {
-    const { fuel, contributions, members, level, launches, missionLaunches } = get();
+    const { fuel, contributions } = get();
     const total = fuel + amounts[0] + amounts[1];
-    if (total < 100 || !members) {
-      set({ fuel: Math.min(100, total), contributions: [contributions[0] + amounts[0], contributions[1] + amounts[1]] });
-      return;
-    }
-    const saved = { level: level + 1, launches: launches + 1 };
-    saveCrew(members[0].profileId, members[1].profileId, saved);
     set({
-      ...saved,
-      fuel: 100,
+      fuel: Math.min(100, total),
       contributions: [contributions[0] + amounts[0], contributions[1] + amounts[1]],
-      missionLaunches: missionLaunches + 1,
-      launching: true,
+      pendingLaunch: total >= 100,
     });
+  };
+
+  const beginLaunch = (extra: Partial<CrewState> = {}) => {
+    const { members, level, launches, missionLaunches } = get();
+    const saved = { level: level + 1, launches: launches + 1 };
+    if (members) saveCrew(members[0].profileId, members[1].profileId, saved);
+    set({ ...saved, missionLaunches: missionLaunches + 1, pendingLaunch: false, launching: true, ...extra });
   };
 
   const advance = () => {
@@ -245,9 +248,10 @@ export const useCrewStore = create<CrewState>((set, get) => {
     next: () => {
       // only from an answered question: a late timer after the launch
       // overlay already moved on must not skip a turn
-      const { feedback, launching, summary } = get();
+      const { feedback, launching, summary, pendingLaunch } = get();
       if (!feedback || launching || summary) return;
-      advance();
+      if (pendingLaunch) beginLaunch();
+      else advance();
     },
 
     dock: (a, b) => {
@@ -273,11 +277,8 @@ export const useCrewStore = create<CrewState>((set, get) => {
       const { turn } = get();
       if (!turn || turn.kind !== 'docking') return;
       if (turn.last?.result !== 'dock' && turn.tries < MAX_DOCK_TRIES) return;
-      if (get().launching) {
-        set({ turn: null });
-        return;
-      }
-      advance();
+      if (get().pendingLaunch) beginLaunch({ turn: null });
+      else advance();
     },
 
     dismissLaunch: () => {
@@ -285,7 +286,11 @@ export const useCrewStore = create<CrewState>((set, get) => {
       advance();
     },
 
-    land: () => set({ summary: true, launching: false }),
+    land: () => {
+      // a full tank still counts, even when landing before its launch played
+      if (get().pendingLaunch) beginLaunch();
+      set({ summary: true, launching: false });
+    },
 
     close: () => {
       set({ ...freshMission, active: false, members: null });

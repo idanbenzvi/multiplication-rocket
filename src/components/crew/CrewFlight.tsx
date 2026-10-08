@@ -176,9 +176,9 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
   );
 
   return (
+    // keyed by question in CrewFlight, so everything here starts fresh each turn
     <div className="hud-question-zone crew-turn-zone">
       <motion.div
-        key={turn.askedAt}
         className="crew-turn-banner"
         style={{ '--seat': color } as React.CSSProperties}
         initial={{ opacity: 0, y: 12, scale: 0.9 }}
@@ -190,10 +190,9 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
         <span className="crew-turn-seat">{seat === 'navigator' ? t.crew.seatNavigator : t.crew.seatPilot}</span>
       </motion.div>
       {seat === 'navigator' ? (
-        <NavigatorQuestion key={turn.askedAt} question={turn} feedback={feedback} onAnswer={(v) => handle(v, 0)} onContinue={next} />
+        <NavigatorQuestion question={turn} feedback={feedback} onAnswer={(v) => handle(v, 0)} onContinue={next} />
       ) : (
         <QuestionForm
-          key={turn.askedAt}
           question={turn}
           feedback={feedback}
           disabled={locked}

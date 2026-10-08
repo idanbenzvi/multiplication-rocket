@@ -78,6 +78,8 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
 
   const last = turn.last;
   const docked = revealed === 'dock';
+  // the try being played (or, after a miss, the one coming up)
+  const shownTry = docked || outOfTries ? turn.tries : turn.tries + 1;
 
   return (
     <div className="dock-zone">
@@ -91,7 +93,7 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
         <div className="dock-station" dir="ltr">
           <motion.span
             className="dock-rocket"
-            animate={docked ? { x: 34, rotate: 90 } : { x: 0, rotate: 90 }}
+            animate={docked ? { x: 12, rotate: 90 } : { x: 0, rotate: 90 }}
             transition={{ type: 'spring', stiffness: 120, damping: 12 }}
           >
             🚀
@@ -101,7 +103,7 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
           </GradientText>
           <motion.span
             className="dock-rocket"
-            animate={docked ? { x: -34, rotate: -90 } : { x: 0, rotate: -90 }}
+            animate={docked ? { x: -12, rotate: -90 } : { x: 0, rotate: -90 }}
             transition={{ type: 'spring', stiffness: 120, damping: 12 }}
           >
             🚀
@@ -124,8 +126,8 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
           )}
         </div>
         <div className="dock-meta">
-          <span>{t.crew.dockTries(Math.min(MAX_DOCK_TRIES, turn.tries + (revealed ? 0 : 1)), MAX_DOCK_TRIES)}</span>
-          <span>{t.crew.dockBonus(dockMultiplier(turn.tries + (revealed ? 0 : 1)))}</span>
+          <span>{t.crew.dockTries(shownTry, MAX_DOCK_TRIES)}</span>
+          <span>{t.crew.dockBonus(dockMultiplier(shownTry))}</span>
         </div>
 
         <AnimatePresence>

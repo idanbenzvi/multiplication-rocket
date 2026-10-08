@@ -170,7 +170,6 @@
 }
 .nav-stars {
   display: grid;
-  grid-template-columns: repeat(3, auto);
   gap: 0.1rem;
   padding: 0.4rem 0.5rem;
   border-radius: 16px;

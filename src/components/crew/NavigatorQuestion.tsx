@@ -47,6 +47,8 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
   }, [feedback]);
 
   const counts = skipCounts(groups, size);
+  // a group reads as one shape: a single row up to 5, two even rows above that
+  const starColumns = size <= 5 ? size : Math.ceil(size / 2);
 
   return (
     <div className="nav-card">
@@ -66,7 +68,7 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 320, damping: 18, delay: g * 0.08 }}
           >
-            <div className="nav-stars">
+            <div className="nav-stars" style={{ gridTemplateColumns: `repeat(${starColumns}, auto)` }}>
               {Array.from({ length: size }, (_, i) => (
                 <span key={i} className="nav-star">
                   ⭐
