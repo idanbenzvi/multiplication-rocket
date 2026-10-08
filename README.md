@@ -145,7 +145,7 @@ seam where the phones touch. Each child counts their own half, then together the
 sky: `6 × 8 = 6 × 3 + 6 × 5`. Breaking a hard fact into easier pieces is the same idea as the
 strategy hints, but here each child holds one of the pieces.
 
-- **Connect:** on one phone, **Split Sky → Host a game** shows a 4-digit code. On the other,
+- **Connect:** on one phone, **📱📱 Two phones → Host a game** shows a 4-digit code. On the other,
   **Join a game** and type it. Each phone needs one pilot. The host says which side its phone is on.
 - **A round:** each phone shows only its own half (say "6 rows of 3"), and each child answers
   privately. Then both phones show both halves (`6 × 3 = 18`, `6 × 5 = 30`) and ask for the whole,
@@ -159,6 +159,21 @@ strategy hints, but here each child holds one of the pieces.
   answers never touch the server. A phone that drops can rejoin with the same code and carries on
   where it left off. Both phones need the internet to connect. Some guest or mesh Wi-Fi networks
   keep phones apart; the game says so if it can't connect.
+
+### Eclipse Hunters 🌑 (two phones)
+
+The second two-phone game: the host picks it in the lobby, or from the summary. Each phone
+has **one moon**, going round every 3 ticks on one phone and every 4 on the other.
+
+- **Orbit:** each child skip-counts their own moon, choosing the next tick each time (3, 6, 9,
+  12, 15…). The moon flies round the planet past one dot per tick. Every step is a times-table
+  fact and counts as practice. The other phone's progress shows only as a count, never its numbers.
+- **Predict:** "When do both moons line up for the first time?" Each child sees only their own
+  list, so they have to compare out loud to find the first number in both.
+- **Eclipse:** a shadow sweeps across the left phone and then the right, the planet turns into a
+  glowing corona, and it's explained: `3 × 4 = 12`, and again every 12 ticks. The two periods
+  never share a factor, so the first eclipse is always their product.
+- 4 eclipses a game.
 
 Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split-sky.md).
 
