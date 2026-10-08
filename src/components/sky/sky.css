@@ -37,6 +37,16 @@
   font-weight: 700;
   text-align: center;
 }
+.sky-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.6rem;
+}
+.sky-title-row .sky-title {
+  margin: 0; /* GradientText centres itself with auto margins */
+}
 .sky-intro,
 .sky-hint {
   margin: 0;
@@ -175,12 +185,15 @@
   color: #c9a4de;
 }
 
-/* the half hugs the seam: the edge touching the other phone */
+/* The half hugs the seam: the edge touching the other phone. It sits a
+   fixed distance from the top (not centred above the card, whose height
+   differs per phone and language), so rows line up across the phones. */
 .sky-grid-wrap {
   position: relative;
   display: flex;
   flex: 1;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 4vh;
   margin: 0 -16px; /* right up to the screen edge */
 }
 .sky-grid-wrap.is-left {

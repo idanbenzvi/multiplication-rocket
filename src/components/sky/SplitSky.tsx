@@ -169,9 +169,13 @@ function Lobby() {
   const closeSky = useSkyStore((s) => s.closeSky);
   return (
     <div className="sky-panel">
-      <GradientText className="sky-title" colors={['#6ad7ff', '#c9a4de', '#ffd77a', '#6ad7ff']} animationSpeed={4}>
-        📱📱 {t.sky.title}
-      </GradientText>
+      {/* the emoji stays outside: the gradient fill would flatten it */}
+      <div className="sky-title-row">
+        <span aria-hidden>📱📱</span>
+        <GradientText className="sky-title" colors={['#6ad7ff', '#c9a4de', '#ffd77a', '#6ad7ff']} animationSpeed={4}>
+          {t.sky.title}
+        </GradientText>
+      </div>
       {role === null && (
         <>
           <p className="sky-intro">{t.sky.intro}</p>

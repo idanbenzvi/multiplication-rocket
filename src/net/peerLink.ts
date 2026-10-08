@@ -98,12 +98,13 @@ export async function hostLink(handlers: LinkHandlers): Promise<{ code: string; 
 
   let guest: DataConnection | null = null;
   peer.on('connection', (conn) => {
-    // one other phone at a time: a newcomer replaces a dropped one, otherwise it's turned away
-    if (guest?.open) {
-      conn.on('open', () => conn.close());
-      return;
-    }
+    // One other phone at a time, and the newest wins: a phone that slept or
+    // lost Wi-Fi often leaves its old connection looking open for a while,
+    // and it must still be able to come back. (Joining needs the code shown
+    // on this screen, so in practice the newcomer is that same phone.)
+    const old = guest;
     guest = conn;
+    old?.close();
     conn.on('open', () => {
       handlers.onStatus('connected');
       handlers.onConnect?.();
