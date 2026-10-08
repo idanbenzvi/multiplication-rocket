@@ -32,24 +32,42 @@ export interface ProgressStore {
   reset(): void;
 }
 
+function loadFrom(key: string): Progress {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return defaultProgress();
+    const parsed = JSON.parse(raw) as Partial<Progress>;
+    if (parsed.version !== 1) return defaultProgress();
+    return { ...defaultProgress(), ...parsed };
+  } catch {
+    return defaultProgress();
+  }
+}
+
+function saveTo(key: string, progress: Progress) {
+  try {
+    localStorage.setItem(key, JSON.stringify(progress));
+  } catch {
+    // storage blocked/full: progress lasts for this session only
+  }
+}
+
+// A crew flight records answers for two pilots at once, so it reads and
+// writes a given pilot's progress rather than the active one's.
+export function loadProgressFor(profileId: string): Progress {
+  return loadFrom(progressKeyFor(profileId));
+}
+
+export function saveProgressFor(profileId: string, progress: Progress) {
+  saveTo(progressKeyFor(profileId), progress);
+}
+
 export const localProgressStore: ProgressStore = {
   load() {
-    try {
-      const raw = localStorage.getItem(storageKey());
-      if (!raw) return defaultProgress();
-      const parsed = JSON.parse(raw) as Partial<Progress>;
-      if (parsed.version !== 1) return defaultProgress();
-      return { ...defaultProgress(), ...parsed };
-    } catch {
-      return defaultProgress();
-    }
+    return loadFrom(storageKey());
   },
   save(progress) {
-    try {
-      localStorage.setItem(storageKey(), JSON.stringify(progress));
-    } catch {
-      // storage blocked/full: progress lasts for this session only
-    }
+    saveTo(storageKey(), progress);
   },
   reset() {
     try {

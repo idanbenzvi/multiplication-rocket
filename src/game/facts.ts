@@ -26,6 +26,18 @@ export function nextDueScore(previous: number | undefined, wasCorrect: boolean):
   return Math.min(DUE_SCORE_MAX, Math.max(DUE_SCORE_MIN, updated));
 }
 
+/** one more answer to a fact, folded into a pilot's mastery map (returns a new map) */
+export function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean): Record<string, FactStat> {
+  const prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
+  const next: FactStat = {
+    attempts: prev.attempts + 1,
+    correct: prev.correct + (isCorrect ? 1 : 0),
+    wrong: prev.wrong + (isCorrect ? 0 : 1),
+    dueScore: nextDueScore(prev.dueScore, isCorrect),
+  };
+  return { ...mastery, [key]: next };
+}
+
 export function pickNextFact(
   pool: Fact[],
   mastery: Record<string, FactStat>,

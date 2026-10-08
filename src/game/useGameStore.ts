@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { gameNow } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
-import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, randomizeOrder } from './facts';
+import { buildFactPool, getStrugglingFactKeys, pickNextFact, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
@@ -72,17 +72,6 @@ interface GameState {
   devLaunch: () => void;
   /** dev mode only: set the tank to a given fuel level */
   devSetFuel: (fuel: number) => void;
-}
-
-function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean) {
-  const prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
-  const next: FactStat = {
-    attempts: prev.attempts + 1,
-    correct: prev.correct + (isCorrect ? 1 : 0),
-    wrong: prev.wrong + (isCorrect ? 0 : 1),
-    dueScore: nextDueScore(prev.dueScore, isCorrect),
-  };
-  return { ...mastery, [key]: next };
 }
 
 function launchFrom(progress: Progress) {
