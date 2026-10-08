@@ -1,15 +1,7 @@
 import { create } from 'zustand';
-import {
-  buildSkyRounds,
-  expectedAnswer,
-  initialSkyState,
-  skyReducer,
-  type Side,
-  type SkyAction,
-  type SkyPlayer,
-  type SkyStage,
-  type SkyState,
-} from './splitSky';
+import { buildSkyRounds, expectedAnswer, type Side, type SkyPlayer, type SkyStage } from './splitSky';
+import { buildEclipseRounds } from './eclipse';
+import { duoReducer, initialDuoState, type DuoAction, type DuoGame, type DuoState } from './duo';
 import { recordAttempt } from './facts';
 import { hostLink, joinLink, type Link, type LinkError, type LinkStatus } from '../net/peerLink';
 import { activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
@@ -18,7 +10,8 @@ import { appendToLog } from '../stats/answerLog';
 import { pauseGame, resumeGame } from './gameClock';
 import { useGameStore } from './useGameStore';
 
-// A Split Sky session on this phone. The host runs the referee (splitSky.ts)
+// A two-phone session on this phone (Split Sky or Eclipse Hunters, see
+// duo.ts). The host runs the referee
 // and sends the whole state to the other phone after every change, so a
 // reconnecting phone just gets the latest state; the guest only sends its
 // own answers. Each phone records its own pilot's answers.
@@ -27,8 +20,8 @@ type Role = 'host' | 'guest';
 
 type Msg =
   | { t: 'hello'; player: SkyPlayer }
-  | { t: 'act'; action: SkyAction }
-  | { t: 'state'; state: SkyState; guestSide: Side };
+  | { t: 'act'; action: DuoAction }
+  | { t: 'state'; state: DuoState; guestSide: Side };
 
 interface SkyStore {
   open: boolean;
@@ -37,7 +30,7 @@ interface SkyStore {
   status: LinkStatus | null;
   error: LinkError | null;
   mySide: Side;
-  state: SkyState;
+  state: DuoState;
   openSky: () => void;
   closeSky: () => void;
   host: () => Promise<void>;
@@ -48,11 +41,18 @@ interface SkyStore {
   leave: () => void;
   /** host only */
   swapSides: () => void;
+  /** host only, in the lobby or summary: which game to play */
+  chooseGame: (game: DuoGame) => void;
   /** host only: a fresh game (also "play again") */
   startGame: () => void;
   /** host only: on to the next round once the constellation has been admired */
   nextRound: () => void;
+  /** Split Sky: this phone's answer */
   answer: (stage: SkyStage, value: number) => void;
+  /** Eclipse Hunters: this phone's next tick */
+  orbit: (value: number) => void;
+  /** Eclipse Hunters: when this phone thinks the moons line up */
+  predict: (value: number) => void;
 }
 
 let link: Link | null = null;
@@ -68,11 +68,15 @@ function isMsg(m: unknown): m is Msg {
   return !!m && typeof m === 'object' && typeof (m as { t?: unknown }).t === 'string';
 }
 
+function isAnswer(a: DuoAction): a is Extract<DuoAction, { side: Side; value: number }> {
+  return a.type === 'answer' || a.type === 'orbit' || a.type === 'predict';
+}
+
 function factKey(a: number, b: number) {
   return `${Math.min(a, b)}x${Math.max(a, b)}`;
 }
 
-function recordOwn(key: string, correct: boolean) {
+function recordOwn(key: string, correct: boolean, source: 'sky' | 'eclipse') {
   const id = useProfiles.getState().activeId;
   if (!id) return;
   const progress = loadProgressFor(id);
@@ -81,7 +85,7 @@ function recordOwn(key: string, correct: boolean) {
     mastery: recordAttempt(progress.mastery, key, correct),
     totalCorrectAnswers: progress.totalCorrectAnswers + (correct ? 1 : 0),
   });
-  appendToLog(id, [{ fact: key, correct, ms: null, source: 'sky' }]);
+  appendToLog(id, [{ fact: key, correct, ms: null, source }]);
 }
 
 // Set by SplitSky so names fall back to the translated "Pilot".
@@ -89,13 +93,19 @@ export const skyNames = { fallback: 'Pilot' };
 
 export const useSkyStore = create<SkyStore>((set, get) => {
   // host: apply an action and send the result to the other phone
-  const dispatch = (action: SkyAction) => {
-    const state = skyReducer(get().state, action);
+  const dispatch = (action: DuoAction) => {
+    const state = duoReducer(get().state, action);
     if (state === get().state) return;
     set({ state });
     broadcast();
   };
   const broadcast = () => link?.send({ t: 'state', state: get().state, guestSide: other(get().mySide) } satisfies Msg);
+
+  // this phone's own answer: the host judges it directly, the guest sends it over
+  const act = (action: DuoAction) => {
+    if (get().role === 'host') dispatch(action);
+    else link?.send({ t: 'act', action } satisfies Msg);
+  };
 
   const resetLink = () => {
     link?.close();
@@ -111,16 +121,16 @@ export const useSkyStore = create<SkyStore>((set, get) => {
     status: null,
     error: null,
     mySide: 'left',
-    state: initialSkyState(),
+    state: initialDuoState(),
 
     openSky: () => {
       pauseGame('sky');
-      set({ open: true, role: null, status: null, error: null, state: initialSkyState() });
+      set({ open: true, role: null, status: null, error: null, state: initialDuoState() });
     },
 
     closeSky: () => {
       resetLink();
-      set({ open: false, role: null, status: null, error: null, code: '', state: initialSkyState() });
+      set({ open: false, role: null, status: null, error: null, code: '', state: initialDuoState() });
       resumeGame('sky');
       // this pilot's practice map may have changed
       useGameStore.getState().init();
@@ -129,7 +139,7 @@ export const useSkyStore = create<SkyStore>((set, get) => {
     host: async () => {
       resetLink();
       const mySide: Side = 'left';
-      set({ role: 'host', mySide, code: '', state: skyReducer(initialSkyState(), { type: 'player', side: mySide, player: me(skyNames.fallback) }) });
+      set({ role: 'host', mySide, code: '', state: duoReducer(initialDuoState(), { type: 'player', side: mySide, player: me(skyNames.fallback) }) });
       try {
         const { code, link: l } = await hostLink({
           onStatus: (status, error) => {
@@ -142,8 +152,8 @@ export const useSkyStore = create<SkyStore>((set, get) => {
             if (!isMsg(m)) return;
             const guestSide = other(get().mySide);
             if (m.t === 'hello') dispatch({ type: 'player', side: guestSide, player: m.player });
-            // the other phone may only answer for its own half
-            else if (m.t === 'act' && m.action.type === 'answer' && m.action.side === guestSide) dispatch(m.action);
+            // the other phone may only answer, and only for its own side
+            else if (m.t === 'act' && isAnswer(m.action) && m.action.side === guestSide) dispatch(m.action);
           },
         });
         if (get().role !== 'host') return l.close(); // left while connecting
@@ -156,7 +166,7 @@ export const useSkyStore = create<SkyStore>((set, get) => {
 
     join: async (code) => {
       resetLink();
-      set({ role: 'guest', code, state: initialSkyState() });
+      set({ role: 'guest', code, state: initialDuoState() });
       try {
         const l = await joinLink(code, {
           onStatus,
@@ -179,7 +189,7 @@ export const useSkyStore = create<SkyStore>((set, get) => {
 
     leave: () => {
       resetLink();
-      set({ role: null, status: null, error: null, code: '', state: initialSkyState() });
+      set({ role: null, status: null, error: null, code: '', state: initialDuoState() });
     },
 
     swapSides: () => {
@@ -189,10 +199,16 @@ export const useSkyStore = create<SkyStore>((set, get) => {
       broadcast(); // guestSide changed even if nothing else did
     },
 
+    chooseGame: (game) => {
+      if (get().role === 'host') dispatch({ type: 'game', game });
+    },
+
     startGame: () => {
       if (get().role !== 'host') return;
       const id = useProfiles.getState().activeId;
-      dispatch({ type: 'start', rounds: buildSkyRounds(id ? loadProgressFor(id).mastery : {}) });
+      const mastery = id ? loadProgressFor(id).mastery : {};
+      if (get().state.game === 'split') dispatch({ type: 'start', rounds: buildSkyRounds(mastery) });
+      else dispatch({ type: 'start', rounds: buildEclipseRounds(mastery) });
     },
 
     nextRound: () => {
@@ -200,16 +216,36 @@ export const useSkyStore = create<SkyStore>((set, get) => {
     },
 
     answer: (stage, value) => {
-      const { state, mySide, role } = get();
+      const { state, mySide } = get();
+      if (state.game !== 'split') return;
       const round = state.rounds[state.roundIndex];
       if (!round || state.phase !== stage || state[stage][mySide].done) return;
       // each phone records its own pilot's answer: the half fact, or the whole one
       const correct = value === expectedAnswer(round, mySide, stage);
       const cols = stage === 'count' ? round.cols[mySide] : round.cols.left + round.cols.right;
-      recordOwn(factKey(round.rows, cols), correct);
-      const action: SkyAction = { type: 'answer', side: mySide, stage, value };
-      if (role === 'host') dispatch(action);
-      else link?.send({ t: 'act', action } satisfies Msg);
+      recordOwn(factKey(round.rows, cols), correct, 'sky');
+      act({ type: 'answer', side: mySide, stage, value });
+    },
+
+    orbit: (value) => {
+      const { state, mySide } = get();
+      if (state.game !== 'eclipse' || state.phase !== 'orbit') return;
+      const round = state.rounds[state.roundIndex];
+      const { step } = state.orbit[mySide];
+      if (!round || step >= round.steps[mySide]) return;
+      // each tick is a times-table fact: period × orbit number
+      const period = round.periods[mySide];
+      recordOwn(factKey(period, step + 1), value === period * (step + 1), 'eclipse');
+      act({ type: 'orbit', side: mySide, value });
+    },
+
+    predict: (value) => {
+      const { state, mySide } = get();
+      if (state.game !== 'eclipse' || state.phase !== 'predict' || state.predict[mySide].done) return;
+      const round = state.rounds[state.roundIndex];
+      if (!round) return;
+      recordOwn(factKey(round.periods.left, round.periods.right), value === round.eclipse, 'eclipse');
+      act({ type: 'predict', side: mySide, value });
     },
   };
 });

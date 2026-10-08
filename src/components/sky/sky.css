@@ -325,3 +325,115 @@
   font-weight: 600;
   color: #ffd77a;
 }
+
+/* ---------- Eclipse Hunters ---------- */
+
+.ecl-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+.ecl-mymoon {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.ecl-partner {
+  font-size: 0.85rem;
+  color: #c8bcd9;
+}
+.ecl-scene {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.ecl-svg {
+  width: min(62vw, 34vh, 260px);
+  height: auto;
+  overflow: visible;
+}
+.ecl-ring {
+  fill: none;
+  stroke: rgba(201, 164, 222, 0.35);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+}
+.ecl-tick {
+  fill: rgba(201, 164, 222, 0.6);
+}
+.ecl-tick.is-start {
+  fill: #6ad7ff;
+}
+.ecl-planet {
+  fill: #ff9d76;
+  filter: drop-shadow(0 0 10px rgba(255, 157, 118, 0.6));
+  transition: fill 0.8s ease, filter 0.8s ease;
+}
+.ecl-moon {
+  fill: #fdf3e7;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
+}
+/* the eclipse: the planet darkens into a glowing corona */
+.ecl-scene.is-eclipse .ecl-planet {
+  fill: #241b3f;
+  filter: drop-shadow(0 0 4px #fff6e0) drop-shadow(0 0 18px #ffd77a) drop-shadow(0 0 34px #ff9d76);
+  transition-delay: 0.9s;
+}
+/* a shadow sweeps across both phones, left to right: the right-hand phone a beat later */
+.ecl-shadow {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(5, 3, 12, 0.85) 35%, rgba(5, 3, 12, 0.85) 65%, transparent);
+  transform: translateX(-110%);
+  animation: ecl-sweep 1.4s ease-in-out forwards;
+}
+.ecl-scene.is-right .ecl-shadow {
+  animation-delay: 0.7s;
+}
+@keyframes ecl-sweep {
+  to {
+    transform: translateX(110%);
+  }
+}
+.ecl-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ecl-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+}
+.ecl-tick-chip {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(106, 215, 255, 0.12);
+  border: 1px solid rgba(106, 215, 255, 0.4);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.ecl-tick-chip.is-eclipse {
+  background: #ffd77a;
+  border-color: #ffd77a;
+  color: #241b3f;
+  box-shadow: 0 0 14px rgba(255, 215, 122, 0.7);
+}
+.sky-games .settings-option.is-on {
+  border-color: #6ad7ff;
+  background: rgba(106, 215, 255, 0.12);
+  box-shadow: 0 0 16px rgba(106, 215, 255, 0.25);
+}
+.sky-chosen-game {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}

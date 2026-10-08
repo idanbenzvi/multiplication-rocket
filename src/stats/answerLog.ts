@@ -5,7 +5,7 @@
 //
 // Stored on the device only, compactly, capped at the most recent entries.
 
-export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky';
+export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse';
 
 export interface LoggedAnswer {
   /** Date.now() when answered (wall-clock, so days line up with the calendar) */
@@ -21,7 +21,7 @@ export interface LoggedAnswer {
 const PREFIX = 'multiplication-rocket:log:v1';
 const MAX_ENTRIES = 6000;
 // append only: the index is what's stored
-const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky'];
+const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse'];
 
 // compact row: [at, fact, correct 0/1, ms | -1, source index]
 type Row = [number, string, 0 | 1, number, number];

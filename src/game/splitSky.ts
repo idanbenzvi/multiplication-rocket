@@ -32,6 +32,7 @@ export interface SideProgress {
 }
 
 export interface SkyState {
+  game: 'split';
   phase: 'lobby' | 'count' | 'join' | 'lit' | 'summary';
   players: Partial<Record<Side, SkyPlayer>>;
   rounds: SkyRound[];
@@ -81,7 +82,7 @@ export function buildSkyRounds(mastery: Record<string, FactStat>, n = SKY_ROUNDS
 const fresh = (): Record<Side, SideProgress> => ({ left: { done: false, misses: 0 }, right: { done: false, misses: 0 } });
 
 export function initialSkyState(): SkyState {
-  return { phase: 'lobby', players: {}, rounds: [], roundIndex: 0, count: fresh(), join: fresh(), lit: 0, perfect: 0 };
+  return { game: 'split', phase: 'lobby', players: {}, rounds: [], roundIndex: 0, count: fresh(), join: fresh(), lit: 0, perfect: 0 };
 }
 
 export function currentRound(s: SkyState): SkyRound | null {

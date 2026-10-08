@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { skyNames, useSkyStore } from '../../game/useSkyStore';
-import { MAX_MISSES, type Side, type SkyStage } from '../../game/splitSky';
+import { MAX_MISSES, type Side, type SkyStage, type SkyState } from '../../game/splitSky';
+import type { DuoGame } from '../../game/duo';
+import { EclipsePlay } from './EclipsePlay';
+import { Choices, StatusLine } from './parts';
 import { distractors } from '../../game/distractors';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
@@ -47,27 +50,30 @@ function Players() {
   );
 }
 
-function StatusLine() {
+const GAME_ICONS: Record<DuoGame, string> = { split: '✨', eclipse: '🌑' };
+
+function GamePicker() {
   const t = useT();
-  const status = useSkyStore((s) => s.status);
-  const error = useSkyStore((s) => s.error);
-  const role = useSkyStore((s) => s.role);
-  const reconnect = useSkyStore((s) => s.reconnect);
-  if (status === 'connecting') return <div className="sky-status">{t.sky.connecting}</div>;
-  if (status === 'error') return <div className="sky-status is-error">{error === 'bad-code' ? t.sky.badCode : t.sky.networkError}</div>;
-  if (status === 'lost') {
-    return role === 'guest' ? (
-      <div className="sky-status is-error">
-        {t.sky.lost}
-        <button type="button" className="profile-primary" onClick={reconnect}>
-          {t.sky.reconnect}
+  const game = useSkyStore((s) => s.state.game);
+  const chooseGame = useSkyStore((s) => s.chooseGame);
+  return (
+    <div className="settings-segment sky-games">
+      {(['split', 'eclipse'] as const).map((g) => (
+        <button
+          key={g}
+          type="button"
+          className={`settings-option ${game === g ? 'is-on' : ''}`}
+          aria-pressed={game === g}
+          onClick={() => chooseGame(g)}
+        >
+          <span className="settings-option-name">
+            {GAME_ICONS[g]} {t.sky.games[g].name}
+          </span>
+          <span className="settings-option-hint">{t.sky.games[g].hint}</span>
         </button>
-      </div>
-    ) : (
-      <div className="sky-status is-error">{t.sky.waitingReconnect}</div>
-    );
-  }
-  return null;
+      ))}
+    </div>
+  );
 }
 
 function HostLobby() {
@@ -96,6 +102,7 @@ function HostLobby() {
       <StatusLine />
       {both && (
         <>
+          <GamePicker />
           <div className="sky-hint">{t.sky.placePhones}</div>
           <Players />
           <div className="sky-side-row">
@@ -110,6 +117,17 @@ function HostLobby() {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+function ChosenGame() {
+  const t = useT();
+  const game = useSkyStore((s) => s.state.game);
+  return (
+    <div className="sky-chosen-game">
+      {GAME_ICONS[game]} {t.sky.games[game].name}
+      <div className="sky-hint">{t.sky.games[game].hint}</div>
     </div>
   );
 }
@@ -138,7 +156,12 @@ function GuestLobby() {
   if (connected || status === 'lost') {
     return (
       <div className="sky-lobby">
-        {players.left && players.right && <Players />}
+        {players.left && players.right && (
+          <>
+            <ChosenGame />
+            <Players />
+          </>
+        )}
         <StatusLine />
         {connected && <div className="sky-status is-pulse">{t.sky.waitHost}</div>}
       </div>
@@ -173,7 +196,7 @@ function Lobby() {
       <div className="sky-title-row">
         <span aria-hidden>📱📱</span>
         <GradientText className="sky-title" colors={['#6ad7ff', '#c9a4de', '#ffd77a', '#6ad7ff']} animationSpeed={4}>
-          {t.sky.title}
+          {t.sky.lobbyTitle}
         </GradientText>
       </div>
       {role === null && (
@@ -215,32 +238,8 @@ function Chip({ label, rows, cols, mine }: { label: string; rows: number; cols: 
   );
 }
 
-function Choices({ choices, onPick, misses }: { choices: number[]; onPick: (v: number) => void; misses: number }) {
-  // one pick per state: unlocked again when the referee has judged it
-  const [picked, setPicked] = useState<number | null>(null);
-  return (
-    <motion.div className="choice-grid sky-choices" dir="ltr" animate={misses > 0 ? { x: [0, -8, 8, -4, 4, 0] } : undefined}>
-      {choices.map((c) => (
-        <button
-          key={c}
-          type="button"
-          className="choice-btn"
-          disabled={picked !== null}
-          onClick={() => {
-            setPicked(c);
-            onPick(c);
-          }}
-        >
-          {c}
-        </button>
-      ))}
-    </motion.div>
-  );
-}
-
-function Play() {
+function SplitPlay({ state }: { state: SkyState }) {
   const t = useT();
-  const state = useSkyStore((s) => s.state);
   const mySide = useSkyStore((s) => s.mySide);
   const role = useSkyStore((s) => s.role);
   const answer = useSkyStore((s) => s.answer);
@@ -395,13 +394,20 @@ function Summary() {
       </GradientText>
       <Players />
       <div className="sky-summary">
-        <span>✨ {t.sky.summaryLit(state.lit)}</span>
+        {state.game === 'split' ? (
+          <span>✨ {t.sky.summaryLit(state.lit)}</span>
+        ) : (
+          <span>🌑 {t.sky.eclipse.summaryEclipses(state.eclipses)}</span>
+        )}
         <span>💎 {t.sky.summaryPerfect(state.perfect)}</span>
       </div>
       {role === 'host' ? (
-        <button type="button" className="profile-primary" onClick={startGame}>
-          {t.sky.playAgain}
-        </button>
+        <>
+          <GamePicker />
+          <button type="button" className="profile-primary" onClick={startGame}>
+            {t.sky.playAgain}
+          </button>
+        </>
       ) : (
         <div className="sky-status">{t.sky.waitHost}</div>
       )}
@@ -415,12 +421,21 @@ function Summary() {
 export function SplitSky() {
   const t = useT();
   const open = useSkyStore((s) => s.open);
-  const phase = useSkyStore((s) => s.state.phase);
+  const state = useSkyStore((s) => s.state);
   skyNames.fallback = t.defaultPilotName;
   if (!open) return null;
+  const { phase } = state;
   return createPortal(
     <motion.div className="sky-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {phase === 'lobby' ? <Lobby /> : phase === 'summary' ? <Summary /> : <Play />}
+      {phase === 'lobby' ? (
+        <Lobby />
+      ) : phase === 'summary' ? (
+        <Summary />
+      ) : state.game === 'split' ? (
+        <SplitPlay state={state} />
+      ) : (
+        <EclipsePlay state={state} />
+      )}
     </motion.div>,
     document.body,
   );
