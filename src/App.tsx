@@ -30,6 +30,9 @@ import { StardustRun } from './components/stardust/StardustRun';
 import { DevPanel } from './components/DevPanel';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
+import { CrewFlight } from './components/crew/CrewFlight';
+import { CrewSetup } from './components/crew/CrewSetup';
+import { useCrewStore } from './game/useCrewStore';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
 import { isMilestone, streakTier } from './game/streak';
@@ -57,6 +60,8 @@ function App() {
   const answerMode = useSettings((s) => s.answerMode);
   const paused = usePause((s) => s.away);
   const academyOpen = useGameStore((s) => s.academyOpen);
+  // a crew flight replaces the solo game (its questions, tank and overlays)
+  const crewActive = useCrewStore((s) => s.active);
   const closeAcademy = useGameStore((s) => s.closeAcademy);
   // Until a pilot is picked/created the game itself stays hidden.
   const gateOpen = useProfileGateOpen();
@@ -221,32 +226,39 @@ function App() {
         <div className="hud-logo">
           🚀 <ShinyText text={t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
         </div>
-        <LevelBanner level={displayLevel} />
+        {!crewActive && <LevelBanner level={displayLevel} />}
         <div className="hud-topbar-right">
-          <PilotButton />
+          {/* solo pilot's own things: the crew bar shows both pilots instead */}
+          {!crewActive && <PilotButton />}
           <BadgesButton />
-          <div className="hud-stat-chip">
-            ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
-          </div>
+          {!crewActive && (
+            <div className="hud-stat-chip">
+              ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
+            </div>
+          )}
           <AudioControls />
-          <ReviewButton mastery={progress.mastery} onClick={requestHeatmap} />
+          {!crewActive && <ReviewButton mastery={progress.mastery} onClick={requestHeatmap} />}
           <SettingsMenu onReset={handleReset} />
           <AboutButton />
         </div>
       </header>
 
-      <FuelGauge
-        fuelPercent={progress.fuel}
-        bestStreak={progress.bestStreak}
-        mastery={progress.mastery}
-      />
+      {!crewActive && (
+        <FuelGauge
+          fuelPercent={progress.fuel}
+          bestStreak={progress.bestStreak}
+          mastery={progress.mastery}
+        />
+      )}
 
       <ProfileGate />
+      <CrewSetup />
+      {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen && <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />}
       <PauseController />
       {DEV_MODE && <DevPanel />}
 
-      {!gateOpen && (
+      {!gateOpen && !crewActive && (
         <>
           {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
             <MeteorShower key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />

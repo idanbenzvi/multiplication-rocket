@@ -43,6 +43,8 @@ export interface CrewQuestion {
 
 export interface CrewDocking {
   kind: 'docking';
+  /** game time it started: tells one round from the next */
+  startedAt: number;
   docking: Docking;
   /** tries used so far */
   tries: number;
@@ -120,7 +122,7 @@ interface CrewState {
   start: (members: [CrewMember, CrewMember]) => void;
   /** a question answered: returns whether it was right */
   answer: (value: number, elapsedMs: number) => boolean;
-  /** after the feedback: the next turn (a question or a docking round) */
+  /** after an answer's feedback: the next turn (a question or a docking round) */
   next: () => void;
   /** both picked a number in a docking round */
   dock: (a: number, b: number) => DockResult;
@@ -196,7 +198,7 @@ export const useCrewStore = create<CrewState>((set, get) => {
       // targets come through the pilot's (or first member's) hard facts
       const lead = members.find((m) => m.seat === 'pilot') ?? members[0];
       const docking = buildDocking(loadProgressFor(lead.profileId).mastery, withNavigator);
-      set({ turn: { kind: 'docking', docking, tries: 0, last: null }, feedback: null, sinceDock: 0 });
+      set({ turn: { kind: 'docking', startedAt: gameNow(), docking, tries: 0, last: null }, feedback: null, sinceDock: 0 });
       return;
     }
     set({
@@ -241,7 +243,10 @@ export const useCrewStore = create<CrewState>((set, get) => {
     },
 
     next: () => {
-      if (get().launching || get().summary) return;
+      // only from an answered question: a late timer after the launch
+      // overlay already moved on must not skip a turn
+      const { feedback, launching, summary } = get();
+      if (!feedback || launching || summary) return;
       advance();
     },
 
