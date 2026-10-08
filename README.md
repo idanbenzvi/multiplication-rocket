@@ -138,6 +138,30 @@ parent dashboard. A full tank launches the crew. Each pair of pilots has its own
 separate from their solo levels. **Land** ends the flight with a summary for both, then it's back to solo
 play. Design notes: [`docs/plans/2026-10-08-crew-flight.md`](docs/plans/2026-10-08-crew-flight.md).
 
+## Split Sky 📱📱 (two phones)
+
+Two children, two phones, **side by side**. One sky of stars spans both screens, split at the
+seam where the phones touch. Each child counts their own half, then together they find the whole
+sky: `6 × 8 = 6 × 3 + 6 × 5`. Breaking a hard fact into easier pieces is the same idea as the
+strategy hints, but here each child holds one of the pieces.
+
+- **Connect:** on one phone, **Split Sky → Host a game** shows a 4-digit code. On the other,
+  **Join a game** and type it. Each phone needs one pilot. The host says which side its phone is on.
+- **A round:** each phone shows only its own half (say "6 rows of 3"), and each child answers
+  privately. Then both phones show both halves (`6 × 3 = 18`, `6 × 5 = 30`) and ask for the whole,
+  `6 × 8`. A miss on the whole gives the hint "18 + 30". When both are done, the constellation
+  lights with a glow that starts at the seam and runs out across both screens.
+- When the sky is wider than 5 columns, one half is a **5** (`7 × 8 = 7 × 5 + 7 × 3`), the classic
+  way to split a hard fact.
+- There are 5 skies a game. Each phone records its own pilot's answers in its own practice map.
+- **How it connects:** the free [PeerJS](https://peerjs.com) cloud server introduces the phones
+  using the code. After that, the game goes directly phone to phone (WebRTC), and names and
+  answers never touch the server. A phone that drops can rejoin with the same code and carries on
+  where it left off. Both phones need the internet to connect. Some guest or mesh Wi-Fi networks
+  keep phones apart; the game says so if it can't connect.
+
+Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split-sky.md).
+
 ## Parent dashboard 👪
 
 **⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A
