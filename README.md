@@ -191,8 +191,17 @@ fight it together, each on their own phone.
 - **Help each other:** a question you miss is sent to a random teammate as a **🆘 Help Ari!**
   card. When they solve it, you see their answer ("help from Tal: 7 × 8 = 56"), and the same
   fact comes back to you two questions later to try again.
+- **Everyone sees the team:** each pilot has a colour, and every right answer on any phone is a
+  beam in that colour flying into the monster on *all* the phones. The monster winces when hit,
+  chomps and gloats ("YUM!") when fed, sweats and panics when it's nearly beaten, and bursts
+  into a cloud of letters. Whoever is helping someone shows a 🆘 on their chip, and everyone sees
+  "Noa helped Ari".
+- **Team combo:** right answers in a row by *anyone* build a shared combo; every 5 sends a
+  shockwave through the monster.
 - **Three monsters**, each tougher: more hit points (6, then 7 per player), bigger tables (up to
-  6, 8, then 10), more rays and faster flicker. The summary shows each pilot's hits and helps.
+  6, 8, then 10), more rays and faster flicker.
+- **The summary** gives every pilot an award (🤝 Super helper first, then 💥 Monster smasher,
+  🎯 Sharp eye, ⭐ Brave heart) and lists the facts the team "learned together".
 - A phone that drops or reloads can rejoin with the same code and keeps its seat and score.
 
 Design notes: [`docs/plans/2026-10-10-monster-sun.md`](docs/plans/2026-10-10-monster-sun.md).

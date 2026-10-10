@@ -28,6 +28,26 @@
   border-color: rgba(255, 157, 74, 0.45);
   background: rgba(42, 32, 72, 0.92);
 }
+.sun-lurk {
+  display: flex;
+  justify-content: center;
+  margin: -0.4rem 0 -0.8rem;
+}
+.sun-lurk .sun-monster {
+  width: min(42vw, 170px);
+}
+.sun-go:not(:disabled) {
+  background: linear-gradient(90deg, #ffd77a, #ff9d4a, #ff5c8a);
+  color: #2a1505;
+  font-weight: 800;
+  box-shadow: 0 0 22px rgba(255, 157, 74, 0.55);
+  animation: sun-go 1.6s ease-in-out infinite;
+}
+@keyframes sun-go {
+  50% {
+    box-shadow: 0 0 34px rgba(255, 157, 74, 0.85);
+  }
+}
 
 /* ---------- pilots ---------- */
 
@@ -38,23 +58,49 @@
   gap: 0.4rem;
 }
 .sun-pilot {
+  --pilot: #ffffff;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.3rem;
   max-width: 100%;
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--pilot) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--pilot) 70%, transparent);
   font-size: 0.9rem;
 }
 .sun-pilot.is-me {
-  border-color: #ffd77a;
-  background: rgba(255, 215, 122, 0.12);
+  border-color: var(--pilot);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--pilot) 55%, transparent);
 }
 .sun-pilot.is-offline {
-  opacity: 0.4;
   border-style: dashed;
+}
+.sun-pilot-sos {
+  position: absolute;
+  top: -0.7rem;
+  inset-inline-end: -0.4rem;
+  font-size: 0.85rem;
+  animation: sun-sos 0.9s ease-in-out infinite;
+}
+@keyframes sun-sos {
+  50% {
+    transform: scale(1.3) rotate(-8deg);
+  }
+}
+.sun-pilot-pop {
+  position: absolute;
+  top: -0.4rem;
+  left: 50%;
+  margin-left: -0.8rem;
+  width: 1.6rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--pilot);
+  text-shadow: 0 0 8px var(--pilot);
+  pointer-events: none;
 }
 .sun-pilot-avatar {
   font-size: 1.15rem;
@@ -68,8 +114,9 @@
   white-space: nowrap;
 }
 .sun-pilot-hits {
-  color: #ffd77a;
-  font-weight: 700;
+  display: inline-block;
+  color: var(--pilot);
+  font-weight: 800;
 }
 
 /* ---------- the fight ---------- */
@@ -109,13 +156,33 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 157, 74, 0.5);
 }
-.sun-hp-fill {
+.sun-hp-fill,
+.sun-hp-lag {
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
+}
+.sun-hp-fill {
   background: linear-gradient(90deg, #ff5c8a, #ff9d4a, #ffd77a);
   box-shadow: 0 0 14px rgba(255, 157, 74, 0.6);
-  transition: width 0.35s ease;
+  /* drops when the beam lands */
+  transition: width 0.25s ease 0.36s;
+}
+/* the chunk just knocked off lingers, then drains away */
+.sun-hp-lag {
+  background: rgba(255, 255, 255, 0.75);
+  transition: width 0.6s ease 0.9s;
+}
+.sun-hp.is-low {
+  animation: sun-low 0.8s ease-in-out infinite;
+}
+.sun-hp.is-low .sun-hp-fill {
+  background: linear-gradient(90deg, #ff2d55, #ff5c8a);
+}
+@keyframes sun-low {
+  50% {
+    box-shadow: 0 0 18px rgba(255, 45, 85, 0.8);
+  }
 }
 .sun-hp-text {
   position: relative;
@@ -139,25 +206,105 @@
   width: min(84vw, 42dvh, 380px);
   aspect-ratio: 1;
 }
-.sun-tip {
-  position: absolute;
-  top: 0.3rem;
-  inset-inline: 0;
-  margin-inline: auto;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0.45rem 0.9rem;
-  border-radius: 14px;
-  background: rgba(30, 60, 50, 0.92);
-  border: 1px solid #7dff9a;
-  box-shadow: 0 0 18px rgba(125, 255, 154, 0.35);
-  font-size: 0.95rem;
-  text-align: center;
-}
-.sun-tip-math {
+.sun-math {
   font-family: var(--font-display);
   font-weight: 700;
   color: #ffd77a;
+  white-space: nowrap;
+}
+.sun-toasts {
+  position: absolute;
+  top: 0.2rem;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+.sun-toast {
+  max-width: 100%;
+  padding: 0.45rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+.sun-toast.is-ask {
+  background: rgba(90, 20, 50, 0.92);
+  border: 2px solid #ff5c8a;
+  box-shadow: 0 0 22px rgba(255, 92, 138, 0.55);
+}
+.sun-toast.is-tip {
+  background: rgba(20, 70, 50, 0.92);
+  border: 2px solid #7dff9a;
+  box-shadow: 0 0 22px rgba(125, 255, 154, 0.45);
+}
+.sun-toast.is-team {
+  background: rgba(40, 30, 70, 0.88);
+  border: 1px solid rgba(255, 215, 122, 0.6);
+  font-size: 0.85rem;
+}
+.sun-combo {
+  position: absolute;
+  bottom: 0.4rem;
+  inset-inline-end: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 14px;
+  background: rgba(60, 25, 10, 0.75);
+  border: 1px solid rgba(255, 157, 74, 0.7);
+  box-shadow: 0 0 16px rgba(255, 157, 74, 0.4);
+}
+.sun-combo-n {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffd77a;
+}
+.sun-combo-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffc99a;
+}
+.sun-banner {
+  position: absolute;
+  top: 42%;
+  inset-inline: 0;
+  z-index: 3;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 92%;
+  padding: 0.5rem 1.1rem;
+  border-radius: 16px;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+}
+.sun-banner.is-combo {
+  color: #2a1505;
+  background: linear-gradient(90deg, #ffd77a, #ff9d4a);
+  box-shadow: 0 0 40px rgba(255, 190, 90, 0.9);
+}
+.sun-banner.is-warning {
+  color: #fff;
+  background: rgba(120, 10, 30, 0.85);
+  border: 2px solid #ff2d55;
+  box-shadow: 0 0 30px rgba(255, 45, 85, 0.7);
+  animation: sun-warn 0.45s steps(2) infinite;
+}
+@keyframes sun-warn {
+  50% {
+    border-color: #ffd77a;
+  }
 }
 .sun-card {
   gap: 0.5rem;
@@ -170,18 +317,38 @@
   font-weight: 700;
 }
 .sun-card-tag.is-help {
-  background: rgba(255, 92, 138, 0.18);
-  border: 1px solid #ff5c8a;
+  background: rgba(255, 92, 138, 0.22);
+  border: 2px solid #ff5c8a;
+  box-shadow: 0 0 14px rgba(255, 92, 138, 0.5);
 }
 .sun-card-tag.is-retry {
-  background: rgba(125, 255, 154, 0.14);
-  border: 1px solid #7dff9a;
+  background: rgba(125, 255, 154, 0.16);
+  border: 2px solid #7dff9a;
+}
+/* a teammate's question: a rescue mission, it glows */
+.sun-card.is-rescue {
+  border: 2px solid #ff5c8a;
+  box-shadow: inset 0 0 30px rgba(255, 92, 138, 0.25);
+  animation: sun-rescue 1.4s ease-in-out infinite;
+}
+@keyframes sun-rescue {
+  50% {
+    box-shadow: inset 0 0 44px rgba(255, 92, 138, 0.45);
+  }
+}
+.sun-card.is-retry {
+  border: 2px solid #7dff9a;
+}
+.sun-answer {
+  color: #7dff9a;
+  text-shadow: 0 0 12px rgba(125, 255, 154, 0.7);
 }
 .sun-feedback {
   min-height: 1.5rem;
   text-align: center;
 }
 .sun-feedback .is-hit {
+  display: inline-block;
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
@@ -194,20 +361,78 @@
   color: #c8bcd9;
 }
 
-/* ---------- summary ---------- */
+/* ---------- victory and summary ---------- */
 
+.sun-victory {
+  border-color: rgba(255, 215, 122, 0.7);
+  box-shadow: 0 0 30px rgba(255, 215, 122, 0.3);
+}
+.sun-team-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #ffd77a;
+}
 .sun-score {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 .sun-score-row {
+  --pilot: #ffffff;
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.7rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 0.9rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pilot) 10%, rgba(255, 255, 255, 0.04));
+  border: 2px solid color-mix(in srgb, var(--pilot) 55%, transparent);
+}
+.sun-score-row.is-me {
+  box-shadow: 0 0 16px color-mix(in srgb, var(--pilot) 45%, transparent);
+}
+.sun-score-avatar {
+  font-size: 1.8rem;
+}
+.sun-score-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sun-award {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pilot);
+}
+.sun-score-nums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.8rem;
+  color: #e2d5ef;
+  white-space: nowrap;
+}
+.sun-learned {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: center;
+}
+.sun-learned-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.sun-learned-chip {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(125, 255, 154, 0.1);
+  border: 1px solid rgba(125, 255, 154, 0.45);
+  font-size: 0.85rem;
 }

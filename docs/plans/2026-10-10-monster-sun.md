@@ -32,6 +32,22 @@ you practise it right after a friend showed you.
 - **Defeated:** the monster bursts into flying characters. The host taps "Next monster".
   After the third: a summary with each player's hits and helps.
 
+## Making the teamwork visible
+
+The referee keeps a short **event log** (hit, miss, sent, helped, each with who and to whom), and
+every phone plays each event once, so everyone sees everyone's play:
+
+- Each pilot has a colour (by seat). A hit is a beam in that colour arcing from that pilot's
+  spot along the bottom into the monster; the characters it knocks off go when it *lands*.
+- The monster has a face: it glares and follows the beams, winces (> <) when hit, chomps and
+  gloats (^ ^, "YUM!") when fed, sweats and panics below a quarter, and assembles itself out of
+  flying letters ("⚠️ Scramblax is coming!") and bursts into a lingering cloud of them.
+- **Team combo:** right answers in a row by anyone; every 5 → a shockwave and a banner.
+- Help is visible: "📨 Sent to Tal", a 🆘 on the helper's chip, "Ari needs your help!" for the
+  helper, a pink rescue card, "🤝 You helped Ari!", and "Noa helped Ari" on everyone else's phone.
+- The warp starfield surges with hits, combos and the burst.
+- The summary gives every pilot an award (helper first) and lists the facts learned together.
+
 ## Architecture
 
 - `src/game/sun.ts`: pure, tested referee `sunReducer(state, action, rand)`: players (by a

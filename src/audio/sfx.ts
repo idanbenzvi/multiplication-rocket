@@ -200,4 +200,40 @@ export const sfx = {
     tone(c, 110, t, 1.4, { type: 'sawtooth', gain: 0.05, glideTo: 880, attack: 0.2 });
     [0, 2, 3, 5].forEach((n, i) => tone(c, noteFreq(n + 3), t + 0.9 + i * 0.03, 1.2, { gain: 0.14 }));
   },
+
+  /** Monster Sun: a teammate's beam hits the monster. Each pilot's beam has its own pitch. */
+  zap(slot: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, noteFreq(7 + (slot % 6)), t, 0.18, { type: 'square', gain: 0.05, glideTo: noteFreq(2 + (slot % 6)) });
+    noiseBurst(c, t + 0.12, 0.25, 2400, 400, 0.1);
+  },
+
+  /** Monster Sun: a wrong answer feeds the monster, and it chuckles. */
+  monsterLaugh() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    for (let i = 0; i < 3; i++) tone(c, 180 - i * 22, t + i * 0.13, 0.12, { type: 'sawtooth', gain: 0.05, glideTo: 140 - i * 20 });
+  },
+
+  /** Monster Sun: the monster bursts into letters. */
+  monsterBurst() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 1.2, 3000, 80, 0.3);
+    tone(c, 70, t, 0.9, { type: 'triangle', gain: 0.25, glideTo: 30 });
+    [0, 2, 4, 7, 9, 12].forEach((n, i) => tone(c, noteFreq(n + 2), t + 0.45 + i * 0.07, 0.8, { gain: 0.14 }));
+  },
+
+  /** Monster Sun: a new, tougher monster assembles out of the dark. */
+  monsterRise() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    tone(c, 55, t, 1.6, { type: 'sawtooth', gain: 0.05, glideTo: 110, attack: 0.4 });
+    noiseBurst(c, t, 1.4, 120, 900, 0.08);
+  },
 };

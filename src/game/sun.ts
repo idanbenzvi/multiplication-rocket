@@ -13,6 +13,9 @@ export const HITS_PER_PLAYER = 5;
 const MAX_HELP_CARDS = 3;
 /** a retry comes back after this many more of the player's own answers */
 const RETRY_AFTER = 2;
+/** events kept: plenty for a phone that missed a few states */
+const MAX_EVENTS = 24;
+const MAX_RESCUES = 12;
 
 export interface SunPlayerInfo {
   /** stable per phone tab, so a reloaded phone gets its seat back */
@@ -52,6 +55,22 @@ export interface SunPlayer extends SunPlayerInfo {
   tip: SunTip | null;
 }
 
+/**
+ * What just happened, for every phone to animate: whose beam hit the
+ * monster, who fed it, whose miss went to whom, who helped whom. Phones
+ * play each event once (by id), so none is lost when several arrive at once.
+ */
+export type SunEvent =
+  | { id: number; kind: 'hit' | 'miss'; by: string }
+  | { id: number; kind: 'sent' | 'helped'; by: string; to: string; fact: string };
+
+/** a fact one pilot solved for another: "learned together" */
+export interface SunRescue {
+  fact: string;
+  by: string;
+  to: string;
+}
+
 export interface SunState {
   phase: 'lobby' | 'fight' | 'defeated' | 'summary';
   players: SunPlayer[];
@@ -59,10 +78,15 @@ export interface SunState {
   monster: number;
   hp: number;
   maxHp: number;
-  /** running counts, so every phone can animate each blow and heal */
+  /** the team's right answers this game */
   blows: number;
-  heals: number;
+  /** right answers in a row, by anyone on the team */
+  combo: number;
+  bestCombo: number;
   defeated: number;
+  /** the latest events, oldest first */
+  events: SunEvent[];
+  rescues: SunRescue[];
   nextId: number;
 }
 
@@ -93,7 +117,7 @@ export function dueCard(p: SunPlayer): SunCard | undefined {
 }
 
 export function initialSunState(): SunState {
-  return { phase: 'lobby', players: [], monster: 0, hp: 0, maxHp: 0, blows: 0, heals: 0, defeated: 0, nextId: 1 };
+  return { phase: 'lobby', players: [], monster: 0, hp: 0, maxHp: 0, blows: 0, combo: 0, bestCombo: 0, defeated: 0, events: [], rescues: [], nextId: 1 };
 }
 
 const fresh = (info: SunPlayerInfo): SunPlayer => ({
@@ -159,6 +183,8 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
         inbox: card ? p.inbox.filter((c) => c !== card) : p.inbox,
       }));
 
+      const events: SunEvent[] = [{ id: nextId++, kind: correct ? 'hit' : 'miss', by: me.id }];
+      let { rescues } = s;
       if (correct && card?.kind === 'help') {
         // the one who missed sees who solved it, and gets the fact back soon
         const tip: SunTip = { id: nextId++, from: me.id, fact: card.fact };
@@ -168,6 +194,8 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
             ? { ...p, tip, inbox: [...p.inbox, { id: retryId, fact: card.fact, from: me.id, kind: 'retry', after: p.answered + RETRY_AFTER }] }
             : p,
         );
+        events.push({ id: nextId++, kind: 'helped', by: me.id, to: card.from, fact: card.fact });
+        rescues = [...rescues, { fact: card.fact, by: me.id, to: card.from }].slice(-MAX_RESCUES);
       } else if (!correct && !card) {
         // my own miss goes to a teammate (not passed on again if they miss it too)
         const mates = players.filter((p) => p.online && p.id !== me.id && p.inbox.filter((c) => c.kind === 'help').length < MAX_HELP_CARDS);
@@ -175,18 +203,23 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
           const to = mates[Math.min(mates.length - 1, Math.floor(rand() * mates.length))];
           const help: SunCard = { id: nextId++, fact: action.fact, from: me.id, kind: 'help', after: 0 };
           players = players.map((p) => (p.id === to.id ? { ...p, inbox: [...p.inbox, help] } : p));
+          events.push({ id: nextId++, kind: 'sent', by: me.id, to: to.id, fact: action.fact });
         }
       }
 
       const hp = correct ? s.hp - 1 : Math.min(s.maxHp, s.hp + 1);
       const beaten = hp <= 0;
+      const combo = correct ? s.combo + 1 : 0;
       return {
         ...s,
         players,
         nextId,
         hp: Math.max(0, hp),
         blows: s.blows + (correct ? 1 : 0),
-        heals: s.heals + (correct || hp === s.hp ? 0 : 1),
+        combo,
+        bestCombo: Math.max(s.bestCombo, combo),
+        events: [...s.events, ...events].slice(-MAX_EVENTS),
+        rescues,
         phase: beaten ? 'defeated' : 'fight',
         defeated: s.defeated + (beaten ? 1 : 0),
       };
@@ -200,4 +233,30 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
       return { ...s, phase: 'fight', monster, hp, maxHp: hp };
     }
   }
+}
+
+// ---------- the summary ----------
+
+export type SunAward = 'helper' | 'smasher' | 'sharp' | 'brave';
+
+/**
+ * One award for every pilot, so everyone leaves with something: the best
+ * helper, the most hits, the sharpest aim (fewest misses for their answers),
+ * and "brave pilot" for the rest. Helping comes first: it's the point.
+ */
+export function sunAwards(players: SunPlayer[]): Record<string, SunAward> {
+  const out: Record<string, SunAward> = {};
+  const free = () => players.filter((p) => !(p.id in out) && p.answered > 0);
+  const best = (score: (p: SunPlayer) => number, min = 1) => {
+    const ranked = free().filter((p) => score(p) >= min);
+    return ranked.reduce<SunPlayer | null>((a, p) => (!a || score(p) > score(a) ? p : a), null);
+  };
+  const helper = best((p) => p.helped);
+  if (helper) out[helper.id] = 'helper';
+  const smasher = best((p) => p.hits);
+  if (smasher) out[smasher.id] = 'smasher';
+  const sharp = best((p) => (p.answered >= 3 ? p.hits / p.answered : 0), 0.6);
+  if (sharp) out[sharp.id] = 'sharp';
+  for (const p of players) out[p.id] ??= 'brave';
+  return out;
 }

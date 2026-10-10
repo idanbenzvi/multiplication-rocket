@@ -6,6 +6,7 @@ import {
   maxHpFor,
   SUN_MONSTERS,
   sunFactorMax,
+  sunAwards,
   sunReducer,
   type SunAction,
   type SunState,
@@ -59,10 +60,10 @@ describe('lobby', () => {
 describe('the fight', () => {
   it('a right answer is a blow, a wrong one heals the monster (never past full)', () => {
     let s = run(fighting(), right('n'), right('n'));
-    expect(s).toMatchObject({ hp: 8, blows: 2 });
+    expect(s).toMatchObject({ hp: 8, blows: 2, combo: 2 });
     expect(player(s, 'n')).toMatchObject({ hits: 2, answered: 2 });
     s = run(s, wrong('a'));
-    expect(s).toMatchObject({ hp: 9, heals: 1 });
+    expect(s).toMatchObject({ hp: 9, combo: 0, bestCombo: 2 });
     s = run(fighting(), wrong('a'));
     expect(s.hp).toBe(10);
   });
@@ -145,6 +146,43 @@ describe('the fight', () => {
   it('a player joining mid-fight makes the monster stronger by their share', () => {
     const s = run(fighting(), right('n'), { type: 'join', player: tal });
     expect(s).toMatchObject({ hp: 14, maxHp: 15 });
+  });
+});
+
+describe('events', () => {
+  it('tells every phone who hit, who missed, where the miss went and who helped', () => {
+    let s = run(fighting(), right('n'), wrong('a', '7x8'));
+    const card = player(s, 'n').inbox[0];
+    s = run(s, right('n', '7x8', card.id));
+    expect(s.events.map((e) => e.kind)).toEqual(['hit', 'miss', 'sent', 'hit', 'helped']);
+    expect(s.events[2]).toMatchObject({ by: 'a', to: 'n', fact: '7x8' });
+    expect(s.events[4]).toMatchObject({ by: 'n', to: 'a', fact: '7x8' });
+    expect(s.rescues).toEqual([{ fact: '7x8', by: 'n', to: 'a' }]);
+    const ids = s.events.map((e) => e.id);
+    expect([...ids].sort((x, y) => x - y)).toEqual(ids);
+  });
+
+  it('keeps only the latest events', () => {
+    let s = fighting([noa, ari, tal]);
+    for (let i = 0; i < 40; i++) s = run(s, right('n'));
+    expect(s.events.length).toBeLessThanOrEqual(24);
+    expect(s.events[s.events.length - 1].kind).toBe('hit');
+  });
+});
+
+describe('sunAwards', () => {
+  it('gives every pilot one award, helping first', () => {
+    let s = fighting([noa, ari, tal]);
+    s = run(s, wrong('a', '7x8'));
+    const card = player(s, 'n').inbox[0];
+    s = run(s, right('n', '7x8', card.id), right('t'), right('t'), right('t'), right('a'), right('a'));
+    const awards = sunAwards(s.players);
+    expect(awards).toEqual({ n: 'helper', t: 'smasher', a: 'sharp' });
+  });
+
+  it('a pilot who never answered is still a brave pilot', () => {
+    const s = run(fighting([noa, ari]), right('n'));
+    expect(sunAwards(s.players)).toEqual({ n: 'smasher', a: 'brave' });
   });
 });
 
