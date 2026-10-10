@@ -1,21 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { skyNames, useSkyStore } from '../../game/useSkyStore';
 import { MAX_MISSES, type Side, type SkyStage, type SkyState } from '../../game/splitSky';
 import type { DuoGame } from '../../game/duo';
 import { EclipsePlay } from './EclipsePlay';
-import { Choices, StatusLine } from './parts';
+import { Choices, CodeDisplay, CodeEntry, StatusLine } from './parts';
 import { distractors } from '../../game/distractors';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
-import { NumPad } from '../NumPad';
 import { SkyGrid } from './SkyGrid';
 import GradientText from '../reactbits/GradientText';
 import './sky.css';
 
-const CODE_LENGTH = 4;
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
 function shuffled<T>(items: T[]): T[] {
@@ -90,11 +88,7 @@ function HostLobby() {
       {code && (
         <>
           <div className="settings-label">{t.sky.yourCode}</div>
-          <div className="sky-code" dir="ltr">
-            {code.split('').map((d, i) => (
-              <span key={i}>{d}</span>
-            ))}
-          </div>
+          <CodeDisplay code={code} />
           {!both && <div className="sky-hint">{t.sky.tellCode}</div>}
         </>
       )}
@@ -137,23 +131,7 @@ function GuestLobby() {
   const status = useSkyStore((s) => s.status);
   const join = useSkyStore((s) => s.join);
   const players = useSkyStore((s) => s.state.players);
-  const [code, setCode] = useState('');
-  const connected = status === 'connected';
-  const busy = status === 'connecting';
-
-  const typeDigit = (d: string) => setCode((c) => (c.length < CODE_LENGTH ? c + d : c));
-  useEffect(() => {
-    if (connected) return;
-    const handler = (e: KeyboardEvent) => {
-      if (/^\d$/.test(e.key)) setCode((c) => (c.length < CODE_LENGTH ? c + e.key : c));
-      else if (e.key === 'Backspace') setCode((c) => c.slice(0, -1));
-      else if (e.key === 'Enter' && code.length === CODE_LENGTH) join(code);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [connected, code, join]);
-
-  if (connected || status === 'lost') {
+  if (status === 'connected' || status === 'lost') {
     return (
       <div className="sky-lobby">
         {players.left && players.right && (
@@ -163,24 +141,14 @@ function GuestLobby() {
           </>
         )}
         <StatusLine />
-        {connected && <div className="sky-status is-pulse">{t.sky.waitHost}</div>}
+        {status === 'connected' && <div className="sky-status is-pulse">{t.sky.waitHost}</div>}
       </div>
     );
   }
   return (
-    <div className="sky-lobby">
-      <div className="sky-hint">{t.sky.enterCode}</div>
-      <div className="sky-code is-entry" dir="ltr" aria-live="polite">
-        {Array.from({ length: CODE_LENGTH }, (_, i) => (
-          <span key={i}>{code[i] ?? ''}</span>
-        ))}
-      </div>
+    <CodeEntry hint={t.sky.enterCode} busy={status === 'connecting'} onJoin={join}>
       <StatusLine />
-      <NumPad onDigit={typeDigit} onBackspace={() => setCode((c) => c.slice(0, -1))} disabled={busy} />
-      <button type="button" className="profile-primary" disabled={code.length < CODE_LENGTH || busy} onClick={() => join(code)}>
-        {t.sky.joinButton}
-      </button>
-    </div>
+    </CodeEntry>
   );
 }
 

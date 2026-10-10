@@ -5,6 +5,7 @@ import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Pr
 import { useGameStore } from '../game/useGameStore';
 import { useCrewStore } from '../game/useCrewStore';
 import { useSkyStore } from '../game/useSkyStore';
+import { useSunStore } from '../game/useSunStore';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 
@@ -195,6 +196,22 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
             <span className="pilot-card-avatar">📱📱</span>
             <span className="pilot-card-name">{t.sky.card}</span>
             <span className="pilot-card-stats">{t.sky.cardHint}</span>
+          </button>
+        )}
+        {profiles.length >= 1 && (
+          <button
+            type="button"
+            className="pilot-card pilot-card-new pilot-card-crew"
+            onClick={() => {
+              // the active pilot plays on this phone
+              select(activeId ?? profiles[0].id);
+              onPicked();
+              useSunStore.getState().openSun();
+            }}
+          >
+            <span className="pilot-card-avatar">👾</span>
+            <span className="pilot-card-name">{t.sun.card}</span>
+            <span className="pilot-card-stats">{t.sun.cardHint}</span>
           </button>
         )}
       </div>

@@ -6,7 +6,8 @@ import type { DataConnection } from 'peerjs';
 // directly between them over a WebRTC data channel. PeerJS is loaded on
 // demand, so solo play never downloads it.
 //
-// One host, one guest. The host's peer id is a short code a child can
+// One host and one guest (hostLink), or one host and several guests
+// (hostGroup). The host's peer id is a short code a child can
 // type; a code someone else is using is simply re-rolled.
 
 export type LinkStatus = 'connecting' | 'waiting' | 'connected' | 'lost' | 'error';
@@ -25,7 +26,9 @@ export interface Link {
   close: () => void;
 }
 
-const ID_PREFIX = 'mult-rocket-sky-';
+/** each kind of game has its own codes, so a code can't join the wrong game */
+export type LinkGame = 'sky' | 'sun';
+const idPrefix = (game: LinkGame) => `mult-rocket-${game}-`;
 const CODE_TRIES = 6;
 /** giving up on reaching the other phone (e.g. the Wi-Fi keeps phones apart) */
 const CONNECT_TIMEOUT_MS = 15000;
@@ -72,29 +75,35 @@ function wire(conn: DataConnection, handlers: LinkHandlers, onClose: () => void)
   conn.on('error', onClose);
 }
 
-/** host a game: resolves with the code to show once the server has given us one */
-export async function hostLink(handlers: LinkHandlers): Promise<{ code: string; link: Link }> {
-  handlers.onStatus('connecting');
+// Opens the host's peer under a free code (re-rolled if someone else has it).
+async function openHost(game: LinkGame, onStatus: LinkHandlers['onStatus']): Promise<{ code: string; peer: Peer }> {
+  onStatus('connecting');
   const PeerClass = await loadPeer();
   let peer: Peer | null = null;
   let code = '';
   for (let i = 0; i < CODE_TRIES && !peer; i++) {
     code = randomCode();
     try {
-      peer = await openPeer(PeerClass, ID_PREFIX + code);
+      peer = await openPeer(PeerClass, idPrefix(game) + code);
     } catch (err) {
       if (errorType(err) !== 'unavailable-id') {
-        handlers.onStatus('error', 'network');
+        onStatus('error', 'network');
         throw err;
       }
     }
   }
   if (!peer) {
-    handlers.onStatus('error', 'network');
+    onStatus('error', 'network');
     throw new Error('no free code');
   }
   stayReachable(peer);
-  handlers.onStatus('waiting');
+  onStatus('waiting');
+  return { code, peer };
+}
+
+/** host a game: resolves with the code to show once the server has given us one */
+export async function hostLink(handlers: LinkHandlers): Promise<{ code: string; link: Link }> {
+  const { code, peer } = await openHost('sky', handlers.onStatus);
 
   let guest: DataConnection | null = null;
   peer.on('connection', (conn) => {
@@ -116,20 +125,68 @@ export async function hostLink(handlers: LinkHandlers): Promise<{ code: string; 
     });
   });
 
-  const live = peer;
   return {
     code,
     link: {
       send: (msg) => {
         if (guest?.open) guest.send(msg);
       },
-      close: () => live.destroy(),
+      close: () => peer.destroy(),
+    },
+  };
+}
+
+export interface GroupHandlers {
+  onStatus: LinkHandlers['onStatus'];
+  /** a message from one of the phones, by its connection */
+  onMessage: (from: string, msg: unknown) => void;
+  onJoin: (conn: string) => void;
+  onLeave: (conn: string) => void;
+}
+
+export interface Group {
+  send: (conn: string, msg: unknown) => void;
+  broadcast: (msg: unknown) => void;
+  close: () => void;
+}
+
+/** host a game for several phones: each guest is told apart by its connection id */
+export async function hostGroup(game: LinkGame, handlers: GroupHandlers): Promise<{ code: string; group: Group }> {
+  const { code, peer } = await openHost(game, handlers.onStatus);
+  const guests = new Map<string, DataConnection>();
+
+  peer.on('connection', (conn) => {
+    const id = conn.connectionId;
+    conn.on('open', () => {
+      guests.set(id, conn);
+      handlers.onJoin(id);
+    });
+    conn.on('data', (data) => handlers.onMessage(id, data));
+    const gone = () => {
+      if (!guests.delete(id)) return;
+      handlers.onLeave(id);
+    };
+    conn.on('close', gone);
+    conn.on('error', gone);
+  });
+
+  return {
+    code,
+    group: {
+      send: (id, msg) => {
+        const conn = guests.get(id);
+        if (conn?.open) conn.send(msg);
+      },
+      broadcast: (msg) => {
+        for (const conn of guests.values()) if (conn.open) conn.send(msg);
+      },
+      close: () => peer.destroy(),
     },
   };
 }
 
 /** join the game hosted under a code */
-export async function joinLink(code: string, handlers: LinkHandlers): Promise<Link> {
+export async function joinLink(code: string, handlers: LinkHandlers, game: LinkGame = 'sky'): Promise<Link> {
   handlers.onStatus('connecting');
   const PeerClass = await loadPeer();
   let peer: Peer;
@@ -140,7 +197,7 @@ export async function joinLink(code: string, handlers: LinkHandlers): Promise<Li
     throw err;
   }
   stayReachable(peer);
-  const conn = peer.connect(ID_PREFIX + code, { reliable: true, serialization: 'json' });
+  const conn = peer.connect(idPrefix(game) + code, { reliable: true, serialization: 'json' });
   let settled = false;
   const timer = window.setTimeout(() => {
     if (settled) return;

@@ -2,11 +2,10 @@ import { create } from 'zustand';
 import { buildSkyRounds, expectedAnswer, type Side, type SkyPlayer, type SkyStage } from './splitSky';
 import { buildEclipseRounds } from './eclipse';
 import { duoReducer, initialDuoState, type DuoAction, type DuoGame, type DuoState } from './duo';
-import { recordAttempt } from './facts';
+import { recordOwn } from './ownAnswers';
 import { hostLink, joinLink, type Link, type LinkError, type LinkStatus } from '../net/peerLink';
 import { activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
-import { loadProgressFor, saveProgressFor } from '../storage/progressStore';
-import { appendToLog } from '../stats/answerLog';
+import { loadProgressFor } from '../storage/progressStore';
 import { pauseGame, resumeGame } from './gameClock';
 import { useGameStore } from './useGameStore';
 
@@ -74,18 +73,6 @@ function isAnswer(a: DuoAction): a is Extract<DuoAction, { side: Side; value: nu
 
 function factKey(a: number, b: number) {
   return `${Math.min(a, b)}x${Math.max(a, b)}`;
-}
-
-function recordOwn(key: string, correct: boolean, source: 'sky' | 'eclipse') {
-  const id = useProfiles.getState().activeId;
-  if (!id) return;
-  const progress = loadProgressFor(id);
-  saveProgressFor(id, {
-    ...progress,
-    mastery: recordAttempt(progress.mastery, key, correct),
-    totalCorrectAnswers: progress.totalCorrectAnswers + (correct ? 1 : 0),
-  });
-  appendToLog(id, [{ fact: key, correct, ms: null, source }]);
 }
 
 // Set by SplitSky so names fall back to the translated "Pilot".

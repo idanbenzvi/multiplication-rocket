@@ -177,6 +177,26 @@ has **one moon**, going round every 3 ticks on one phone and every 4 on the othe
 
 Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split-sky.md).
 
+## Monster Sun 👾 (2–6 phones, co-op)
+
+A monster sun made of flickering characters is swallowing the stars, and up to six children
+fight it together, each on their own phone.
+
+- **Connect:** **👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
+  **Join a fight** and types it. At least 2 phones are needed.
+- **Fight:** every phone drills its own questions (4 choices, weighted by that pilot's mastery).
+  A right answer is a blow: the monster shivers and sheds characters. A wrong one feeds it back
+  one hit point, and the right answer is shown. The first monster takes **5 right answers per
+  player**.
+- **Help each other:** a question you miss is sent to a random teammate as a **🆘 Help Ari!**
+  card. When they solve it, you see their answer ("help from Tal: 7 × 8 = 56"), and the same
+  fact comes back to you two questions later to try again.
+- **Three monsters**, each tougher: more hit points (6, then 7 per player), bigger tables (up to
+  6, 8, then 10), more rays and faster flicker. The summary shows each pilot's hits and helps.
+- A phone that drops or reloads can rejoin with the same code and keeps its seat and score.
+
+Design notes: [`docs/plans/2026-10-10-monster-sun.md`](docs/plans/2026-10-10-monster-sun.md).
+
 ## Parent dashboard 👪
 
 **⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A

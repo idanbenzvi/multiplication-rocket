@@ -1,0 +1,213 @@
+/* ==================== MONSTER SUN ==================== */
+
+.sun-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background: #07050f;
+  color: #fdf3e7;
+}
+.sun-warp {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sun-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.sun-panel {
+  border-color: rgba(255, 157, 74, 0.45);
+  background: rgba(42, 32, 72, 0.92);
+}
+
+/* ---------- pilots ---------- */
+
+.sun-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.sun-pilot {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.9rem;
+}
+.sun-pilot.is-me {
+  border-color: #ffd77a;
+  background: rgba(255, 215, 122, 0.12);
+}
+.sun-pilot.is-offline {
+  opacity: 0.4;
+  border-style: dashed;
+}
+.sun-pilot-avatar {
+  font-size: 1.15rem;
+}
+.sun-pilot-name {
+  max-width: 7.5rem;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sun-pilot-hits {
+  color: #ffd77a;
+  font-weight: 700;
+}
+
+/* ---------- the fight ---------- */
+
+.sun-fight {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  width: min(480px, 100%);
+  min-height: calc(100dvh - 32px);
+}
+.sun-top {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.2rem;
+}
+.sun-quit {
+  position: absolute;
+  inset-inline-start: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.sun-hp {
+  position: relative;
+  height: 1.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 157, 74, 0.5);
+}
+.sun-hp-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  background: linear-gradient(90deg, #ff5c8a, #ff9d4a, #ffd77a);
+  box-shadow: 0 0 14px rgba(255, 157, 74, 0.6);
+  transition: width 0.35s ease;
+}
+.sun-hp-text {
+  position: relative;
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.sun-stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.sun-monster {
+  width: min(84vw, 42dvh, 380px);
+  aspect-ratio: 1;
+}
+.sun-tip {
+  position: absolute;
+  top: 0.3rem;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.45rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(30, 60, 50, 0.92);
+  border: 1px solid #7dff9a;
+  box-shadow: 0 0 18px rgba(125, 255, 154, 0.35);
+  font-size: 0.95rem;
+  text-align: center;
+}
+.sun-tip-math {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffd77a;
+}
+.sun-card {
+  gap: 0.5rem;
+}
+.sun-card-tag {
+  align-self: center;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.sun-card-tag.is-help {
+  background: rgba(255, 92, 138, 0.18);
+  border: 1px solid #ff5c8a;
+}
+.sun-card-tag.is-retry {
+  background: rgba(125, 255, 154, 0.14);
+  border: 1px solid #7dff9a;
+}
+.sun-feedback {
+  min-height: 1.5rem;
+  text-align: center;
+}
+.sun-feedback .is-hit {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffd77a;
+}
+.sun-shared {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: #c8bcd9;
+}
+
+/* ---------- summary ---------- */
+
+.sun-score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.sun-score-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.9rem;
+}
