@@ -358,9 +358,9 @@ function Defeated({ state }: { state: SunState }) {
   const next = useSunStore((s) => s.next);
   const last = state.monster + 1 >= SUN_MONSTERS;
   return (
-    <motion.div className="sky-card sun-card sun-victory" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.9, type: 'spring', stiffness: 260, damping: 16 }}>
-      <div className="sky-lit-title">{t.sun.defeated}</div>
-      <div className="sky-hint">{t.sun.burst(t.sun.names[state.monster % t.sun.names.length])}</div>
+    <motion.div className="sky-card sun-card sun-victory" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.2, type: 'spring', stiffness: 260, damping: 16 }}>
+      <div className="sky-lit-title">{t.sun.saved}</div>
+      <div className="sky-hint">{t.sun.cured[state.monster % t.sun.cured.length](t.sun.names[state.monster % t.sun.names.length])}</div>
       <div className="sun-team-line">
         <span>💥 {t.sun.teamHits(state.blows)}</span>
         {state.bestCombo >= 3 && <span>🔥 {t.sun.bestCombo(state.bestCombo)}</span>}
@@ -425,14 +425,15 @@ function Fight({ state }: { state: SunState }) {
   useEffect(() => {
     const before = prevCombo.current;
     prevCombo.current = state.combo;
-    if (state.combo <= before || state.combo % COMBO_EVERY !== 0) return;
+    // not on the hit that cures it: that moment belongs to the monster
+    if (state.combo <= before || state.combo % COMBO_EVERY !== 0 || state.phase !== 'fight') return;
     fx.current?.ring(GOLD);
     sfx.milestone(state.combo);
     warpKick(1.6);
     setBlast(state.combo);
     const timer = window.setTimeout(() => setBlast(null), 1700);
     return () => window.clearTimeout(timer);
-  }, [state.combo]);
+  }, [state.combo, state.phase]);
 
   // each monster arrives with a warning
   useEffect(() => {
@@ -454,14 +455,21 @@ function Fight({ state }: { state: SunState }) {
     );
   }, [state.blows]);
 
-  const onBurst = useCallback(() => {
-    sfx.monsterBurst();
+  // cured: its letters swirl into a friend, who then shows off
+  const onCured = useCallback(() => {
+    sfx.monsterCured();
     haptics.correct(5);
-    warpKick(3);
+    warpKick(2.2);
+  }, []);
+  const onCheer = useCallback(() => {
+    sfx.constellation();
+    haptics.tick();
+    warpKick(1.2);
   }, []);
 
   const strength = state.maxHp > 0 ? state.hp / state.maxHp : 0;
   const low = state.phase === 'fight' && strength < 0.25;
+  const saved = state.phase !== 'fight';
   return (
     <div className="sun-fight">
       <div className="sun-top">
@@ -472,14 +480,15 @@ function Fight({ state }: { state: SunState }) {
           {t.sun.monster(state.monster + 1, SUN_MONSTERS)} · {name}
         </div>
       </div>
-      <div ref={hpRef} className={`sun-hp ${low ? 'is-low' : ''}`} role="meter" aria-valuemin={0} aria-valuemax={state.maxHp} aria-valuenow={state.hp}>
+      {/* once it's saved, the bar fills back up as a happy meter */}
+      <div ref={hpRef} className={`sun-hp ${low ? 'is-low' : ''} ${saved ? 'is-saved' : ''}`} role="meter" aria-valuemin={0} aria-valuemax={state.maxHp} aria-valuenow={state.hp}>
         <div className="sun-hp-lag" style={{ width: `${strength * 100}%` }} />
-        <div className="sun-hp-fill" style={{ width: `${strength * 100}%` }} />
-        <span className="sun-hp-text">{state.phase === 'fight' ? `👾 ${t.sun.hpLeft(state.hp)}` : t.sun.defeated}</span>
+        <div className="sun-hp-fill" style={{ width: `${saved ? 100 : strength * 100}%` }} />
+        <span className="sun-hp-text">{saved ? t.sun.savedBar : `👾 ${t.sun.hpLeft(state.hp)}`}</span>
       </div>
 
       <div className="sun-stage">
-        <MonsterCanvas monster={state.monster} hp={state.hp} maxHp={state.maxHp} fx={fx} onBurst={onBurst} />
+        <MonsterCanvas monster={state.monster} hp={state.hp} maxHp={state.maxHp} fx={fx} onCured={onCured} onCheer={onCheer} />
 
         <div className="sun-toasts">
           <AnimatePresence>
@@ -510,7 +519,7 @@ function Fight({ state }: { state: SunState }) {
         </AnimatePresence>
 
         <AnimatePresence>
-          {blast !== null && (
+          {blast !== null && state.phase === 'fight' && (
             <motion.div key={blast} className="sun-banner is-combo" initial={{ opacity: 0, scale: 2.2 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}>
               {t.sun.comboBlast(blast)}
             </motion.div>
@@ -549,6 +558,17 @@ function Summary({ state }: { state: SunState }) {
       <div className="sun-team-line">
         <span>💥 {t.sun.teamHits(state.blows)}</span>
         {state.bestCombo >= 2 && <span>🔥 {t.sun.bestCombo(state.bestCombo)}</span>}
+      </div>
+      <div className="sun-friends">
+        <div className="settings-label">💛 {t.sun.friends}</div>
+        <div className="sun-friends-row">
+          {t.sun.names.slice(0, SUN_MONSTERS).map((n, k) => (
+            <div key={k} className="sun-friend">
+              <MonsterCanvas monster={k} hp={0} maxHp={1} wait={0.2 + k * 0.5} />
+              <span className="sun-friend-name">{n}</span>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="sun-score">
         {state.players.map((p, seat) => (

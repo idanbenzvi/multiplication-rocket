@@ -218,14 +218,14 @@ export const sfx = {
     for (let i = 0; i < 3; i++) tone(c, 180 - i * 22, t + i * 0.13, 0.12, { type: 'sawtooth', gain: 0.05, glideTo: 140 - i * 20 });
   },
 
-  /** Monster Sun: the monster bursts into letters. */
-  monsterBurst() {
+  /** Monster Sun: the monster is cured. Its letters whoosh out and swirl back as a friend. */
+  monsterCured() {
     const c = audio();
     if (!c || volume() === 0) return;
     const t = c.currentTime + 0.01;
-    noiseBurst(c, t, 1.2, 3000, 80, 0.3);
-    tone(c, 70, t, 0.9, { type: 'triangle', gain: 0.25, glideTo: 30 });
-    [0, 2, 4, 7, 9, 12].forEach((n, i) => tone(c, noteFreq(n + 2), t + 0.45 + i * 0.07, 0.8, { gain: 0.14 }));
+    noiseBurst(c, t, 1.4, 400, 7000, 0.12);
+    tone(c, 196, t, 1.2, { type: 'triangle', gain: 0.08, glideTo: 784, attack: 0.25 });
+    [0, 2, 4, 5, 7, 9, 10, 12].forEach((n, i) => tone(c, noteFreq(n), t + 0.6 + i * 0.1, 0.7, { gain: 0.12 }));
   },
 
   /** Monster Sun: a new, tougher monster assembles out of the dark. */

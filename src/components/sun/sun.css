@@ -179,6 +179,18 @@
 .sun-hp.is-low .sun-hp-fill {
   background: linear-gradient(90deg, #ff2d55, #ff5c8a);
 }
+/* saved: the bar fills back up, a happy meter */
+.sun-hp.is-saved {
+  border-color: rgba(125, 255, 154, 0.7);
+}
+.sun-hp.is-saved .sun-hp-lag {
+  opacity: 0;
+}
+.sun-hp.is-saved .sun-hp-fill {
+  background: linear-gradient(90deg, #7dff9a, #ffd77a, #ff8fd0);
+  box-shadow: 0 0 16px rgba(255, 215, 122, 0.7);
+  transition: width 1.4s ease 1.2s;
+}
 @keyframes sun-low {
   50% {
     box-shadow: 0 0 18px rgba(255, 45, 85, 0.8);
@@ -375,6 +387,36 @@
   font-family: var(--font-display);
   font-weight: 600;
   color: #ffd77a;
+}
+.sun-friends {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: center;
+}
+.sun-friends-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.sun-friend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.sun-friend .sun-monster {
+  width: min(27vw, 112px);
+}
+.sun-friend-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffd77a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sun-score {
   display: flex;

@@ -5,7 +5,8 @@
 Several children, each on their own phone, team up against a menacing **ASCII monster**: a
 glowing sun made of flickering characters, burning in the middle of the warp starfield. Every
 phone drills its own times-table questions. Each right answer makes the monster shiver and shed
-characters; each wrong answer feeds it a little. Defeat it together and a tougher one appears.
+characters; each wrong answer feeds it a little. Cure it together (it turns into a friend) and a
+tougher one appears.
 
 The co-op twist that makes it a *learning* game: **a fact you miss is sent to a teammate.** A
 random other player gets it as a "Help Noa!" card. When they solve it, you see their answer
@@ -29,8 +30,9 @@ you practise it right after a friend showed you.
   - Helper right → the one who missed gets a tip ("🐱 Ari solved 7 × 8 = 56 for you!") and a
     retry card for that fact, served after two more of their own answers.
   - A wrong help or retry card isn't passed on again (no ping-pong); the answer is shown.
-- **Defeated:** the monster bursts into flying characters. The host taps "Next monster".
-  After the third: a summary with each player's hits and helps.
+- **Saved:** the monster isn't destroyed, it's cured. Its letters swirl back into a friend (a
+  sun in sunglasses, a flower, a heart-eyed smiley, one per monster). The host taps "Next
+  monster". After the third: a summary with the three friends and each player's hits and helps.
 
 ## Making the teamwork visible
 
@@ -41,11 +43,13 @@ every phone plays each event once, so everyone sees everyone's play:
   spot along the bottom into the monster; the characters it knocks off go when it *lands*.
 - The monster has a face: it glares and follows the beams, winces (> <) when hit, chomps and
   gloats (^ ^, "YUM!") when fed, sweats and panics below a quarter, and assembles itself out of
-  flying letters ("⚠️ Scramblax is coming!") and bursts into a lingering cloud of them.
+  flying letters ("⚠️ Scramblax is coming!"). Cured, its scrambled letters fly out and swirl
+  back, unscrambling as they land, into a friend that shines and floats hearts; the sunglasses
+  drop on, the petals spring open, or the heart eyes pop. The bar fills back up as a happy meter.
 - **Team combo:** right answers in a row by anyone; every 5 → a shockwave and a banner.
 - Help is visible: "📨 Sent to Tal", a 🆘 on the helper's chip, "Ari needs your help!" for the
   helper, a pink rescue card, "🤝 You helped Ari!", and "Noa helped Ari" on everyone else's phone.
-- The warp starfield surges with hits, combos and the burst.
+- The warp starfield surges with hits, combos and the cure.
 - The summary gives every pilot an award (helper first) and lists the facts learned together.
 
 ## Architecture
@@ -60,7 +64,8 @@ every phone plays each event once, so everyone sees everyone's play:
   its own pilot's answers (answer-log source `sun`).
 - `src/components/sun/`: `SunMonster.tsx` overlay (lobby, fight, defeated, summary) over the
   shared warp starfield, and `MonsterCanvas.tsx`: the ASCII sun on a 2D canvas (characters
-  mutate every frame, shiver + flying characters on a hit, red flash on a heal, burst on defeat).
+  mutate every frame, shiver + flying characters on a hit, red flash on a heal, the friend it
+  turns into at zero).
 - Entry: a "👾 Monster Sun" card next to "Two phones" in the pilot picker.
 
 ## Testing

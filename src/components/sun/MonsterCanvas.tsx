@@ -8,7 +8,10 @@ import { useEffect, useMemo, useRef } from 'react';
 //     the monster winces (> <), shivers and sheds characters (rays first,
 //     eyes last), each flying off as a spark;
 //   - a wrong answer feeds it: it chomps, swells and gloats in red;
-//   - weak, it trembles and sweats; at zero it bursts into a cloud of letters.
+//   - weak, it trembles and sweats.
+// At zero it's cured: its scrambled letters fly out, swirl back and
+// unscramble into a friend that shines (a sun in sunglasses, a flower, a
+// heart-eyed smiley), one per monster.
 
 const GLYPHS = '#@%&*+=?!$<>{}[]/\\~^0XЖΨΩ§∑∆≈¥¤'.split('');
 const N = 29;
@@ -41,8 +44,8 @@ interface Spark {
   color: string;
   life: number;
   fade: number;
-  /** slows down and floats instead of falling (the cloud of letters) */
-  drag?: boolean;
+  /** slows down and floats up instead of falling (hearts) */
+  float?: boolean;
 }
 
 interface Beam {
@@ -65,6 +68,15 @@ interface Floater {
   text: string;
   x: number;
   y: number;
+  life: number;
+}
+
+/** a sparkle around the cured friend, in grid units */
+interface Twinkle {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
   life: number;
 }
 
@@ -139,6 +151,373 @@ function buildMonster(monster: number): Cell[] {
   return cells.sort((a, b) => a.order - b.order);
 }
 
+// ---------- the friend it turns into ----------
+
+type FriendPart = 'face' | 'ray' | 'petal' | 'stem' | 'leaf';
+
+interface FriendCell {
+  x: number;
+  y: number;
+  d: number;
+  part: FriendPart;
+  ch: string;
+  /** the glyphs it twinkles between */
+  set: string[];
+  color: string;
+  /** where it swirls in from, and when */
+  sx: number;
+  sy: number;
+  delay: number;
+}
+
+/** seconds a letter takes to swirl into place */
+const FLY_S = 0.8;
+/** seconds from the cure until the friend shows off (sunglasses land, petals open, heart eyes pop) */
+const CHEER_AT = 2.1;
+const GLASSES_FALL = 0.7;
+/** the flower's middle (its face) */
+const BLOOM: [number, number] = [0, -0.14];
+const ROUND = ['*', '+', 'o', '•'];
+const PETAL = ['o', '*', '✿'];
+const RAINBOW = ['#ff5c8a', '#ff9d4a', '#ffd77a', '#7dff9a', '#6ad7ff', '#c49bff'];
+const HEARTS = ['#ff5c8a', '#ff8fd0', '#ffd77a'];
+const FRIEND_GLOW = ['255, 190, 80', '255, 120, 200', '255, 215, 140'];
+
+/** a straight ray drawn with the character that points its way */
+function rayGlyph(a: number): string {
+  const k = Math.round((((a % Math.PI) + Math.PI) % Math.PI) / (Math.PI / 4)) % 4;
+  return ['-', '\\', '|', '/'][k];
+}
+
+/** inside an ellipse centred at (cx, cy), turned by `turn` */
+function inEllipse(x: number, y: number, cx: number, cy: number, rx: number, ry: number, turn: number): boolean {
+  const dx = x - cx;
+  const dy = y - cy;
+  const u = dx * Math.cos(turn) + dy * Math.sin(turn);
+  const v = -dx * Math.sin(turn) + dy * Math.cos(turn);
+  return (u / rx) ** 2 + (v / ry) ** 2 <= 1;
+}
+
+/** 0 → 1 with a springy overshoot */
+const spring = (p: number) => (p <= 0 ? 0 : 1 - Math.exp(-5 * p) * Math.cos(9 * p));
+
+function bounce(p: number): number {
+  const n = 7.5625;
+  const d = 2.75;
+  if (p < 1 / d) return n * p * p;
+  if (p < 2 / d) return n * (p - 1.5 / d) ** 2 + 0.75;
+  if (p < 2.5 / d) return n * (p - 2.25 / d) ** 2 + 0.9375;
+  return n * (p - 2.625 / d) ** 2 + 0.984375;
+}
+
+/** monster 1 becomes a sun in sunglasses, 2 a flower, 3 a heart-eyed smiley with rainbow rays */
+function buildFriend(form: number): FriendCell[] {
+  const h = (N - 1) / 2;
+  const cells: FriendCell[] = [];
+  const add = (x: number, y: number, part: FriendPart, color: string, set: string[]) => {
+    const d = Math.hypot(x, y);
+    const a = Math.random() * Math.PI * 2;
+    const far = 1.3 + Math.random() * 0.5;
+    const late = part === 'face' ? 0 : part === 'stem' || part === 'leaf' ? 0.45 : 0.3;
+    cells.push({
+      x,
+      y,
+      d,
+      part,
+      ch: set[Math.floor(Math.random() * set.length)],
+      set,
+      color,
+      sx: Math.cos(a) * far,
+      sy: Math.sin(a) * far,
+      delay: 0.2 + late + d * 0.35 + Math.random() * 0.3,
+    });
+  };
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const x = (c - h) / h;
+      const y = (r - h) / h;
+      const d = Math.hypot(x, y);
+      if (form === 1) {
+        const dx = x - BLOOM[0];
+        const dy = y - BLOOM[1];
+        const dc = Math.hypot(dx, dy);
+        const step = Math.PI / 4;
+        const a = Math.atan2(dy, dx);
+        const da = a - Math.round(a / step) * step;
+        if (dc <= 0.2) add(x, y, 'face', dc < 0.11 ? '#fff6c8' : '#ffd77a', ROUND);
+        else if (inEllipse(dc * Math.cos(da), dc * Math.sin(da), 0.37, 0, 0.17, 0.125, 0)) add(x, y, 'petal', dc > 0.41 ? '#ff8fd0' : '#ffc2ea', PETAL);
+        else if (inEllipse(x, y, -0.17, 0.7, 0.15, 0.065, 0.38) || inEllipse(x, y, 0.17, 0.58, 0.15, 0.065, -0.38)) add(x, y, 'leaf', '#7dff9a', ROUND);
+        else if (Math.abs(x) < 0.03 && y > 0.4 && y < 0.97) add(x, y, 'stem', '#4fd36a', ['|']);
+        continue;
+      }
+      if (d <= 0.42) {
+        const core = form === 0 ? '#fff6c8' : '#fffbe0';
+        const mid = form === 0 ? '#ffd77a' : '#ffe9a0';
+        add(x, y, 'face', d < 0.22 ? core : mid, ROUND);
+      } else if (d > 0.48) {
+        const step = (Math.PI * 2) / 12;
+        const a = Math.atan2(y, x);
+        const k = Math.round(a / step);
+        const da = a - k * step;
+        const reach = k % 2 ? 0.78 : 0.94;
+        if (d <= reach && Math.abs(Math.sin(da)) * d < 0.048 && Math.abs(da) < step / 2) {
+          add(x, y, 'ray', form === 0 ? '#ffb347' : RAINBOW[((k % 12) + 12) % 6], [rayGlyph(k * step)]);
+        }
+      }
+    }
+  }
+  // the face goes on top of the petals
+  return cells.sort((a, b) => Number(a.part === 'face') - Number(b.part === 'face'));
+}
+
+type At = (x: number, y: number) => [number, number];
+
+/** the flower's petals: a closed bud until the cheer, then they spring open and breathe */
+function petalsOpen(ft: number, t: number): number {
+  if (ft < CHEER_AT) return 0.75;
+  return (0.75 + 0.25 * spring((ft - CHEER_AT) / 0.8)) * (1 + 0.025 * Math.sin(t * 2.5));
+}
+
+/** the friend's letters: scrambled while they swirl in, unscrambled once they land */
+function drawFriendCells(ctx: CanvasRenderingContext2D, friend: FriendCell[], form: number, ft: number, t: number, at: At, scrambled: string) {
+  const open = form === 1 ? petalsOpen(ft, t) : 1;
+  for (const c of friend) {
+    const p = Math.min(1, Math.max(0, (ft - c.delay) / FLY_S));
+    if (p <= 0) continue;
+    let { x, y } = c;
+    if (c.part === 'petal') {
+      x = BLOOM[0] + (x - BLOOM[0]) * open;
+      y = BLOOM[1] + (y - BLOOM[1]) * open;
+    }
+    if (p < 1) {
+      const k = easeOut(p);
+      const lx = c.sx + (x - c.sx) * k;
+      const ly = c.sy + (y - c.sy) * k;
+      const swirl = (1 - k) * 2.4;
+      const [px, py] = at(lx * Math.cos(swirl) - ly * Math.sin(swirl), lx * Math.sin(swirl) + ly * Math.cos(swirl));
+      ctx.globalAlpha = Math.min(1, p * 2);
+      ctx.fillStyle = scrambled;
+      ctx.fillText(glyph(), px, py);
+      continue;
+    }
+    if (c.set.length > 1 && Math.random() < 0.004) c.ch = c.set[Math.floor(Math.random() * c.set.length)];
+    const [px, py] = at(x, y);
+    // the rays shine, a glow running outwards along them
+    ctx.globalAlpha = c.part === 'ray' ? 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 5 - c.d * 10)) : 1;
+    // each letter flashes white as it lands
+    ctx.fillStyle = ft - c.delay - FLY_S < 0.2 ? '#ffffff' : c.color;
+    ctx.fillText(c.ch, px, py);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, inner: string, outer: string) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${inner}, 0.6)`);
+  g.addColorStop(0.82, `rgba(${outer}, 0.5)`);
+  g.addColorStop(1, `rgba(${outer}, 0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** soft shapes behind the letters, so the friend reads as one solid thing (grid units) */
+function drawFriendBack(ctx: CanvasRenderingContext2D, form: number, ft: number, t: number) {
+  if (form !== 1) {
+    disc(ctx, 0, 0, 0.47, form === 0 ? '255, 240, 180' : '255, 248, 215', form === 0 ? '255, 196, 90' : '255, 222, 140');
+    return;
+  }
+  const open = petalsOpen(ft, t);
+  const [cx, cy] = BLOOM;
+  ctx.strokeStyle = 'rgba(79, 211, 106, 0.6)';
+  ctx.lineWidth = 0.04;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 0.36);
+  ctx.lineTo(0, 0.97);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(125, 255, 154, 0.35)';
+  for (const [x, y, turn] of [
+    [-0.17, 0.7, 0.38],
+    [0.17, 0.58, -0.38],
+  ]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, 0.17, 0.075, turn, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.fillStyle = i % 2 ? 'rgba(255, 143, 208, 0.45)' : 'rgba(255, 170, 222, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(cx + Math.cos(a) * 0.37 * open, cy + Math.sin(a) * 0.37 * open, 0.19 * open, 0.135 * open, a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  disc(ctx, cx, cy, 0.23, '255, 240, 180', '255, 196, 90');
+}
+
+function cheek(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, 'rgba(255, 105, 150, 0.6)');
+  g.addColorStop(1, 'rgba(255, 105, 150, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** a closed, smiling eye: ∩ */
+function happyEye(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  ctx.arc(x, y + r * 0.4, r, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.stroke();
+}
+
+function heart(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.beginPath();
+  ctx.moveTo(0, -0.25);
+  ctx.bezierCurveTo(-0.25, -0.7, -1, -0.55, -0.9, 0);
+  ctx.bezierCurveTo(-0.82, 0.32, -0.3, 0.55, 0, 0.85);
+  ctx.bezierCurveTo(0.3, 0.55, 0.82, 0.32, 0.9, 0);
+  ctx.bezierCurveTo(1, -0.55, 0.25, -0.7, 0, -0.25);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** a four-pointed twinkle */
+function sparkle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    const rr = i % 2 ? r * 0.28 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** cool sunglasses, `dy` above where they sit, with a glint sweeping across */
+function shades(ctx: CanvasRenderingContext2D, dy: number, t: number) {
+  const top = -0.165 + dy;
+  const cy = -0.1 + dy;
+  const lenses = () => {
+    ctx.beginPath();
+    for (const cx of [-0.165, 0.165]) {
+      const w = 0.14;
+      const bot = cy + 0.09;
+      ctx.moveTo(cx - w, top);
+      ctx.lineTo(cx + w, top);
+      ctx.bezierCurveTo(cx + w + 0.01, cy + 0.03, cx + w * 0.55, bot, cx, bot);
+      ctx.bezierCurveTo(cx - w * 0.55, bot, cx - w - 0.01, cy + 0.03, cx - w, top);
+      ctx.closePath();
+    }
+  };
+  lenses();
+  const g = ctx.createLinearGradient(0, top, 0, cy + 0.09);
+  g.addColorStop(0, '#3d3266');
+  g.addColorStop(1, '#0c0818');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = '#120c20';
+  ctx.lineWidth = 0.025;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-0.38, top);
+  ctx.lineTo(0.38, top);
+  ctx.lineWidth = 0.04;
+  ctx.stroke();
+  ctx.save();
+  lenses();
+  ctx.clip();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  for (const cx of [-0.165, 0.165]) {
+    ctx.beginPath();
+    ctx.ellipse(cx - 0.06, top + 0.045, 0.035, 0.016, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const sweep = (t % 2.8) / 0.6;
+  if (sweep < 1) {
+    const x = -0.5 + sweep;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x + 0.07, top);
+    ctx.lineTo(x - 0.03, cy + 0.1);
+    ctx.lineTo(x - 0.1, cy + 0.1);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  // ...and a twinkle once it has gone by
+  const ting = ((t % 2.8) - 0.55) / 0.45;
+  if (ting > 0 && ting < 1) {
+    ctx.fillStyle = '#ffffff';
+    sparkle(ctx, 0.29, top + 0.01, 0.09 * Math.sin(Math.PI * ting));
+  }
+}
+
+/** the friend's face, in grid units (the canvas is already moved, turned and scaled) */
+function drawFriendFace(ctx: CanvasRenderingContext2D, form: number, ft: number, t: number) {
+  ctx.lineCap = 'round';
+  if (form === 1) {
+    const [cx, cy] = BLOOM;
+    cheek(ctx, cx - 0.12, cy + 0.05, 0.05);
+    cheek(ctx, cx + 0.12, cy + 0.05, 0.05);
+    ctx.strokeStyle = '#7a3a12';
+    ctx.lineWidth = 0.026;
+    happyEye(ctx, cx - 0.07, cy - 0.04, 0.035);
+    happyEye(ctx, cx + 0.07, cy - 0.04, 0.035);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 0.08, Math.PI * 0.2, Math.PI * 0.8);
+    ctx.stroke();
+    return;
+  }
+  cheek(ctx, -0.26, 0.07, 0.085);
+  cheek(ctx, 0.26, 0.07, 0.085);
+  ctx.strokeStyle = '#8a3b12';
+  ctx.lineWidth = 0.04;
+  if (form === 0) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 0.2, Math.PI * 0.18, Math.PI * 0.82);
+    ctx.stroke();
+    // happy eyes, until the sunglasses drop onto them (first touch at the cheer)
+    const fall = (ft - CHEER_AT) / GLASSES_FALL + 1 / 2.75;
+    if (fall < 1 / 2.75) {
+      happyEye(ctx, -0.15, -0.1, 0.055);
+      happyEye(ctx, 0.15, -0.1, 0.055);
+    }
+    if (fall > 0) shades(ctx, -1.6 * (1 - bounce(Math.min(1, fall))), t);
+    return;
+  }
+  // heart eyes pop at the cheer, then beat
+  if (ft < CHEER_AT) {
+    happyEye(ctx, -0.15, -0.1, 0.055);
+    happyEye(ctx, 0.15, -0.1, 0.055);
+  } else {
+    const s = 0.11 * spring((ft - CHEER_AT) / 0.5) * (1 + 0.08 * Math.max(0, Math.sin(t * 8)));
+    ctx.fillStyle = '#ff3d7f';
+    heart(ctx, -0.155, -0.1, s);
+    heart(ctx, 0.155, -0.1, s);
+  }
+  // a big open grin
+  ctx.beginPath();
+  ctx.moveTo(-0.18, 0.05);
+  ctx.quadraticCurveTo(0, 0.4, 0.18, 0.05);
+  ctx.closePath();
+  ctx.fillStyle = '#5a1030';
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = '#ff6f9a';
+  ctx.beginPath();
+  ctx.ellipse(0, 0.2, 0.085, 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 /** what the page can make the monster do */
 export interface MonsterFx {
   /** a pilot's right answer: a beam in their colour, from along the bottom edge (0 = left, 1 = right) */
@@ -156,16 +535,20 @@ interface Props {
   fx?: React.RefObject<MonsterFx | null>;
   /** lobby: just lurking and looking around */
   lurk?: boolean;
-  /** the moment it bursts (for the sound) */
-  onBurst?: () => void;
+  /** already cured (the summary): seconds before its friend swirls in */
+  wait?: number;
+  /** the moment it's cured, and the moment its friend shows off (for the sounds) */
+  onCured?: () => void;
+  onCheer?: () => void;
 }
 
-export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }: Props) {
+export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, onCured, onCheer }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cells = useMemo(() => buildMonster(monster), [monster]);
-  const live = useRef({ hp, maxHp, onBurst });
+  const friend = useMemo(() => buildFriend(monster % 3), [monster]);
+  const live = useRef({ hp, maxHp, onCured, onCheer });
   useEffect(() => {
-    live.current = { hp, maxHp, onBurst };
+    live.current = { hp, maxHp, onCured, onCheer };
   });
 
   useEffect(() => {
@@ -177,8 +560,13 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
     const mutate = 0.03 + tier * 0.025;
     const total = cells.length;
     const goneFor = (h: number, m: number) => (m > 0 ? Math.round(total * (1 - Math.max(0, h) / m)) : 0);
-    // already worn down (a phone that joins or reloads mid-fight): no burst for those
+    // already worn down (a phone that joins or reloads mid-fight): no sparks for those
     const shown = cells.map((_, i) => i >= goneFor(live.current.hp, live.current.maxHp));
+    // already cured: the friend swirls in quietly
+    const quiet = shown.every((s) => !s);
+    let curedAt: number | null = quiet ? wait : null;
+    let cheered = false;
+    let twinkles: Twinkle[] = [];
     let sparks: Spark[] = [];
     let beams: Beam[] = [];
     let rings: Ring[] = [];
@@ -190,19 +578,23 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
     let gloat = 0;
     let look: [number, number] = [0, 1];
     let lookFor = 0;
-    let burst = shown.every((s) => !s);
     let raf = 0;
     let last = performance.now();
     const t0 = last;
 
     const colorOf = (c: Cell) => (c.kind === 'mouth' ? '#c0163f' : c.kind === 'ray' ? pal.ray : c.d < 0.22 ? pal.core : pal.mid);
-    const burstAt = (x: number, y: number, n: number, colors: string[], speed: number, linger = false) => {
+    const burstAt = (x: number, y: number, n: number, colors: string[], speed: number) => {
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2;
         const v = speed * (0.4 + Math.random());
-        // a lingering cloud drifts slowly and fades over a few seconds
-        const fade = linger ? 0.22 + Math.random() * 0.2 : 0.7 + Math.random() * 0.8;
-        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ch: glyph(), color: colors[i % colors.length], life: 1, fade, drag: linger });
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ch: glyph(), color: colors[i % colors.length], life: 1, fade: 0.7 + Math.random() * 0.8 });
+      }
+    };
+    const heartsAt = (x: number, y: number, n: number, speed: number) => {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = speed * (0.3 + Math.random() * 0.7);
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ch: '♥', color: HEARTS[i % HEARTS.length], life: 1, fade: 0.45 + Math.random() * 0.25, float: true });
       }
     };
 
@@ -245,6 +637,14 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
       const low = strength > 0 && strength < 0.25 && !lurk;
       // a cell goes when the beam that knocks it off lands, not before
       const gone = Math.max(0, Math.min(total, goneFor(nowHp, nowMax) - beams.length));
+      // cured: the last beam has landed
+      const curing = curedAt === null && gone >= total && beams.length === 0;
+      if (curing) {
+        curedAt = t;
+        whiteFlash = 1;
+        live.current.onCured?.();
+      }
+      const ft = curedAt === null ? -1 : t - curedAt;
 
       shake = Math.max(low ? 0.12 : 0, shake - dt * 2.2);
       redFlash = Math.max(0, redFlash - dt * 1.6);
@@ -257,7 +657,8 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
       const swell = 1 + 0.07 * Math.sin(Math.min(1, gloat) * Math.PI);
       const scale = half * 0.92 * (1 + 0.025 * Math.sin(t * 2.4)) * swell;
       const jx = (Math.random() - 0.5) * 14 * shake;
-      const jy = (Math.random() - 0.5) * 14 * shake;
+      // the friend bobs, happily
+      const jy = (Math.random() - 0.5) * 14 * shake + (curedAt === null ? 0 : Math.sin(t * 2.2) * half * 0.025);
       const rot = Math.sin(t * 0.5) * 0.07 + shake * (Math.random() - 0.5) * 0.15;
       const cos = Math.cos(rot);
       const sin = Math.sin(rot);
@@ -273,6 +674,22 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
         g.addColorStop(1, `rgba(${pal.glow}, 0)`);
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, size, size);
+      }
+      // the friend's warm glow
+      if (ft > 0) {
+        const glow = FRIEND_GLOW[monster % 3];
+        const k = Math.min(1, ft / 1.5) * (0.85 + 0.15 * Math.sin(t * 2));
+        const g = ctx.createRadialGradient(half + jx, half + jy, 0, half + jx, half + jy, scale * 1.05);
+        g.addColorStop(0, `rgba(${glow}, ${0.55 * k})`);
+        g.addColorStop(0.45, `rgba(${glow}, ${0.2 * k})`);
+        g.addColorStop(1, `rgba(${glow}, 0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+      }
+      if (curing) {
+        // its scrambled letters fly out
+        rings.push({ color: pal.mid, life: 1, width: 10 }, { color: '#ffffff', life: 0.8, width: 5 });
+        burstAt(half, half, 45, [pal.core, pal.mid, pal.ray], 300);
       }
       if (redFlash > 0) {
         const g = ctx.createRadialGradient(half, half, 0, half, half, scale);
@@ -361,6 +778,48 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
         ctx.shadowBlur = 0;
       }
 
+      // cured: the friend swirls in, unscrambles and shows off
+      if (ft > 0) {
+        const form = monster % 3;
+        // drawn in grid units, moving and turning with the letters
+        const inGrid = (alpha: number, paint: () => void) => {
+          if (alpha <= 0) return;
+          ctx.save();
+          ctx.translate(half + jx, half + jy);
+          ctx.rotate(rot);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = Math.min(1, alpha);
+          paint();
+          ctx.restore();
+        };
+        inGrid((ft - 0.9) / 0.7, () => drawFriendBack(ctx, form, ft, t));
+        ctx.font = `800 ${cell * 1.15}px ${MONO}`;
+        drawFriendCells(ctx, friend, form, ft, t, at, pal.mid);
+        inGrid((ft - 1.1) / 0.5, () => drawFriendFace(ctx, form, ft, t));
+        if (!cheered && ft >= CHEER_AT) {
+          cheered = true;
+          rings.push({ color: HEARTS[form], life: 1, width: 6 }, { color: '#ffffff', life: 0.7, width: 3 });
+          heartsAt(half, half, 14, 170);
+          if (!quiet) live.current.onCheer?.();
+        }
+        // sparkles all around, and hearts floating up
+        if (ft > 1.6 && Math.random() < dt * 5) {
+          const a = Math.random() * Math.PI * 2;
+          const r = 0.5 + Math.random() * 0.5;
+          twinkles.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, size: 0.5 + Math.random() * 0.6, color: Math.random() < 0.5 ? '#ffffff' : '#fff3b0', life: 1 });
+        }
+        if (cheered && Math.random() < dt * 1.3) {
+          const [hx, hy] = at((Math.random() - 0.5) * 0.9, 0.2 + Math.random() * 0.3);
+          heartsAt(hx, hy, 1, 25);
+        }
+      }
+      twinkles = twinkles.filter((w) => (w.life -= dt * 1.3) > 0);
+      for (const w of twinkles) {
+        const [px, py] = at(w.x, w.y);
+        ctx.fillStyle = w.color;
+        sparkle(ctx, px, py, cell * 0.9 * w.size * Math.sin(Math.PI * w.life));
+      }
+
       // weak: it sweats
       if (low && Math.random() < dt * 4) {
         const [sx, sy] = at((Math.random() - 0.5) * 0.6, -0.38);
@@ -423,41 +882,33 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
         return false;
       });
 
-      // sparks and knocked-off characters
-      ctx.font = `700 ${cell * 1.2}px ${MONO}`;
+      // sparks and knocked-off characters fall; hearts float up
       sparks = sparks.filter((s) => (s.life -= dt * 0.9 * s.fade) > 0);
-      for (const s of sparks) {
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-        if (s.drag) {
-          const slow = Math.exp(-dt * 1.6);
-          s.vx *= slow;
-          s.vy = s.vy * slow - 4 * dt;
-          if (Math.random() < dt * 3) s.ch = glyph();
-        } else {
-          s.vy += 60 * dt;
+      for (const float of [false, true]) {
+        ctx.font = `700 ${cell * (float ? 1.5 : 1.2)}px ${MONO}`;
+        for (const s of sparks) {
+          if (!!s.float !== float) continue;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          if (float) {
+            const slow = Math.exp(-dt * 1.4);
+            s.vx *= slow;
+            s.vy = s.vy * slow - 40 * dt;
+          } else {
+            s.vy += 60 * dt;
+          }
+          ctx.globalAlpha = Math.min(1, s.life * 1.5);
+          ctx.fillStyle = s.color;
+          ctx.fillText(s.ch, s.x, s.y);
         }
-        ctx.globalAlpha = s.life;
-        ctx.fillStyle = s.color;
-        ctx.fillText(s.ch, s.x, s.y);
       }
       ctx.globalAlpha = 1;
 
-      // defeated: one big flash and a cloud of letters
-      if (!burst && gone >= total && beams.length === 0) {
-        burst = true;
-        whiteFlash = 1;
-        rings.push({ color: pal.mid, life: 1, width: 10 }, { color: '#ffffff', life: 0.8, width: 5 });
-        burstAt(half, half, 50, [pal.core, pal.mid, pal.ray, '#ffffff'], 320);
-        burstAt(half, half, 70, [pal.core, pal.mid, pal.ray], 140, true);
-        live.current.onBurst?.();
-      } else if (gone < total) {
-        burst = false;
-      }
+      // the moment it's cured: a warm flash
       if (whiteFlash > 0) {
         const g = ctx.createRadialGradient(half, half, 0, half, half, half);
-        g.addColorStop(0, `rgba(255, 255, 255, ${0.9 * whiteFlash})`);
-        g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        g.addColorStop(0, `rgba(255, 244, 214, ${0.9 * whiteFlash})`);
+        g.addColorStop(1, 'rgba(255, 244, 214, 0)');
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, size, size);
       }
@@ -468,7 +919,7 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, onBurst }:
       cancelAnimationFrame(raf);
       if (fx) fx.current = null;
     };
-  }, [cells, monster, fx, lurk]);
+  }, [cells, friend, monster, fx, lurk, wait]);
 
   return <canvas ref={canvasRef} className={`sun-monster ${lurk ? 'is-lurking' : ''}`} aria-hidden />;
 }

@@ -179,8 +179,8 @@ Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split
 
 ## Monster Sun 👾 (2–6 phones, co-op)
 
-A monster sun made of flickering characters is swallowing the stars, and up to six children
-fight it together, each on their own phone.
+A grumpy monster sun made of flickering characters is swallowing the stars, and up to six
+children team up to cure it, each on their own phone.
 
 - **Connect:** **👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
   **Join a fight** and types it. At least 2 phones are needed.
@@ -193,14 +193,17 @@ fight it together, each on their own phone.
   fact comes back to you two questions later to try again.
 - **Everyone sees the team:** each pilot has a colour, and every right answer on any phone is a
   beam in that colour flying into the monster on *all* the phones. The monster winces when hit,
-  chomps and gloats ("YUM!") when fed, sweats and panics when it's nearly beaten, and bursts
-  into a cloud of letters. Whoever is helping someone shows a 🆘 on their chip, and everyone sees
-  "Noa helped Ari".
+  chomps and gloats ("YUM!") when fed, and sweats and panics when it's nearly beaten. Whoever is
+  helping someone shows a 🆘 on their chip, and everyone sees "Noa helped Ari".
+- **Cured, not destroyed:** at zero its scrambled letters fly out, swirl back and unscramble
+  into a friend: the first becomes a sun that puts on sunglasses, the second a flower that
+  blooms, the third a smiley with heart eyes. They shine, sparkle and float hearts, and the
+  summary shows all three as the team's new friends.
 - **Team combo:** right answers in a row by *anyone* build a shared combo; every 5 sends a
   shockwave through the monster.
 - **Three monsters**, each tougher: more hit points (6, then 7 per player), bigger tables (up to
   6, 8, then 10), more rays and faster flicker.
-- **The summary** gives every pilot an award (🤝 Super helper first, then 💥 Monster smasher,
+- **The summary** shows the three friends, gives every pilot an award (🤝 Super helper first, then 💥 Monster smasher,
   🎯 Sharp eye, ⭐ Brave heart) and lists the facts the team "learned together".
 - A phone that drops or reloads can rejoin with the same code and keeps its seat and score.
 
