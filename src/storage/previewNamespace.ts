@@ -1,13 +1,15 @@
-// The preview build (VITE_PREVIEW=1, published at …/multiplication-rocket/preview/)
-// is the same site to the browser as the real game, so it would share the
-// children's saved pilots and progress. Here every localStorage key gets a
-// "preview:" prefix instead, so a test version can never touch real progress.
+// A preview build (VITE_PREVIEW=1, published at …/multiplication-rocket/preview/
+// or …/preview_addition/) is the same site to the browser as the real game, so
+// it would share the children's saved pilots and progress. Here every
+// localStorage key gets the preview's name as a prefix instead ("preview:",
+// "preview_addition:"), so a test version can never touch real progress, nor
+// another preview's.
 //
 // Imported first in main.tsx: the stores read storage as soon as they load.
 
 export const IS_PREVIEW = import.meta.env.VITE_PREVIEW === '1';
 
-const PREFIX = 'preview:';
+const PREFIX = `${import.meta.env.VITE_PREVIEW_NAME || 'preview'}:`;
 
 if (IS_PREVIEW) {
   const proto = Storage.prototype;

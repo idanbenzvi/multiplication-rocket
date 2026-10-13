@@ -1,12 +1,14 @@
-# Pushing to the "preview" branch republishes the site, so the test version
-# appears at https://idanbenzvi.github.io/multiplication-rocket/preview/.
+# Pushing to a preview branch republishes the site, so its test version
+# appears in a folder of the branch's name:
+#   https://idanbenzvi.github.io/multiplication-rocket/preview/
+#   https://idanbenzvi.github.io/multiplication-rocket/preview_addition/
 # Only master may deploy to GitHub Pages, so this just asks the master
-# workflow (pages.yml) to run; it builds master and preview together.
+# workflow (pages.yml) to run; it builds master and the previews together.
 name: Republish preview
 
 on:
   push:
-    branches: [preview]
+    branches: [preview, preview_addition]
 
 permissions:
   actions: write
