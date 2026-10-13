@@ -1,8 +1,9 @@
 # Publishes the web version to GitHub Pages on every push to master:
 #   https://idanbenzvi.github.io/multiplication-rocket/
-# and, when a "preview" branch exists, its test build alongside it:
+# and each preview branch that exists, as a test build in a folder of its name:
 #   https://idanbenzvi.github.io/multiplication-rocket/preview/
-# (a push to preview re-runs this through preview.yml on that branch).
+#   https://idanbenzvi.github.io/multiplication-rocket/preview_addition/
+# (a push to a preview branch re-runs this through preview.yml on that branch).
 name: Deploy to GitHub Pages
 
 on:
@@ -34,16 +35,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Build the preview branch into /preview/
+      - name: Build the preview branches into /preview/ and /preview_addition/
+        # VITE_PREVIEW_NAME keeps each preview's saved pilots apart (older
+        # branches ignore it and use the plain "preview:" namespace).
         run: |
-          if git ls-remote --exit-code --heads origin preview; then
-            git fetch --depth=1 origin preview
-            git worktree add ../preview FETCH_HEAD
-            cd ../preview
-            npm ci
-            VITE_PREVIEW=1 npm run build
-            cp -r dist "$GITHUB_WORKSPACE/dist/preview"
-          fi
+          for branch in preview preview_addition; do
+            if git ls-remote --exit-code --heads origin "$branch"; then
+              git fetch --depth=1 origin "$branch"
+              git worktree add "../$branch" FETCH_HEAD
+              (cd "../$branch" && npm ci && VITE_PREVIEW=1 VITE_PREVIEW_NAME="$branch" npm run build)
+              cp -r "../$branch/dist" "$GITHUB_WORKSPACE/dist/$branch"
+            fi
+          done
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
