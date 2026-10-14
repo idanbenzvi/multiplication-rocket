@@ -191,8 +191,10 @@ children team up to cure it, each on their own phone.
 - **Help each other:** a question you miss is sent to a random teammate as a **🆘 Help Ari!**
   card. When they solve it, you see their answer ("help from Tal: 7 × 8 = 56"), and the same
   fact comes back to you two questions later to try again.
-- **Everyone sees the team:** each pilot has a colour, and every right answer on any phone is a
-  beam in that colour flying into the monster on *all* the phones. The monster winces when hit,
+- **Everyone sees the team:** every pilot's ship, in their colour with their animal in the
+  cockpit, hovers on an arc below the monster on *every* phone, each one turned to point at it.
+  Every right answer on any phone is a beam in that colour from the pilot's ship (it kicks back
+  as it fires) into the monster on all the phones. The monster winces when hit,
   chomps and gloats ("YUM!") when fed, and sweats and panics when it's nearly beaten. Whoever is
   helping someone shows a 🆘 on their chip, and everyone sees "Noa helped Ari".
 - **Cured, not destroyed:** at zero its scrambled letters fly out, swirl back and unscramble

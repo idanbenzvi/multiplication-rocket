@@ -49,8 +49,9 @@ interface Spark {
 }
 
 interface Beam {
-  /** where it starts along the bottom edge, 0..1 */
+  /** where it starts, as fractions of the canvas (a pilot's ship nose; 1 = the bottom edge) */
   from: number;
+  fromY: number;
   /** the arc's bend, sideways */
   bend: number;
   color: string;
@@ -520,8 +521,8 @@ function drawFriendFace(ctx: CanvasRenderingContext2D, form: number, ft: number,
 
 /** what the page can make the monster do */
 export interface MonsterFx {
-  /** a pilot's right answer: a beam in their colour, from along the bottom edge (0 = left, 1 = right) */
-  beam: (color: string, from: number) => void;
+  /** a pilot's right answer: a beam in their colour, from a point given as fractions of the canvas (their ship's nose) */
+  beam: (color: string, x: number, y?: number) => void;
   /** a wrong answer: it chomps, swells and says this */
   gloat: (text: string) => void;
   /** a team combo: a shockwave ring */
@@ -600,9 +601,9 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
 
     if (fx) {
       fx.current = {
-        beam: (color, from) => {
-          beams.push({ from, bend: (Math.random() - 0.5) * 0.5, color, t: 0, trail: [] });
-          look = [from * 2 - 1, 1];
+        beam: (color, from, fromY = 1) => {
+          beams.push({ from, fromY, bend: (Math.random() - 0.5) * 0.4, color, t: 0, trail: [] });
+          look = [from * 2 - 1, Math.min(1, fromY * 2 - 1)];
           lookFor = 1.2;
         },
         gloat: (text) => {
@@ -842,12 +843,12 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
       }
       ctx.globalAlpha = 1;
 
-      // beams: from the bottom edge, arcing into the monster
+      // beams: from a pilot's ship, arcing into the monster
       ctx.font = `700 ${cell * 1.3}px ${MONO}`;
       beams = beams.filter((b) => {
         b.t += dt / BEAM_S;
         const sx = b.from * size;
-        const sy = size;
+        const sy = b.fromY * size;
         const ang = Math.atan2(sy - half, sx - half);
         const ex = half + Math.cos(ang) * scale * 0.4;
         const ey = half + Math.sin(ang) * scale * 0.4;
