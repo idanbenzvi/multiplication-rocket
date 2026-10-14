@@ -8,6 +8,7 @@ import { hostGroup, joinLink, type Group, type Link, type LinkError, type LinkSt
 import { activeMission, activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
 import { loadProgressFor } from '../storage/progressStore';
 import { pauseGame, resumeGame } from './gameClock';
+import { playTrack } from '../audio/useAudio';
 import { useGameStore } from './useGameStore';
 
 // A Monster Sun session on this phone (see sun.ts). The host runs the
@@ -157,6 +158,8 @@ export const useSunStore = create<SunStore>((set, get) => {
 
     openSun: () => {
       pauseGame('sun');
+      // Monster Sun has its own soundtrack (openSun runs from a tap, so it may start)
+      playTrack('sun');
       set({ open: true, role: null, status: null, error: null, state: initialSunState() });
     },
 
@@ -164,6 +167,7 @@ export const useSunStore = create<SunStore>((set, get) => {
       resetLink();
       set({ open: false, role: null, status: null, error: null, code: '', state: initialSunState() });
       resumeGame('sun');
+      playTrack('theme');
       // this pilot's practice map may have changed
       useGameStore.getState().init();
     },
