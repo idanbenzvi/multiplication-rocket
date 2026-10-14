@@ -9,6 +9,7 @@ import { useWarpCanvas } from '../useWarpCanvas';
 import { CodeDisplay, CodeEntry, LinkStatusLine } from '../sky/parts';
 import { MonsterCanvas, type MonsterFx } from './MonsterCanvas';
 import { pilotColor } from './pilotColors';
+import { RearShip } from '../spaceArt';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
@@ -103,6 +104,55 @@ function Status() {
   const role = useSunStore((s) => s.role);
   const reconnect = useSunStore((s) => s.reconnect);
   return <LinkStatusLine status={status} error={error} role={role} reconnect={reconnect} />;
+}
+
+// ---------- the squadron ----------
+
+/** how far out the ships sit, and how big they are, as fractions of the monster's square */
+const SHIP_R = 0.47;
+const SHIP_SIZE = 0.15;
+
+/**
+ * Where a pilot's ship sits: on an arc below the monster, in seat order from
+ * left to right, each one turned so its nose points at the monster. The
+ * beam leaves from the nose.
+ */
+function shipSpot(seat: number, n: number) {
+  const arc = n > 1 ? Math.min(140, (n - 1) * 34) : 0;
+  const phi = ((n > 1 ? -arc / 2 + (seat * arc) / (n - 1) : 0) * Math.PI) / 180;
+  const at = (r: number) => ({ x: 0.5 + r * Math.sin(phi), y: 0.5 + r * Math.cos(phi) });
+  return { ...at(SHIP_R), nose: at(SHIP_R - SHIP_SIZE * 0.45), turn: (-phi * 180) / Math.PI };
+}
+
+/** every pilot's ship and animal around the monster, on every phone; a ship kicks back when it fires */
+function Squadron({ players, fired }: { players: SunPlayer[]; fired: Record<string, number> }) {
+  const myId = useSunStore((s) => s.myId);
+  return (
+    <div className="sun-squadron" aria-hidden>
+      {players.map((p, seat) => {
+        const spot = shipSpot(seat, players.length);
+        return (
+          <div
+            key={p.id}
+            className={`sun-ship ${p.id === myId ? 'is-me' : ''} ${p.online ? '' : 'is-offline'}`}
+            style={{ left: `${spot.x * 100}%`, top: `${spot.y * 100}%`, rotate: `${spot.turn}deg`, animationDelay: `${-seat * 0.7}s`, '--pilot': pilotColor(seat) } as React.CSSProperties}
+          >
+            <motion.div
+              key={fired[p.id] ?? 0}
+              className={`sun-ship-body ${fired[p.id] ? 'is-firing' : ''}`}
+              initial={false}
+              animate={fired[p.id] ? { y: [0, 10, 0] } : undefined}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <span className="sun-ship-flame" />
+              <RearShip size={64} color={pilotColor(seat)} />
+              <span className="sun-ship-avatar">{p.avatar}</span>
+            </motion.div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /** the team, in seat order (left to right on every phone, like the beams) */
@@ -390,6 +440,8 @@ function Fight({ state }: { state: SunState }) {
   const fx = useRef<MonsterFx | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [pops, setPops] = useState<Record<string, number[]>>({});
+  // how many shots each pilot's ship has fired here (each one replays the kick)
+  const [fired, setFired] = useState<Record<string, number>>({});
   const [blast, setBlast] = useState<number | null>(null);
   const [coming, setComing] = useState(false);
   const name = t.sun.names[state.monster % t.sun.names.length];
@@ -403,7 +455,9 @@ function Fight({ state }: { state: SunState }) {
   useNewEvents(state.events, (e) => {
     const seat = seatOf(state, e.by);
     if (e.kind === 'hit') {
-      fx.current?.beam(pilotColor(seat), (seat + 0.5) / Math.max(1, state.players.length));
+      const { nose } = shipSpot(seat, state.players.length);
+      fx.current?.beam(pilotColor(seat), nose.x, nose.y);
+      setFired((f) => ({ ...f, [e.by]: (f[e.by] ?? 0) + 1 }));
       if (e.by !== myId) sfx.zap(seat);
       warpKick(0.35);
       setPops((ps) => ({ ...ps, [e.by]: [...(ps[e.by] ?? []).slice(-2), e.id] }));
@@ -495,7 +549,10 @@ function Fight({ state }: { state: SunState }) {
       </div>
 
       <div className="sun-stage">
-        <MonsterCanvas monster={state.monster} hp={state.hp} maxHp={state.maxHp} fx={fx} onCured={onCured} onCheer={onCheer} />
+        <div className="sun-arena">
+          <MonsterCanvas monster={state.monster} hp={state.hp} maxHp={state.maxHp} fx={fx} onCured={onCured} onCheer={onCheer} />
+          <Squadron players={state.players} fired={fired} />
+        </div>
 
         <div className="sun-toasts">
           <AnimatePresence>
