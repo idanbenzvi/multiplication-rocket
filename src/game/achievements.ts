@@ -1,6 +1,7 @@
 import type { FactStat, Progress } from './types';
 import { masterySummary } from './masteryStats';
 import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
+import { DESTINATION_COUNT } from './levels';
 
 // Badges a pilot earns along the way, and the ranks they add up to: every
 // badge is a step from Cadet towards Honored Captain. Names and descriptions
@@ -90,8 +91,8 @@ export const BADGES: BadgeDef[] = [
   // journey: launches and practice
   { id: 'liftoff', icon: '🚀', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, 1) },
   { id: 'starHopper', icon: '🪐', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, 5) },
-  { id: 'galaxyExplorer', icon: '🌌', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, 11) },
-  { id: 'deepSpace', icon: '🛸', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, 22) },
+  { id: 'galaxyExplorer', icon: '🌌', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, DESTINATION_COUNT) },
+  { id: 'deepSpace', icon: '🛸', group: 'journey', goal: (c) => count(c.progress.launchesCompleted, 2 * DESTINATION_COUNT) },
   { id: 'hundredRight', icon: '💯', group: 'journey', goal: (c) => count(c.progress.totalCorrectAnswers, 100) },
   { id: 'thousandRight', icon: '🏆', group: 'journey', goal: (c) => count(c.progress.totalCorrectAnswers, 1000) },
   { id: 'regularFlyer', icon: '📅', group: 'journey', goal: (c) => count(c.stats.practiceDays.length, 3) },

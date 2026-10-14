@@ -199,8 +199,8 @@ button:focus-visible {
   display: flex;
   gap: 0.3rem;
   justify-content: center;
-  flex-wrap: wrap;
-  max-width: 220px;
+  /* one row: the banner shows only the latest few (LevelBanner's MAX_BADGES) */
+  white-space: nowrap;
 }
 
 .collected-badge {
@@ -4117,34 +4117,9 @@ button:focus-visible {
 .about-close:hover {
   background: rgba(255, 255, 255, 0.16);
 }
-.about-github {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  flex-wrap: wrap;
-  margin-top: 0.6rem;
-  padding: 0.6rem 1rem;
-  border-radius: 999px;
-  background: #fff;
-  color: #14102a;
-  font-weight: 700;
-  text-decoration: none;
-  transition: transform 0.15s;
-}
-.about-github:hover {
-  transform: translateY(-1px);
-}
-.about-github-handle {
-  font-weight: 500;
-  opacity: 0.65;
-  font-size: 0.9em;
-}
 @media (max-width: 480px) {
   .about-card {
     padding: 1.6rem 1.25rem 1.4rem;
-  }
-  .about-github-handle {
-    display: none;
   }
 }
 .about-inline-link {

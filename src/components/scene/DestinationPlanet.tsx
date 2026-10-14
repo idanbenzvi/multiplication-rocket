@@ -14,22 +14,29 @@ interface Look {
   glow: string;
   bands: number; // 0 = smooth, otherwise stripe frequency (gas giants)
   ring?: string;
+  /** shines by its own light: no shadow side, and a corona around it */
+  sun?: boolean;
 }
 
 // Same order as the destinations in levels.ts. Stylized, not literal — the
 // space station and galaxy get planet-like stand-ins in their colors.
 const LOOKS: Look[] = [
   { base: '#e8e2d0', band: '#b9b2a0', glow: '#fff6e0', bands: 0 }, // Moon
+  { base: '#e8c97a', band: '#c9a24e', glow: '#fff0b8', bands: 3 }, // Venus
+  { base: '#9a948c', band: '#6e6a64', glow: '#d8d2c8', bands: 0 }, // Mercury
+  { base: '#ffcf4a', band: '#ff9d2a', glow: '#fff2a0', bands: 7, sun: true }, // the Sun
   { base: '#e0603a', band: '#a8402a', glow: '#ff9d76', bands: 0 }, // Mars
   { base: '#a08c7a', band: '#6e5f52', glow: '#d8c4b0', bands: 0 }, // Asteroid belt
   { base: '#e3a05f', band: '#b86d3c', glow: '#ffd29a', bands: 9 }, // Jupiter
   { base: '#e8cf8a', band: '#c4a65e', glow: '#fff0c0', bands: 6, ring: '#f2dfa8' }, // Saturn
   { base: '#9fe0e6', band: '#78c4cc', glow: '#d8fbff', bands: 3 }, // Uranus
   { base: '#4a78e0', band: '#3156a8', glow: '#8fb8ff', bands: 4 }, // Neptune
+  { base: '#e8d6c0', band: '#b89a80', glow: '#fff0e0', bands: 0 }, // Pluto
   { base: '#bfe8ff', band: '#8fc8ec', glow: '#ffffff', bands: 0 }, // Comet
   { base: '#c0c4d0', band: '#8a90a0', glow: '#e8f0ff', bands: 12, ring: '#9aa4b8' }, // Space station
   { base: '#8fe07a', band: '#5ab04a', glow: '#d0ffb0', bands: 5 }, // Alien planet
   { base: '#c9a4de', band: '#8f6ab8', glow: '#ffd0ff', bands: 2, ring: '#f2a6c0' }, // Galaxy
+  { base: '#3c8ae0', band: '#4caf6a', glow: '#bfe4ff', bands: 0 }, // Earth: blue seas, green land
 ];
 
 const VERT = /* glsl */ `
@@ -50,6 +57,7 @@ uniform vec3 baseColor;
 uniform vec3 bandColor;
 uniform vec3 glowColor;
 uniform float bands;
+uniform float sun;
 uniform float time;
 varying vec3 vNormal;
 varying vec3 vObjPos;
@@ -61,7 +69,8 @@ void main() {
   vec3 col = mix(baseColor, bandColor, max(stripe * 0.7, speckle * 0.6));
   // Two-tone toon light from the upper right, to match the storybook rocket.
   float light = dot(n, normalize(vec3(0.6, 0.5, 0.6)));
-  col *= light > 0.05 ? 1.0 : 0.62;
+  // (the Sun has no night side)
+  col *= sun > 0.5 ? 1.1 : light > 0.05 ? 1.0 : 0.62;
   // Atmosphere rim.
   float rim = pow(1.0 - max(dot(n, vViewDir), 0.0), 2.5);
   col += glowColor * rim * 0.9;
@@ -95,11 +104,30 @@ export function DestinationPlanet({ destinationIndex }: Props) {
           bandColor: { value: new THREE.Color(look.band) },
           glowColor: { value: new THREE.Color(look.glow) },
           bands: { value: look.bands },
+          sun: { value: look.sun ? 1 : 0 },
           time: { value: 0 },
         },
       }),
     [look],
   );
+
+  // the Sun's corona: a soft glow fading out from its edge (the Sun itself hides the middle)
+  const corona = useMemo(() => {
+    if (!look.sun) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const g = canvas.getContext('2d');
+    if (!g) return null;
+    const c = new THREE.Color(look.glow);
+    const rgb = `${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}`;
+    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0.5, `rgba(${rgb}, 0.9)`);
+    grad.addColorStop(0.62, `rgba(${rgb}, 0.35)`);
+    grad.addColorStop(1, `rgba(${rgb}, 0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(canvas);
+  }, [look]);
 
   useFrame(({ clock }, rawDelta) => {
     const group = groupRef.current;
@@ -121,6 +149,11 @@ export function DestinationPlanet({ destinationIndex }: Props) {
       <mesh material={material}>
         <sphereGeometry args={[1, 48, 48]} />
       </mesh>
+      {corona && (
+        <sprite scale={3.6}>
+          <spriteMaterial map={corona} transparent depthWrite={false} blending={THREE.AdditiveBlending} fog={false} />
+        </sprite>
+      )}
       {look.ring && (
         <mesh rotation={[Math.PI / 2.4, 0.2, 0]}>
           <ringGeometry args={[1.35, 1.9, 64]} />

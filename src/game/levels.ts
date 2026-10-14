@@ -17,7 +17,12 @@ function streakForLevel(level: number): number {
 const FULL_FACTOR_RANGE: [number, number] = [1, 10];
 
 // Display names live in i18n/strings.ts (Strings.destinations), same order.
-const DESTINATION_EMOJIS = ['🌕', '🔴', '☄️', '🟠', '🪐', '🔵', '🟦', '💫', '🛰️', '👽', '🌌'];
+// A tour of the whole solar system: the Moon, in past Venus and Mercury to
+// the Sun, out past Mars to Pluto, beyond it to a galaxy, and home to Earth.
+const DESTINATION_EMOJIS = ['🌕', '🟡', '⚪', '☀️', '🔴', '☄️', '🟠', '🪐', '🔵', '🟦', '🧊', '💫', '🛰️', '👽', '🌌', '🌍'];
+
+/** stops in one lap of the journey */
+export const DESTINATION_COUNT = DESTINATION_EMOJIS.length;
 
 const cache = new Map<number, LevelConfig>();
 
