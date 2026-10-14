@@ -3996,17 +3996,20 @@ button:focus-visible {
 /* ---- About page ---- */
 .about-studio-logo {
   display: block;
-  width: 112px;
-  height: 112px;
-  margin: 0 auto 0.7rem;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18), 0 0 30px rgba(201, 164, 222, 0.55);
+  width: 128px;
+  height: 128px;
+  margin: 0 auto 0.5rem;
+  /* no background: a thin light rim and a soft glow lift the grey ink off the dark card */
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 14px rgba(201, 164, 222, 0.6));
   animation: studioFloat 4s ease-in-out infinite;
 }
 @keyframes studioFloat {
   50% { translate: 0 -4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-studio-logo {
+    animation: none;
+  }
 }
 .about-button {
   width: 28px;
