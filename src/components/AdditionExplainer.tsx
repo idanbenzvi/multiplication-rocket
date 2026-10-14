@@ -44,10 +44,13 @@ export function AdditionExplainer({ x, y }: Props) {
     );
   }
 
-  const parts = [tensOf(x), tensOf(y), x % 10, y % 10].filter((n, i) => i < 2 || n > 0);
+  // a one-digit number has no tens: 8 + 42 = 40 + 8 + 2
+  const parts = [tensOf(x), tensOf(y), x % 10, y % 10].filter((n) => n > 0);
   const tens = tensOf(x) + tensOf(y);
   const ones = (x % 10) + (y % 10);
-  const math = `${x} + ${y}  =  ${parts.join(' + ')}  =  ${ones > 0 ? `${tens} + ${ones}  =  ` : ''}${sum}`;
+  // tens + tens (40 + 30) needs no splitting
+  const split = parts.length > 2 ? `${parts.join(' + ')}  =  ${ones > 0 ? `${tens} + ${ones}  =  ` : ''}` : '';
+  const math = `${x} + ${y}  =  ${split}${sum}`;
   let n = 0;
   const row = (value: number, kind: string) => (
     <div className="place-row">
