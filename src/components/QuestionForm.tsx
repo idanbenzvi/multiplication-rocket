@@ -239,7 +239,8 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
       >
         {onFire && <div className="on-fire-badge" style={{ background: FIRE_COLORS[heat] }}>⚡ {t.onFire}</div>}
         <form className="question-card" onSubmit={handleSubmit}>
-          <div className="equation-row" dir="ltr">
+          {/* keyed by question, so each new one pops in */}
+          <div key={question.askedAt} className="equation-row is-new" dir="ltr">
             <span className="equation-operand">{question.x}</span>
             <span className="equation-op">{OP_SYMBOL[mission]}</span>
             <span className="equation-operand">{question.y}</span>

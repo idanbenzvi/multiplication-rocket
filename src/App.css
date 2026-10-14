@@ -27,6 +27,26 @@
   display: block;
 }
 
+/* darkens the sky's edges and the bottom (where the question sits), never the middle */
+.app-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 42%, transparent 55%, rgba(12, 8, 26, 0.42) 100%),
+    linear-gradient(to top, rgba(12, 8, 26, 0.38), transparent 32%);
+}
+
+/* every button gives a little under the finger, and shows where the keyboard is */
+button:not(:disabled):active {
+  scale: 0.96;
+}
+button:focus-visible {
+  outline: 3px solid rgba(255, 215, 122, 0.85);
+  outline-offset: 2px;
+}
+
 /* --- launch warp flash: radiating warm light rays that flash and expand --- */
 .warp-burst {
   position: fixed;
@@ -72,7 +92,7 @@
   /* notched phones/tablets: keep clear of the status bar and rounded corners */
   padding: calc(0.6rem + env(safe-area-inset-top)) calc(1.25rem + env(safe-area-inset-right)) 0.6rem
     calc(1.25rem + env(safe-area-inset-left));
-  background: linear-gradient(180deg, rgba(15, 11, 28, 0.75), transparent);
+  background: linear-gradient(180deg, rgba(15, 11, 28, 0.82), rgba(15, 11, 28, 0.3));
   border-bottom: 1px solid rgba(255, 157, 118, 0.2);
   backdrop-filter: blur(6px);
 }
@@ -93,6 +113,10 @@
 }
 
 .hud-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
   background: rgba(143, 191, 106, 0.12);
@@ -115,6 +139,12 @@
   transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.reset-button {
+  white-space: nowrap;
+}
+.review-icon {
+  margin-inline-end: 0.35rem;
+}
 .reset-button:hover {
   border-color: #c9a4de;
   color: #e6cdf2;
@@ -240,13 +270,15 @@
   font-family: var(--font-display);
   font-size: 0.65rem;
   letter-spacing: 0.14em;
-  color: #f2c9a8;
+  color: #ffe2c8;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .fuel-gauge-streak {
   font-size: 0.68rem;
-  color: #a898bf;
+  color: #d6c8ee;
   font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .fuel-gauge-callout {
@@ -276,14 +308,23 @@
   margin: 0 auto;
   padding: 0.6rem 1rem;
   clip-path: var(--hud-cut-sm);
-  background: rgba(255, 215, 122, 0.12);
-  border: 1px solid rgba(255, 215, 122, 0.3);
-  color: #fdf3e7;
+  /* dark glass, so the hint reads over even the brightest sky */
+  background: linear-gradient(90deg, rgba(38, 26, 62, 0.82), rgba(26, 19, 46, 0.78));
+  border: 1px solid rgba(255, 215, 122, 0.35);
+  backdrop-filter: blur(8px);
+  color: #fff4dc;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
   text-align: start;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.strategy-hint.is-quiet,
+.strategy-hint-chip.is-quiet {
+  opacity: 0;
 }
 
 .strategy-hint-icon {
@@ -307,9 +348,11 @@
   margin: 0 auto;
   padding: 0.45rem 1rem;
   clip-path: var(--hud-cut-sm);
-  background: rgba(255, 215, 122, 0.1);
-  border: 1px solid rgba(255, 215, 122, 0.25);
-  color: #f2c9a8;
+  background: rgba(26, 19, 46, 0.7);
+  border: 1px solid rgba(255, 215, 122, 0.3);
+  backdrop-filter: blur(8px);
+  color: #ffe2c8;
+  transition: opacity 0.2s ease;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.8rem;
@@ -349,6 +392,23 @@
   border: 1px solid rgba(255, 157, 118, 0.3);
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(10px);
+}
+
+/* a new question pops in */
+.equation-row.is-new {
+  animation: questionIn 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes questionIn {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
 }
 
 .equation-row {
@@ -2210,6 +2270,28 @@
   }
   .pilot-button {
     padding-inline: 0.55rem;
+  }
+  /* one tidy row of round buttons, the same size */
+  .hud-topbar-right {
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+  }
+  .hud-topbar-right .reset-button,
+  .hud-topbar-right .hud-stat-chip {
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .review-label {
+    display: none;
+  }
+  .review-icon {
+    margin: 0;
+    font-size: 1.05rem;
   }
 }
 .wormhole-rocket img {

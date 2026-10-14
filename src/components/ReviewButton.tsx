@@ -37,7 +37,10 @@ export function ReviewButton({ mastery, mission, onClick }: Props) {
         onBlur={() => setPeek(false)}
         aria-describedby={peek ? 'review-peek' : undefined}
       >
-        {t.stopAndReview}
+        <span className="review-icon" aria-hidden>
+          🗺️
+        </span>
+        <span className="review-label">{t.stopAndReview}</span>
       </button>
       {peek && summary && (
         <div className="review-peek" id="review-peek" role="tooltip">

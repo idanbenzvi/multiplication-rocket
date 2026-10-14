@@ -8,14 +8,16 @@ interface Props {
   mission: Mission;
   visible: boolean;
   onToggle: () => void;
+  /** fade out while the praise for a right answer shows (it pops up right here) */
+  quiet?: boolean;
 }
 
-export function StrategyHint({ x, y, mission, visible, onToggle }: Props) {
+export function StrategyHint({ x, y, mission, visible, onToggle, quiet = false }: Props) {
   const t = useT();
 
   if (!visible) {
     return (
-      <button className="strategy-hint-chip" onClick={onToggle}>
+      <button className={`strategy-hint-chip ${quiet ? 'is-quiet' : ''}`} onClick={onToggle}>
         💡 {t.showHint} <span className="strategy-hint-key">(H)</span>
       </button>
     );
@@ -24,7 +26,7 @@ export function StrategyHint({ x, y, mission, visible, onToggle }: Props) {
   const strategy = strategyFor(x, y, t, mission);
 
   return (
-    <button className="strategy-hint" onClick={onToggle} title={t.pressHToHide}>
+    <button className={`strategy-hint ${quiet ? 'is-quiet' : ''}`} onClick={onToggle} title={t.pressHToHide}>
       <span className="strategy-hint-icon">💡</span>
       <span className="strategy-hint-text">
         {strategy.text}

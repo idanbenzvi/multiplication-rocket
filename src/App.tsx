@@ -225,6 +225,8 @@ function App() {
       <div className="starfield-layer">
         <RocketScene />
       </div>
+      {/* a soft cinematic vignette: the sky stays bright in the middle, the HUD readable at the edges */}
+      <div className="app-vignette" aria-hidden />
 
       {showWarp && <div className="warp-burst" />}
       {exitFlash > 0 && <div key={exitFlash} className="wormhole-exit-flash" />}
@@ -312,6 +314,7 @@ function App() {
                 mission={missionOfKey(question.fact.key)}
                 visible={hintVisible}
                 onToggle={() => setHintVisible((v) => !v)}
+                quiet={feedback === 'correct'}
               />
               <QuestionForm
                 question={question}
