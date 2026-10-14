@@ -4,13 +4,16 @@
 // rounds have no comparable timer), and where it came from.
 //
 // Stored on the device only, compactly, capped at the most recent entries.
+// Both missions share one log: a fact's key says which one it belongs to.
+
+import { missionOfKey, type Mission } from '../game/mission';
 
 export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun';
 
 export interface LoggedAnswer {
   /** Date.now() when answered (wall-clock, so days line up with the calendar) */
   at: number;
-  /** canonical fact key, e.g. "3x7" */
+  /** what the answer is tracked under, e.g. "3x7", "3+4" or "2d+1d:c" */
   fact: string;
   correct: boolean;
   /** response time in ms (paused time excluded); null when not timed */
@@ -71,9 +74,15 @@ export function appendToLog(profileId: string | null, entries: Array<Omit<Logged
   }
 }
 
-export function clearLog(profileId: string) {
+/** forget a pilot's history: all of it, or just one mission's */
+export function clearLog(profileId: string, mission?: Mission) {
   try {
-    localStorage.removeItem(logKeyFor(profileId));
+    if (!mission) {
+      localStorage.removeItem(logKeyFor(profileId));
+      return;
+    }
+    const rows = readRows(profileId).filter(([, fact]) => missionOfKey(fact) !== mission);
+    localStorage.setItem(logKeyFor(profileId), JSON.stringify(rows));
   } catch {
     // ignore
   }

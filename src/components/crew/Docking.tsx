@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { gameTimeout } from '../../game/gameClock';
 import { dockMultiplier, MAX_DOCK_TRIES, type DockResult } from '../../game/crew';
+import { applyOp, OP_SYMBOL } from '../../game/mission';
 import type { CrewDocking } from '../../game/useCrewStore';
 import type { Profile } from '../../profiles/useProfiles';
 import { pilotName } from '../../profiles/useProfiles';
@@ -26,13 +27,16 @@ const REVEAL_DELAY_MS = 600;
 const DOCKED_MS = 2200;
 
 // Docking: the station shows a number, and each child secretly picks one
-// factor on their own half of the screen. A pick shows as 🔒 so neither can
-// copy the other: to dock reliably they have to agree out loud first.
+// factor (on the addition mission, one part of the sum) on their own half
+// of the screen. A pick shows as 🔒 so neither can copy the other: to dock
+// reliably they have to agree out loud first.
 export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
   const t = useT();
   const [picks, setPicks] = useState<[number | null, number | null]>([null, null]);
   const [revealed, setRevealed] = useState<DockResult | null>(null);
-  const { target, pairs } = turn.docking;
+  const { target, pairs, mission } = turn.docking;
+  const sym = OP_SYMBOL[mission];
+  const expr = (a: number, b: number) => `${a} ${sym} ${b} = ${applyOp(mission, a, b)}`;
   const outOfTries = revealed !== null && revealed !== 'dock' && turn.tries >= MAX_DOCK_TRIES;
   // the reveal timer reads the latest callbacks, so a parent re-render doesn't restart it
   const callbacks = useRef({ onDock, onFinish, onBurst });
@@ -113,10 +117,10 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
           {revealed && last ? (
             <span className={`dock-result is-${last.result}`} dir="ltr">
               {last.result === 'dock'
-                ? t.crew.dockDocked(last.a, last.b)
+                ? t.crew.dockDocked(expr(last.a, last.b))
                 : last.result === 'over'
-                  ? t.crew.dockOver(last.a, last.b)
-                  : t.crew.dockUnder(last.a, last.b)}
+                  ? t.crew.dockOver(expr(last.a, last.b))
+                  : t.crew.dockUnder(expr(last.a, last.b))}
             </span>
           ) : (
             <>
@@ -142,7 +146,7 @@ export function Docking({ turn, pilots, onDock, onFinish, onBurst }: Props) {
               <div className="dock-pairs" dir="ltr">
                 {pairs.map(([a, b]) => (
                   <span key={a} className="dock-pair">
-                    {a} × {b}
+                    {a} {sym} {b}
                   </span>
                 ))}
               </div>

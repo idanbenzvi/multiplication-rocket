@@ -10,19 +10,26 @@ import {
   DOCK_EVERY,
   fuelPerAnswer,
   MAX_DOCK_TRIES,
+  navigatorAddPool,
   navigatorChoices,
   poolFor,
   type Docking,
   type DockResult,
   type Seat,
 } from './crew';
+import { missionOfKey, pairKey } from './mission';
+import { pickFact } from './questions';
+import { clampStage } from './addition';
+import { missionOf } from '../profiles/useProfiles';
 import { loadProgressFor, saveProgressFor } from '../storage/progressStore';
 import { appendToLog } from '../stats/answerLog';
 import { useGameStore } from './useGameStore';
 
 // A Crew Flight session (see game/crew.ts for the rules). Answers go into
 // each pilot's own mastery map and answer history, so crew play counts as
-// practice; the shared tank and the crew level belong to the pair.
+// practice; the shared tank and the crew level belong to the pair. Each
+// pilot's questions come from their own mission, so an older child on ×
+// and a younger one on + can fly together.
 
 export interface CrewMember {
   profileId: string;
@@ -139,20 +146,48 @@ interface CrewState {
 
 function questionFor(members: [CrewMember, CrewMember], member: 0 | 1): CrewQuestion {
   const { profileId, seat } = members[member];
-  const { mastery } = loadProgressFor(profileId);
-  const fact = pickNextFact(poolFor(seat, mastery), mastery);
+  const mission = missionOf(profileId);
+  const progress = loadProgressFor(profileId);
+  const { mastery } = progress;
+  const fact =
+    seat === 'pilot'
+      ? pickFact(mission, progress)
+      : pickNextFact(mission === 'add' ? navigatorAddPool(mastery) : poolFor(seat, mastery), mastery);
   const { x, y } = randomizeOrder(fact);
-  return { kind: 'question', member, fact, x, y, askedAt: gameNow(), choices: seat === 'navigator' ? navigatorChoices(x, y) : [] };
+  return { kind: 'question', member, fact, x, y, askedAt: gameNow(), choices: seat === 'navigator' ? navigatorChoices(x, y, mission) : [] };
 }
 
+// Into the pilot's progress for the fact's mission: only facts of their own
+// mission are recorded (a docking round in the other one plays along).
 function record(profileId: string, factKey: string, correct: boolean, ms: number | null) {
-  const progress = loadProgressFor(profileId);
-  saveProgressFor(profileId, {
-    ...progress,
-    mastery: recordAttempt(progress.mastery, factKey, correct),
-    totalCorrectAnswers: progress.totalCorrectAnswers + (correct ? 1 : 0),
-  });
+  const mission = missionOfKey(factKey);
+  if (mission !== missionOf(profileId)) return;
+  const progress = loadProgressFor(profileId, mission);
+  saveProgressFor(
+    profileId,
+    {
+      ...progress,
+      mastery: recordAttempt(progress.mastery, factKey, correct),
+      totalCorrectAnswers: progress.totalCorrectAnswers + (correct ? 1 : 0),
+    },
+    mission,
+  );
   appendToLog(profileId, [{ fact: factKey, correct, ms, source: 'crew' }]);
+}
+
+// Docking is played together, so in a mixed crew it's an addition round
+// (at the stage of the pilot who is further back): the one both can play.
+function dockingFor(members: [CrewMember, CrewMember]): Docking {
+  const withNavigator = members.some((m) => m.seat === 'navigator');
+  const adders = members.filter((m) => missionOf(m.profileId) === 'add');
+  if (adders.length > 0) {
+    const stages = adders.map((m) => clampStage(loadProgressFor(m.profileId, 'add').stage));
+    const lead = adders.find((m) => m.seat === 'pilot') ?? adders[0];
+    return buildDocking(loadProgressFor(lead.profileId, 'add').mastery, withNavigator, 'add', Math.min(...stages));
+  }
+  // targets come through the pilot's (or first member's) hard facts
+  const lead = members.find((m) => m.seat === 'pilot') ?? members[0];
+  return buildDocking(loadProgressFor(lead.profileId).mastery, withNavigator);
 }
 
 const freshMission = {
@@ -197,10 +232,7 @@ export const useCrewStore = create<CrewState>((set, get) => {
     const { members, nextMember, sinceDock } = get();
     if (!members) return;
     if (sinceDock >= DOCK_EVERY) {
-      const withNavigator = members.some((m) => m.seat === 'navigator');
-      // targets come through the pilot's (or first member's) hard facts
-      const lead = members.find((m) => m.seat === 'pilot') ?? members[0];
-      const docking = buildDocking(loadProgressFor(lead.profileId).mastery, withNavigator);
+      const docking = dockingFor(members);
       set({ turn: { kind: 'docking', startedAt: gameNow(), docking, tries: 0, last: null }, feedback: null, sinceDock: 0 });
       return;
     }
@@ -233,7 +265,7 @@ export const useCrewStore = create<CrewState>((set, get) => {
       const { turn, members, level, stats, feedback } = get();
       if (!turn || turn.kind !== 'question' || !members || feedback) return false;
       const member = members[turn.member];
-      const correct = value === turn.fact.product;
+      const correct = value === turn.fact.answer;
       record(member.profileId, turn.fact.key, correct, member.seat === 'pilot' ? elapsedMs : null);
       const nextStats = [...stats] as [MemberStats, MemberStats];
       nextStats[turn.member] = { correct: stats[turn.member].correct + (correct ? 1 : 0), answered: stats[turn.member].answered + 1 };
@@ -257,13 +289,14 @@ export const useCrewStore = create<CrewState>((set, get) => {
     dock: (a, b) => {
       const { turn, members, level, docks } = get();
       if (!turn || turn.kind !== 'docking' || !members) return 'under';
-      const result = checkDock(a, b, turn.docking.target);
+      const { mission } = turn.docking;
+      const result = checkDock(a, b, turn.docking.target, mission);
       const tries = turn.tries + 1;
       set({ turn: { ...turn, tries, last: { a, b, result } } });
       if (result === 'dock') {
         // A miss isn't evidence of not knowing a fact (5 × 6 = 30 is right,
         // just not the station's number), so only a dock is recorded.
-        const key = `${Math.min(a, b)}x${Math.max(a, b)}`;
+        const key = pairKey(mission, a, b);
         for (const m of members) record(m.profileId, key, true, null);
         set({ docks: docks + 1 });
         // the docking bonus is earned together: half each

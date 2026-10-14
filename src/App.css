@@ -142,6 +142,14 @@
   white-space: nowrap;
 }
 
+/* addition pilots: the stage they're on, under the destination */
+.level-banner-stage {
+  display: block;
+  font-size: 0.72rem;
+  color: #8fe6ff;
+  text-shadow: 0 0 8px rgba(106, 215, 255, 0.45);
+}
+
 .level-banner-collected {
   margin-top: 0.25rem;
   font-size: 1.05rem;
@@ -535,6 +543,92 @@
   font-size: 0.9rem;
 }
 
+/* the addition explainer: ten-frames within 20, tens and ones beyond */
+.ten-frames {
+  display: flex;
+  gap: 10px;
+}
+
+.ten-frame {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  width: min(36vw, 130px);
+  padding: 5px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+}
+
+.ten-frame-cell {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ten-frame-cell.add-a,
+.ten-frame-cell.add-b,
+.place-rod,
+.place-dot {
+  opacity: 0;
+  transform: scale(0.4);
+  animation: gridCellPopIn 0.25s ease forwards;
+}
+
+.add-a {
+  --add-color: #ffd77a;
+  --add-glow: rgba(255, 177, 94, 0.55);
+}
+
+.add-b {
+  --add-color: #6ad7ff;
+  --add-glow: rgba(106, 215, 255, 0.5);
+}
+
+.ten-frame-cell.add-a,
+.ten-frame-cell.add-b,
+.place-dot {
+  background: var(--add-color);
+  box-shadow: 0 0 6px var(--add-glow);
+}
+
+.place-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(80vw, 300px);
+}
+
+.place-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.place-rod {
+  width: 9px;
+  height: 54px;
+  border-radius: 3px;
+  /* ten segments: a rod is ten ones */
+  background: repeating-linear-gradient(to bottom, var(--add-color) 0 4.4px, rgba(0, 0, 0, 0.35) 4.4px 5.4px);
+  box-shadow: 0 0 6px var(--add-glow);
+}
+
+.place-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.add-explainer-math {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #fff6e0;
+  font-size: 1.05rem;
+  white-space: pre-wrap;
+  text-align: center;
+}
+
 .continue-button {
   background: linear-gradient(90deg, #ff9d76, #c9a4de);
   color: #241b3f;
@@ -605,6 +699,23 @@
   font-weight: 700;
 }
 
+.launch-stage-up {
+  margin: 0.6rem auto 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: rgba(106, 215, 255, 0.14);
+  border: 1px solid rgba(106, 215, 255, 0.5);
+  box-shadow: 0 0 24px rgba(106, 215, 255, 0.25);
+  color: #d8f6ff;
+  font-weight: 600;
+}
+
+.launch-stage-up-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: #8fe6ff;
+}
+
 
 
 /* --- mastery heatmap --- */
@@ -670,6 +781,51 @@
   font-weight: 600;
   background: transparent;
   border: none;
+}
+
+/* the addition map's kinds of two-digit sum */
+.heatmap-kinds {
+  margin: 0.8rem 0 0.2rem;
+}
+
+.heatmap-kinds-title {
+  color: #a898bf;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.heatmap-kinds-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.heatmap-kind {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 92px;
+  max-width: 120px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heatmap-kind-example {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.heatmap-kind-name {
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  line-height: 1.2;
+  opacity: 0.85;
 }
 
 
@@ -1881,6 +2037,62 @@
   border-color: #ffd77a;
   background: rgba(255, 215, 122, 0.15);
   transform: scale(1.08);
+}
+/* the mission: × or +, side by side */
+.mission-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.mission-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fdf3e7;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.mission-option.is-on {
+  border-color: #ffd77a;
+  background: rgba(255, 215, 122, 0.15);
+  transform: scale(1.03);
+}
+.mission-option.is-add.is-on {
+  border-color: #6ad7ff;
+  background: rgba(106, 215, 255, 0.14);
+}
+.mission-option-symbol {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  color: #ffd77a;
+}
+.mission-option.is-add .mission-option-symbol {
+  color: #8fe6ff;
+}
+.mission-option-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+}
+.mission-option-hint {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: #c9a4de;
+  text-align: center;
+}
+.pilot-card-mission {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffd77a;
+}
+.pilot-card-mission.is-add {
+  color: #8fe6ff;
 }
 .profile-primary {
   min-height: 54px;

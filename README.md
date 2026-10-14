@@ -1,6 +1,7 @@
 # 🚀 Multiplication Rocket
 
-A space-rocket game for practicing the multiplication table (1–10), in **English and Hebrew**.
+A space-rocket game for practicing the multiplication table (1–10), or addition
+(**SpaceSum**: sums to 10, then 20, then 100), in **English and Hebrew**.
 The rocket is always flying, under northern-lights curtains that change color every level. Every correct answer fuels it and speeds it up, and a streak of
 correct answers makes it go faster still: stars stretch into streaks, the screen motion-blurs,
 and the engine plume grows hotter. A wrong answer makes it brake and slow down. Fill the tank to
@@ -95,6 +96,40 @@ The lessons follow the order the research on early multiplication supports:
    picture, then a symbols-only problem with an optional "show me". This is the
    concrete → representational → abstract sequence
    ([meta-analytic review of CRA, University of Kentucky](https://scholars.uky.edu/en/publications/a-meta-analytic-review-of-the-concrete-representational-abstract-/)).
+
+## Two missions: × or + (SpaceSum)
+
+Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10)
+or **➕ Addition**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM*, *טיל הכפל* /
+*טיל החיבור*), and each mission keeps its own progress, so a pilot can switch in their profile
+(✏️) and come back to where they were in the other one.
+
+Addition climbs three stages, shown under the destination:
+
+| Stage | Range | Example | What's being learned |
+| --- | --- | --- | --- |
+| 1 | sums within 10 | 3 + 4 | counting on, doubles |
+| 2 | sums within 20 | 8 + 5 | crossing ten: 8 + 5 = 8 + 2 + 3 |
+| 3 | numbers up to 100 | 37 + 45 | tens and ones, then carrying |
+
+- **Moving up on success:** a launch opens the next stage once 80% of the current one is
+  mastered ("New mission level! From now on: sums to 20"). One question in five keeps reviewing
+  the earlier stages.
+- **Stage 3** has thousands of pairs, so it tracks *kinds* of sum instead (tens + tens,
+  two-digit + one-digit, two-digit + two-digit, each with and without carrying) and makes up a
+  fresh problem of the kind picked. The practice map shows the 10 × 10 addition table plus a row
+  for these kinds.
+- **Wrong answers teach:** within 20 the sum fills ten-frames (first number, then the second in
+  another colour, so making ten is visible); two-digit sums are drawn as tens rods and ones dots.
+- **Hints** count on, use doubles ("6 + 7 → 6 + 6 + 1"), make ten ("8 + 5 → 8 + 2 + 3"), or add
+  tens then ones ("37 + 45 → 30 + 40 + 7 + 5"), always stopping one step short.
+- **Modes:** the main drill, the Wormhole (pick the 3 sums that make the target), Meteor Shower,
+  Crew Flight and Monster Sun all play in addition. A mixed crew works: each pilot gets their
+  own mission's questions, the navigator counts two groups of stars, and docking is an addition
+  round. In Monster Sun each phone drills its own mission, and a missed + fact can go to any
+  teammate, a missed × fact only to a × pilot. Constellation, Fleet Battle, Stranded Fleet,
+  Stardust Run, the two-phone games and the Academy are still multiplication only (addition
+  versions are planned, see [docs/plans/2026-10-13-addition.md](docs/plans/2026-10-13-addition.md)).
 
 ## Pilot profiles (siblings)
 

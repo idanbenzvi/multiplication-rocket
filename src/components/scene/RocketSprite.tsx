@@ -9,7 +9,7 @@ import { haptics } from '../../audio/haptics';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
 import { ROCKET_PORTHOLE, rocketSvg } from './illustrations';
-import { useProfiles } from '../../profiles/useProfiles';
+import { activeMission, useProfiles } from '../../profiles/useProfiles';
 import { useSvgTexture } from './spriteTexture';
 
 interface Props {
@@ -29,7 +29,11 @@ export function RocketSprite({ level }: Props) {
   // The active pilot's animal looks out of the porthole.
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
   // until this pilot has found the Academy, the window shimmers to invite taps
-  const academySeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.academySeen);
+  // (the Academy teaches multiplication: no invitation on the addition mission yet)
+  const academySeen = useProfiles((s) => {
+    const p = s.profiles.find((x) => x.id === s.activeId);
+    return !!p?.academySeen || p?.mission === 'add';
+  });
   const porthole = useMemo(() => (avatar ? { ...ROCKET_PORTHOLE, emoji: avatar } : undefined), [avatar]);
   const texture = useSvgTexture(svg, 260, 520, porthole);
 
@@ -45,7 +49,7 @@ export function RocketSprite({ level }: Props) {
     const dy = (uv.y - (1 - ROCKET_PORTHOLE.y)) * HEIGHT;
     if (Math.hypot(dx, dy) > ROCKET_PORTHOLE.radius * WIDTH * 1.8) return;
     e.stopPropagation();
-    if (diving.current) return;
+    if (diving.current || activeMission() === 'add') return;
     const s = useGameStore.getState();
     // only from normal flight (not over a bonus round, launch or review)
     if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;

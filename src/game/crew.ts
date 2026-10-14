@@ -1,6 +1,9 @@
 import type { Fact, FactStat } from './types';
-import { buildFactPool, pickNextFact } from './facts';
+import { buildFactPool, isMastered, pickNextFact } from './facts';
 import { MAX_SPEED_FACTOR, MIN_SPEED_FACTOR, speedFactor } from './scoring';
+import { applyOp, type Mission } from './mission';
+import { additionTable } from './addition';
+import { additionDistractors } from './distractors';
 
 // Crew Flight: two pilots fly one rocket on one device, taking turns. Each
 // sits in a seat: the Pilot gets the usual timed drills, the Navigator (a
@@ -8,6 +11,8 @@ import { MAX_SPEED_FACTOR, MIN_SPEED_FACTOR, speedFactor } from './scoring';
 // Both pour fuel into one shared tank, and every DOCK_EVERY-th turn is a
 // Docking round they play together: each secretly picks one factor, and the
 // two have to multiply to the station's number. See docs/plans/2026-10-08-crew-flight.md.
+// On the addition mission the Navigator counts two groups of stars, and the
+// two numbers at the station have to add up to it.
 
 export type Seat = 'pilot' | 'navigator';
 
@@ -20,10 +25,6 @@ const NAVIGATOR_START_MAX = 5;
 const NAVIGATOR_CAP_MAX = 7;
 /** share of the navigator's pool that has to be mastered before it widens */
 const WIDEN_AT = 0.8;
-
-function isMastered(stat: FactStat | undefined): boolean {
-  return !!stat && stat.attempts > 0 && stat.correct / stat.attempts >= 0.8;
-}
 
 /** the navigator's biggest factor: 5, widening a step at a time (to 7) as they master it */
 export function navigatorMax(mastery: Record<string, FactStat>): number {
@@ -39,6 +40,25 @@ export function navigatorMax(mastery: Record<string, FactStat>): number {
 
 export function poolFor(seat: Seat, mastery: Record<string, FactStat>): Fact[] {
   return seat === 'pilot' ? buildFactPool(1, 10) : buildFactPool(1, navigatorMax(mastery));
+}
+
+const NAVIGATOR_ADD_START = 6;
+const NAVIGATOR_ADD_CAP = 10;
+
+/** an addition navigator's biggest sum: 6, widening a step at a time (to 10) as they master it */
+export function navigatorAddMax(mastery: Record<string, FactStat>): number {
+  let max = NAVIGATOR_ADD_START;
+  while (max < NAVIGATOR_ADD_CAP) {
+    const pool = navigatorAddPool(mastery, max);
+    const done = pool.filter((f) => isMastered(mastery[f.key])).length;
+    if (done / pool.length < WIDEN_AT) break;
+    max++;
+  }
+  return max;
+}
+
+export function navigatorAddPool(mastery: Record<string, FactStat>, max = navigatorAddMax(mastery)): Fact[] {
+  return additionTable(1).filter((f) => f.answer <= max);
 }
 
 /** seats for two pilots by their solo levels: the one further along flies */
@@ -82,8 +102,10 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 // The answer plus the slips a child counting groups makes: one group too
-// many or too few, and miscounting by one or two.
-export function navigatorChoices(groups: number, size: number): number[] {
+// many or too few, and miscounting by one or two (for two groups added
+// together, only the miscounting).
+export function navigatorChoices(groups: number, size: number, mission: Mission = 'mul'): number[] {
+  if (mission === 'add') return shuffle([groups + size, ...additionDistractors(groups, size, 3)]);
   const answer = groups * size;
   const slips = shuffle([...new Set([answer + size, answer - size, answer + 1, answer - 1, answer + 2])]).filter(
     (v) => v > 0 && v !== answer,
@@ -98,8 +120,9 @@ export function navigatorChoices(groups: number, size: number): number[] {
 // ---------- docking ----------
 
 export interface Docking {
+  mission: Mission;
   target: number;
-  /** every way to make it within 1-10, smaller factor first */
+  /** every way to make it within 1-10, smaller number first */
   pairs: Array<[number, number]>;
 }
 
@@ -112,24 +135,41 @@ export function factorPairs(n: number): Array<[number, number]> {
   return pairs;
 }
 
+/** every way to make n as a sum of two numbers within 1-10, smaller first */
+export function sumPairs(n: number): Array<[number, number]> {
+  const pairs: Array<[number, number]> = [];
+  for (let a = 1; a <= n / 2; a++) if (n - a <= 10) pairs.push([a, n - a]);
+  return pairs;
+}
+
 // Targets above 10 (so "1 × n" never works and both children have to
 // think) with at least two factor pairs (so there's something to agree on).
 // With a navigator aboard, some pair has a factor of 5 or less: a part the
-// younger child can find.
-export function buildDocking(mastery: Record<string, FactStat>, withNavigator: boolean): Docking {
+// younger child can find. For addition, targets from the lead pilot's stage
+// (6-10 while they learn sums within 10, then 11-18) with two ways or more
+// to make them, and with a navigator, one that uses a 5 or less.
+export function buildDocking(mastery: Record<string, FactStat>, withNavigator: boolean, mission: Mission = 'mul', stage = 1): Docking {
+  if (mission === 'add') {
+    const candidates = (stage <= 1 ? additionTable(1) : additionTable(2)).filter((f) => {
+      const pairs = sumPairs(f.answer);
+      return f.answer >= 6 && pairs.length >= 2 && (!withNavigator || pairs.some(([a]) => a <= 5));
+    });
+    const fact = pickNextFact(candidates, mastery);
+    return { mission, target: fact.answer, pairs: sumPairs(fact.answer) };
+  }
   const candidates = buildFactPool(1, 10).filter((f) => {
-    if (f.product <= 10) return false;
-    const pairs = factorPairs(f.product);
+    if (f.answer <= 10) return false;
+    const pairs = factorPairs(f.answer);
     return pairs.length >= 2 && (!withNavigator || pairs.some(([a]) => a <= 5));
   });
   const fact = pickNextFact(candidates, mastery);
-  return { target: fact.product, pairs: factorPairs(fact.product) };
+  return { mission, target: fact.answer, pairs: factorPairs(fact.answer) };
 }
 
 export type DockResult = 'dock' | 'over' | 'under';
 
-export function checkDock(a: number, b: number, target: number): DockResult {
-  const p = a * b;
+export function checkDock(a: number, b: number, target: number, mission: Mission = 'mul'): DockResult {
+  const p = applyOp(mission, a, b);
   return p === target ? 'dock' : p > target ? 'over' : 'under';
 }
 

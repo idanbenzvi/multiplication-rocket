@@ -1,3 +1,6 @@
+import { isAddKind } from '../game/addition';
+import { formatFactKey } from '../game/facts';
+
 export type Lang = 'en' | 'he';
 
 // Every player-facing string lives here. Math expressions (operands, ×, =,
@@ -6,6 +9,15 @@ export type Lang = 'en' | 'he';
 // how Israeli school workbooks print them too.
 const en = {
   logo: 'MULT-ROCKET',
+  logoAdd: 'SPACESUM',
+  pickMission: 'Pick your mission',
+  missionMul: 'Multiplication',
+  missionMulHint: 'The times tables, 1 to 10',
+  missionAdd: 'Addition',
+  missionAddHint: 'Sums to 10, then to 20 and 100',
+  stageName: (n: number) => `Sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
+  stageUpTitle: 'New mission level! 🎉',
+  stageUp: (n: number) => `From now on: sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   level: (n: number) => `Level ${n}`,
   destination: 'Destination:',
   stopAndReview: 'Stop & Review',
@@ -84,6 +96,19 @@ const en = {
   hintTimesTen: '× 10 just adds a zero.',
   hintSmall: (x: number, y: number) => `Small numbers — picture ${x} groups of ${y} and count them.`,
   hintHalveDouble: 'Halve it, then double:',
+  hintOneMore: '+ 1 is just the next number.',
+  hintPlusTen: (n: number) => `10 + ${n} is one ten and ${n} ones.`,
+  hintDouble: (n: number) => `A double! Start at ${n} and count on ${n} more.`,
+  hintNearDouble: 'Almost a double:',
+  hintMakeTen: 'Make 10 first:',
+  hintCountOn: 'Start at the bigger number and count on:',
+  hintTensLike: (a: number, b: number) => `Just like ${a} + ${b}, but with tens.`,
+  hintAddOnes: 'Add the ones:',
+  hintNextTen: 'Jump to the next ten first:',
+  hintTensAndOnes: 'Tens with tens, ones with ones:',
+  addExplainCount: 'Count them all:',
+  addExplainMakeTen: 'Fill up the 10 first, then the rest:',
+  addExplainTens: 'Tens with tens, ones with ones:',
 
   blastOff: 'Blast off!',
   youReached: 'You reached',
@@ -93,12 +118,14 @@ const en = {
 
   wormholeAhead: 'Wormhole ahead!',
   wormholeInstructions: (n: number) => `Pick the 3 drills that equal ${n}`,
+  wormholeInstructionsAdd: (n: number) => `Pick the 3 sums that make ${n}`,
   wormholePicked: (k: number) => `${k} / 3 found`,
   wormholeKeys: 'or press 1–5',
   wormholeOneLeft: 'Careful — one more miss closes the wormhole!',
   wormholeCollapsed: 'The wormhole closed. Next time!',
   wormholeBoost: 'DOUBLE BOOST!',
   drillLabel: (x: number, y: number) => `${x} times ${y}`,
+  drillLabelAdd: (x: number, y: number) => `${x} plus ${y}`,
 
 
   meteorTitle: 'Meteor shower!',
@@ -149,6 +176,7 @@ const en = {
   patternDigitSum9: 'The digits always add up to 9 (63 → 6 + 3 = 9).',
 
   reviewPeekTitle: 'Your multiplication map',
+  reviewPeekTitleAdd: 'Your addition map',
   reviewPeekStats: (m: number, p: number, n: number) => `${m} mastered · ${p} to practice · ${n} not tried yet`,
   reviewPeekHint: 'Click for the full review',
 
@@ -328,6 +356,15 @@ const en = {
   },
 
   heatmapTitle: 'Your Multiplication Map',
+  heatmapTitleAdd: 'Your Addition Map',
+  heatmapKinds: 'Two-digit sums',
+  addKinds: {
+    'tens+tens': 'tens + tens',
+    '2d+1d': 'two-digit + one-digit',
+    '2d+2d': 'two-digit + two-digit',
+    '2d+1d:c': 'two-digit + one-digit, carrying',
+    '2d+2d:c': 'two-digit + two-digit, carrying',
+  },
   heatmapSubtitle: 'Green = mastered · Red = needs more practice',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
   keepPracticing: 'Keep Practicing',
@@ -354,8 +391,10 @@ const en = {
     seat: 'Seat',
     seatPilot: '🚀 Pilot',
     seatPilotHint: 'Times tables, against the clock',
+    seatPilotHintAdd: 'Sums, against the clock',
     seatNavigator: '🧭 Navigator',
     seatNavigatorHint: 'Count groups of stars',
+    seatNavigatorHintAdd: 'Count two groups of stars',
     launchTogether: 'Launch together! 🚀',
     turnOf: (name: string) => `${name}'s turn`,
     crewLevel: (n: number) => `Crew level ${n}`,
@@ -365,15 +404,17 @@ const en = {
       `${g === 1 ? '1 group' : `${g} groups`} of ${s === 1 ? '1 star' : `${s} stars`}. How many stars?`,
     navCountAlong: "Let's count the groups together:",
     navTotal: (g: number, s: number) => `${g} groups of ${s} = ${g * s}`,
+    navAddQuestion: (a: number, b: number) => `${a === 1 ? '1 star' : `${a} stars`} and ${b} more. How many stars?`,
+    navAddCountOn: "Let's count on from the first group:",
     dockTitle: 'Docking!',
     dockIntro: (n: number) => `Make ${n} together! Each of you picks one number.`,
     dockTalk: 'Talk it over: which two numbers make it?',
     dockPick: (name: string) => `${name}, pick a number`,
     dockLocked: 'Locked in 🔒',
     dockTries: (k: number, n: number) => `Try ${k} / ${n}`,
-    dockOver: (a: number, b: number) => `${a} × ${b} = ${a * b}: too big!`,
-    dockUnder: (a: number, b: number) => `${a} × ${b} = ${a * b}: too small!`,
-    dockDocked: (a: number, b: number) => `${a} × ${b} = ${a * b}: docked!`,
+    dockOver: (expr: string) => `${expr}: too big!`,
+    dockUnder: (expr: string) => `${expr}: too small!`,
+    dockDocked: (expr: string) => `${expr}: docked!`,
     dockBonus: (m: number) => `⚡ ×${m} fuel`,
     dockShow: (n: number) => `${n} can be made like this:`,
     tryAgain: 'Try again',
@@ -511,6 +552,15 @@ export type Strings = typeof en;
 
 const he: Strings = {
   logo: 'טיל הכפל',
+  logoAdd: 'טיל החיבור',
+  pickMission: 'בחרו משימה',
+  missionMul: 'כפל',
+  missionMulHint: 'לוח הכפל, 1 עד 10',
+  missionAdd: 'חיבור',
+  missionAddHint: 'חיבור עד 10, ואז עד 20 ועד 100',
+  stageName: (n) => `חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
+  stageUpTitle: 'שלב חדש במשימה! 🎉',
+  stageUp: (n) => `מעכשיו: חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   level: (n) => `שלב ${n}`,
   destination: 'יעד:',
   stopAndReview: 'עצירה וחזרה',
@@ -577,7 +627,7 @@ const he: Strings = {
     ['יפה!', 'כן!', 'נכון!', 'יופי!'],
     ['מדהים!', 'בום!', 'זוּם!', 'סופר!'],
     ['מוח של טיל!', 'כוכב על!', 'מטורף!', 'איזה רצף!'],
-    ['בלתי ניתן לעצירה!', 'אגדי!', 'אלוף הכפל!', 'פשוט מדהים!'],
+    ['בלתי ניתן לעצירה!', 'אגדי!', 'אלוף החשבון!', 'פשוט מדהים!'],
   ],
   milestoneTitle: (n) => `${n} ברצף!`,
   milestoneSubtitle: ['איזה רצף!', 'עפים על זה!', 'אי אפשר לעצור את זה!', 'להיכל התהילה!'],
@@ -588,6 +638,19 @@ const he: Strings = {
   hintTimesTen: '× 10 — פשוט מוסיפים אפס.',
   hintSmall: (x, y) => `מספרים קטנים — דמיינו ${x} קבוצות של ${y} וספרו אותן.`,
   hintHalveDouble: 'חוצים לשניים, ואז מכפילים פי 2:',
+  hintOneMore: 'ועוד 1 זה פשוט המספר הבא.',
+  hintPlusTen: (n) => `\u206610 + ${n}\u2069 זה עשרת אחת ו־${n} יחידות.`,
+  hintDouble: (n) => `כפולה! מתחילים ב־${n} וסופרים עוד ${n}.`,
+  hintNearDouble: 'כמעט כפולה:',
+  hintMakeTen: 'קודם משלימים ל־10:',
+  hintCountOn: 'מתחילים מהמספר הגדול וסופרים הלאה:',
+  hintTensLike: (a, b) => `בדיוק כמו \u2066${a} + ${b}\u2069, רק בעשרות.`,
+  hintAddOnes: 'מחברים את היחידות:',
+  hintNextTen: 'קודם קופצים לעשרת הבאה:',
+  hintTensAndOnes: 'עשרות עם עשרות, יחידות עם יחידות:',
+  addExplainCount: 'סופרים את כולם:',
+  addExplainMakeTen: 'קודם ממלאים את ה־10, ואז את השאר:',
+  addExplainTens: 'עשרות עם עשרות, יחידות עם יחידות:',
 
   blastOff: 'שיגור!',
   youReached: 'הגעת אל',
@@ -597,12 +660,14 @@ const he: Strings = {
 
   wormholeAhead: 'חור תולעת לפנינו!',
   wormholeInstructions: (n) => `בחרו את 3 התרגילים ששווים ${n}`,
+  wormholeInstructionsAdd: (n) => `בחרו את 3 התרגילים שסכומם ${n}`,
   wormholePicked: (k) => `נמצאו ${k} מתוך 3`,
   wormholeKeys: 'או הקישו 1–5',
   wormholeOneLeft: 'זהירות — עוד טעות אחת וחור התולעת ייסגר!',
   wormholeCollapsed: 'חור התולעת נסגר. בפעם הבאה!',
   wormholeBoost: 'בוסט כפול!',
   drillLabel: (x, y) => `${x} כפול ${y}`,
+  drillLabelAdd: (x, y) => `${x} ועוד ${y}`,
 
 
   meteorTitle: 'מטר מטאורים!',
@@ -653,6 +718,7 @@ const he: Strings = {
   patternDigitSum9: 'סכום הספרות תמיד 9 (\u206663: 6 + 3 = 9\u2069).',
 
   reviewPeekTitle: 'מפת הכפל שלך',
+  reviewPeekTitleAdd: 'מפת החיבור שלך',
   reviewPeekStats: (m, p, n) => `${m} שולטים · ${p} לתרגול · ${n} עוד לא נוסו`,
   reviewPeekHint: 'לחצו לחזרה המלאה',
 
@@ -832,6 +898,15 @@ const he: Strings = {
   },
 
   heatmapTitle: 'מפת הכפל שלך',
+  heatmapTitleAdd: 'מפת החיבור שלך',
+  heatmapKinds: 'חיבור דו־ספרתי',
+  addKinds: {
+    'tens+tens': 'עשרות + עשרות',
+    '2d+1d': 'דו־ספרתי + חד־ספרתי',
+    '2d+2d': 'דו־ספרתי + דו־ספרתי',
+    '2d+1d:c': 'דו־ספרתי + חד־ספרתי, עם המרה',
+    '2d+2d:c': 'דו־ספרתי + דו־ספרתי, עם המרה',
+  },
   heatmapSubtitle: 'ירוק = שולטים · אדום = צריך עוד תרגול',
   heatmapWhy: 'היו 5 תרגילים קשים. הנה איפה כדאי להתאמן:',
   keepPracticing: 'ממשיכים להתאמן',
@@ -858,8 +933,10 @@ const he: Strings = {
     seat: 'תפקיד',
     seatPilot: '🚀 טייס',
     seatPilotHint: 'לוח הכפל, נגד השעון',
+    seatPilotHintAdd: 'חיבור, נגד השעון',
     seatNavigator: '🧭 נווט',
     seatNavigatorHint: 'סופרים קבוצות של כוכבים',
+    seatNavigatorHintAdd: 'סופרים שתי קבוצות של כוכבים',
     launchTogether: 'משגרים יחד! 🚀',
     turnOf: (name) => `התור של ${name}`,
     crewLevel: (n) => `שלב צוות ${n}`,
@@ -869,15 +946,17 @@ const he: Strings = {
       `${g === 1 ? 'קבוצה אחת' : `${g} קבוצות`} של ${s === 1 ? 'כוכב אחד' : `${s} כוכבים`}. כמה כוכבים יש?`,
     navCountAlong: 'בואו נספור את הקבוצות יחד:',
     navTotal: (g, s) => `${g} קבוצות של ${s} = ${g * s}`,
+    navAddQuestion: (a, b) => `${a === 1 ? 'כוכב אחד' : `${a} כוכבים`} ועוד ${b}. כמה כוכבים יש?`,
+    navAddCountOn: 'בואו נמשיך לספור מהקבוצה הראשונה:',
     dockTitle: 'עגינה!',
     dockIntro: (n) => `הרכיבו ${n} יחד! כל אחד בוחר מספר אחד.`,
     dockTalk: 'דברו ביניכם: אילו שני מספרים יוצרים אותו?',
     dockPick: (name) => `${name}, מה המספר שלך?`,
     dockLocked: 'ננעל 🔒',
     dockTries: (k, n) => `ניסיון ${k} מתוך ${n}`,
-    dockOver: (a, b) => `${a} × ${b} = ${a * b}: גדול מדי!`,
-    dockUnder: (a, b) => `${a} × ${b} = ${a * b}: קטן מדי!`,
-    dockDocked: (a, b) => `${a} × ${b} = ${a * b}: עגנו!`,
+    dockOver: (expr) => `${expr}: גדול מדי!`,
+    dockUnder: (expr) => `${expr}: קטן מדי!`,
+    dockDocked: (expr) => `${expr}: עגנו!`,
     dockBonus: (m) => `⚡ דלק ×${m}`,
     dockShow: (n) => `אפשר להרכיב את ${n} כך:`,
     tryAgain: 'נסו שוב',
@@ -1008,6 +1087,11 @@ const he: Strings = {
 };
 
 export const STRINGS: Record<Lang, Strings> = { en, he };
+
+/** a tracked fact for people to read: "3 × 7", "3 + 4", or an addition kind's name */
+export function factLabel(t: Strings, key: string): string {
+  return isAddKind(key) ? t.addKinds[key] : formatFactKey(key);
+}
 
 export function destinationName(
   t: Strings,

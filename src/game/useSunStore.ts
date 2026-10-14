@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { initialSunState, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
+import { factAnswer, initialSunState, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
 import { buildFactPool, pickNextFact } from './facts';
 import { recordOwn } from './ownAnswers';
+import { pairKey, parsePair } from './mission';
+import { additionTrackKey, pickAdditionFact } from './addition';
 import { hostGroup, joinLink, type Group, type Link, type LinkError, type LinkStatus } from '../net/peerLink';
-import { activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
+import { activeMission, activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
 import { loadProgressFor } from '../storage/progressStore';
 import { pauseGame, resumeGame } from './gameClock';
 import { useGameStore } from './useGameStore';
@@ -79,7 +81,7 @@ export const sunNames = { fallback: 'Pilot' };
 
 function me(): SunPlayerInfo {
   const p = activeProfile();
-  return { id: useSunStore.getState().myId, name: pilotName(p, sunNames.fallback), avatar: p?.avatar ?? '🙂' };
+  return { id: useSunStore.getState().myId, name: pilotName(p, sunNames.fallback), avatar: p?.avatar ?? '🙂', mission: activeMission() };
 }
 
 function isMsg(m: unknown): m is Msg {
@@ -88,27 +90,40 @@ function isMsg(m: unknown): m is Msg {
 
 function isPlayerInfo(p: unknown): p is SunPlayerInfo {
   const x = p as SunPlayerInfo;
-  return !!x && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.avatar === 'string';
+  return (
+    !!x &&
+    typeof x.id === 'string' &&
+    typeof x.name === 'string' &&
+    typeof x.avatar === 'string' &&
+    (x.mission === undefined || x.mission === 'mul' || x.mission === 'add')
+  );
 }
 
 /**
  * This phone's next question: a waiting help or retry card first, otherwise
- * one of its pilot's own facts, up to this monster's biggest table and
- * weighted by their mastery (facts they miss come up more).
+ * one of its pilot's own facts, weighted by their mastery (facts they miss
+ * come up more): on ×, up to this monster's biggest table; on +, from
+ * their own addition stage.
  */
 export function nextQuestion(avoid?: string): SunQuestion {
   const { state, myId } = useSunStore.getState();
   const mine = state.players.find((p) => p.id === myId);
   const card = mine?.inbox.find((c) => c.after <= mine.answered && !answeredCards.has(c.id));
   const flip = Math.random() < 0.5;
-  if (card) {
-    const [a, b] = card.fact.split('x').map(Number);
-    return { fact: card.fact, x: flip ? b : a, y: flip ? a : b, card };
+  const pair = card && parsePair(card.fact);
+  if (card && pair) {
+    return { fact: card.fact, x: flip ? pair.b : pair.a, y: flip ? pair.a : pair.b, card };
   }
   const id = useProfiles.getState().activeId;
-  const mastery = id ? loadProgressFor(id).mastery : {};
-  const fact = pickNextFact(buildFactPool(2, sunFactorMax(state.monster)), mastery, avoid);
-  return { fact: fact.key, x: flip ? fact.b : fact.a, y: flip ? fact.a : fact.b };
+  const progress = id ? loadProgressFor(id) : null;
+  const mastery = progress?.mastery ?? {};
+  const fact =
+    activeMission() === 'add'
+      ? pickAdditionFact(progress?.stage ?? 1, mastery, avoid)
+      : pickNextFact(buildFactPool(2, sunFactorMax(state.monster)), mastery, avoid);
+  // what's sent is the problem itself (a stage-3 sum is tracked by its kind)
+  const key = activeMission() === 'add' ? pairKey('add', fact.a, fact.b) : fact.key;
+  return { fact: key, x: flip ? fact.b : fact.a, y: flip ? fact.a : fact.b };
 }
 
 export const useSunStore = create<SunStore>((set, get) => {
@@ -232,8 +247,11 @@ export const useSunStore = create<SunStore>((set, get) => {
     answer: (q, value) => {
       const { state, role, myId } = get();
       if (state.phase !== 'fight') return;
-      const [a, b] = q.fact.split('x').map(Number);
-      recordOwn(q.fact, value === a * b, 'sun');
+      const pair = parsePair(q.fact);
+      if (pair) {
+        const tracked = pair.mission === 'add' ? additionTrackKey(pair.a, pair.b) : q.fact;
+        recordOwn(tracked, value === factAnswer(q.fact), 'sun');
+      }
       if (q.card) answeredCards.add(q.card.id);
       if (role === 'host') dispatch({ type: 'answer', id: myId, fact: q.fact, value, cardId: q.card?.id });
       else link?.send({ t: 'answer', fact: q.fact, value, cardId: q.card?.id } satisfies Msg);

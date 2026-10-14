@@ -1,6 +1,7 @@
 import type { FactStat } from '../game/types';
 import type { LoggedAnswer } from './answerLog';
 import { masterySummary } from '../game/masteryStats';
+import type { Mission } from '../game/mission';
 
 // Parent-dashboard metrics, computed from a pilot's answer log (and their
 // all-time mastery totals for "hardest facts"). Pure functions — no React.
@@ -126,6 +127,7 @@ export function computeDashboard(
   mastery: Record<string, FactStat>,
   range: Range,
   now = Date.now(),
+  mission: Mission = 'mul',
 ): Dashboard {
   const today = startOfDay(now);
   const firstLogged = log.length ? startOfDay(Math.min(...log.map((e) => e.at))) : today;
@@ -171,7 +173,7 @@ export function computeDashboard(
   }
   improved.sort((a, b) => b.after - b.before - (a.after - a.before));
 
-  const summary = masterySummary(mastery);
+  const summary = masterySummary(mastery, mission);
   return {
     days,
     current: periodStats(inRange, days),

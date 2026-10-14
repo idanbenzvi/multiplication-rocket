@@ -6,7 +6,7 @@ export function buildFactPool(min: number, max: number): Fact[] {
   const facts: Fact[] = [];
   for (let a = min; a <= max; a++) {
     for (let b = a; b <= max; b++) {
-      facts.push({ a, b, key: `${a}x${b}`, product: a * b });
+      facts.push({ a, b, key: `${a}x${b}`, answer: a * b });
     }
   }
   return facts;
@@ -70,6 +70,12 @@ export function getStrugglingFactKeys(mastery: Record<string, FactStat>): string
     .map(([key]) => key);
 }
 
+/** right at least 4 times out of 5 (the practice map's green) */
+export function isMastered(stat: FactStat | undefined): boolean {
+  return !!stat && stat.attempts > 0 && stat.correct / stat.attempts >= 0.8;
+}
+
+/** "3x7" → "3 × 7", "3+4" → "3 + 4"; an addition kind needs factLabel() (it's translated) */
 export function formatFactKey(key: string): string {
-  return key.replace('x', ' × ');
+  return key.replace(/^(\d+)([x+])(\d+)$/, (_, a, op, b) => `${a} ${op === 'x' ? '×' : '+'} ${b}`);
 }

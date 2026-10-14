@@ -3,6 +3,8 @@ import { gameNow } from '../game/gameClock';
 import type { Question } from '../game/useGameStore';
 import { FAST_MS, SLOW_MS, speedZone } from '../game/scoring';
 import { MultiplicationGrid } from './MultiplicationGrid';
+import { AdditionExplainer } from './AdditionExplainer';
+import { missionOfKey, OP_SYMBOL } from '../game/mission';
 import { useT } from '../i18n/useLang';
 import ElectricBorder from './reactbits/ElectricBorder';
 import { AnimatePresence, motion } from 'motion/react';
@@ -74,13 +76,14 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
     [question.askedAt],
   );
   const [picked, setPicked] = useState<number | null>(null);
-  const answer = question.fact.product;
+  const answer = question.fact.answer;
+  const mission = missionOfKey(question.fact.key);
   const usePad = mode === 'type' && touch;
 
   // Four options: the answer plus three near-misses (neighboring facts —
   // the mistakes children actually make), fixed for the life of the question.
   const choices = useMemo(
-    () => shuffled([answer, ...distractors(question.x, question.y, 3)]),
+    () => shuffled([answer, ...distractors(question.x, question.y, 3, mission)]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [question.askedAt],
   );
@@ -238,7 +241,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
         <form className="question-card" onSubmit={handleSubmit}>
           <div className="equation-row" dir="ltr">
             <span className="equation-operand">{question.x}</span>
-            <span className="equation-op">&times;</span>
+            <span className="equation-op">{OP_SYMBOL[mission]}</span>
             <span className="equation-operand">{question.y}</span>
             <span className="equation-op">=</span>
             {mode === 'type' && !usePad && (
@@ -298,7 +301,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
 
           {feedback === 'wrong' && (
             <div className="wrong-explainer">
-              <MultiplicationGrid x={question.x} y={question.y} />
+              {mission === 'add' ? <AdditionExplainer x={question.x} y={question.y} /> : <MultiplicationGrid x={question.x} y={question.y} />}
               <button ref={continueButtonRef} type="submit" className="continue-button">
                 {t.gotItContinue} {!touch && <span className="continue-key">(Enter)</span>}
               </button>

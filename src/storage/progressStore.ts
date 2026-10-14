@@ -1,11 +1,13 @@
 import type { Progress } from '../game/types';
-import { progressKeyFor, useProfiles } from '../profiles/useProfiles';
+import type { Mission } from '../game/mission';
+import { activeMission, missionOf, progressKeyFor, useProfiles } from '../profiles/useProfiles';
 
-// Progress is saved per pilot profile. Before a profile exists (the very
-// first launch, while the welcome screen is up) it falls back to a scratch key.
+// Progress is saved per pilot profile and mission (the active pilot's
+// current one). Before a profile exists (the very first launch, while the
+// welcome screen is up) it falls back to a scratch key.
 function storageKey(): string {
   const { activeId } = useProfiles.getState();
-  return activeId ? progressKeyFor(activeId) : 'multiplication-rocket:progress:v1:unassigned';
+  return activeId ? progressKeyFor(activeId, activeMission()) : 'multiplication-rocket:progress:v1:unassigned';
 }
 
 export function defaultProgress(): Progress {
@@ -53,13 +55,14 @@ function saveTo(key: string, progress: Progress) {
 }
 
 // A crew flight records answers for two pilots at once, so it reads and
-// writes a given pilot's progress rather than the active one's.
-export function loadProgressFor(profileId: string): Progress {
-  return loadFrom(progressKeyFor(profileId));
+// writes a given pilot's progress rather than the active one's (in their
+// current mission, unless a fact from the other one is being recorded).
+export function loadProgressFor(profileId: string, mission: Mission = missionOf(profileId)): Progress {
+  return loadFrom(progressKeyFor(profileId, mission));
 }
 
-export function saveProgressFor(profileId: string, progress: Progress) {
-  saveTo(progressKeyFor(profileId), progress);
+export function saveProgressFor(profileId: string, progress: Progress, mission: Mission = missionOf(profileId)) {
+  saveTo(progressKeyFor(profileId, mission), progress);
 }
 
 export const localProgressStore: ProgressStore = {

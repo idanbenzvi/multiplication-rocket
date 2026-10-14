@@ -2,11 +2,20 @@ import type { Fact, Progress } from './types';
 import { buildFactPool, pickNextFact, randomizeOrder } from './facts';
 import { getLevelConfig } from './levels';
 import { distractors } from './distractors';
+import type { Mission } from './mission';
+import { pickFact } from './questions';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them.
 export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust';
 export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust'];
+// Addition has the rounds that work with any operation so far; the others
+// are built around multiplication and get addition versions later.
+const ADDITION_ROTATION: BonusKind[] = ['wormhole', 'meteor'];
+
+export function bonusRotation(mission: Mission): BonusKind[] {
+  return mission === 'add' ? ADDITION_ROTATION : BONUS_ROTATION;
+}
 
 // ---------- Meteor Shower ----------
 
@@ -37,20 +46,19 @@ function pool(progress: Progress) {
 }
 
 /** Drills picked with the usual "facts you struggle with come back more" weighting. */
-export function buildMeteorDrills(progress: Progress): MeteorDrill[] {
-  const facts = pool(progress);
+export function buildMeteorDrills(progress: Progress, mission: Mission = 'mul'): MeteorDrill[] {
   const drills: MeteorDrill[] = [];
   let last: string | undefined;
   for (let i = 0; i < METEOR_DRILLS; i++) {
-    const fact = pickNextFact(facts, progress.mastery, last);
+    const fact = pickFact(mission, progress, last);
     last = fact.key;
     const { x, y } = randomizeOrder(fact);
     drills.push({
       factKey: fact.key,
       x,
       y,
-      answer: fact.product,
-      values: shuffle([fact.product, ...distractors(x, y, METEORS_PER_DRILL - 1)]),
+      answer: fact.answer,
+      values: shuffle([fact.answer, ...distractors(x, y, METEORS_PER_DRILL - 1, mission)]),
     });
   }
   return drills;
@@ -83,9 +91,9 @@ export function buildConstellationTargets(progress: Progress): ConstellationTarg
   for (let tries = 0; targets.length < CONSTELLATION_TARGETS && tries < 60; tries++) {
     const fact = pickNextFact(facts, progress.mastery, last);
     last = fact.key;
-    if (used.has(fact.product)) continue;
-    used.add(fact.product);
-    targets.push({ target: fact.product, hint: { rows: fact.a, cols: fact.b } });
+    if (used.has(fact.answer)) continue;
+    used.add(fact.answer);
+    targets.push({ target: fact.answer, hint: { rows: fact.a, cols: fact.b } });
   }
   return targets;
 }

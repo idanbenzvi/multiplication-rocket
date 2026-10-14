@@ -3,6 +3,8 @@ import { gameNow, gameTimeout } from '../game/gameClock';
 import { useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildMeteorDrills, METEOR_DRILLS, type MeteorDrill } from '../game/bonusRounds';
+import { missionOfKey, OP_SYMBOL } from '../game/mission';
+import { activeMission } from '../profiles/useProfiles';
 import { bump, kick } from '../game/flight';
 import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
@@ -65,7 +67,7 @@ function rockPath(seed: number): string {
 
 export function MeteorShower({ onDone, onBurst }: Props) {
   const t = useT();
-  const drills = useMemo(() => buildMeteorDrills(useGameStore.getState().progress), []);
+  const drills = useMemo(() => buildMeteorDrills(useGameStore.getState().progress, activeMission()), []);
   const fuelPerHit = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
 
   const [phase, setPhase] = useState<Phase>('intro');
@@ -210,7 +212,7 @@ export function MeteorShower({ onDone, onBurst }: Props) {
         <span className="meteor-title">☄️ {t.meteorTitle}</span>
         {drill && phase !== 'intro' && phase !== 'summary' && (
           <bdi dir="ltr" className="meteor-drill">
-            {drill.x} × {drill.y} = {burned ? drill.answer : '?'}
+            {drill.x} {OP_SYMBOL[missionOfKey(drill.factKey)]} {drill.y} = {burned ? drill.answer : '?'}
           </bdi>
         )}
         <span className="meteor-pips">

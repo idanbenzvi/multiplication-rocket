@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import type { CrewQuestion } from '../../game/useCrewStore';
 import { skipCounts } from '../../game/crew';
+import { missionOfKey } from '../../game/mission';
 import { useLang, useT } from '../../i18n/useLang';
 import { speak } from '../../audio/speech';
 
@@ -16,13 +17,16 @@ interface Props {
 // of 4 stars"), four big answer buttons, and the question read aloud on
 // request. A miss counts the groups up together (4, 8, 12): the Academy's
 // equal-groups lesson, practised. Untimed: counting takes what it takes.
+// On the addition mission it's two groups (3 stars and 4 more), and a miss
+// counts on from the first group (4, 5, 6, 7).
 export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: Props) {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const [picked, setPicked] = useState<number | null>(null);
   const { x: groups, y: size, choices } = question;
-  const answer = groups * size;
-  const prompt = t.crew.navQuestion(groups, size);
+  const adding = missionOfKey(question.fact.key) === 'add';
+  const answer = adding ? groups + size : groups * size;
+  const prompt = adding ? t.crew.navAddQuestion(groups, size) : t.crew.navQuestion(groups, size);
   const continueRef = useRef<HTMLButtonElement>(null);
 
   const choose = (v: number) => {
@@ -59,47 +63,51 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
         </button>
       </div>
 
-      <div className="nav-groups" dir="ltr">
-        {counts.map((total, g) => (
-          <motion.div
-            key={g}
-            className="nav-group"
-            initial={{ scale: 0.4, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 18, delay: g * 0.08 }}
-          >
-            <div className="nav-stars" style={{ gridTemplateColumns: `repeat(${starColumns}, auto)` }}>
-              {Array.from({ length: size }, (_, i) => (
-                <span key={i} className="nav-star">
-                  ⭐
-                </span>
-              ))}
-            </div>
-            {feedback === 'wrong' && (
-              <motion.div
-                className="nav-count"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + g * 0.45 }}
-              >
-                {total}
-              </motion.div>
-            )}
-          </motion.div>
-        ))}
-      </div>
+      {adding ? (
+        <AddGroups a={groups} b={size} countOn={feedback === 'wrong'} />
+      ) : (
+        <div className="nav-groups" dir="ltr">
+          {counts.map((total, g) => (
+            <motion.div
+              key={g}
+              className="nav-group"
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 18, delay: g * 0.08 }}
+            >
+              <div className="nav-stars" style={{ gridTemplateColumns: `repeat(${starColumns}, auto)` }}>
+                {Array.from({ length: size }, (_, i) => (
+                  <span key={i} className="nav-star">
+                    ⭐
+                  </span>
+                ))}
+              </div>
+              {feedback === 'wrong' && (
+                <motion.div
+                  className="nav-count"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + g * 0.45 }}
+                >
+                  {total}
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {feedback === 'wrong' ? (
         <div className="nav-explainer">
-          <div>{t.crew.navCountAlong}</div>
+          <div>{adding ? t.crew.navAddCountOn : t.crew.navCountAlong}</div>
           <motion.div
             className="nav-total"
             dir="ltr"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 + groups * 0.45 }}
+            transition={{ delay: adding ? 0.6 + size * 0.4 : 0.4 + groups * 0.45 }}
           >
-            {t.crew.navTotal(groups, size)}
+            {adding ? `${groups} + ${size} = ${answer}` : t.crew.navTotal(groups, size)}
           </motion.div>
           <button ref={continueRef} type="button" className="continue-button" onClick={onContinue}>
             {t.gotItContinue}
@@ -117,6 +125,44 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/** the two groups of an addition question; counting on, the second group's stars get numbers */
+function AddGroups({ a, b, countOn }: { a: number; b: number; countOn: boolean }) {
+  const columns = (n: number) => (n <= 5 ? n : Math.ceil(n / 2));
+  const group = (n: number, second: boolean) => (
+    <motion.div
+      className="nav-group"
+      initial={{ scale: 0.4, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 18, delay: second ? 0.12 : 0 }}
+    >
+      <div className={`nav-stars ${second ? 'is-second' : ''}`} style={{ gridTemplateColumns: `repeat(${columns(n)}, auto)` }}>
+        {Array.from({ length: n }, (_, i) => (
+          <span key={i} className="nav-star">
+            ⭐
+            {countOn && second && (
+              <motion.i className="nav-star-n" initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 + i * 0.4 }}>
+                {a + i + 1}
+              </motion.i>
+            )}
+          </span>
+        ))}
+      </div>
+      {countOn && !second && (
+        <motion.div className="nav-count" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          {a}
+        </motion.div>
+      )}
+    </motion.div>
+  );
+  return (
+    <div className="nav-groups nav-add" dir="ltr">
+      {group(a, false)}
+      <span className="nav-plus">+</span>
+      {group(b, true)}
     </div>
   );
 }

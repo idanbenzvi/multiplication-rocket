@@ -4,6 +4,10 @@
 // a random teammate as a help card; when they solve it, the one who missed
 // sees their answer and gets the fact again two questions later. The host
 // phone runs sunReducer as the referee. See docs/plans/2026-10-10-monster-sun.md.
+// Every phone drills its own pilot's mission: × and + pilots can fight
+// side by side, and a missed fact only goes to a teammate who can solve it.
+
+import { answerOfKey, missionOfKey, type Mission } from './mission';
 
 export const MAX_PLAYERS = 6;
 export const SUN_MONSTERS = 3;
@@ -22,11 +26,13 @@ export interface SunPlayerInfo {
   id: string;
   name: string;
   avatar: string;
+  /** the pilot's mission (a phone from before missions existed sends none: ×) */
+  mission?: Mission;
 }
 
 export interface SunCard {
   id: number;
-  /** canonical fact key, e.g. "7x8" */
+  /** the problem, e.g. "7x8" or "37+45" */
   fact: string;
   /** who missed it */
   from: string;
@@ -106,9 +112,14 @@ export function maxHpFor(monster: number, players: number): number {
   return (HITS_PER_PLAYER + monster) * players;
 }
 
-export function factProduct(fact: string): number | null {
-  const m = /^(\d{1,2})x(\d{1,2})$/.exec(fact);
-  return m ? Number(m[1]) * Number(m[2]) : null;
+/** the answer to a problem a phone sent, or null for anything malformed */
+export function factAnswer(fact: string): number | null {
+  return answerOfKey(fact);
+}
+
+/** a + fact can go to anyone, a × fact only to someone on the × mission */
+export function canHelpWith(p: SunPlayerInfo, fact: string): boolean {
+  return missionOfKey(fact) === 'add' || (p.mission ?? 'mul') === 'mul';
 }
 
 /** the card this player answers next, before their own questions */
@@ -140,12 +151,12 @@ function update(s: SunState, id: string, fn: (p: SunPlayer) => SunPlayer): SunPl
 export function sunReducer(s: SunState, action: SunAction, rand: () => number = Math.random): SunState {
   switch (action.type) {
     case 'join': {
-      const { id, name, avatar } = action.player;
+      const { id, name, avatar, mission } = action.player;
       if (s.players.some((p) => p.id === id)) {
-        return { ...s, players: update(s, id, (p) => ({ ...p, name, avatar, online: true })) };
+        return { ...s, players: update(s, id, (p) => ({ ...p, name, avatar, mission, online: true })) };
       }
       if (s.players.length >= MAX_PLAYERS) return s;
-      const players = [...s.players, fresh({ id, name, avatar })];
+      const players = [...s.players, fresh({ id, name, avatar, mission })];
       if (s.phase === 'lobby' || s.phase === 'summary') return { ...s, players };
       // joining mid-fight: the monster grows by the newcomer's share
       const share = HITS_PER_PLAYER + s.monster;
@@ -167,7 +178,7 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
     case 'answer': {
       if (s.phase !== 'fight') return s;
       const me = s.players.find((p) => p.id === action.id);
-      const product = factProduct(action.fact);
+      const product = factAnswer(action.fact);
       if (!me || product === null) return s;
       const card = action.cardId === undefined ? undefined : me.inbox.find((c) => c.id === action.cardId);
       if (action.cardId !== undefined && (!card || card.fact !== action.fact)) return s;
@@ -198,7 +209,9 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
         rescues = [...rescues, { fact: card.fact, by: me.id, to: card.from }].slice(-MAX_RESCUES);
       } else if (!correct && !card) {
         // my own miss goes to a teammate (not passed on again if they miss it too)
-        const mates = players.filter((p) => p.online && p.id !== me.id && p.inbox.filter((c) => c.kind === 'help').length < MAX_HELP_CARDS);
+        const mates = players.filter(
+          (p) => p.online && p.id !== me.id && canHelpWith(p, action.fact) && p.inbox.filter((c) => c.kind === 'help').length < MAX_HELP_CARDS,
+        );
         if (mates.length > 0) {
           const to = mates[Math.min(mates.length - 1, Math.floor(rand() * mates.length))];
           const help: SunCard = { id: nextId++, fact: action.fact, from: me.id, kind: 'help', after: 0 };

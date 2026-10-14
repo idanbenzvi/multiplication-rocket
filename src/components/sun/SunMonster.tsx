@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { nextQuestion, sunNames, useSunStore, type SunQuestion } from '../../game/useSunStore';
-import { MAX_PLAYERS, SUN_MONSTERS, sunAwards, type SunEvent, type SunPlayer, type SunState } from '../../game/sun';
+import { factAnswer, MAX_PLAYERS, SUN_MONSTERS, sunAwards, type SunEvent, type SunPlayer, type SunState } from '../../game/sun';
 import { distractors } from '../../game/distractors';
+import { missionOfKey, OP_SYMBOL, parsePair } from '../../game/mission';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { CodeDisplay, CodeEntry, LinkStatusLine } from '../sky/parts';
 import { MonsterCanvas, type MonsterFx } from './MonsterCanvas';
@@ -38,12 +39,18 @@ const seatOf = (state: SunState, id: string) => Math.max(0, state.players.findIn
 const helpWaiting = (p: SunPlayer) => p.inbox.some((c) => c.kind === 'help');
 
 function Math2({ fact }: { fact: string }) {
-  const [a, b] = fact.split('x').map(Number);
+  const p = parsePair(fact);
+  if (!p) return null;
   return (
     <bdi dir="ltr" className="sun-math">
-      {a} × {b} = {a * b}
+      {p.a} {OP_SYMBOL[p.mission]} {p.b} = {factAnswer(fact)}
     </bdi>
   );
+}
+
+/** the four answer buttons: the answer and three near misses, in the question's mission */
+function choicesFor(q: SunQuestion): number[] {
+  return shuffled([factAnswer(q.fact) ?? 0, ...distractors(q.x, q.y, 3, missionOfKey(q.fact))]);
 }
 
 /** calls back once for each event this phone hasn't played yet */
@@ -254,10 +261,10 @@ function Question({ state }: { state: SunState }) {
   const answer = useSunStore((s) => s.answer);
   const myId = useSunStore((s) => s.myId);
   const [q, setQ] = useState<SunQuestion>(() => nextQuestion());
-  const [choices, setChoices] = useState<number[]>(() => shuffled([q.x * q.y, ...distractors(q.x, q.y, 3)]));
+  const [choices, setChoices] = useState<number[]>(() => choicesFor(q));
   const [picked, setPicked] = useState<number | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const product = q.x * q.y;
+  const product = factAnswer(q.fact) ?? 0;
 
   // where my miss went
   useNewEvents(state.events, (e) => {
@@ -266,7 +273,7 @@ function Question({ state }: { state: SunState }) {
 
   const ask = useCallback((next: SunQuestion) => {
     setQ(next);
-    setChoices(shuffled([next.x * next.y, ...distractors(next.x, next.y, 3)]));
+    setChoices(choicesFor(next));
     setPicked(null);
     setSentTo(null);
   }, []);
@@ -313,7 +320,7 @@ function Question({ state }: { state: SunState }) {
       )}
       <div className="equation-row sky-equation" dir="ltr">
         <span className="equation-operand">{q.x}</span>
-        <span className="equation-op">&times;</span>
+        <span className="equation-op">{OP_SYMBOL[missionOfKey(q.fact)]}</span>
         <span className="equation-operand">{q.y}</span>
         <span className="equation-op">=</span>
         <span className={`equation-operand ${picked !== null ? 'sun-answer' : ''}`}>{picked === null ? '?' : product}</span>

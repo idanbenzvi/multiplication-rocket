@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Profile } from '../profiles/useProfiles';
+import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useMission, useProfiles, type Profile } from '../profiles/useProfiles';
+import { MISSIONS, OP_SYMBOL, type Mission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
 import { useCrewStore } from '../game/useCrewStore';
 import { useSkyStore } from '../game/useSkyStore';
@@ -33,15 +34,20 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
   const [name, setName] = useState(profile?.name ?? '');
   const taken = new Set(profiles.filter((p) => p.id !== profile?.id).map((p) => p.avatar));
   const [avatar, setAvatar] = useState(profile?.avatar ?? AVATARS.find((a) => !taken.has(a)) ?? AVATARS[0]);
+  // a new pilot chooses; an existing one (even from before missions) has one
+  const [mission, setMission] = useState<Mission | null>(profile ? (profile.mission ?? 'mul') : null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const canSave = name.trim().length > 0;
+  const canSave = name.trim().length > 0 && mission !== null;
 
   const save = () => {
     if (!canSave) return;
     if (profile) {
-      update(profile.id, { name, avatar });
+      const switched = mission !== (profile.mission ?? 'mul');
+      update(profile.id, { name, avatar, mission });
+      // the other mission has its own progress: load it
+      if (switched && profile.id === activeId) startGameForActive();
     } else {
-      create(name, avatar);
+      create(name, avatar, mission);
       startGameForActive();
     }
     onDone();
@@ -75,6 +81,23 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && save()}
       />
+      <div className="profile-label">{t.pickMission}</div>
+      <div className="mission-options" role="radiogroup" aria-label={t.pickMission}>
+        {MISSIONS.map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mission === m}
+            className={`mission-option is-${m} ${mission === m ? 'is-on' : ''}`}
+            onClick={() => setMission(m)}
+          >
+            <span className="mission-option-symbol">{OP_SYMBOL[m]}</span>
+            <span className="mission-option-name">{m === 'add' ? t.missionAdd : t.missionMul}</span>
+            <span className="mission-option-hint">{m === 'add' ? t.missionAddHint : t.missionMulHint}</span>
+          </button>
+        ))}
+      </div>
       <div className="profile-label">{t.pickAnimal}</div>
       <div className="avatar-grid" role="radiogroup" aria-label={t.pickAnimal}>
         {AVATARS.map((a) => (
@@ -127,6 +150,8 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
   const profiles = useProfiles((s) => s.profiles);
   const activeId = useProfiles((s) => s.activeId);
   const select = useProfiles((s) => s.select);
+  // the two-phone games are multiplication games (addition versions are still to come)
+  const mission = useMission();
 
   return (
     <div className="pilot-picker">
@@ -153,7 +178,8 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
                   {pilotName(p, t.defaultPilotName)}
                 </span>
                 <span className="pilot-card-stats">
-                  {t.level(stats.level)} · ✓ {stats.correct}
+                  <span className={`pilot-card-mission is-${p.mission ?? 'mul'}`}>{OP_SYMBOL[p.mission ?? 'mul']}</span> {t.level(stats.level)} · ✓{' '}
+                  {stats.correct}
                 </span>
               </button>
               <button type="button" className="pilot-card-edit" onClick={() => onEdit(p)} aria-label={t.editPilot}>
@@ -182,7 +208,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
             <span className="pilot-card-stats">{t.crew.flyTogetherHint}</span>
           </button>
         )}
-        {profiles.length >= 1 && (
+        {profiles.length >= 1 && mission === 'mul' && (
           <button
             type="button"
             className="pilot-card pilot-card-new pilot-card-crew"

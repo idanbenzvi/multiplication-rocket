@@ -177,8 +177,35 @@
   background: rgba(255, 215, 122, 0.06);
 }
 .nav-star {
+  position: relative;
   font-size: 1.15rem;
   line-height: 1.15;
+}
+/* addition: two groups with a + between, the second in blue */
+.nav-add {
+  align-items: center;
+}
+.nav-plus {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffd77a;
+}
+.nav-stars.is-second {
+  border-color: rgba(106, 215, 255, 0.6);
+  background: rgba(106, 215, 255, 0.08);
+}
+.nav-star-n {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #241b3f;
 }
 .nav-count {
   font-family: var(--font-display);

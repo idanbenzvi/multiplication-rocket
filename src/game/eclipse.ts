@@ -64,7 +64,7 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 export function buildEclipseRounds(mastery: Record<string, FactStat>, n = ECLIPSE_ROUNDS): EclipseRound[] {
-  const pool = buildFactPool(2, 10).filter((f) => f.a !== f.b && gcd(f.a, f.b) === 1 && f.product <= MAX_ECLIPSE);
+  const pool = buildFactPool(2, 10).filter((f) => f.a !== f.b && gcd(f.a, f.b) === 1 && f.answer <= MAX_ECLIPSE);
   const rounds: EclipseRound[] = [];
   const used = new Set<string>();
   for (let tries = 0; rounds.length < n && tries < 100; tries++) {
@@ -75,8 +75,8 @@ export function buildEclipseRounds(mastery: Record<string, FactStat>, n = ECLIPS
     const beyond = () => 1 + Math.floor(Math.random() * 2);
     rounds.push({
       periods: { left, right },
-      eclipse: fact.product,
-      steps: { left: fact.product / left + beyond(), right: fact.product / right + beyond() },
+      eclipse: fact.answer,
+      steps: { left: fact.answer / left + beyond(), right: fact.answer / right + beyond() },
     });
   }
   return rounds;

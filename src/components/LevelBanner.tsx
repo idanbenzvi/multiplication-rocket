@@ -4,12 +4,14 @@ import { useT } from '../i18n/useLang';
 
 interface Props {
   level: number;
+  /** addition pilots: the stage they're on */
+  stage?: number;
 }
 
 // Fewer on phones, where the banner shares a narrow top bar.
 const MAX_BADGES = typeof window !== 'undefined' && window.innerWidth < 600 ? 4 : 8;
 
-export function LevelBanner({ level }: Props) {
+export function LevelBanner({ level, stage }: Props) {
   const t = useT();
   const config = getLevelConfig(level);
   // Only the most recent badges, so the banner stays one row however far the
@@ -22,6 +24,7 @@ export function LevelBanner({ level }: Props) {
     <div className="level-banner">
       <div className="level-banner-current">
         {t.level(level)} &mdash; {t.destination} {config.destinationEmoji} {destinationName(t, config)}
+        {stage !== undefined && <span className="level-banner-stage">➕ {t.stageName(stage)}</span>}
       </div>
       {collected.length > 0 && (
         <div className="level-banner-collected">

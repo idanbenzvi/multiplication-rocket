@@ -1,11 +1,14 @@
 import type { FactStat } from '../game/types';
 import { masteryCellStyle as cellStyle } from '../game/masteryStats';
+import { applyOp, OP_SYMBOL, pairKey, type Mission } from '../game/mission';
+import { ADD_KINDS, type AddKind } from '../game/addition';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
 
 interface Props {
   mastery: Record<string, FactStat>;
+  mission: Mission;
   onContinue: () => void;
   /** opened by itself after a run of mistakes: say so */
   auto?: boolean;
@@ -13,14 +16,26 @@ interface Props {
 
 const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 
-export function MasteryHeatmap({ mastery, onContinue, auto = false }: Props) {
+/** one example of each two-digit kind, for the addition map */
+const KIND_EXAMPLES: Record<AddKind, string> = {
+  'tens+tens': '40 + 30',
+  '2d+1d': '34 + 5',
+  '2d+2d': '34 + 25',
+  '2d+1d:c': '37 + 5',
+  '2d+2d:c': '37 + 45',
+};
+
+// The addition map is the same 10 × 10 grid (sums instead of products),
+// plus a row for the kinds of two-digit sum.
+export function MasteryHeatmap({ mastery, mission, onContinue, auto = false }: Props) {
   const t = useT();
+  const sym = OP_SYMBOL[mission];
   return (
     <div className="heatmap-overlay">
       <div className="heatmap-card">
         <h2>
           <GradientText colors={['#7ec4b0', '#ffd77a', '#ff9d76', '#7ec4b0']} animationSpeed={5}>
-            {t.heatmapTitle}
+            {mission === 'add' ? t.heatmapTitleAdd : t.heatmapTitle}
           </GradientText>
         </h2>
         {auto && <p className="heatmap-why">{t.heatmapWhy}</p>}
@@ -41,12 +56,12 @@ export function MasteryHeatmap({ mastery, onContinue, auto = false }: Props) {
                 <tr key={x}>
                   <th>{x}</th>
                   {NUMBERS.map((y) => {
-                    const key = `${Math.min(x, y)}x${Math.max(x, y)}`;
-                    const stat = mastery[key];
+                    const stat = mastery[pairKey(mission, x, y)];
                     const style = cellStyle(stat);
+                    const value = applyOp(mission, x, y);
                     return (
-                      <td key={y} style={style} title={`${x} × ${y} = ${x * y}`}>
-                        {x * y}
+                      <td key={y} style={style} title={`${x} ${sym} ${y} = ${value}`}>
+                        {value}
                       </td>
                     );
                   })}
@@ -55,6 +70,21 @@ export function MasteryHeatmap({ mastery, onContinue, auto = false }: Props) {
             </tbody>
           </table>
         </div>
+        {mission === 'add' && (
+          <div className="heatmap-kinds">
+            <div className="heatmap-kinds-title">{t.heatmapKinds}</div>
+            <div className="heatmap-kinds-row">
+              {ADD_KINDS.map((k) => (
+                <div key={k} className="heatmap-kind" style={cellStyle(mastery[k])} title={t.addKinds[k]}>
+                  <bdi dir="ltr" className="heatmap-kind-example">
+                    {KIND_EXAMPLES[k]}
+                  </bdi>
+                  <span className="heatmap-kind-name">{t.addKinds[k]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <StarBorder
           className="heatmap-button"
