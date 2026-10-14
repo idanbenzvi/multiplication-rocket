@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { skyNames, useSkyStore } from '../../game/useSkyStore';
-import { MAX_MISSES, type Side, type SkyStage, type SkyState } from '../../game/splitSky';
+import { groupColumns, MAX_MISSES, type Side, type SkyStage, type SkyState } from '../../game/splitSky';
+import { additionStrategy } from '../../game/strategy';
+import { useMission } from '../../profiles/useProfiles';
 import type { DuoGame } from '../../game/duo';
 import { EclipsePlay } from './EclipsePlay';
 import { Choices, CodeDisplay, CodeEntry, StatusLine } from './parts';
@@ -54,9 +56,11 @@ function GamePicker() {
   const t = useT();
   const game = useSkyStore((s) => s.state.game);
   const chooseGame = useSkyStore((s) => s.chooseGame);
+  // Eclipse Hunters is about multiples: a + host plays Split Sky only
+  const games: DuoGame[] = useMission() === 'add' ? ['split'] : ['split', 'eclipse'];
   return (
     <div className="settings-segment sky-games">
-      {(['split', 'eclipse'] as const).map((g) => (
+      {games.map((g) => (
         <button
           key={g}
           type="button"
@@ -193,14 +197,14 @@ function Lobby() {
 
 // ---------- playing ----------
 
-function Chip({ label, rows, cols, mine }: { label: string; rows: number; cols: number; mine?: boolean }) {
+function Chip({ label, rows, cols, mine, adding }: { label: string; rows: number; cols: number; mine?: boolean; adding?: boolean }) {
   return (
     <div className={`sky-chip ${mine ? 'is-mine' : ''}`}>
       <span className="sky-chip-label">
         {label}
       </span>
       <bdi dir="ltr" className="sky-chip-math">
-        {rows} × {cols} = {rows * cols}
+        {adding ? `⭐ ${cols}` : `${rows} × ${cols} = ${rows * cols}`}
       </bdi>
     </div>
   );
@@ -220,13 +224,19 @@ function SplitPlay({ state }: { state: SkyState }) {
   const whole = round ? round.cols.left + round.cols.right : 0;
   const myCols = round?.cols[mySide] ?? 0;
   const partnerCols = round?.cols[other(mySide)] ?? 0;
+  // addition: each phone's group of stars, and the two added together
+  const adding = round?.mission === 'add';
 
   // choices stay put for the whole question (a miss doesn't reshuffle them)
   const choices = useMemo(() => {
     if (!round || !stage) return [];
     const cols = stage === 'count' ? myCols : whole;
     const answerValue = round.rows * cols;
-    const near = distractors(round.rows, cols, 3);
+    const near = !adding
+      ? distractors(round.rows, cols, 3)
+      : stage === 'count'
+        ? distractors(myCols, 0, 3, 'add')
+        : distractors(round.cols.left, round.cols.right, 3, 'add');
     // in the whole-sky question, "just my half" is a tempting slip
     const half = round.rows * myCols;
     if (stage === 'join' && !near.includes(half)) near[2] = half;
@@ -263,26 +273,40 @@ function SplitPlay({ state }: { state: SkyState }) {
   return (
     <div className="sky-play">
       <div className="sky-round">{t.sky.round(state.roundIndex + 1, state.rounds.length)}</div>
-      <SkyGrid
-        key={state.roundIndex}
-        rows={round.rows}
-        cols={myCols}
-        sizeCols={Math.max(round.cols.left, round.cols.right)}
-        side={mySide}
-        lit={lit}
-      />
+      {adding ? (
+        <SkyGrid
+          key={state.roundIndex}
+          rows={Math.ceil(myCols / groupColumns(round))}
+          cols={groupColumns(round)}
+          sizeCols={groupColumns(round)}
+          side={mySide}
+          lit={lit}
+          count={myCols}
+        />
+      ) : (
+        <SkyGrid
+          key={state.roundIndex}
+          rows={round.rows}
+          cols={myCols}
+          sizeCols={Math.max(round.cols.left, round.cols.right)}
+          side={mySide}
+          lit={lit}
+        />
+      )}
 
       <div className="sky-card">
         {state.phase === 'count' && mine && (
           <>
             {!mine.done ? (
               <>
-                <div className="sky-prompt">{t.sky.yourHalf(round.rows, myCols)}</div>
+                <div className="sky-prompt">
+                  {adding ? (myCols > 10 ? t.sky.yourHalfTens : t.sky.yourHalfAdd) : t.sky.yourHalf(round.rows, myCols)}
+                </div>
                 <Choices key={`c${state.roundIndex}-${mine.misses}`} choices={choices} misses={mine.misses} onPick={(v) => answer('count', v)} />
               </>
             ) : (
               <>
-                <Chip label={t.sky.myHalf} rows={round.rows} cols={myCols} mine />
+                <Chip label={t.sky.myHalf} rows={round.rows} cols={myCols} mine adding={adding} />
                 <div className="sky-status is-pulse">{t.sky.waitPartner(partnerName)}</div>
               </>
             )}
@@ -294,9 +318,9 @@ function SplitPlay({ state }: { state: SkyState }) {
             {/* in the order the phones sit, so the sum reads like the sky */}
             {(['left', 'right'] as const).map((side) =>
               side === mySide ? (
-                <Chip key={side} label={t.sky.myHalf} rows={round.rows} cols={myCols} mine />
+                <Chip key={side} label={t.sky.myHalf} rows={round.rows} cols={myCols} mine adding={adding} />
               ) : (
-                <Chip key={side} label={t.sky.partnerHalf(partnerName)} rows={round.rows} cols={partnerCols} />
+                <Chip key={side} label={t.sky.partnerHalf(partnerName)} rows={round.rows} cols={partnerCols} adding={adding} />
               ),
             )}
           </div>
@@ -308,17 +332,13 @@ function SplitPlay({ state }: { state: SkyState }) {
               <>
                 <div className="sky-prompt">{t.sky.wholeSky}</div>
                 <div className="equation-row sky-equation" dir="ltr">
-                  <span className="equation-operand">{round.rows}</span>
-                  <span className="equation-op">&times;</span>
-                  <span className="equation-operand">{whole}</span>
+                  <span className="equation-operand">{adding ? round.cols.left : round.rows}</span>
+                  <span className="equation-op">{adding ? '+' : '×'}</span>
+                  <span className="equation-operand">{adding ? round.cols.right : whole}</span>
                   <span className="equation-op">=</span>
                   <span className="equation-operand">?</span>
                 </div>
-                {mine.misses > 0 && (
-                  <div className="sky-hint">
-                    {t.sky.hintAdd(round.rows * round.cols.left, round.rows * round.cols.right)}
-                  </div>
-                )}
+                {mine.misses > 0 && <JoinHint round={round} adding={adding} />}
                 <Choices key={`j${state.roundIndex}-${mine.misses}`} choices={choices} misses={mine.misses} onPick={(v) => answer('join', v)} />
               </>
             ) : (
@@ -331,7 +351,9 @@ function SplitPlay({ state }: { state: SkyState }) {
           <motion.div className="sky-lit" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
             <div className="sky-lit-title">{t.sky.litTitle}</div>
             <bdi dir="ltr" className="sky-lit-math">
-              {round.rows} × {round.cols.left} + {round.rows} × {round.cols.right} = {round.rows} × {whole} = {round.rows * whole}
+              {adding
+                ? `${round.cols.left} + ${round.cols.right} = ${whole}`
+                : `${round.rows} × ${round.cols.left} + ${round.rows} × ${round.cols.right} = ${round.rows} × ${whole} = ${round.rows * whole}`}
             </bdi>
             {role === 'host' ? (
               <button type="button" className="profile-primary" onClick={nextRound} autoFocus>
@@ -345,6 +367,20 @@ function SplitPlay({ state }: { state: SkyState }) {
 
       </div>
       <StatusLine />
+    </div>
+  );
+}
+
+/** after a miss on the whole sky: add the halves (×), or a way to add the two groups (+) */
+function JoinHint({ round, adding }: { round: SkyState['rounds'][number]; adding: boolean }) {
+  const t = useT();
+  if (!adding) return <div className="sky-hint">{t.sky.hintAdd(round.rows * round.cols.left, round.rows * round.cols.right)}</div>;
+  const s = additionStrategy(round.cols.left, round.cols.right, t);
+  return (
+    <div className="sky-hint">
+      {s.text}
+      {s.text && s.math && ' '}
+      {s.math && <bdi dir="ltr">{s.math}</bdi>}
     </div>
   );
 }

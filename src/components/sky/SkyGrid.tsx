@@ -9,6 +9,8 @@ interface Props {
   sizeCols: number;
   side: Side;
   lit: boolean;
+  /** addition: only this many stars, filling rows from the seam outwards (the last row partly) */
+  count?: number;
 }
 
 const WAVE_STEP_MS = 90;
@@ -28,7 +30,7 @@ function useViewport() {
 // side by side. When the constellation lights, a glow wave starts at the
 // seam and runs outward: each star waits by its distance from the seam, so
 // on the two phones together the wave looks continuous across the gap.
-export function SkyGrid({ rows, cols, sizeCols, side, lit }: Props) {
+export function SkyGrid({ rows, cols, sizeCols, side, lit, count }: Props) {
   const { w, h } = useViewport();
   const cell = Math.floor(Math.max(18, Math.min(52, (w - 32) / sizeCols, (h * 0.4) / rows)));
   return (
@@ -40,6 +42,8 @@ export function SkyGrid({ rows, cols, sizeCols, side, lit }: Props) {
         {Array.from({ length: rows * cols }, (_, i) => {
           const c = i % cols;
           const fromSeam = side === 'left' ? cols - 1 - c : c;
+          // a partial last row hugs the seam
+          if (count !== undefined && Math.floor(i / cols) * cols + fromSeam >= count) return <span key={i} />;
           return <span key={i} className="sky-star" style={{ animationDelay: lit ? `${fromSeam * WAVE_STEP_MS}ms` : `${(i % 7) * 0.4}s` }} />;
         })}
       </div>

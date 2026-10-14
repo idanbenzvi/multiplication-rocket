@@ -15,6 +15,8 @@ import { useWarpCanvas } from './useWarpCanvas';
 import GradientText from './reactbits/GradientText';
 import { SpaceRipple } from './SpaceRipple';
 import { DEV_SOLVE_EVENT } from '../dev/devMode';
+import { applyOp, OP_SYMBOL } from '../game/mission';
+import { activeMission } from '../profiles/useProfiles';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -22,7 +24,8 @@ interface Props {
 }
 
 // Lightspeed in → stranded ships drift in one by one, each projecting a drill
-// that shares one hidden number ([ ] × 4 = 28, [ ] × 9 = 63, …) → guess it
+// that shares one hidden number ([ ] × 4 = 28, [ ] × 9 = 63, …, or on the
+// addition mission [ ] + 4 = 11, [ ] + 9 = 16, …) → guess it
 // (the earlier, the bigger the fuel bonus) → fuel lines power every ship →
 // the whole fleet jumps to lightspeed.
 type Phase = 'warp' | 'reveal' | 'checking' | 'fuel' | 'jump' | 'summary';
@@ -65,7 +68,9 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const round = useMemo(() => buildStranded(useGameStore.getState().progress), []);
+  const round = useMemo(() => buildStranded(useGameStore.getState().progress, activeMission()), []);
+  const sym = OP_SYMBOL[round.mission];
+  const op = (a: number, b: number) => applyOp(round.mission, a, b);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -234,7 +239,9 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   }, [answerMode, phase, typed, guess]);
 
   const choices = useMemo(() => {
-    const near = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter((v) => v !== round.hidden && Math.abs(v - round.hidden) <= 3);
+    // two-digit hidden numbers (addition): a ten off is a likely slip too
+    const span = round.hidden > 10 ? [-10, -2, -1, 1, 2, 10] : [-3, -2, -1, 1, 2, 3];
+    const near = span.map((d) => round.hidden + d).filter((v) => v >= 1 && v <= 99);
     return shuffled([round.hidden, ...shuffled(near).slice(0, 3)]);
   }, [round.hidden]);
 
@@ -273,14 +280,14 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
         <div className="stranded-screen" style={{ left: w * 0.06, top: h * 0.06, width: w, height: h }}>
           {/* the stranded fleet */}
           {SLOTS.slice(0, shown).map((slot, i) => {
-            const m = round.multipliers[i];
-            const product = round.hidden * m;
+            const m = round.others[i];
+            const product = op(round.hidden, m);
             const powered = litAt.current[i] !== undefined;
           const boosting = powered && gameNow() - litAt.current[i] < 700;
             const drift = Math.sin(now * 0.7 + i) * 6;
             const jumpY = phase === 'jump' ? -Math.pow(tPhase, 2) * h * 1.6 : 0;
             const jumpStretch = phase === 'jump' ? 1 + tPhase * 3 : 1;
-            const check = checking !== null ? { value: checking * m, ok: checking * m === product } : null;
+            const check = checking !== null ? { value: op(checking, m), ok: op(checking, m) === product } : null;
             return (
               <div
                 key={i}
@@ -290,15 +297,15 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
                 <div className={`holo-drill ${check ? (check.ok ? 'is-ok' : 'is-bad') : ''}`} dir="ltr">
                   {check ? (
                     <>
-                      {checking} × {m} = {check.value} {check.ok ? '✓' : `✗ ${product}`}
+                      {checking} {sym} {m} = {check.value} {check.ok ? '✓' : `✗ ${product}`}
                     </>
                   ) : powered || phase === 'summary' ? (
                     <>
-                      <b>{round.hidden}</b> × {m} = {product}
+                      <b>{round.hidden}</b> {sym} {m} = {product}
                     </>
                   ) : (
                     <>
-                      <span className="holo-blank">[ ]</span> × {m} = {product}
+                      <span className="holo-blank">[ ]</span> {sym} {m} = {product}
                     </>
                   )}
                 </div>
@@ -379,7 +386,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
           </GradientText>
           <div className="round-card-text">
             <bdi dir="ltr">
-              {round.hidden} × {round.multipliers.join(', ')}
+              {round.hidden} {sym} {round.others.join(', ')}
             </bdi>
           </div>
         </div>

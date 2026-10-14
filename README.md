@@ -123,13 +123,25 @@ Addition climbs three stages, shown under the destination:
   another colour, so making ten is visible); two-digit sums are drawn as tens rods and ones dots.
 - **Hints** count on, use doubles ("6 + 7 → 6 + 6 + 1"), make ten ("8 + 5 → 8 + 2 + 3"), or add
   tens then ones ("37 + 45 → 30 + 40 + 7 + 5"), always stopping one step short.
-- **Modes:** the main drill, the Wormhole (pick the 3 sums that make the target), Meteor Shower,
-  Crew Flight and Monster Sun all play in addition. A mixed crew works: each pilot gets their
-  own mission's questions, the navigator counts two groups of stars, and docking is an addition
-  round. In Monster Sun each phone drills its own mission, and a missed + fact can go to any
-  teammate, a missed × fact only to a × pilot. Constellation, Fleet Battle, Stranded Fleet,
-  Stardust Run, the two-phone games and the Academy are still multiplication only (addition
-  versions are planned, see [docs/plans/2026-10-13-addition.md](docs/plans/2026-10-13-addition.md)).
+- **Every bonus round has an addition version:**
+  - **Wormhole:** pick the 3 sums that make the target (3 + 5, 6 + 2, 1 + 7 = 8).
+  - **Meteor Shower:** blast the sum.
+  - **Constellation:** a star chart with the first number already lit in gold; drag (or tap) to
+    where the sum lands. Within 10 it's a ten-frame, within 20 two side by side (8 + 5: two fill
+    the frame, three spill over), and two-digit sums use a hundred chart, where a ten is one row
+    down.
+  - **Fleet Battle:** the missing part. "We have 7 cannons. How many more do we need for 12
+    enemies?" Each ship brings one cannon, and the power meter starts from the 7.
+  - **Stranded Fleet:** every ship shows [ ] + 4 = 11, [ ] + 9 = 16, …: find the shared number.
+  - **Stardust Run:** jumps of the same size along the stream (2s and 3s, crossing ten in 3s to
+    6s, then +10, +20, +9 or +11), with a pattern to remember at the end ("+9 = add 10, then take
+    away 1").
+- **Together:** a mixed crew works in Crew Flight: each pilot gets their own mission's questions,
+  the navigator counts two groups of stars, and docking is an addition round. In Monster Sun each
+  phone drills its own mission, and a missed + fact can go to any teammate, a missed × fact only
+  to a × pilot. In **Split Sky**, an addition host's game has each phone count its own group of
+  stars (in rows of ten), then both add the two together. Eclipse Hunters (common multiples) and
+  the Academy stay multiplication only.
 
 ## Pilot profiles (siblings)
 

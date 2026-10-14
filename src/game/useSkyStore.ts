@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { buildSkyRounds, expectedAnswer, type Side, type SkyPlayer, type SkyStage } from './splitSky';
+import { buildSkyAddRounds, buildSkyRounds, expectedAnswer, type Side, type SkyPlayer, type SkyStage } from './splitSky';
+import { additionTrackKey } from './addition';
 import { buildEclipseRounds } from './eclipse';
 import { duoReducer, initialDuoState, type DuoAction, type DuoGame, type DuoState } from './duo';
 import { recordOwn } from './ownAnswers';
 import { hostLink, joinLink, type Link, type LinkError, type LinkStatus } from '../net/peerLink';
-import { activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
+import { activeMission, activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
 import { loadProgressFor } from '../storage/progressStore';
 import { pauseGame, resumeGame } from './gameClock';
 import { useGameStore } from './useGameStore';
@@ -193,9 +194,13 @@ export const useSkyStore = create<SkyStore>((set, get) => {
     startGame: () => {
       if (get().role !== 'host') return;
       const id = useProfiles.getState().activeId;
-      const mastery = id ? loadProgressFor(id).mastery : {};
-      if (get().state.game === 'split') dispatch({ type: 'start', rounds: buildSkyRounds(mastery) });
-      else dispatch({ type: 'start', rounds: buildEclipseRounds(mastery) });
+      const progress = id ? loadProgressFor(id) : null;
+      const mastery = progress?.mastery ?? {};
+      // Split Sky follows the host pilot's mission; Eclipse Hunters is multiplication
+      if (get().state.game === 'split') {
+        const rounds = activeMission() === 'add' ? buildSkyAddRounds(mastery, progress?.stage ?? 1) : buildSkyRounds(mastery);
+        dispatch({ type: 'start', rounds });
+      } else dispatch({ type: 'start', rounds: buildEclipseRounds(mastery) });
     },
 
     nextRound: () => {
@@ -208,9 +213,14 @@ export const useSkyStore = create<SkyStore>((set, get) => {
       const round = state.rounds[state.roundIndex];
       if (!round || state.phase !== stage || state[stage][mySide].done) return;
       // each phone records its own pilot's answer: the half fact, or the whole one
+      // (adding: counting a group isn't a fact, the sum of the two is)
       const correct = value === expectedAnswer(round, mySide, stage);
-      const cols = stage === 'count' ? round.cols[mySide] : round.cols.left + round.cols.right;
-      recordOwn(factKey(round.rows, cols), correct, 'sky');
+      if (round.mission === 'add') {
+        if (stage === 'join') recordOwn(additionTrackKey(round.cols.left, round.cols.right), correct, 'sky');
+      } else {
+        const cols = stage === 'count' ? round.cols[mySide] : round.cols.left + round.cols.right;
+        recordOwn(factKey(round.rows, cols), correct, 'sky');
+      }
       act({ type: 'answer', side: mySide, stage, value });
     },
 

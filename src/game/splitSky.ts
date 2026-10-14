@@ -1,5 +1,7 @@
 import type { FactStat } from './types';
 import { buildFactPool, pickNextFact } from './facts';
+import type { Mission } from './mission';
+import { pickAdditionFact } from './addition';
 
 // Split Sky: two phones side by side, one star array across both screens,
 // split at the seam where they touch. Each child counts their own half
@@ -7,6 +9,11 @@ import { buildFactPool, pickNextFact } from './facts';
 // distributive property, 6 × 8 = 6 × 3 + 6 × 5. The host phone runs
 // skyReducer as the referee and sends the state to the other phone. See
 // docs/plans/2026-10-08-split-sky.md.
+//
+// On the addition mission each phone's half is a group of stars, in rows of
+// ten (a ten-frame up to 10): each child counts their own group, then
+// together they add the two (8 + 5). Such a round is one row: rows = 1 and
+// the columns are the two groups, so the referee's sums work unchanged.
 
 export type Side = 'left' | 'right';
 export type SkyStage = 'count' | 'join';
@@ -22,8 +29,10 @@ export interface SkyPlayer {
 
 export interface SkyRound {
   rows: number;
-  /** columns on each phone */
+  /** columns on each phone (addition: the stars in each group) */
   cols: Record<Side, number>;
+  /** the host pilot's mission; rounds from before missions are multiplication */
+  mission?: Mission;
 }
 
 export interface SideProgress {
@@ -75,6 +84,26 @@ export function buildSkyRounds(mastery: Record<string, FactStat>, n = SKY_ROUNDS
     rounds.push({ rows, cols: splitColumns(cols) });
   }
   return rounds;
+}
+
+// Sums from the host pilot's addition stage and mastery, both groups at
+// least 2 stars, no repeats in a game.
+export function buildSkyAddRounds(mastery: Record<string, FactStat>, stage: number, n = SKY_ROUNDS): SkyRound[] {
+  const rounds: SkyRound[] = [];
+  const used = new Set<string>();
+  for (let tries = 0; rounds.length < n && tries < 100; tries++) {
+    const fact = pickAdditionFact(stage, mastery);
+    if (fact.a < 2 || fact.b < 2 || used.has(`${fact.a}+${fact.b}`)) continue;
+    used.add(`${fact.a}+${fact.b}`);
+    const flip = Math.random() < 0.5;
+    rounds.push({ rows: 1, cols: { left: flip ? fact.b : fact.a, right: flip ? fact.a : fact.b }, mission: 'add' });
+  }
+  return rounds;
+}
+
+/** addition: both phones lay their stars out alike, five to a row up to 10, then ten to a row */
+export function groupColumns(round: SkyRound): number {
+  return Math.max(round.cols.left, round.cols.right) <= 10 ? 5 : 10;
 }
 
 // ---------- the referee ----------

@@ -150,7 +150,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
   const profiles = useProfiles((s) => s.profiles);
   const activeId = useProfiles((s) => s.activeId);
   const select = useProfiles((s) => s.select);
-  // the two-phone games are multiplication games (addition versions are still to come)
+  // an addition pilot's two-phone game is Split Sky (Eclipse Hunters is about multiples)
   const mission = useMission();
 
   return (
@@ -208,7 +208,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
             <span className="pilot-card-stats">{t.crew.flyTogetherHint}</span>
           </button>
         )}
-        {profiles.length >= 1 && mission === 'mul' && (
+        {profiles.length >= 1 && (
           <button
             type="button"
             className="pilot-card pilot-card-new pilot-card-crew"
@@ -221,7 +221,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
           >
             <span className="pilot-card-avatar">📱📱</span>
             <span className="pilot-card-name">{t.sky.card}</span>
-            <span className="pilot-card-stats">{t.sky.cardHint}</span>
+            <span className="pilot-card-stats">{mission === 'add' ? t.sky.games.split.name : t.sky.cardHint}</span>
           </button>
         )}
         {profiles.length >= 1 && (

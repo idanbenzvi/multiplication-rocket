@@ -5,7 +5,7 @@ import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
-import { bonusRotation, type BonusKind } from './bonusRounds';
+import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { pickFact } from './questions';
 import { clampStage, stageReady } from './addition';
 import { localProgressStore } from '../storage/progressStore';
@@ -266,8 +266,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (count >= CHALLENGE_EVERY) {
       const { bonusIndex } = get();
       const mission = activeMission();
-      const rotation = bonusRotation(mission);
-      const kind = rotation[bonusIndex % rotation.length];
+      const kind = BONUS_ROTATION[bonusIndex % BONUS_ROTATION.length];
       const next = { questionsSinceChallenge: 0, bonusIndex: bonusIndex + 1, feedback: null, flare: 0 };
       if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level, mission, clampStage(progress.stage)) });
       else set({ ...next, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
