@@ -32,6 +32,7 @@ import { StardustRun } from './components/stardust/StardustRun';
 import { DevPanel } from './components/DevPanel';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
+import { AdditionAcademy } from './components/academy/AdditionAcademy';
 import { CrewFlight } from './components/crew/CrewFlight';
 import { CrewSetup } from './components/crew/CrewSetup';
 import { SplitSky } from './components/sky/SplitSky';
@@ -264,7 +265,8 @@ function App() {
       {!gateOpen && <SplitSky />}
       {!gateOpen && <SunMonster />}
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
-      {academyOpen && <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />}
+      {academyOpen &&
+        (mission === 'add' ? <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} /> : <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />)}
       <PauseController />
       {DEV_MODE && <DevPanel />}
 

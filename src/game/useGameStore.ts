@@ -353,8 +353,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   openAcademy: () => {
     const s = get();
     if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
-    // the Academy teaches multiplication; addition's lessons are still to come
-    if (activeMission() === 'add') return;
     set({ academyOpen: true });
     // this pilot has found the secret: stop the porthole's "tap me" shimmer
     const { activeId, update } = useProfiles.getState();

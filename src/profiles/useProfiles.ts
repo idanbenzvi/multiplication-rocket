@@ -14,6 +14,8 @@ export interface Profile {
   academySeen?: boolean;
   /** what they practise; profiles from before missions existed are multiplication */
   mission?: Mission;
+  /** addition Academy courses finished ('add1'-'add3') */
+  academyDone?: string[];
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -77,7 +79,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string, mission: Mission) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }

@@ -3266,6 +3266,8 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  /* full width, so a number line in it isn't squeezed */
+  align-self: stretch;
 }
 .ac-choices-wrap {
   display: flex;
@@ -3373,6 +3375,228 @@
 .ac-grid-frame {
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+/* --- the addition Academy: courses, ten-frames, pairs, rows, tens and ones --- */
+.ac-courses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .ac-courses {
+    grid-template-columns: 1fr;
+  }
+}
+.ac-course {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.8rem 0.9rem;
+  border-radius: 20px;
+  border: 2px solid rgba(143, 227, 255, 0.4);
+  background: rgba(82, 39, 255, 0.18);
+  color: #fdf3e7;
+  text-align: center;
+}
+.ac-course.is-here {
+  border-color: #ffd77a;
+  box-shadow: 0 0 22px rgba(255, 215, 122, 0.45);
+}
+.ac-course-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.ac-course-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #ffd77a;
+}
+.ac-course-hint {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: #c8bcd9;
+}
+.ac-course-tag,
+.ac-course-done {
+  margin-top: 0.2rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.ac-course-tag {
+  background: rgba(255, 215, 122, 0.2);
+  color: #ffd77a;
+}
+.ac-course-done {
+  background: rgba(126, 224, 143, 0.2);
+  color: #7ee08f;
+}
+.ac-sum {
+  color: #7ee08f;
+}
+@keyframes acPop {
+  from { scale: 0.3; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+.ac-star {
+  display: inline-block;
+  width: clamp(20px, 5vw, 28px);
+  height: clamp(20px, 5vw, 28px);
+  border-radius: 50%;
+  animation: acPop 0.3s ease-out both;
+}
+.ac-star.is-gold {
+  background: #ffd77a;
+  box-shadow: 0 0 10px rgba(255, 215, 122, 0.8);
+}
+.ac-star.is-blue {
+  background: #6ad7ff;
+  box-shadow: 0 0 10px rgba(106, 215, 255, 0.8);
+}
+.ac-star.is-new {
+  background: #7ee08f;
+  box-shadow: 0 0 12px rgba(126, 224, 143, 0.9);
+}
+.ac-frames {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+.ac-frame {
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border: 2px solid rgba(201, 164, 222, 0.5);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.ac-frame-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(30px, 7vw, 40px);
+  height: clamp(30px, 7vw, 40px);
+  padding: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: transparent;
+}
+.ac-frame-cell:not(:disabled) {
+  cursor: pointer;
+  border-color: rgba(143, 227, 255, 0.55);
+  background: rgba(143, 227, 255, 0.06);
+}
+.ac-maketen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+.ac-waiting {
+  display: flex;
+  gap: 0.35rem;
+  min-height: clamp(20px, 5vw, 28px);
+}
+.ac-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.ac-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.ac-strip {
+  display: flex;
+  gap: 3px;
+}
+.ac-strip .ac-star {
+  width: clamp(16px, 4vw, 22px);
+  height: clamp(16px, 4vw, 22px);
+}
+.ac-pair-math {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #fff;
+  min-width: 3.5em;
+}
+.ac-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ac-row {
+  display: flex;
+  gap: 0.35rem;
+}
+.ac-pv {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  min-height: 100px;
+}
+.ac-pv-rods {
+  display: flex;
+  gap: 6px;
+}
+.ac-pv-ones {
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  gap: 5px;
+  align-content: end;
+}
+.ac-rod {
+  --c: #ffd77a;
+  display: inline-block;
+  width: clamp(14px, 3.4vw, 18px);
+  height: clamp(80px, 18vw, 100px);
+  border-radius: 4px;
+  /* ten segments: a rod is ten ones */
+  background: repeating-linear-gradient(to bottom, var(--c) 0 calc(10% - 1.5px), rgba(0, 0, 0, 0.35) calc(10% - 1.5px) 10%);
+  box-shadow: 0 0 8px var(--c);
+  animation: acPop 0.35s ease-out both;
+}
+.ac-rod.is-blue,
+.ac-one.is-blue {
+  --c: #6ad7ff;
+}
+.ac-rod.is-new,
+.ac-one.is-new {
+  --c: #7ee08f;
+}
+.ac-one {
+  --c: #ffd77a;
+  display: inline-block;
+  width: clamp(14px, 3.4vw, 18px);
+  height: clamp(14px, 3.4vw, 18px);
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c);
+  animation: acPop 0.3s ease-out both;
+}
+.ac-pv-counts {
+  display: flex;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #ffd77a;
+}
+.ac-pv-counts span {
+  width: clamp(14px, 3.4vw, 18px);
+  display: flex;
   justify-content: center;
 }
 

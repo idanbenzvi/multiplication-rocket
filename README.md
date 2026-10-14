@@ -97,6 +97,24 @@ The lessons follow the order the research on early multiplication supports:
    concrete → representational → abstract sequence
    ([meta-analytic review of CRA, University of Kentucky](https://scholars.uky.edu/en/publications/a-meta-analytic-review-of-the-concrete-representational-abstract-/)).
 
+### On the addition mission: three courses
+
+For an addition pilot the Academy opens on a menu of three courses, one per stage; the pilot's own
+stage is marked **📍 You are here**, and finished courses get a ✓. Each follows the usual path
+from counting all, to counting on, to known facts and strategies, and ends with the same fading
+practice (a picture, then symbols only, with "Show me").
+
+1. **Sums to 10:** two buses of aliens put together and counted all; the **+** sign and "sum";
+   counting on from 5 along a number line; swapping `2 + 6` into `6 + 2` (start at the bigger
+   number); filling a ten-frame; the pairs that make 10.
+2. **Over 10:** a full ten-frame and some more (`10 + 3 = 13`, teen numbers); **make a ten
+   first**: the stars of `8 + 5` fly into two ten-frames, 2 filling the first and 3 spilling into
+   the next (`8 + 2 + 3 = 10 + 3`); doubles (`6 + 6`) and near doubles (`6 + 7` is one more).
+3. **20 and up:** tens as rods and ones as dots (build 25 with buttons); adding tens (`30 + 20`
+   counted by tens); tens with tens and ones with ones (`34 + 25`, the pieces slide together);
+   **a new ten**: in `37 + 25` the 12 ones are bundled into a rod (carrying); jumping to the next
+   ten (`48 + 2 + 5`).
+
 ## Two missions: × or + (SpaceSum)
 
 Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10)
