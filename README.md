@@ -53,14 +53,15 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
   - **Fleet Battle ⚔️.** The view warps to forward-looking and an enemy fleet appears on the horizon, say 👾 24. Fly around (← ↑ → ↓ or drag) to collect the laser cannons, here 4. Then: "Each ship carries 4 cannons. How many ships do we need for 24 enemies?" Answer 6 and six ships fly in and circle your ship faster and faster inside a blazing ring while a power meter charges. Then one huge beam fires, flinging every enemy away in all directions, with one flying straight at you. Only the exact answer wins. Too few ships leave enemies standing ("5 ships × 4 = 20: 4 enemies left!"), and too many overload the beam ("7 ships × 4 = 28: 4 cannons too many!"). After three tries the right fleet is shown doing it. It's a first taste of division: the missing factor.
   - **Stranded Fleet 🛸.** The ship jumps to lightspeed, banking and rolling as if the pilot is fighting the controls. Stranded, out-of-fuel ships fly in one by one, each projecting a hologram drill that hides the same number: `[ ] × 4 = 28`, `[ ] × 9 = 63`, `[ ] × 2 = 14`… Spot the number they all share (7) to power them up: your ship sends an energy pulse rippling through space (a WebGL shader that bends the starfield), each ship powers up as the ring reaches it, and the whole fleet jumps to lightspeed. The sooner you guess, the bigger the fuel bonus (3× with one ship showing, down to 1× with all five). A wrong guess makes every ship check it ("6 × 4 = 24 ✗ 28"), so you can see why it doesn't fit.
   - **Stardust Run ✨.** One times table, laid out as a glowing path of stops (`7 × 4 = 28`, `7 × 5`, `7 × 6`…). Each question is the next stop, with 4 answers stacked top to bottom. A right answer and the ship glides along an arc of swirling stardust (a WebGL fluid simulation from React Bits' Splash Cursor, stirred by the ship's flight) to the next stop, which lights up and stays lit, so the chain of answers builds up behind it. Every hop is labelled `+7`: the next answer is always the last one plus the table. The wrong choices are real skip-counting slips (one stop too far, one or two off, a slipped ten), and a wrong pick gives the hint "From 28, jump 7 more." At the end the whole table is shown with the run highlighted, plus the table's pattern to remember (the 9s' digits add up to 9, the 4s end in 4, 8, 2, 6, 0…). The table comes from a fact the child finds hard, and the 3-4 jumps pass through it. On devices too slow for the fluid, it switches to a light particle trail.
-  - **Acceleration Road 🛣️.** A glowing rainbow road of floating slabs, seen at an isometric
-    angle, runs from the bottom-left corner to the middle of the screen, with holes in it. The
-    ship's engines stream sparks while it asks a doubling question: `1 × 2`, `2 × 2`, `4 × 2`,
-    `8 × 2` (or doubles on the addition mission: `4 + 4`, `8 + 8`). Every right answer doubles the
-    number (and the engines' spark stream) and the ship jumps the next hole, and every jump is twice
-    as long as the one before (holes of 1, 2, 4 and 8 slabs), so ×2 is something you can see. After
-    the fourth jump it reaches the middle, charges, turns upward and blasts off with a light trail,
-    a motion-blur wake and a space-time ripple. A wrong pick gives the hint "×2 is the number twice:
+  - **Acceleration Road 🛣️.** Seen from just behind the ship (your animal in the cockpit), a
+    glowing rainbow road of floating slabs stretches ahead to the horizon, with holes in it. The
+    engines stream sparks past the camera while the ship asks a doubling question: `1 × 2`,
+    `2 × 2`, `4 × 2`, `8 × 2` (or doubles on the addition mission: `4 + 4`, `8 + 8`). Every right
+    answer doubles the number, the engines' flames and spark stream, and the ship jumps the next
+    hole: every hole is twice as long as the one before (1, 2, 4 and 8 slabs) and every jump twice
+    as far in about the same time, so the ship really accelerates and ×2 is something you can see.
+    After the fourth jump it charges, flies on to the middle of the screen, the view tilts up, and
+    it blasts off skyward with a light trail, a motion-blur wake and a space-time ripple. A wrong pick gives the hint "×2 is the number twice:
     8 + 8". Only answers within the practised facts count toward the mastery map.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 

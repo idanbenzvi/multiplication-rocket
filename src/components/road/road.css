@@ -17,10 +17,47 @@
   z-index: 0;
 }
 .road-ship {
+  --flame: 1;
   position: absolute;
   translate: -50% -50%;
   pointer-events: none;
+  container-type: inline-size;
   filter: drop-shadow(0 0 10px rgba(255, 215, 122, 0.55));
+}
+.road-ship svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.road-ship-avatar {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  translate: -50% -50%;
+  font-size: 22cqw;
+  line-height: 1;
+}
+/* the two engines, seen from behind: flames that grow as the energy doubles */
+.road-flame {
+  position: absolute;
+  top: 74%;
+  width: 16%;
+  height: calc(26% * var(--flame));
+  translate: -50% 0;
+  border-radius: 50% 50% 45% 45%;
+  background: radial-gradient(ellipse at 50% 15%, #ffffff, #ffd77a 30%, #ff6ad5 60%, transparent 75%);
+  filter: blur(1.5px);
+  animation: roadFlame 0.12s ease-in-out infinite alternate;
+}
+.road-flame.is-left {
+  left: 39%;
+}
+.road-flame.is-right {
+  left: 61%;
+}
+@keyframes roadFlame {
+  from { scale: 0.9 0.85; opacity: 0.85; }
+  to { scale: 1.05 1.1; opacity: 1; }
 }
 .road-ship.is-charging {
   animation: roadCharge 0.18s ease-in-out infinite alternate;
@@ -62,10 +99,10 @@
   from { scale: 0.3; opacity: 0; }
   to { scale: 1; opacity: 1; }
 }
-/* the question: up top on a phone (the road climbs from the bottom-left), bottom-right on a wide screen */
+/* the question: at the bottom on a phone (under the ship), bottom-right on a wide screen */
 .road-panel {
   position: absolute;
-  top: calc(var(--hud-top, 96px) + 56px);
+  bottom: calc(12px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -82,9 +119,8 @@
   -webkit-backdrop-filter: blur(6px);
   animation: dimIn 0.3s ease-out both;
 }
-@media (min-width: 760px) {
+@media (min-width: 700px) {
   .road-panel {
-    top: auto;
     left: auto;
     right: 24px;
     bottom: 24px;
