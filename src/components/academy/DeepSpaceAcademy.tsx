@@ -1,14 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useT, useLang } from '../../i18n/useLang';
-import type { Strings } from '../../i18n/strings';
-import { pauseGame, resumeGame } from '../../game/gameClock';
+import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
-import { useAchievements } from '../../game/useAchievements';
-import { useGameStore } from '../../game/useGameStore';
-import { haptics } from '../../audio/haptics';
-import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
+import { AcademyScreen, Alien, Bus, Choices, Rich, type A, type CourseSpec, type StepProps } from './parts';
 
 // The Deep Space Academy: multiplication from the ground up, for a child
 // who has never met "×". Opened by tapping the rocket's window three times.
@@ -25,7 +20,6 @@ import GradientText from '../reactbits/GradientText';
 //      read a picture → symbols only (concrete → representational → abstract)
 // Everything can be read aloud, so non-readers can follow.
 
-type A = Strings['academy'];
 interface Props {
   onClose: () => void;
   onBurst: (x: number, y: number, color: string) => void;
@@ -47,122 +41,7 @@ const STEPS: Array<{ lesson: number; id: string }> = [
   { lesson: 6, id: 'done' },
 ];
 
-// ---------- helpers ----------
-
-/** text with {math} spans: the math is always shown left-to-right (inside Hebrew too) */
-function Rich({ text }: { text: string }) {
-  const parts = text.split(/\{([^}]+)\}/);
-  return (
-    <>
-      {parts.map((p, i) =>
-        i % 2 === 1 ? (
-          <bdi key={i} dir="ltr" className="ac-math">
-            {p}
-          </bdi>
-        ) : (
-          <span key={i}>{p}</span>
-        ),
-      )}
-    </>
-  );
-}
-
-function speak(text: string, lang: 'en' | 'he', words: A['speakWords']) {
-  try {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    synth.cancel();
-    const spoken = text
-      .replace(/[{}]/g, '')
-      .replace(/×/g, ` ${words.times} `)
-      .replace(/\+/g, ` ${words.plus} `)
-      .replace(/=/g, ` ${words.equals} `)
-      .replace(/[🎓🔊]/gu, '');
-    const u = new SpeechSynthesisUtterance(spoken);
-    u.lang = lang === 'he' ? 'he-IL' : 'en-US';
-    u.rate = 0.88;
-    u.pitch = 1.08;
-    synth.speak(u);
-  } catch {
-    // no speech synthesis on this device — the text is still on screen
-  }
-}
-
-function Alien({ n, lit, onTap }: { n?: number; lit?: boolean; onTap?: () => void }) {
-  return (
-    <motion.button
-      type="button"
-      className={`ac-alien ${lit ? 'is-lit' : ''}`}
-      onClick={onTap}
-      disabled={!onTap}
-      initial={{ scale: 0, rotate: -30 }}
-      animate={{ scale: 1, rotate: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-    >
-      <span className="ac-alien-face">👽</span>
-      {n !== undefined && <span className="ac-alien-n">{n}</span>}
-    </motion.button>
-  );
-}
-
-function Bus({ children, highlight, label, delay = 0 }: { children: React.ReactNode; highlight?: boolean; label?: string; delay?: number }) {
-  return (
-    <motion.div
-      className={`ac-bus ${highlight ? 'is-highlight' : ''}`}
-      initial={{ x: 200, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 120, damping: 16, delay }}
-    >
-      <div className="ac-bus-seats">{children}</div>
-      {label && <div className="ac-bus-label">{label}</div>}
-    </motion.div>
-  );
-}
-
-/** big multiple-choice buttons with gentle feedback */
-function Choices({ options, answer, onCorrect, t }: { options: Array<string | number>; answer: string | number; onCorrect: () => void; t: A }) {
-  const [wrong, setWrong] = useState<string | number | null>(null);
-  const [done, setDone] = useState(false);
-  return (
-    <div className="ac-choices-wrap">
-      <div className="ac-choices" dir="ltr">
-        {options.map((o) => (
-          <motion.button
-            key={o}
-            type="button"
-            className={`ac-choice ${done && o === answer ? 'is-right' : ''} ${wrong === o ? 'is-wrong' : ''}`}
-            disabled={done}
-            animate={wrong === o ? { x: [0, -8, 8, -5, 5, 0] } : {}}
-            onClick={() => {
-              if (o === answer) {
-                setDone(true);
-                setWrong(null);
-                sfx.correct(3, false);
-                haptics.correct(2);
-                onCorrect();
-              } else {
-                setWrong(o);
-                sfx.wrong();
-                haptics.thump();
-              }
-            }}
-          >
-            {o}
-          </motion.button>
-        ))}
-      </div>
-      {wrong !== null && !done && <div className="ac-wrong">{t.wrong}</div>}
-    </div>
-  );
-}
-
 // ---------- the steps ----------
-
-interface StepProps {
-  t: A;
-  setReady: (r: boolean) => void;
-  say: (s: string) => void;
-}
 
 function StepS1({ t, setReady }: StepProps) {
   const [counted, setCounted] = useState(0);
@@ -590,146 +469,10 @@ function stepText(id: string, t: A): string {
 // ---------- the screen ----------
 
 export function DeepSpaceAcademy({ onClose, onBurst }: Props) {
-  const all = useT();
-  const t = all.academy;
-  const lang = useLang((s) => s.lang);
-  const [phase, setPhase] = useState<'warp' | 'learn' | 'leaving'>('warp');
-  const [step, setStep] = useState(0);
-  const [ready, setReady] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const warpSpeed = useRef(2.8);
-  useWarpCanvas(canvasRef, 0.45, warpSpeed);
-
-  // the game waits while the Academy is open
-  useEffect(() => {
-    pauseGame('academy');
-    sfx.wormhole();
-    const id = window.setTimeout(() => {
-      warpSpeed.current = 0.08; // calm drift
-      setPhase('learn');
-    }, 1400);
-    return () => {
-      window.clearTimeout(id);
-      try {
-        window.speechSynthesis?.cancel();
-      } catch {
-        // ignore
-      }
-      resumeGame('academy');
-    };
-  }, []);
-
-  const current = STEPS[step];
-  const Step = STEP_COMPONENTS[current.id];
-  const markReady = useCallback((r: boolean) => setReady(r), []);
-  const say = useCallback((s: string) => speak(s, lang, t.speakWords), [lang, t.speakWords]);
-
-  const go = useCallback(
-    (dir: 1 | -1) => {
-      try {
-        window.speechSynthesis?.cancel();
-      } catch {
-        // ignore
-      }
-      setReady(false);
-      setStep((s) => Math.max(0, Math.min(STEPS.length - 1, s + dir)));
-    },
-    [],
+  const t = useT().academy;
+  const course: CourseSpec = useMemo(
+    () => ({ id: 'mul', subtitle: t.subtitle, lessons: t.lessons, steps: STEPS, components: STEP_COMPONENTS, stepText: (id) => stepText(id, t) }),
+    [t],
   );
-
-  const leave = useCallback(() => {
-    setPhase('leaving');
-    warpSpeed.current = 3;
-    sfx.launch();
-    window.setTimeout(onClose, 700);
-  }, [onClose]);
-
-  // a little celebration on the last screen
-  useEffect(() => {
-    if (current.id !== 'done') return;
-    useAchievements.getState().track({ type: 'academy' }, useGameStore.getState().progress);
-    sfx.milestone(10);
-    for (let i = 0; i < 8; i++) {
-      window.setTimeout(
-        () => onBurst(window.innerWidth * (0.2 + Math.random() * 0.6), window.innerHeight * (0.2 + Math.random() * 0.4), ['#ffd77a', '#6ad7ff', '#ff6ad5'][i % 3]),
-        i * 140,
-      );
-    }
-  }, [current.id, onBurst]);
-
-  // keyboard: ← → to move, Esc to leave
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (phase !== 'learn') return;
-      if (e.key === 'Escape') leave();
-      else if (e.key === 'ArrowRight' && ready && step < STEPS.length - 1) go(1);
-      else if (e.key === 'ArrowLeft' && step > 0) go(-1);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [phase, ready, step, go, leave]);
-
-  const lessonCount = t.lessons.length;
-  const stepTextNow = useMemo(() => stepText(current.id, t), [current.id, t]);
-
-  return (
-    <div className={`academy is-${phase}`}>
-      <canvas ref={canvasRef} className="academy-warp" />
-      {phase === 'warp' && <div className="academy-flash" />}
-
-      {phase !== 'warp' && (
-        <div className="academy-panel">
-          <header className="academy-header">
-            <div>
-              <div className="academy-title">🪐 {t.title}</div>
-              <div className="academy-sub">
-                {current.lesson < lessonCount ? `${t.lessonOf(current.lesson + 1, lessonCount)} · ${t.lessons[current.lesson]}` : t.subtitle}
-              </div>
-            </div>
-            <button type="button" className="academy-close" onClick={leave} aria-label={t.close}>
-              ✕
-            </button>
-          </header>
-          <div className="academy-steps" aria-hidden="true">
-            {STEPS.map((_, i) => (
-              <span key={i} className={`academy-step-dot ${i < step ? 'is-done' : ''} ${i === step ? 'is-now' : ''}`} />
-            ))}
-          </div>
-
-          <main className="academy-body" dir="auto">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                className="academy-step"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
-                transition={{ duration: 0.25 }}
-              >
-                <Step t={t} setReady={markReady} say={say} />
-              </motion.div>
-            </AnimatePresence>
-          </main>
-
-          <footer className="academy-footer">
-            <button type="button" className="ac-secondary" onClick={() => go(-1)} disabled={step === 0}>
-              {t.back}
-            </button>
-            <button type="button" className="ac-secondary" onClick={() => say(stepTextNow)}>
-              {t.readAloud}
-            </button>
-            {step < STEPS.length - 1 ? (
-              <button type="button" className="ac-next" onClick={() => go(1)} disabled={!ready}>
-                {t.next} {lang === 'he' ? '‹' : '›'}
-              </button>
-            ) : (
-              <button type="button" className="ac-next" onClick={leave}>
-                🚀 {t.close}
-              </button>
-            )}
-          </footer>
-        </div>
-      )}
-    </div>
-  );
+  return <AcademyScreen course={course} onClose={onClose} onBurst={onBurst} />;
 }

@@ -7,6 +7,11 @@
 // order (3×4 and 4×3) — but always at least two genuinely different pairs,
 // so the round is about knowing the table, and quietly teaches that order
 // doesn't matter.
+//
+// On the addition mission the drills are sums that make the target (3 + 5,
+// 6 + 2, 1 + 7 = 8): number bonds, at the pilot's stage.
+
+import type { Mission } from './mission';
 
 export const CHALLENGE_EVERY = 6; // every Nth question becomes a challenge
 export const CORRECT_PICKS = 3;
@@ -21,6 +26,7 @@ export interface Drill {
 }
 
 export interface Challenge {
+  mission: Mission;
   target: number;
   drills: Drill[];
   createdAt: number;
@@ -97,7 +103,8 @@ function pickDecoys(target: number, correct: Array<[number, number]>): Array<[nu
   return shuffle(candidates).slice(0, DRILL_COUNT - CORRECT_PICKS);
 }
 
-export function buildChallenge(level: number): Challenge {
+export function buildChallenge(level: number, mission: Mission = 'mul', stage = 1): Challenge {
+  if (mission === 'add') return buildAdditionChallenge(stage);
   const targets = eligibleTargets(level);
   const target = targets[Math.floor(Math.random() * targets.length)];
   const correct = pickCorrect(target, level);
@@ -106,5 +113,48 @@ export function buildChallenge(level: number): Challenge {
     ...correct.map(([x, y]) => ({ x, y, correct: true })),
     ...decoys.map(([x, y]) => ({ x, y, correct: false })),
   ]).map((d, id) => ({ ...d, id }));
-  return { target, drills, createdAt: Date.now() };
+  return { mission, target, drills, createdAt: Date.now() };
+}
+
+// ---------- addition ----------
+
+const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
+
+/** the target and the range of each number in the drills, by stage */
+function bondRange(stage: number): { target: number; lo: number; hi: number } {
+  // each target has at least three ways to make it
+  if (stage <= 1) return { target: 6 + Math.floor(Math.random() * 5), lo: 1, hi: 9 }; // 6-10
+  if (stage === 2) return { target: 11 + Math.floor(Math.random() * 6), lo: 1, hi: 10 }; // 11-16
+  return { target: pick([40, 50, 60, 70, 80, 90, 100]), lo: 11, hi: 89 }; // round numbers
+}
+
+// Three different pairs that make the target, and two decoys a number off
+// (or, with two-digit numbers, sometimes a ten off) so the sum is close.
+export function buildAdditionChallenge(stage: number): Challenge {
+  const { target, lo, hi } = bondRange(stage);
+  const pairs: Array<[number, number]> = [];
+  for (let a = lo; a <= target - lo; a++) {
+    const b = target - a;
+    if (a <= b && b <= hi) pairs.push([a, b]);
+  }
+  const flip = ([a, b]: [number, number]): [number, number] => (Math.random() < 0.5 ? [a, b] : [b, a]);
+  const correct = shuffle(pairs).slice(0, CORRECT_PICKS).map(flip);
+  const seen = new Set(correct.map(([a, b]) => `${Math.min(a, b)}+${Math.max(a, b)}`));
+  const nudges = stage >= 3 ? [-10, -1, 1, 10] : [-2, -1, 1, 2];
+  const decoys: Array<[number, number]> = [];
+  for (const [a, b] of shuffle([...correct])) {
+    for (const d of shuffle(nudges)) {
+      const pair: [number, number] = Math.random() < 0.5 ? [a + d, b] : [a, b + d];
+      const key = `${Math.min(...pair)}+${Math.max(...pair)}`;
+      if (pair[0] < 1 || pair[1] < 1 || seen.has(key) || decoys.length >= DRILL_COUNT - CORRECT_PICKS) continue;
+      seen.add(key);
+      decoys.push(pair);
+      break;
+    }
+  }
+  const drills = shuffle([
+    ...correct.map(([x, y]) => ({ x, y, correct: true })),
+    ...decoys.map(([x, y]) => ({ x, y, correct: false })),
+  ]).map((d, id) => ({ ...d, id }));
+  return { mission: 'add', target, drills, createdAt: Date.now() };
 }

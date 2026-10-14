@@ -1,11 +1,13 @@
 import type { Progress } from '../game/types';
-import { progressKeyFor, useProfiles } from '../profiles/useProfiles';
+import type { Mission } from '../game/mission';
+import { activeMission, missionOf, progressKeyFor, useProfiles } from '../profiles/useProfiles';
 
-// Progress is saved per pilot profile. Before a profile exists (the very
-// first launch, while the welcome screen is up) it falls back to a scratch key.
+// Progress is saved per pilot profile and mission (the active pilot's
+// current one). Before a profile exists (the very first launch, while the
+// welcome screen is up) it falls back to a scratch key.
 function storageKey(): string {
   const { activeId } = useProfiles.getState();
-  return activeId ? progressKeyFor(activeId) : 'multiplication-rocket:progress:v1:unassigned';
+  return activeId ? progressKeyFor(activeId, activeMission()) : 'multiplication-rocket:progress:v1:unassigned';
 }
 
 export function defaultProgress(): Progress {
@@ -32,24 +34,43 @@ export interface ProgressStore {
   reset(): void;
 }
 
+function loadFrom(key: string): Progress {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return defaultProgress();
+    const parsed = JSON.parse(raw) as Partial<Progress>;
+    if (parsed.version !== 1) return defaultProgress();
+    return { ...defaultProgress(), ...parsed };
+  } catch {
+    return defaultProgress();
+  }
+}
+
+function saveTo(key: string, progress: Progress) {
+  try {
+    localStorage.setItem(key, JSON.stringify(progress));
+  } catch {
+    // storage blocked/full: progress lasts for this session only
+  }
+}
+
+// A crew flight records answers for two pilots at once, so it reads and
+// writes a given pilot's progress rather than the active one's (in their
+// current mission, unless a fact from the other one is being recorded).
+export function loadProgressFor(profileId: string, mission: Mission = missionOf(profileId)): Progress {
+  return loadFrom(progressKeyFor(profileId, mission));
+}
+
+export function saveProgressFor(profileId: string, progress: Progress, mission: Mission = missionOf(profileId)) {
+  saveTo(progressKeyFor(profileId, mission), progress);
+}
+
 export const localProgressStore: ProgressStore = {
   load() {
-    try {
-      const raw = localStorage.getItem(storageKey());
-      if (!raw) return defaultProgress();
-      const parsed = JSON.parse(raw) as Partial<Progress>;
-      if (parsed.version !== 1) return defaultProgress();
-      return { ...defaultProgress(), ...parsed };
-    } catch {
-      return defaultProgress();
-    }
+    return loadFrom(storageKey());
   },
   save(progress) {
-    try {
-      localStorage.setItem(storageKey(), JSON.stringify(progress));
-    } catch {
-      // storage blocked/full: progress lasts for this session only
-    }
+    saveTo(storageKey(), progress);
   },
   reset() {
     try {

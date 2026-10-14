@@ -1,0 +1,22 @@
+# Pushing to a preview branch republishes the site, so its test version
+# appears in a folder of the branch's name:
+#   https://idanbenzvi.github.io/multiplication-rocket/preview/
+#   https://idanbenzvi.github.io/multiplication-rocket/preview_addition/
+# Only master may deploy to GitHub Pages, so this just asks the master
+# workflow (pages.yml) to run; it builds master and the previews together.
+name: Republish preview
+
+on:
+  push:
+    branches: [preview, preview_addition]
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run pages.yml --ref master --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -8,7 +8,7 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import { useSettings, isTouchDevice } from '../settings/useSettings';
-import { useProfiles } from '../profiles/useProfiles';
+import { activeMission, useProfiles } from '../profiles/useProfiles';
 import { NumPad } from './NumPad';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { CannonPickup, RearShip, Saucer } from './spaceArt';
@@ -21,7 +21,9 @@ interface Props {
 }
 
 // Warp in → collect the cannons → "how many ships?" → the fleet forms up and
-// fires → win, or see why the count was off and try again.
+// fires → win, or see why the count was off and try again. On the addition
+// mission the cannons collected are what we have, and each ship brings one
+// more: "we have 7, how many more for 12?" (the missing part of the sum).
 type Phase = 'warp' | 'collect' | 'question' | 'attack' | 'result' | 'summary';
 
 const WARP_MS = 2200;
@@ -58,7 +60,11 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const battle = useMemo(() => buildBattle(useGameStore.getState().progress), []);
+  const battle = useMemo(() => buildBattle(useGameStore.getState().progress, activeMission()), []);
+  const adding = battle.mission === 'add';
+  // the beam's charge with n ships: n × cannons each, or (adding) ours plus one per ship
+  const shotsWith = (n: number) => (adding ? battle.cannons + n : n * battle.cannons);
+  const perShip = adding ? 1 : battle.cannons;
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -312,7 +318,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       sfx.wormhole(); // the rising whoosh of the spin-up
     }, ARRIVE_MS);
     later(() => {
-      const shots = n * battle.cannons;
+      const shots = shotsWith(n);
       const exact = n === battle.ships;
       if (exact) {
         setAttackStep('blast');
@@ -329,7 +335,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
         later(() => {
           setAttackStep('done');
           warpSpeed.current = 0.5;
-          setMessage({ text: isDemo ? t.battleShowAnswer(battle.ships, battle.cannons, battle.enemies) : t.battleWin, good: true });
+          setMessage({ text: isDemo ? showAnswer() : t.battleWin, good: true });
           setPhase('result');
           later(() => {
             setPhase('summary');
@@ -345,8 +351,11 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       setAttackStep('fizzle');
       sfx.wrong();
       haptics.thump();
-      const text =
-        shots < battle.enemies
+      const text = adding
+        ? shots < battle.enemies
+          ? t.battleTooFewAdd(battle.cannons, n, battle.enemies - shots)
+          : t.battleTooManyAdd(battle.cannons, n, shots - battle.enemies)
+        : shots < battle.enemies
           ? t.battleTooFew(n, battle.cannons, battle.enemies - shots)
           : t.battleTooMany(n, battle.cannons, shots - battle.enemies);
       setMessage({ text, good: false });
@@ -364,6 +373,9 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       }, RESULT_MS + 400);
     }, ARRIVE_MS + ORBIT_MS);
   };
+
+  const showAnswer = () =>
+    adding ? t.battleShowAnswerAdd(battle.cannons, battle.ships, battle.enemies) : t.battleShowAnswer(battle.ships, battle.cannons, battle.enemies);
 
   // How each enemy gets flung when the beam hits: a random direction and
   // spin, and one of them comes straight at the viewer.
@@ -409,8 +421,10 @@ export function FleetBattle({ onDone, onBurst }: Props) {
     const startX = w * (0.15 + (0.7 * (i + 0.5)) / Math.max(1, fleet));
     return { x: startX + (ring.x - startX) * e, y: h + 80 + (ring.y - h - 80) * e, depth: Math.sin(a) };
   });
-  const charge = fleet * battle.cannons;
-  const chargeShown = attackStep === 'arrive' ? 0 : Math.min(1, orbitT / (ORBIT_MS / 1000)) * charge;
+  // adding: the meter starts at the cannons we have, and the fleet tops it up
+  const charge = shotsWith(fleet);
+  const chargeFrom = adding ? battle.cannons : 0;
+  const chargeShown = attackStep === 'arrive' ? 0 : chargeFrom + Math.min(1, orbitT / (ORBIT_MS / 1000)) * (charge - chargeFrom);
   const shake = spinning && attackStep !== 'fizzle' ? Math.min(6, orbitT * orbitT * 0.9) : 0;
   const tBlast = blastStart.current ? (gameNow() - blastStart.current) / 1000 : 0;
   // Halo + orbit ring brightness, 0..1: builds with the spin, white-hot at the
@@ -545,7 +559,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       {phase === 'question' && (
         <div className="battle-question">
           <div className="battle-question-text" dir="auto">
-            {t.battleQuestion(battle.cannons, battle.enemies)}
+            {adding ? t.battleQuestionAdd(battle.cannons, battle.enemies) : t.battleQuestion(battle.cannons, battle.enemies)}
           </div>
           {answerMode === 'choice' ? (
             <div className="choice-grid" dir="ltr">
@@ -625,7 +639,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
             p.depth < 0 ? (
               <div key={i} className={`fleet-ship ${orbitT > 1.2 ? 'is-streaking' : ''}`} style={{ left: p.x, top: p.y, zIndex: 1, scale: 0.85 }}>
                 <RearShip size={fleetSize} color="#7ec4b0" />
-                <span className="fleet-ship-cannons">{'⚡'.repeat(battle.cannons)}</span>
+                <span className="fleet-ship-cannons">{'⚡'.repeat(perShip)}</span>
               </div>
             ) : null,
           )}
@@ -637,7 +651,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
             p.depth >= 0 ? (
               <div key={i} className={`fleet-ship ${orbitT > 1.2 ? 'is-streaking' : ''}`} style={{ left: p.x, top: p.y, zIndex: 3 }}>
                 <RearShip size={fleetSize} color="#7ec4b0" />
-                <span className="fleet-ship-cannons">{'⚡'.repeat(battle.cannons)}</span>
+                <span className="fleet-ship-cannons">{'⚡'.repeat(perShip)}</span>
               </div>
             ) : null,
           )}
@@ -668,7 +682,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
             {t.battleWin}
           </GradientText>
           <div className="round-card-text">
-            <bdi dir="ltr">{t.battleShowAnswer(battle.ships, battle.cannons, battle.enemies)}</bdi>
+            <bdi dir="ltr">{showAnswer()}</bdi>
           </div>
         </div>
       )}

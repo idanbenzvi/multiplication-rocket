@@ -1,14 +1,16 @@
 import { strategyFor } from '../game/strategy';
+import type { Mission } from '../game/mission';
 import { useT } from '../i18n/useLang';
 
 interface Props {
   x: number;
   y: number;
+  mission: Mission;
   visible: boolean;
   onToggle: () => void;
 }
 
-export function StrategyHint({ x, y, visible, onToggle }: Props) {
+export function StrategyHint({ x, y, mission, visible, onToggle }: Props) {
   const t = useT();
 
   if (!visible) {
@@ -19,7 +21,7 @@ export function StrategyHint({ x, y, visible, onToggle }: Props) {
     );
   }
 
-  const strategy = strategyFor(x, y, t);
+  const strategy = strategyFor(x, y, t, mission);
 
   return (
     <button className="strategy-hint" onClick={onToggle} title={t.pressHToHide}>

@@ -12,7 +12,9 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { ReviewButton } from './components/ReviewButton';
 import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
-import { activeProfile, pilotName, useProfileGateOpen } from './profiles/useProfiles';
+import { activeProfile, pilotName, useMission, useProfileGateOpen } from './profiles/useProfiles';
+import { missionOfKey } from './game/mission';
+import { clampStage } from './game/addition';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
 import { haptics } from './audio/haptics';
@@ -30,8 +32,15 @@ import { StardustRun } from './components/stardust/StardustRun';
 import { DevPanel } from './components/DevPanel';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
+import { AdditionAcademy } from './components/academy/AdditionAcademy';
+import { CrewFlight } from './components/crew/CrewFlight';
+import { CrewSetup } from './components/crew/CrewSetup';
+import { SplitSky } from './components/sky/SplitSky';
+import { SunMonster } from './components/sun/SunMonster';
+import { useCrewStore } from './game/useCrewStore';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
+import { IS_PREVIEW } from './storage/previewNamespace';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
@@ -57,6 +66,8 @@ function App() {
   const answerMode = useSettings((s) => s.answerMode);
   const paused = usePause((s) => s.away);
   const academyOpen = useGameStore((s) => s.academyOpen);
+  // a crew flight replaces the solo game (its questions, tank and overlays)
+  const crewActive = useCrewStore((s) => s.active);
   const closeAcademy = useGameStore((s) => s.closeAcademy);
   // Until a pilot is picked/created the game itself stays hidden.
   const gateOpen = useProfileGateOpen();
@@ -64,6 +75,8 @@ function App() {
   const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
   const progress = useGameStore((s) => s.progress);
+  const mission = useMission();
+  const stageUp = useGameStore((s) => s.stageUp);
   const question = useGameStore((s) => s.question);
   const feedback = useGameStore((s) => s.feedback);
   const justLaunched = useGameStore((s) => s.justLaunched);
@@ -219,34 +232,45 @@ function App() {
 
       <header className="hud-topbar" ref={topbarRef}>
         <div className="hud-logo">
-          🚀 <ShinyText text={t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
+          🚀 <ShinyText text={mission === 'add' ? t.logoAdd : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
+          {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
-        <LevelBanner level={displayLevel} />
+        {!crewActive && <LevelBanner level={displayLevel} stage={mission === 'add' ? clampStage(progress.stage) : undefined} />}
         <div className="hud-topbar-right">
-          <PilotButton />
+          {/* solo pilot's own things: the crew bar shows both pilots instead */}
+          {!crewActive && <PilotButton />}
           <BadgesButton />
-          <div className="hud-stat-chip">
-            ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
-          </div>
+          {!crewActive && (
+            <div className="hud-stat-chip">
+              ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
+            </div>
+          )}
           <AudioControls />
-          <ReviewButton mastery={progress.mastery} onClick={requestHeatmap} />
+          {!crewActive && <ReviewButton mastery={progress.mastery} mission={mission} onClick={requestHeatmap} />}
           <SettingsMenu onReset={handleReset} />
           <AboutButton />
         </div>
       </header>
 
-      <FuelGauge
-        fuelPercent={progress.fuel}
-        bestStreak={progress.bestStreak}
-        mastery={progress.mastery}
-      />
+      {!crewActive && (
+        <FuelGauge
+          fuelPercent={progress.fuel}
+          bestStreak={progress.bestStreak}
+          mastery={progress.mastery}
+        />
+      )}
 
       <ProfileGate />
-      {academyOpen && <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />}
+      <CrewSetup />
+      {!gateOpen && <SplitSky />}
+      {!gateOpen && <SunMonster />}
+      {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
+      {academyOpen &&
+        (mission === 'add' ? <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} /> : <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />)}
       <PauseController />
       {DEV_MODE && <DevPanel />}
 
-      {!gateOpen && (
+      {!gateOpen && !crewActive && (
         <>
           {bonusRound === 'meteor' && !justLaunched && !showHeatmap && (
             <MeteorShower key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
@@ -281,6 +305,7 @@ function App() {
               <StrategyHint
                 x={question.x}
                 y={question.y}
+                mission={missionOfKey(question.fact.key)}
                 visible={hintVisible}
                 onToggle={() => setHintVisible((v) => !v)}
               />
@@ -299,11 +324,15 @@ function App() {
           )}
 
           {justLaunched && (
-            <LaunchOverlay completedLevel={progress.level - 1} onContinue={dismissLaunch} />
+            <LaunchOverlay
+              completedLevel={progress.level - 1}
+              newStage={stageUp ? clampStage(progress.stage) : undefined}
+              onContinue={dismissLaunch}
+            />
           )}
 
           {showHeatmap && !justLaunched && (
-            <MasteryHeatmap mastery={progress.mastery} onContinue={dismissHeatmap} auto={heatmapAuto} />
+            <MasteryHeatmap mastery={progress.mastery} mission={mission} onContinue={dismissHeatmap} auto={heatmapAuto} />
           )}
         </>
       )}

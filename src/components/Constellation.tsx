@@ -8,6 +8,8 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
+import { SumConstellation } from './SumConstellation';
+import { useMission } from '../profiles/useProfiles';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -37,11 +39,16 @@ function norm(r: Rect) {
   return { top, left, rows, cols, product: rows * cols };
 }
 
+/** the multiplication rectangle, or (on the addition mission) the counting-on star chart */
+export function Constellation(props: Props) {
+  return useMission() === 'add' ? <SumConstellation {...props} /> : <ProductConstellation {...props} />;
+}
+
 // Drag across the stars to frame a rectangle; a rectangle of exactly the
 // target's size lights up as a constellation. Shows multiplication as what
 // it is — rows times columns — and that one number can be built different
 // ways (12 = 3 × 4 = 2 × 6).
-export function Constellation({ onDone, onBurst }: Props) {
+function ProductConstellation({ onDone, onBurst }: Props) {
   const t = useT();
   const targets = useMemo(() => buildConstellationTargets(useGameStore.getState().progress), []);
   const fuelPerTarget = useMemo(

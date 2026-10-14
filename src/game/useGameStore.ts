@@ -1,14 +1,16 @@
 import { create } from 'zustand';
 import { gameNow } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
-import { buildFactPool, getStrugglingFactKeys, nextDueScore, pickNextFact, randomizeOrder } from './facts';
+import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
+import { pickFact } from './questions';
+import { clampStage, stageReady } from './addition';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
-import { useProfiles } from '../profiles/useProfiles';
+import { activeMission, useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 import { useAchievements } from './useAchievements';
 
@@ -28,6 +30,8 @@ interface GameState {
   flare: number;
   lastGainPercent: number;
   justLaunched: boolean;
+  /** this launch also opened the next addition stage */
+  stageUp: boolean;
   sessionMistakes: number;
   showHeatmap: boolean;
   /** the map opened by itself after a run of mistakes (vs. "Stop & Review") */
@@ -74,17 +78,6 @@ interface GameState {
   devSetFuel: (fuel: number) => void;
 }
 
-function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean) {
-  const prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
-  const next: FactStat = {
-    attempts: prev.attempts + 1,
-    correct: prev.correct + (isCorrect ? 1 : 0),
-    wrong: prev.wrong + (isCorrect ? 0 : 1),
-    dueScore: nextDueScore(prev.dueScore, isCorrect),
-  };
-  return { ...mastery, [key]: next };
-}
-
 function launchFrom(progress: Progress) {
   return {
     level: progress.level + 1,
@@ -92,6 +85,14 @@ function launchFrom(progress: Progress) {
     currentStreak: 0,
     fuel: 0,
   };
+}
+
+// An addition pilot moves up a stage on a launch, once enough of the stage
+// is mastered (see addition.ts): advancing through the levels, on success.
+// The stage only changes when a new one opens (a new pilot has none saved yet).
+function nextStage(progress: Progress, mastery: Record<string, FactStat>): number | undefined {
+  if (activeMission() !== 'add' || !stageReady(clampStage(progress.stage), mastery)) return progress.stage;
+  return clampStage(progress.stage) + 1;
 }
 
 // Fuel bookkeeping shared by normal answers and the wormhole boost. A full
@@ -104,18 +105,18 @@ function addFuel(progress: Progress, mastery: Record<string, FactStat>, gain: nu
   let level = progress.level;
   let launchesCompleted = progress.launchesCompleted;
   let currentStreak = progress.currentStreak;
+  let stage = progress.stage;
   let launched = false;
   if (fuel >= 100 && getStrugglingFactKeys(mastery).length === 0) {
     launched = true;
     ({ level, launchesCompleted, currentStreak, fuel } = launchFrom(progress));
+    stage = nextStage(progress, mastery);
   }
-  return { fuel, level, launchesCompleted, currentStreak, launched };
+  return { fuel, level, launchesCompleted, currentStreak, launched, stage, stageUp: stage !== progress.stage };
 }
 
 function newQuestion(progress: Progress, avoidKey?: string): Question {
-  const level = getLevelConfig(progress.level);
-  const pool = buildFactPool(level.factorRange[0], level.factorRange[1]);
-  const fact = pickNextFact(pool, progress.mastery, avoidKey);
+  const fact = pickFact(activeMission(), progress, avoidKey);
   const { x, y } = randomizeOrder(fact);
   return { fact, x, y, askedAt: gameNow() };
 }
@@ -127,6 +128,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   flare: 0,
   lastGainPercent: 0,
   justLaunched: false,
+  stageUp: false,
   sessionMistakes: 0,
   showHeatmap: false,
   heatmapAuto: false,
@@ -146,6 +148,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
       justLaunched: false,
+      stageUp: false,
       sessionMistakes: 0,
       showHeatmap: false,
       challenge: null,
@@ -159,7 +162,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   submitAnswer: (value: number, elapsedMs: number) => {
     const { progress, question } = get();
     if (!question) return false;
-    const isCorrect = value === question.fact.product;
+    const isCorrect = value === question.fact.answer;
     const level = getLevelConfig(progress.level);
 
     const nextMastery = recordAttempt(progress.mastery, question.fact.key, isCorrect);
@@ -173,7 +176,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     let launchesCompleted = progress.launchesCompleted;
     let totalCorrectAnswers = progress.totalCorrectAnswers;
     let fuel = progress.fuel;
+    let stage = progress.stage;
     let launched = false;
+    let stageUp = false;
     let gainPercent = 0;
 
     if (isCorrect) {
@@ -190,6 +195,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted = result.launchesCompleted;
       currentStreak = result.currentStreak;
       launched = result.launched;
+      stage = result.stage;
+      stageUp = result.stageUp;
     } else {
       currentStreak = 0;
       // A banked full tank is safe from an unrelated mistake — only clearing
@@ -208,6 +215,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       totalCorrectAnswers,
       launchesCompleted,
       mastery: nextMastery,
+      stage,
     };
 
     localProgressStore.save(nextProgress);
@@ -239,6 +247,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       flare: isCorrect ? Math.min(1, gainPercent / (100 / level.streakToLaunch) / 1.75) : 0,
       lastGainPercent: gainPercent,
       justLaunched: launched,
+      stageUp,
       sessionMistakes: triggerHeatmap ? 0 : nextMistakes,
       showHeatmap: triggerHeatmap ? true : get().showHeatmap,
       heatmapAuto: triggerHeatmap ? true : get().heatmapAuto,
@@ -256,9 +265,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
       const { bonusIndex } = get();
+      const mission = activeMission();
       const kind = BONUS_ROTATION[bonusIndex % BONUS_ROTATION.length];
       const next = { questionsSinceChallenge: 0, bonusIndex: bonusIndex + 1, feedback: null, flare: 0 };
-      if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level) });
+      if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level, mission, clampStage(progress.stage)) });
       else set({ ...next, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
       return;
     }
@@ -286,6 +296,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       level: result.level,
       launchesCompleted: result.launchesCompleted,
       currentStreak: result.currentStreak,
+      stage: result.stage,
     };
     localProgressStore.save(nextProgress);
     useAchievements.getState().track({ type: 'bonus', kind: 'wormhole', perfect: false }, nextProgress);
@@ -294,6 +305,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       challenge: null,
       inWormhole: false,
       justLaunched: result.launched,
+      stageUp: result.stageUp,
       lastGainPercent: gain,
       question: newQuestion(nextProgress),
       feedback: null,
@@ -319,6 +331,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       level: result.level,
       launchesCompleted: result.launchesCompleted,
       currentStreak: result.currentStreak,
+      stage: result.stage,
     };
     localProgressStore.save(nextProgress);
     if (bonusRound) {
@@ -329,6 +342,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       progress: nextProgress,
       bonusRound: null,
       justLaunched: result.launched,
+      stageUp: result.stageUp,
       lastGainPercent: fuelGain,
       question: newQuestion(nextProgress),
       feedback: null,
@@ -352,16 +366,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   devStartBonus: (kind) => {
     const { progress } = get();
     const clear = { justLaunched: false, showHeatmap: false, inWormhole: false, feedback: null, flare: 0 };
-    if (kind === 'wormhole') set({ ...clear, bonusRound: null, challenge: buildChallenge(progress.level) });
+    if (kind === 'wormhole') set({ ...clear, bonusRound: null, challenge: buildChallenge(progress.level, activeMission(), clampStage(progress.stage)) });
     else set({ ...clear, challenge: null, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
   },
 
   devLaunch: () => {
     const { progress } = get();
-    const nextProgress: Progress = { ...progress, ...launchFrom(progress) };
+    const stage = nextStage(progress, progress.mastery);
+    const nextProgress: Progress = { ...progress, ...launchFrom(progress), stage };
     localProgressStore.save(nextProgress);
     useAchievements.getState().track({ type: 'progress' }, nextProgress);
-    set({ progress: nextProgress, justLaunched: true, challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
+    set({ progress: nextProgress, justLaunched: true, stageUp: stage !== progress.stage, challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
   },
 
   devSetFuel: (fuel) => {
@@ -378,7 +393,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissLaunch: () => {
     const { progress } = get();
-    set({ justLaunched: false, feedback: null, flare: 0, question: newQuestion(progress) });
+    set({ justLaunched: false, stageUp: false, feedback: null, flare: 0, question: newQuestion(progress) });
   },
 
   requestHeatmap: () => {
@@ -392,9 +407,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetProgress: () => {
     localProgressStore.reset();
-    // a reset is a fresh start: the dashboard's history goes too
+    // a reset is a fresh start: the dashboard's history (of this mission) goes too
     const activeId = useProfiles.getState().activeId;
-    if (activeId) clearLog(activeId);
+    if (activeId) clearLog(activeId, activeMission());
     useAchievements.getState().reset();
     const progress = localProgressStore.load();
     set({
@@ -403,6 +418,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
       justLaunched: false,
+      stageUp: false,
       sessionMistakes: 0,
       showHeatmap: false,
       challenge: null,

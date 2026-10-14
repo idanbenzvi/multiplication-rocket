@@ -1,6 +1,7 @@
 # 🚀 Multiplication Rocket
 
-A space-rocket game for practicing the multiplication table (1–10), in **English and Hebrew**.
+A space-rocket game for practicing the multiplication table (1–10), or addition
+(**SpaceSum**: sums to 10, then 20, then 100), in **English and Hebrew**.
 The rocket is always flying, under northern-lights curtains that change color every level. Every correct answer fuels it and speeds it up, and a streak of
 correct answers makes it go faster still: stars stretch into streaks, the screen motion-blurs,
 and the engine plume grows hotter. A wrong answer makes it brake and slow down. Fill the tank to
@@ -96,6 +97,70 @@ The lessons follow the order the research on early multiplication supports:
    concrete → representational → abstract sequence
    ([meta-analytic review of CRA, University of Kentucky](https://scholars.uky.edu/en/publications/a-meta-analytic-review-of-the-concrete-representational-abstract-/)).
 
+### On the addition mission: three courses
+
+For an addition pilot the Academy opens on a menu of three courses, one per stage; the pilot's own
+stage is marked **📍 You are here**, and finished courses get a ✓. Each follows the usual path
+from counting all, to counting on, to known facts and strategies, and ends with the same fading
+practice (a picture, then symbols only, with "Show me").
+
+1. **Sums to 10:** two buses of aliens put together and counted all; the **+** sign and "sum";
+   counting on from 5 along a number line; swapping `2 + 6` into `6 + 2` (start at the bigger
+   number); filling a ten-frame; the pairs that make 10.
+2. **Over 10:** a full ten-frame and some more (`10 + 3 = 13`, teen numbers); **make a ten
+   first**: the stars of `8 + 5` fly into two ten-frames, 2 filling the first and 3 spilling into
+   the next (`8 + 2 + 3 = 10 + 3`); doubles (`6 + 6`) and near doubles (`6 + 7` is one more).
+3. **20 and up:** tens as rods and ones as dots (build 25 with buttons); adding tens (`30 + 20`
+   counted by tens); tens with tens and ones with ones (`34 + 25`, the pieces slide together);
+   **a new ten**: in `37 + 25` the 12 ones are bundled into a rod (carrying); jumping to the next
+   ten (`48 + 2 + 5`).
+
+## Two missions: × or + (SpaceSum)
+
+Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10)
+or **➕ Addition**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM*, *טיל הכפל* /
+*טיל החיבור*), and each mission keeps its own progress, so a pilot can switch in their profile
+(✏️) and come back to where they were in the other one.
+
+Addition climbs three stages, shown under the destination:
+
+| Stage | Range | Example | What's being learned |
+| --- | --- | --- | --- |
+| 1 | sums within 10 | 3 + 4 | counting on, doubles |
+| 2 | sums within 20 | 8 + 5 | crossing ten: 8 + 5 = 8 + 2 + 3 |
+| 3 | numbers up to 100 | 37 + 45 | tens and ones, then carrying |
+
+- **Moving up on success:** a launch opens the next stage once 80% of the current one is
+  mastered ("New mission level! From now on: sums to 20"). One question in five keeps reviewing
+  the earlier stages.
+- **Stage 3** has thousands of pairs, so it tracks *kinds* of sum instead (tens + tens,
+  two-digit + one-digit, two-digit + two-digit, each with and without carrying) and makes up a
+  fresh problem of the kind picked. The practice map shows the 10 × 10 addition table plus a row
+  for these kinds.
+- **Wrong answers teach:** within 20 the sum fills ten-frames (first number, then the second in
+  another colour, so making ten is visible); two-digit sums are drawn as tens rods and ones dots.
+- **Hints** count on, use doubles ("6 + 7 → 6 + 6 + 1"), make ten ("8 + 5 → 8 + 2 + 3"), or add
+  tens then ones ("37 + 45 → 30 + 40 + 7 + 5"), always stopping one step short.
+- **Every bonus round has an addition version:**
+  - **Wormhole:** pick the 3 sums that make the target (3 + 5, 6 + 2, 1 + 7 = 8).
+  - **Meteor Shower:** blast the sum.
+  - **Constellation:** a star chart with the first number already lit in gold; drag (or tap) to
+    where the sum lands. Within 10 it's a ten-frame, within 20 two side by side (8 + 5: two fill
+    the frame, three spill over), and two-digit sums use a hundred chart, where a ten is one row
+    down.
+  - **Fleet Battle:** the missing part. "We have 7 cannons. How many more do we need for 12
+    enemies?" Each ship brings one cannon, and the power meter starts from the 7.
+  - **Stranded Fleet:** every ship shows [ ] + 4 = 11, [ ] + 9 = 16, …: find the shared number.
+  - **Stardust Run:** jumps of the same size along the stream (2s and 3s, crossing ten in 3s to
+    6s, then +10, +20, +9 or +11), with a pattern to remember at the end ("+9 = add 10, then take
+    away 1").
+- **Together:** a mixed crew works in Crew Flight: each pilot gets their own mission's questions,
+  the navigator counts two groups of stars, and docking is an addition round. In Monster Sun each
+  phone drills its own mission, and a missed + fact can go to any teammate, a missed × fact only
+  to a × pilot. In **Split Sky**, an addition host's game has each phone count its own group of
+  stars (in rows of ten), then both add the two together. Eclipse Hunters (common multiples) and
+  the Academy stay multiplication only.
+
 ## Pilot profiles (siblings)
 
 Each child can have their own pilot: a name plus an animal avatar (🐶🐱🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐧🦄🐙).
@@ -110,6 +175,106 @@ The pilot's animal also rides in the rocket's porthole.
 Answer mode, language and sound are shared by everyone on the device.
 
 <img src="docs/pilots.png" alt="Who's flying today? pilot picker" width="280">
+
+## Crew Flight 👩‍🚀👨‍🚀 (two players)
+
+Two pilots fly **one rocket together on one device**, taking turns. Open it from the pilot picker
+(**Fly together**, shown when there are 2+ pilots), pick the two pilots, and give each a seat:
+
+- **🚀 Pilot.** The usual timed times-table drills, weighted towards that pilot's hard facts.
+- **🧭 Navigator.** For a younger child: picture questions about equal groups ("3 groups of
+  4 stars. How many stars?") with four big answers and a 🔊 read-aloud button. The facts start
+  at factors up to 5 and widen to 6 and 7 as the navigator masters them. A miss counts the groups
+  up together (4, 8, 12).
+
+The pilot further along is suggested as Pilot, and two equals can both fly as Pilots. Every right
+answer pours fuel into **one shared tank**, coloured by who added it. A navigator's answer is worth
+as much as a pilot's average-speed one, so the younger child's part of the launch is just as big. A
+wrong answer brakes the rocket but never drains a sibling's fuel.
+
+Every 4th turn is **Docking 🛰️**: the station shows a number (say 24), and each child secretly
+taps one number on **their own half** of the screen. The picks stay hidden (🔒) until both are in,
+then `4 × 6 = 24` docks the rockets. To win, the two have to agree out loud first ("you take 4,
+I'll take 6"). There are three tries, and an earlier dock is worth more fuel (3× / 2× / 1×). After
+three misses, the ways to make the number are shown.
+
+Answers count as practice for each child: they go into each pilot's own practice map and the
+parent dashboard. A full tank launches the crew. Each pair of pilots has its own crew level,
+separate from their solo levels. **Land** ends the flight with a summary for both, then it's back to solo
+play. Design notes: [`docs/plans/2026-10-08-crew-flight.md`](docs/plans/2026-10-08-crew-flight.md).
+
+## Split Sky 📱📱 (two phones)
+
+Two children, two phones, **side by side**. One sky of stars spans both screens, split at the
+seam where the phones touch. Each child counts their own half, then together they find the whole
+sky: `6 × 8 = 6 × 3 + 6 × 5`. Breaking a hard fact into easier pieces is the same idea as the
+strategy hints, but here each child holds one of the pieces.
+
+- **Connect:** on one phone, **📱📱 Two phones → Host a game** shows a 4-digit code. On the other,
+  **Join a game** and type it. Each phone needs one pilot. The host says which side its phone is on.
+- **A round:** each phone shows only its own half (say "6 rows of 3"), and each child answers
+  privately. Then both phones show both halves (`6 × 3 = 18`, `6 × 5 = 30`) and ask for the whole,
+  `6 × 8`. A miss on the whole gives the hint "18 + 30". When both are done, the constellation
+  lights with a glow that starts at the seam and runs out across both screens.
+- When the sky is wider than 5 columns, one half is a **5** (`7 × 8 = 7 × 5 + 7 × 3`), the classic
+  way to split a hard fact.
+- There are 5 skies a game. Each phone records its own pilot's answers in its own practice map.
+- **How it connects:** the free [PeerJS](https://peerjs.com) cloud server introduces the phones
+  using the code. After that, the game goes directly phone to phone (WebRTC), and names and
+  answers never touch the server. A phone that drops can rejoin with the same code and carries on
+  where it left off. Both phones need the internet to connect. Some guest or mesh Wi-Fi networks
+  keep phones apart; the game says so if it can't connect.
+
+### Eclipse Hunters 🌑 (two phones)
+
+The second two-phone game: the host picks it in the lobby, or from the summary. Each phone
+has **one moon**, going round every 3 ticks on one phone and every 4 on the other.
+
+- **Orbit:** each child skip-counts their own moon, choosing the next tick each time (3, 6, 9,
+  12, 15…). The moon flies round the planet past one dot per tick. Every step is a times-table
+  fact and counts as practice. The other phone's progress shows only as a count, never its numbers.
+- **Predict:** "When do both moons line up for the first time?" Each child sees only their own
+  list, so they have to compare out loud to find the first number in both.
+- **Eclipse:** a shadow sweeps across the left phone and then the right, the planet turns into a
+  glowing corona, and it's explained: `3 × 4 = 12`, and again every 12 ticks. The two periods
+  never share a factor, so the first eclipse is always their product.
+- 4 eclipses a game.
+
+Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split-sky.md).
+
+## Monster Sun 👾 (2–6 phones, co-op)
+
+A grumpy monster sun made of flickering characters is swallowing the stars, and up to six
+children team up to cure it, each on their own phone.
+
+- **Connect:** **👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
+  **Join a fight** and types it. At least 2 phones are needed.
+- **Fight:** every phone drills its own questions (4 choices, weighted by that pilot's mastery).
+  A right answer is a blow: the monster shivers and sheds characters. A wrong one feeds it back
+  one hit point, and the right answer is shown. The first monster takes **5 right answers per
+  player**.
+- **Help each other:** a question you miss is sent to a random teammate as a **🆘 Help Ari!**
+  card. When they solve it, you see their answer ("help from Tal: 7 × 8 = 56"), and the same
+  fact comes back to you two questions later to try again.
+- **Everyone sees the team:** every pilot's ship, in their colour with their animal in the
+  cockpit, hovers on an arc below the monster on *every* phone, each one turned to point at it.
+  Every right answer on any phone is a beam in that colour from the pilot's ship (it kicks back
+  as it fires) into the monster on all the phones. The monster winces when hit,
+  chomps and gloats ("YUM!") when fed, and sweats and panics when it's nearly beaten. Whoever is
+  helping someone shows a 🆘 on their chip, and everyone sees "Noa helped Ari".
+- **Cured, not destroyed:** at zero its scrambled letters fly out, swirl back and unscramble
+  into a friend: the first becomes a sun that puts on sunglasses, the second a flower that
+  blooms, the third a smiley with heart eyes. They shine, sparkle and float hearts, and the
+  summary shows all three as the team's new friends.
+- **Team combo:** right answers in a row by *anyone* build a shared combo; every 5 sends a
+  shockwave through the monster.
+- **Three monsters**, each tougher: more hit points (6, then 7 per player), bigger tables (up to
+  6, 8, then 10), more rays and faster flicker.
+- **The summary** shows the three friends, gives every pilot an award (🤝 Super helper first, then 💥 Monster smasher,
+  🎯 Sharp eye, ⭐ Brave heart) and lists the facts the team "learned together".
+- A phone that drops or reloads can rejoin with the same code and keeps its seat and score.
+
+Design notes: [`docs/plans/2026-10-10-monster-sun.md`](docs/plans/2026-10-10-monster-sun.md).
 
 ## Parent dashboard 👪
 
@@ -138,8 +303,10 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 
 ## Sound
 
-The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Click 🔊 in the
-top bar for separate **music** and **sound-effect** volume sliders (all the way down = off). The
+The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
+has its own soundtrack, *The Final Lap*, which starts from the top whenever Monster Sun opens and
+hands back to the theme when it closes. Click 🔊 in the top bar for separate **music** and
+**sound-effect** volume sliders (all the way down = off). The
 sound effects are synthesized in the browser with Web Audio, so there are no sample files.
 
 ## Development
@@ -149,6 +316,7 @@ Requires [Node.js](https://nodejs.org) 20+.
 ```bash
 npm install
 npm run dev      # play in the browser with hot reload
+npm test         # unit tests for the game logic (vitest)
 npm run app      # run as a desktop app (Electron)
 npm run dist     # build a desktop executable for this OS into release/
 ```

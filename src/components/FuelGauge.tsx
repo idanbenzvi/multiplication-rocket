@@ -1,5 +1,6 @@
 import type { FactStat } from '../game/types';
-import { formatFactKey, getStrugglingFactKeys } from '../game/facts';
+import { getStrugglingFactKeys } from '../game/facts';
+import { factLabel } from '../i18n/strings';
 import { useT } from '../i18n/useLang';
 import CountUp from './reactbits/CountUp';
 
@@ -41,7 +42,7 @@ export function FuelGauge({ fuelPercent, bestStreak, mastery }: Props) {
         <div className="fuel-gauge-callout" dir="auto">
           {t.nailTheseToLaunch}
           <br />
-          <bdi dir="ltr">{struggling.slice(0, MAX_LISTED).map(formatFactKey).join(', ')}</bdi>
+          <bdi dir="auto">{struggling.slice(0, MAX_LISTED).map((k) => factLabel(t, k)).join(', ')}</bdi>
           {struggling.length > MAX_LISTED && ` ${t.more(struggling.length - MAX_LISTED)}`}
         </div>
       )}

@@ -9,6 +9,8 @@ import StarBorder from './reactbits/StarBorder';
 
 interface Props {
   completedLevel: number;
+  /** this launch opened a new addition stage */
+  newStage?: number;
   onContinue: () => void;
 }
 
@@ -27,7 +29,7 @@ const WARP_OPTIONS: Partial<HyperspeedOptions> = {
   },
 };
 
-export function LaunchOverlay({ completedLevel, onContinue }: Props) {
+export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
   const t = useT();
   const config = getLevelConfig(completedLevel);
   const next = getLevelConfig(completedLevel + 1);
@@ -57,6 +59,17 @@ export function LaunchOverlay({ completedLevel, onContinue }: Props) {
         <p className="launch-overlay-next">
           {t.nextStop} {next.destinationEmoji} {destinationName(t, next)}
         </p>
+        {newStage !== undefined && (
+          <motion.div
+            className="launch-stage-up"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1.6, type: 'spring', stiffness: 300, damping: 12 }}
+          >
+            <div className="launch-stage-up-title">{t.stageUpTitle}</div>
+            <div>{t.stageUp(newStage)}</div>
+          </motion.div>
+        )}
         <StarBorder
           className="launch-overlay-button"
           color="#ffd77a"

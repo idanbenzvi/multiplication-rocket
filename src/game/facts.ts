@@ -6,7 +6,7 @@ export function buildFactPool(min: number, max: number): Fact[] {
   const facts: Fact[] = [];
   for (let a = min; a <= max; a++) {
     for (let b = a; b <= max; b++) {
-      facts.push({ a, b, key: `${a}x${b}`, product: a * b });
+      facts.push({ a, b, key: `${a}x${b}`, answer: a * b });
     }
   }
   return facts;
@@ -24,6 +24,18 @@ export function nextDueScore(previous: number | undefined, wasCorrect: boolean):
   const base = previous ?? 1;
   const updated = wasCorrect ? base * CORRECT_DECAY : base + WRONG_PENALTY;
   return Math.min(DUE_SCORE_MAX, Math.max(DUE_SCORE_MIN, updated));
+}
+
+/** one more answer to a fact, folded into a pilot's mastery map (returns a new map) */
+export function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean): Record<string, FactStat> {
+  const prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
+  const next: FactStat = {
+    attempts: prev.attempts + 1,
+    correct: prev.correct + (isCorrect ? 1 : 0),
+    wrong: prev.wrong + (isCorrect ? 0 : 1),
+    dueScore: nextDueScore(prev.dueScore, isCorrect),
+  };
+  return { ...mastery, [key]: next };
 }
 
 export function pickNextFact(
@@ -58,6 +70,12 @@ export function getStrugglingFactKeys(mastery: Record<string, FactStat>): string
     .map(([key]) => key);
 }
 
+/** right at least 4 times out of 5 (the practice map's green) */
+export function isMastered(stat: FactStat | undefined): boolean {
+  return !!stat && stat.attempts > 0 && stat.correct / stat.attempts >= 0.8;
+}
+
+/** "3x7" → "3 × 7", "3+4" → "3 + 4"; an addition kind needs factLabel() (it's translated) */
 export function formatFactKey(key: string): string {
-  return key.replace('x', ' × ');
+  return key.replace(/^(\d+)([x+])(\d+)$/, (_, a, op, b) => `${a} ${op === 'x' ? '×' : '+'} ${b}`);
 }

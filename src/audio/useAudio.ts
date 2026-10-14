@@ -6,10 +6,18 @@ const LEGACY_MUSIC_KEY = 'multiplication-rocket:music'; // old on/off toggle
 const DEFAULT_MUSIC = 0.35;
 const DEFAULT_EFFECTS = 0.7;
 
-// Relative to the page, so it resolves both on a web server and from the
-// Electron app's file:// URL.
-const music = new Audio('./audio/theme.mp3');
-music.loop = true;
+// Two soundtracks: the theme, and Monster Sun's own while that mode is open.
+// One plays at a time, at the music volume. Paths are relative to the page,
+// so they resolve both on a web server and from the Electron app's file:// URL.
+export type Track = 'theme' | 'sun';
+const tracks: Record<Track, HTMLAudioElement> = {
+  theme: new Audio('./audio/theme.mp3'),
+  sun: new Audio('./audio/monster-sun.mp3'),
+};
+// only fetched when someone opens Monster Sun
+tracks.sun.preload = 'none';
+for (const t of Object.values(tracks)) t.loop = true;
+let current: Track = 'theme';
 
 interface Saved {
   musicVolume: number;
@@ -49,9 +57,9 @@ function save(state: Saved) {
 
 // Volume 0 means "off": pause rather than play silently.
 function applyMusic(volume: number) {
-  music.volume = volume;
-  if (volume > 0) void music.play().catch(() => {});
-  else music.pause();
+  for (const t of Object.values(tracks)) t.volume = volume;
+  if (volume > 0) void tracks[current].play().catch(() => {});
+  else tracks[current].pause();
 }
 
 interface AudioState extends Saved {
@@ -74,11 +82,24 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 }));
 
-music.volume = useAudio.getState().musicVolume;
+for (const t of Object.values(tracks)) t.volume = useAudio.getState().musicVolume;
 
 /** game paused (player left the tab/app): stop the music */
 export function pauseMusic() {
-  music.pause();
+  tracks[current].pause();
+}
+
+/**
+ * Switch soundtracks: Monster Sun's starts from the top each time it opens,
+ * the theme carries on where it left off. Call it from a tap, so a browser
+ * that only plays sound after a gesture lets it start.
+ */
+export function playTrack(track: Track) {
+  if (track === current) return;
+  tracks[current].pause();
+  current = track;
+  if (track === 'sun') tracks.sun.currentTime = 0;
+  applyMusic(useAudio.getState().musicVolume);
 }
 
 /** game resumed: music back on, if it isn't turned all the way down */
@@ -99,4 +120,4 @@ for (const type of GESTURES) window.addEventListener(type, startOnFirstGesture);
 // In the Electron app autoplay is allowed, so this starts the music right
 // away; in a browser it's rejected silently and the gesture listener above
 // takes over.
-if (useAudio.getState().musicVolume > 0) void music.play().catch(() => {});
+if (useAudio.getState().musicVolume > 0) void tracks.theme.play().catch(() => {});

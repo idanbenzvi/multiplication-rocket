@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useGameStore } from '../../game/useGameStore';
+import { useCrewStore } from '../../game/useCrewStore';
 import { PortholeShimmer } from './PortholeShimmer';
 import { DIVE_MS, portholeZoom, ZOOM_RESET_MS } from '../../game/flight';
 import { sfx } from '../../audio/sfx';
@@ -48,6 +49,7 @@ export function RocketSprite({ level }: Props) {
     const s = useGameStore.getState();
     // only from normal flight (not over a bonus round, launch or review)
     if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
+    if (useCrewStore.getState().active) return;
     const now = performance.now();
     const z = portholeZoom;
     if (now - z.lastTap > ZOOM_RESET_MS) z.level = 0;

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { MISSIONS, type Mission } from '../game/mission';
 
 // Pilot profiles: each child on the device gets a name, an animal avatar and
 // their own saved progress (see storage/progressStore.ts, which keys
@@ -11,6 +12,10 @@ export interface Profile {
   createdAt: number;
   /** has opened the Deep Space Academy (the porthole stops shimmering) */
   academySeen?: boolean;
+  /** what they practise; profiles from before missions existed are multiplication */
+  mission?: Mission;
+  /** addition Academy courses finished ('add1'-'add3') */
+  academyDone?: string[];
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -21,8 +26,10 @@ const PROGRESS_PREFIX = 'multiplication-rocket:progress:v1';
 /** progress saved before profiles existed */
 const LEGACY_PROGRESS_KEY = PROGRESS_PREFIX;
 
-export function progressKeyFor(profileId: string): string {
-  return `${PROGRESS_PREFIX}:${profileId}`;
+// Each mission keeps its own progress. Multiplication stays under the key it
+// always had, so nobody's levels move when missions arrive.
+export function progressKeyFor(profileId: string, mission: Mission): string {
+  return mission === 'add' ? `${PROGRESS_PREFIX}:${profileId}:add` : `${PROGRESS_PREFIX}:${profileId}`;
 }
 
 interface Saved {
@@ -56,7 +63,7 @@ function load(): Saved {
     const legacy = localStorage.getItem(LEGACY_PROGRESS_KEY);
     if (legacy) {
       const profile: Profile = { id: newId(), name: '', avatar: AVATARS[0], createdAt: Date.now() };
-      localStorage.setItem(progressKeyFor(profile.id), legacy);
+      localStorage.setItem(progressKeyFor(profile.id, 'mul'), legacy);
       localStorage.removeItem(LEGACY_PROGRESS_KEY);
       const migrated = { profiles: [profile], activeId: profile.id };
       persist(migrated);
@@ -71,8 +78,8 @@ function load(): Saved {
 interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
-  create: (name: string, avatar: string) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen'>>) => void;
+  create: (name: string, avatar: string, mission: Mission) => string;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }
@@ -87,8 +94,8 @@ export const useProfiles = create<ProfilesState>((set, get) => {
     ...initial,
     // One profile (or none yet): nothing to choose between.
     chosen: initial.profiles.length < 2,
-    create: (name, avatar) => {
-      const profile: Profile = { id: newId(), name: name.trim().slice(0, MAX_NAME_LENGTH), avatar, createdAt: Date.now() };
+    create: (name, avatar, mission) => {
+      const profile: Profile = { id: newId(), name: name.trim().slice(0, MAX_NAME_LENGTH), avatar, createdAt: Date.now(), mission };
       save({ profiles: [...get().profiles, profile], activeId: profile.id });
       set({ chosen: true });
       return profile.id;
@@ -101,9 +108,16 @@ export const useProfiles = create<ProfilesState>((set, get) => {
     },
     remove: (id) => {
       try {
-        localStorage.removeItem(progressKeyFor(id));
+        for (const m of MISSIONS) localStorage.removeItem(progressKeyFor(id, m));
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
         localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
+        // their crews (keys end in "<idA>+<idB>", see game/useCrewStore.ts)
+        const crews: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('multiplication-rocket:crew:v1:') && key.split(':').pop()!.split('+').includes(id)) crews.push(key);
+        }
+        for (const key of crews) localStorage.removeItem(key);
       } catch {
         // ignore
       }
@@ -123,10 +137,23 @@ export function activeProfile(): Profile | null {
   return profiles.find((p) => p.id === activeId) ?? null;
 }
 
-/** a profile's level / correct count for the picker, read straight from storage */
+/** a pilot's mission (multiplication unless they picked addition) */
+export function missionOf(profileId: string | null | undefined): Mission {
+  return useProfiles.getState().profiles.find((p) => p.id === profileId)?.mission ?? 'mul';
+}
+
+export function activeMission(): Mission {
+  return missionOf(useProfiles.getState().activeId);
+}
+
+export function useMission(): Mission {
+  return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.mission ?? 'mul');
+}
+
+/** a profile's level / correct count in their current mission, for the picker, read straight from storage */
 export function profileStats(id: string): { level: number; correct: number } {
   try {
-    const raw = localStorage.getItem(progressKeyFor(id));
+    const raw = localStorage.getItem(progressKeyFor(id, missionOf(id)));
     if (raw) {
       const p = JSON.parse(raw) as { level?: number; totalCorrectAnswers?: number };
       return { level: p.level ?? 1, correct: p.totalCorrectAnswers ?? 0 };

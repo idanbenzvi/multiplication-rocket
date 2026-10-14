@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../../i18n/useLang';
-import type { Strings } from '../../i18n/strings';
-import { pilotName, progressKeyFor, useProfiles } from '../../profiles/useProfiles';
+import { factLabel, type Strings } from '../../i18n/strings';
+import { missionOf, pilotName, progressKeyFor, useProfiles } from '../../profiles/useProfiles';
+import { MISSIONS, missionOfKey, OP_SYMBOL, type Mission } from '../../game/mission';
 import { readLog } from '../../stats/answerLog';
 import { computeDashboard, type Day, type PeriodStats, type Range } from '../../stats/metrics';
 import type { Progress } from '../../game/types';
@@ -62,9 +63,9 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
 const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
 const secs = (ms: number | null) => (ms === null ? '–' : (ms / 1000).toFixed(1));
 
-function readProgress(id: string): Progress | null {
+function readProgress(id: string, mission: Mission): Progress | null {
   try {
-    const raw = localStorage.getItem(progressKeyFor(id));
+    const raw = localStorage.getItem(progressKeyFor(id, mission));
     return raw ? (JSON.parse(raw) as Progress) : null;
   } catch {
     return null;
@@ -160,16 +161,23 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
   const activeId = useProfiles((s) => s.activeId);
   const [pilotId, setPilotId] = useState(activeId ?? profiles[0]?.id ?? '');
   const [range, setRange] = useState<Range>(7);
+  // each mission has its own progress: the pilot's current one to start with
+  const [mission, setMission] = useState<Mission>(() => missionOf(pilotId));
+  const pickPilot = (id: string) => {
+    setPilotId(id);
+    setMission(missionOf(id));
+  };
 
   const dash = useMemo(() => {
-    const progress = readProgress(pilotId);
-    return computeDashboard(readLog(pilotId), progress?.mastery ?? {}, range);
-  }, [pilotId, range]);
+    const progress = readProgress(pilotId, mission);
+    const log = readLog(pilotId).filter((e) => missionOfKey(e.fact) === mission);
+    return computeDashboard(log, progress?.mastery ?? {}, range, Date.now(), mission);
+  }, [pilotId, range, mission]);
   const cur: PeriodStats = dash.current;
   const prev = dash.previous;
   const dateOf = (d: Day) => `${d.date.getDate()}/${d.date.getMonth() + 1}`;
   const hasData = dash.totalLogged > 0;
-  const fmtFact = (f: string) => f.replace('x', ' × ');
+  const fmtFact = (f: string) => factLabel(all, f);
 
   return createPortal(
     <div className="pd-overlay" role="dialog" aria-modal="true" aria-label={t.title}>
@@ -185,7 +193,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
         <div className="pd-filters">
           <div className="pd-pills" role="radiogroup" aria-label="pilot">
             {profiles.map((p) => (
-              <button key={p.id} type="button" role="radio" aria-checked={pilotId === p.id} className={`pd-pill ${pilotId === p.id ? 'is-on' : ''}`} onClick={() => setPilotId(p.id)}>
+              <button key={p.id} type="button" role="radio" aria-checked={pilotId === p.id} className={`pd-pill ${pilotId === p.id ? 'is-on' : ''}`} onClick={() => pickPilot(p.id)}>
                 {p.avatar} {pilotName(p, all.defaultPilotName)}
               </button>
             ))}
@@ -194,6 +202,13 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
             {([7, 30, 'all'] as Range[]).map((r) => (
               <button key={String(r)} type="button" role="radio" aria-checked={range === r} className={`pd-pill ${range === r ? 'is-on' : ''}`} onClick={() => setRange(r)}>
                 {r === 7 ? t.range7 : r === 30 ? t.range30 : t.rangeAll}
+              </button>
+            ))}
+          </div>
+          <div className="pd-pills" role="radiogroup" aria-label="mission">
+            {MISSIONS.map((m) => (
+              <button key={m} type="button" role="radio" aria-checked={mission === m} className={`pd-pill ${mission === m ? 'is-on' : ''}`} onClick={() => setMission(m)}>
+                {OP_SYMBOL[m]} {m === 'add' ? all.missionAdd : all.missionMul}
               </button>
             ))}
           </div>
@@ -228,7 +243,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                 hint={`${t.consistencyHint(cur.daysPracticed)}${cur.consistencySd !== null ? ` · ±${Math.round(cur.consistencySd)}${t.unitPts}` : ''}`}
                 delta={<Delta now={cur.consistencySd} before={prev?.consistencySd} better="down" format={(d) => `${Math.round(d)}${t.unitPts}`} t={t} />}
               />
-              <StatTile label={t.mastered} value={`${dash.mastered} / 55`} hint={t.masteredHint(dash.practice, dash.untried)} />
+              <StatTile label={t.mastered} value={`${dash.mastered} / ${dash.mastered + dash.practice + dash.untried}`} hint={t.masteredHint(dash.practice, dash.untried)} />
             </div>
 
             <div className="pd-grid">
@@ -297,7 +312,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                   <ul className="pd-facts">
                     {dash.hardest.map((h) => (
                       <li key={h.fact}>
-                        <bdi dir="ltr" className="pd-fact">{fmtFact(h.fact)}</bdi>
+                        <bdi dir="auto" className="pd-fact">{fmtFact(h.fact)}</bdi>
                         <span className="pd-meter"><span style={{ width: `${Math.round(h.accuracy * 100)}%` }} /></span>
                         <span className="pd-fact-num">{pct(h.accuracy)} · {t.tries(h.attempts)}</span>
                       </li>
@@ -313,7 +328,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                   <ul className="pd-facts">
                     {dash.improved.map((h) => (
                       <li key={h.fact}>
-                        <bdi dir="ltr" className="pd-fact">{fmtFact(h.fact)}</bdi>
+                        <bdi dir="auto" className="pd-fact">{fmtFact(h.fact)}</bdi>
                         <span className="pd-fact-num">
                           <bdi dir="ltr">{pct(h.before)} → {pct(h.after)}</bdi>
                         </span>

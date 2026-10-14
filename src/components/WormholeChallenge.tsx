@@ -3,6 +3,7 @@ import { gameTimeout } from '../game/gameClock';
 import { motion } from 'motion/react';
 import type { Challenge, Drill } from '../game/wormhole';
 import { CORRECT_PICKS, WRONG_PICKS_ALLOWED } from '../game/wormhole';
+import { OP_SYMBOL } from '../game/mission';
 import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
@@ -89,7 +90,13 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
           {challenge.target}
         </GradientText>
         <div className="wormhole-instructions">
-          {collapsed ? t.wormholeCollapsed : warn ? t.wormholeOneLeft : t.wormholeInstructions(challenge.target)}
+          {collapsed
+            ? t.wormholeCollapsed
+            : warn
+              ? t.wormholeOneLeft
+              : challenge.mission === 'add'
+                ? t.wormholeInstructionsAdd(challenge.target)
+                : t.wormholeInstructions(challenge.target)}
         </div>
         <div className="wormhole-progress" aria-live="polite">
           {Array.from({ length: CORRECT_PICKS }, (_, i) => (
@@ -123,7 +130,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
                 className={`drill-bubble ${state}`}
                 onClick={(e) => pick(drill, e.currentTarget)}
                 disabled={done || isFound || isMissed}
-                aria-label={`${i + 1}: ${t.drillLabel(drill.x, drill.y)}`}
+                aria-label={`${i + 1}: ${challenge.mission === 'add' ? t.drillLabelAdd(drill.x, drill.y) : t.drillLabel(drill.x, drill.y)}`}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={
                   isMissed
@@ -138,7 +145,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
               >
                 <span className="drill-key">{i + 1}</span>
                 <bdi dir="ltr" className="drill-text">
-                  {drill.x} × {drill.y}
+                  {drill.x} {OP_SYMBOL[challenge.mission]} {drill.y}
                 </bdi>
                 {isFound && <span className="drill-mark">✓</span>}
                 {isMissed && <span className="drill-mark">✗</span>}

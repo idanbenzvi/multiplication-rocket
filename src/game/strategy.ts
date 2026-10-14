@@ -1,4 +1,5 @@
 import type { Strings } from '../i18n/strings';
+import type { Mission } from './mission';
 
 // `text` is translated prose; `math` is a language-neutral expression that's
 // always rendered left-to-right (so it reads correctly inside the Hebrew RTL
@@ -14,7 +15,8 @@ export interface Strategy {
 // an easy addition/subtraction/halving step, but leaves that last step for
 // the child to actually do, so the hint scaffolds the strategy without
 // handing over the answer.
-export function strategyFor(x: number, y: number, t: Strings): Strategy {
+export function strategyFor(x: number, y: number, t: Strings, mission: Mission = 'mul'): Strategy {
+  if (mission === 'add') return additionStrategy(x, y, t);
   if (x === 1 || y === 1) {
     return { text: t.hintTimesOne };
   }
@@ -58,4 +60,45 @@ export function strategyFor(x: number, y: number, t: Strings): Strategy {
   return {
     math: `${small} × ${big}  →  ${small}×5 + ${small}×${remainder}  →  ${small * 5} + ${small * remainder}  →  ?`,
   };
+}
+
+const tensOf = (n: number) => n - (n % 10);
+
+// The same idea for addition: each hint turns the sum into an easier one
+// (count on, a double, make ten, tens then ones) and stops one step short.
+export function additionStrategy(x: number, y: number, t: Strings): Strategy {
+  const [small, big] = x <= y ? [x, y] : [y, x];
+  const sum = x + y;
+
+  if (big <= 10) {
+    if (small === 1) return { text: t.hintOneMore };
+    if (big === 10) return { text: t.hintPlusTen(small) };
+    if (small === big) return { text: t.hintDouble(small) };
+    if (big - small === 1) {
+      return { text: t.hintNearDouble, math: `${x} + ${y}  →  ${small} + ${small} + 1  →  ${small * 2} + 1  →  ?` };
+    }
+    if (sum > 10) {
+      const fill = 10 - big;
+      return { text: t.hintMakeTen, math: `${big} + ${small}  →  ${big} + ${fill} + ${small - fill}  →  10 + ${small - fill}  →  ?` };
+    }
+    const counts = Array.from({ length: small - 1 }, (_, i) => big + 1 + i);
+    return { text: t.hintCountOn, math: `${big}  →  ${[...counts, '?'].join(', ')}` };
+  }
+
+  // two-digit sums
+  if (x % 10 === 0 && y % 10 === 0) return { text: t.hintTensLike(x / 10, y / 10) };
+  if (small < 10) {
+    const ones = big % 10;
+    // up to landing right on the next ten (82 + 8 → 80 + 10), add the ones
+    if (ones + small <= 10) {
+      return { text: t.hintAddOnes, math: `${big} + ${small}  →  ${tensOf(big)} + ${ones} + ${small}  →  ${tensOf(big)} + ${ones + small}  →  ?` };
+    }
+    const fill = 10 - ones;
+    return { text: t.hintNextTen, math: `${big} + ${small}  →  ${big} + ${fill} + ${small - fill}  →  ${big + fill} + ${small - fill}  →  ?` };
+  }
+  const parts = [tensOf(x), tensOf(y), x % 10, y % 10].filter((n, i) => i < 2 || n > 0);
+  const tensSum = tensOf(x) + tensOf(y);
+  const onesSum = (x % 10) + (y % 10);
+  const last = onesSum > 0 ? `${tensSum} + ${onesSum}  →  ?` : '?';
+  return { text: t.hintTensAndOnes, math: `${x} + ${y}  →  ${parts.join(' + ')}  →  ${last}` };
 }

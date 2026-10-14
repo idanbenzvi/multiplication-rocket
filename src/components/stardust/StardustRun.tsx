@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout, usePause } from '../../game/gameClock';
 import { useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
-import { buildStardust, tablePattern } from '../../game/bonusRounds';
+import { buildStardust, tablePattern, type StardustRun as Run } from '../../game/bonusRounds';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
 import type { Strings } from '../../i18n/strings';
-import { useProfiles } from '../../profiles/useProfiles';
+import { activeMission, useProfiles } from '../../profiles/useProfiles';
 import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
@@ -26,7 +26,9 @@ interface Props {
 // the chain of answers builds up behind the ship. Every arc is labelled with
 // the jump (+7): the next answer is always the last one plus the table. At
 // the end the whole table is shown, the run's stops highlighted, with the
-// table's pattern to remember.
+// table's pattern to remember. On the addition mission the jumps are all the
+// same size (+3, +10, +9), each question is the last stop plus the jump, and
+// the recap shows the run with a pattern for that jump.
 type Phase = 'intro' | 'ask' | 'glide' | 'recap';
 
 const INTRO_MS = 2600;
@@ -71,7 +73,15 @@ function onArc(a: Pt, c: Pt, b: Pt, t: number): Pt {
 }
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function patternText(t: Strings, table: number): string {
+function patternText(t: Strings, run: Run): string {
+  const { jump: table } = run;
+  if (run.mission === 'add') {
+    if (table === 10) return t.patternTens;
+    if (table === 20) return t.patternTwenty;
+    if (table === 9) return t.patternTenMinus(9);
+    if (table === 11) return t.patternTenPlus(11);
+    return run.values[run.values.length - 1] > 10 ? t.patternCrossTen : t.patternSkip(table);
+  }
   switch (tablePattern(table)) {
     case 'ends50':
       return t.patternEnds50;
@@ -108,9 +118,10 @@ function GliderShip({ size, avatar }: { size: number; avatar?: string }) {
 export function StardustRun({ onDone, onBurst }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const run = useMemo(() => buildStardust(useGameStore.getState().progress), []);
+  const run = useMemo(() => buildStardust(useGameStore.getState().progress, activeMission()), []);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
-  const { table, startM, steps } = run;
+  const { jump: table, startM, steps, values } = run;
+  const adding = run.mission === 'add';
   const level = useGameStore((s) => s.progress.level);
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -320,7 +331,7 @@ export function StardustRun({ onDone, onBurst }: Props) {
   const now = gameNow();
   const ship = shipAt(now);
   const cur = steps[step];
-  const prevValue = table * (startM + step);
+  const prevValue = values[step];
   const lowest = Math.max(...stops.map((s) => s.y));
   const panelTop = lowest + Math.min(76, h * 0.09);
 
@@ -351,6 +362,8 @@ export function StardustRun({ onDone, onBurst }: Props) {
 
       {stops.map((s, i) => {
         const m = startM + i;
+        // adding: a stop ahead shows only its jump, since "60 + 10" would give away the stop before it
+        const label = !adding ? `${table} × ${m}` : i === 0 ? '' : i <= lit ? `${values[i - 1]} + ${table}` : `+${table}`;
         const isLit = i < lit;
         const target = i === lit && phase === 'ask';
         const glow = phase === 'recap' && i < recapLit;
@@ -361,10 +374,8 @@ export function StardustRun({ onDone, onBurst }: Props) {
             style={{ left: s.x, top: s.y }}
             dir="ltr"
           >
-            <span className="sd-stop-dot">{isLit ? table * m : '?'}</span>
-            <span className="sd-stop-fact">
-              {table} × {m}
-            </span>
+            <span className="sd-stop-dot">{isLit ? values[i] : '?'}</span>
+            <span className="sd-stop-fact">{label}</span>
           </div>
         );
       })}
@@ -383,14 +394,14 @@ export function StardustRun({ onDone, onBurst }: Props) {
           <GradientText className="round-card-title" colors={['#ffd77a', '#ffffff', '#b18cff', '#6ad7ff', '#ffd77a']} animationSpeed={3}>
             ✨ {t.stardustTitle}
           </GradientText>
-          <div className="round-card-text">{t.stardustIntro(table)}</div>
+          <div className="round-card-text">{adding ? t.stardustIntroAdd(table) : t.stardustIntro(table)}</div>
         </div>
       )}
 
       {phase === 'ask' && cur && (
         <div className="sd-panel" style={{ top: panelTop }}>
           <div className="sd-question" dir="ltr">
-            {table} × {cur.m} = <span className="sd-question-blank">{typed || '?'}</span>
+            {adding ? `${prevValue} + ${table}` : `${table} × ${cur.m}`} = <span className="sd-question-blank">{typed || '?'}</span>
           </div>
           <div className={`sd-hint ${wrong.length ? 'is-on' : ''}`} dir="auto">
             {wrong.length ? t.stardustHint(prevValue, table) : ' '}
@@ -416,19 +427,25 @@ export function StardustRun({ onDone, onBurst }: Props) {
           <GradientText className="round-card-title" colors={['#7ee08f', '#6ad7ff', '#ffd77a', '#7ee08f']} animationSpeed={2}>
             {t.stardustWin}
           </GradientText>
-          <div className="sd-recap-label">{t.stardustRemember(table)}</div>
+          <div className="sd-recap-label">{adding ? t.stardustRememberAdd(table) : t.stardustRemember(table)}</div>
           <div className="sd-recap-table" dir="ltr">
-            {Array.from({ length: 10 }, (_, k) => k + 1).map((m) => {
-              const inRun = m >= startM && m <= startM + steps.length;
-              return (
-                <span key={m} className={inRun ? 'is-run' : ''}>
-                  {table * m}
-                </span>
-              );
-            })}
+            {adding
+              ? values.map((v) => (
+                  <span key={v} className="is-run">
+                    {v}
+                  </span>
+                ))
+              : Array.from({ length: 10 }, (_, k) => k + 1).map((m) => {
+                  const inRun = m >= startM && m <= startM + steps.length;
+                  return (
+                    <span key={m} className={inRun ? 'is-run' : ''}>
+                      {table * m}
+                    </span>
+                  );
+                })}
           </div>
           <div className="sd-recap-pattern" dir="auto">
-            {patternText(t, table)}
+            {patternText(t, run)}
           </div>
         </div>
       )}

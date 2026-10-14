@@ -1,8 +1,10 @@
 export interface Fact {
   a: number;
   b: number;
+  /** what answers are tracked under: "3x7", "3+4", or an addition kind ("2d+1d:c") */
   key: string;
-  product: number;
+  /** a × b, or a + b */
+  answer: number;
 }
 
 export interface FactStat {
@@ -21,6 +23,8 @@ export interface Progress {
   totalCorrectAnswers: number;
   launchesCompleted: number;
   mastery: Record<string, FactStat>;
+  /** addition only: the stage reached (1: sums within 10, 2: within 20, 3: within 100) */
+  stage?: number;
 }
 
 export interface LevelConfig {
