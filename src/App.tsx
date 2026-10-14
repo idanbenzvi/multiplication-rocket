@@ -29,6 +29,7 @@ import { Constellation } from './components/Constellation';
 import { FleetBattle } from './components/FleetBattle';
 import { StrandedFleet } from './components/StrandedFleet';
 import { StardustRun } from './components/stardust/StardustRun';
+import { AccelerationRoad } from './components/road/AccelerationRoad';
 import { DevPanel } from './components/DevPanel';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
@@ -283,6 +284,9 @@ function App() {
           )}
           {bonusRound === 'stardust' && !justLaunched && !showHeatmap && (
             <StardustRun key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
+          )}
+          {bonusRound === 'road' && !justLaunched && !showHeatmap && (
+            <AccelerationRoad key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />
           )}
           {bonusRound === 'constellation' && !justLaunched && !showHeatmap && (
             <Constellation key={bonusNonce} onDone={finishBonusRound} onBurst={burstAt} />

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Progress } from './types';
 import {
+  buildRoad,
+  ROAD_JUMPS,
   buildAdditionStardust,
   buildBattle,
   buildStardust,
@@ -135,5 +137,30 @@ describe('addition Split Sky', () => {
     s = skyReducer(s, { type: 'answer', side: 'left', stage: 'join', value: 13 });
     s = skyReducer(s, { type: 'answer', side: 'right', stage: 'join', value: 13 });
     expect(s).toMatchObject({ phase: 'lit', lit: 1, perfect: 1 });
+  });
+});
+
+describe('Acceleration Road: doubling', () => {
+  it('doubles four times, and only tracks facts the main drill asks too', () => {
+    for (const [mission, stage, level] of [['mul', 1, 1], ['mul', 1, 6], ['add', 1, 1], ['add', 2, 3], ['add', 3, 3]] as const) {
+      repeat(100, () => {
+        const run = buildRoad({ ...progress(stage), level }, mission);
+        expect(run.mission).toBe(mission);
+        expect(run.values).toHaveLength(ROAD_JUMPS + 1);
+        run.values.slice(1).forEach((v, k) => expect(v).toBe(run.values[k] * 2));
+        if (mission === 'add' && stage < 3) expect(run.values[0]).toBe(1);
+        run.steps.forEach((s, k) => {
+          expect(s.answer).toBe(run.values[k + 1]);
+          expect(s.choices).toHaveLength(4);
+          expect(new Set(s.choices).size).toBe(4);
+          expect(s.choices).toContain(s.answer);
+          expect(s.choices.every((c) => c > 0)).toBe(true);
+          const v = run.values[k];
+          if (mission === 'mul') expect(s.factKey).toBe(v <= 10 ? `${Math.min(v, 2)}x${Math.max(v, 2)}` : null);
+          else if (stage < 3) expect(s.factKey).toBe(`${v}+${v}`);
+          else expect(s.factKey).toBe(additionTrackKey(v, v));
+        });
+      });
+    }
   });
 });

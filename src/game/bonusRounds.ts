@@ -5,12 +5,13 @@ import { distractors } from './distractors';
 import type { Mission } from './mission';
 import { pickFact } from './questions';
 import { additionTable, additionTrackKey, clampStage } from './addition';
+import { pairKey } from './mission';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them. Every round has an
 // addition version too: see each one below.
-export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust';
-export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust'];
+export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust' | 'road';
+export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust', 'road'];
 
 // ---------- Meteor Shower ----------
 
@@ -339,4 +340,52 @@ export function tablePattern(table: number): TablePattern {
   if (table === 3) return 'digits369';
   if (table === 7) return 'tenMinus';
   return 'evenEnds';
+}
+
+// ---------- Acceleration Road ----------
+
+export const ROAD_JUMPS = 4;
+
+export interface RoadStep {
+  /** where the answer is tracked; null beyond the practised facts (16 × 2 isn't in the table) */
+  factKey: string | null;
+  answer: number;
+  /** four choices, smallest first */
+  choices: number[];
+}
+
+export interface RoadRun {
+  mission: Mission;
+  /** the number before each jump, then the last one: 2, 4, 8, 16, 32 (each answer doubles it) */
+  values: number[];
+  steps: RoadStep[];
+}
+
+// Doubling: four questions, each the last answer times 2 (or, on the
+// addition mission, the last answer plus itself: a double). The road shows
+// it too, since every jump is twice as long as the one before. Starts small
+// for beginners: 1, 2, 4, 8 (to 16); later 2 or 4 (to 32 or 64).
+export function buildRoad(progress: Progress, mission: Mission = 'mul'): RoadRun {
+  const stage = clampStage(progress.stage);
+  // addition below stage 3 doubles within 20: 1, 2, 4, 8, 16
+  const start =
+    mission === 'add'
+      ? stage === 3
+        ? (Math.random() < 0.5 ? 2 : 4)
+        : 1
+      : progress.level >= 4
+        ? (Math.random() < 0.5 ? 2 : 4)
+        : Math.random() < 0.5
+          ? 1
+          : 2;
+  const values = Array.from({ length: ROAD_JUMPS + 1 }, (_, k) => start * 2 ** k);
+  const steps = values.slice(0, -1).map((v): RoadStep => {
+    const answer = v * 2;
+    // only facts the main drill asks as well (a miss must be able to come back)
+    const factKey = mission === 'add' ? (v <= 10 || stage === 3 ? additionTrackKey(v, v) : null) : v <= 10 ? pairKey('mul', v, 2) : null;
+    // the slips: adding 2 (or 1) instead of doubling, tripling, a count off, a ten off
+    const slips = [v + 2, v + 1, v * 3, answer + 1, answer - 1, answer + 2, answer - 2, ...(answer >= 20 ? [answer + 10, answer - 10] : [])];
+    return { factKey, answer, choices: choicesAround(answer, slips) };
+  });
+  return { mission, values, steps };
 }

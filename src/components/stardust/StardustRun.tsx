@@ -97,7 +97,7 @@ function patternText(t: Strings, run: Run): string {
 }
 
 // side view of the ship, nose to the right
-function GliderShip({ size, avatar }: { size: number; avatar?: string }) {
+export function GliderShip({ size, avatar }: { size: number; avatar?: string }) {
   return (
     <div className="sd-ship-body" style={{ width: size * 1.6, height: size }}>
       <svg viewBox="-80 -50 160 100" width={size * 1.6} height={size}>

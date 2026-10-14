@@ -1,6 +1,6 @@
 import type { FactStat, Progress } from './types';
 import { masterySummary } from './masteryStats';
-import type { BonusKind } from './bonusRounds';
+import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 
 // Badges a pilot earns along the way, and the ranks they add up to: every
 // badge is a step from Cadet towards Honored Captain. Names and descriptions
@@ -108,7 +108,7 @@ export const BADGES: BadgeDef[] = [
 
   // missions: bonus rounds and the Academy
   { id: 'wormholeRider', icon: '🌀', group: 'missions', goal: (c) => count(c.stats.wormholes, 1) },
-  { id: 'missionSpecialist', icon: '🎯', group: 'missions', goal: (c) => count(c.stats.bonusKinds.length, 6) },
+  { id: 'missionSpecialist', icon: '🎯', group: 'missions', goal: (c) => count(c.stats.bonusKinds.length, BONUS_ROTATION.length) },
   { id: 'flawless', icon: '💎', group: 'missions', goal: (c) => count(c.stats.perfectRounds, 5) },
   { id: 'academyGraduate', icon: '🎓', group: 'missions', goal: (c) => count(c.stats.academyGraduated ? 1 : 0, 1) },
 ];
