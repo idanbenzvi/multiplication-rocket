@@ -236,8 +236,10 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 
 ## Sound
 
-The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Click 🔊 in the
-top bar for separate **music** and **sound-effect** volume sliders (all the way down = off). The
+The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
+has its own soundtrack, *The Final Lap*, which starts from the top whenever Monster Sun opens and
+hands back to the theme when it closes. Click 🔊 in the top bar for separate **music** and
+**sound-effect** volume sliders (all the way down = off). The
 sound effects are synthesized in the browser with Web Audio, so there are no sample files.
 
 ## Development
