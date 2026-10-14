@@ -145,6 +145,19 @@ button:focus-visible {
 .review-icon {
   margin-inline-end: 0.35rem;
 }
+/* the game modes button, and its sheet */
+.modes-icon {
+  margin-inline-end: 0.35rem;
+}
+.modes-subtitle {
+  margin: -0.3rem 0 0.2rem;
+  text-align: center;
+  color: #c8bcd9;
+  font-size: 0.92rem;
+}
+.pilot-card.is-disabled {
+  cursor: not-allowed;
+}
 .reset-button:hover {
   border-color: #c9a4de;
   color: #e6cdf2;
@@ -2286,10 +2299,12 @@ button:focus-visible {
     align-items: center;
     justify-content: center;
   }
-  .review-label {
+  .review-label,
+  .modes-label {
     display: none;
   }
-  .review-icon {
+  .review-icon,
+  .modes-icon {
     margin: 0;
     font-size: 1.05rem;
   }

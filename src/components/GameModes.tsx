@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { useMission, useProfiles } from '../profiles/useProfiles';
+import { useCrewStore } from '../game/useCrewStore';
+import { useSkyStore } from '../game/useSkyStore';
+import { useSunStore } from '../game/useSunStore';
+import { useT } from '../i18n/useLang';
+import GradientText from './reactbits/GradientText';
+
+// The ways to play together, in their own top-bar button (separate from
+// choosing who's flying): Crew Flight (two pilots on one device), Two phones
+// (Split Sky, Eclipse Hunters) and Monster Sun (2-6 phones). Each starts with
+// the active pilot.
+export function GameModesButton() {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const pilots = useProfiles((s) => s.profiles.length);
+  // an addition pilot's two-phone game is Split Sky (Eclipse Hunters is about multiples)
+  const mission = useMission();
+  const close = () => setOpen(false);
+
+  const modes = [
+    {
+      key: 'crew',
+      icon: '👩‍🚀👨‍🚀',
+      name: t.crew.flyTogether,
+      hint: pilots >= 2 ? t.crew.flyTogetherHint : t.modes.needTwoPilots,
+      disabled: pilots < 2,
+      start: () => useCrewStore.getState().openSetup(),
+    },
+    { key: 'sky', icon: '📱📱', name: t.sky.card, hint: mission === 'add' ? t.sky.games.split.name : t.sky.cardHint, disabled: false, start: () => useSkyStore.getState().openSky() },
+    // opened straight from the tap: Monster Sun starts its own soundtrack
+    { key: 'sun', icon: '👾', name: t.sun.card, hint: t.sun.cardHint, disabled: false, start: () => useSunStore.getState().openSun() },
+  ];
+
+  return (
+    <>
+      <button type="button" className="reset-button modes-button" onClick={() => setOpen(true)} title={t.modes.title} aria-label={t.modes.title}>
+        <span className="modes-icon" aria-hidden>
+          🎮
+        </span>
+        <span className="modes-label">{t.modes.button}</span>
+      </button>
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div className="settings-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={close}>
+              <motion.div
+                className="settings-sheet profile-sheet modes-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t.modes.title}
+                initial={{ y: 40, opacity: 0, scale: 0.96 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="pilot-picker">
+                  <GradientText className="profile-hero" colors={['#6ad7ff', '#c9a4de', '#ffd77a', '#6ad7ff']} animationSpeed={4}>
+                    🎮 {t.modes.title}
+                  </GradientText>
+                  <p className="modes-subtitle">{t.modes.subtitle}</p>
+                  <div className="pilot-cards">
+                    {modes.map((m, i) => (
+                      <motion.button
+                        key={m.key}
+                        type="button"
+                        className={`pilot-card pilot-card-new pilot-card-crew ${m.disabled ? 'is-disabled' : ''}`}
+                        disabled={m.disabled}
+                        onClick={() => {
+                          close();
+                          m.start();
+                        }}
+                        initial={{ opacity: 0, y: 12 }}
+                        // a mode that can't start yet stays dimmed (the animation owns the opacity)
+                        animate={{ opacity: m.disabled ? 0.45 : 1, y: 0 }}
+                        transition={{ delay: 0.05 + i * 0.06 }}
+                      >
+                        <span className="pilot-card-avatar">{m.icon}</span>
+                        <span className="pilot-card-name">{m.name}</span>
+                        <span className="pilot-card-stats">{m.hint}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+                <button type="button" className="settings-close" onClick={close}>
+                  {t.close}
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
+    </>
+  );
+}

@@ -188,8 +188,9 @@ Answer mode, language and sound are shared by everyone on the device.
 
 ## Crew Flight 👩‍🚀👨‍🚀 (two players)
 
-Two pilots fly **one rocket together on one device**, taking turns. Open it from the pilot picker
-(**Fly together**, shown when there are 2+ pilots), pick the two pilots, and give each a seat:
+Two pilots fly **one rocket together on one device**, taking turns. Open it from **🎮 Game modes**
+in the top bar (**Fly together**, which needs 2+ pilots on the device), pick the two pilots, and
+give each a seat:
 
 - **🚀 Pilot.** The usual timed times-table drills, weighted towards that pilot's hard facts.
 - **🧭 Navigator.** For a younger child: picture questions about equal groups ("3 groups of
@@ -220,7 +221,7 @@ seam where the phones touch. Each child counts their own half, then together the
 sky: `6 × 8 = 6 × 3 + 6 × 5`. Breaking a hard fact into easier pieces is the same idea as the
 strategy hints, but here each child holds one of the pieces.
 
-- **Connect:** on one phone, **📱📱 Two phones → Host a game** shows a 4-digit code. On the other,
+- **Connect:** on one phone, **🎮 Game modes → 📱📱 Two phones → Host a game** shows a 4-digit code. On the other,
   **Join a game** and type it. Each phone needs one pilot. The host says which side its phone is on.
 - **A round:** each phone shows only its own half (say "6 rows of 3"), and each child answers
   privately. Then both phones show both halves (`6 × 3 = 18`, `6 × 5 = 30`) and ask for the whole,
@@ -257,7 +258,7 @@ Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split
 A grumpy monster sun made of flickering characters is swallowing the stars, and up to six
 children team up to cure it, each on their own phone.
 
-- **Connect:** **👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
+- **Connect:** **🎮 Game modes → 👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
   **Join a fight** and types it. At least 2 phones are needed.
 - **Fight:** every phone drills its own questions (4 choices, weighted by that pilot's mastery).
   A right answer is a blow: the monster shivers and sheds characters. A wrong one feeds it back

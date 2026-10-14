@@ -494,6 +494,12 @@ const en = {
     'An Alien Planet',
     'A Distant Galaxy',
   ],
+  modes: {
+    button: 'Game modes',
+    title: 'Game modes',
+    subtitle: 'Play together, on one device or on a few',
+    needTwoPilots: 'Add a second pilot to fly together',
+  },
   crew: {
     flyTogether: 'Fly together',
     flyTogetherHint: 'Two pilots, one rocket',
@@ -1147,6 +1153,12 @@ const he: Strings = {
     'כוכב לכת של חייזרים',
     'גלקסיה רחוקה',
   ],
+  modes: {
+    button: 'מצבי משחק',
+    title: 'מצבי משחק',
+    subtitle: 'משחקים יחד, במכשיר אחד או בכמה',
+    needTwoPilots: 'הוסיפו טייס נוסף כדי לטוס יחד',
+  },
   crew: {
     flyTogether: 'טסים יחד',
     flyTogetherHint: 'שני טייסים, טיל אחד',

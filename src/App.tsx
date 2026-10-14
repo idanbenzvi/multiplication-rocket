@@ -12,6 +12,7 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { ReviewButton } from './components/ReviewButton';
 import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
+import { GameModesButton } from './components/GameModes';
 import { activeProfile, pilotName, useMission, useProfileGateOpen } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { clampStage } from './game/addition';
@@ -242,6 +243,7 @@ function App() {
         <div className="hud-topbar-right">
           {/* solo pilot's own things: the crew bar shows both pilots instead */}
           {!crewActive && <PilotButton />}
+          {!crewActive && <GameModesButton />}
           <BadgesButton />
           {!crewActive && (
             <div className="hud-stat-chip">
