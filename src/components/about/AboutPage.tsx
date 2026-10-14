@@ -51,6 +51,8 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
         <button className="about-close" onClick={onClose} aria-label={t.close}>
           ✕
         </button>
+        {/* the studio's emblem: a winged deer, on a round light seal */}
+        <img className="about-studio-logo" src="./studio-logo.webp" alt={t.studioAlt} width={512} height={512} />
         <h2 id="about-title">{t.hello}</h2>
         <p>{t.me}</p>
         <p>

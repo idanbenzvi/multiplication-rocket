@@ -3994,6 +3994,20 @@ button:focus-visible {
 }
 
 /* ---- About page ---- */
+.about-studio-logo {
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 0.7rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18), 0 0 30px rgba(201, 164, 222, 0.55);
+  animation: studioFloat 4s ease-in-out infinite;
+}
+@keyframes studioFloat {
+  50% { translate: 0 -4px; }
+}
 .about-button {
   width: 28px;
   height: 28px;

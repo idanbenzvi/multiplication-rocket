@@ -378,4 +378,4 @@ git push --follow-tags
 
 ## License
 
-Code: [MIT](LICENSE). The app icon uses the 🚀 from [Noto Color Emoji](https://github.com/googlefonts/noto-emoji) (OFL).
+Code: [MIT](LICENSE). The app icon uses the 🚀 from [Noto Color Emoji](https://github.com/googlefonts/noto-emoji) (OFL). The game studio's logo, a winged deer (shown on the About page), was made with Google Gemini.
