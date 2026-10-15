@@ -335,7 +335,7 @@ npm run dist     # build a desktop executable for this OS into release/
 Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndrs/react-three-fiber)
 for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
 components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, LightTunnel,
-Aurora, ElectricBorder, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
+Aurora, ElectricBorder, ElectricLogo, ParticleText, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
 [`src/components/reactbits/`](src/components/reactbits/). The engine plume is React Bits'
 LaserFlow shader, ported to run inside the 3D scene
 ([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in
@@ -379,4 +379,4 @@ git push --follow-tags
 
 ## License
 
-Code: [MIT](LICENSE). The app icon uses the 🚀 from [Noto Color Emoji](https://github.com/googlefonts/noto-emoji) (OFL). The game studio's logo, a winged deer galloping through the air (on the About page), was made with Google Gemini; the white background was cut out of the video frame by frame, and it loops as a transparent animated WebP.
+Code: [MIT](LICENSE). The app icon uses the 🚀 from [Noto Color Emoji](https://github.com/googlefonts/noto-emoji) (OFL). The game studio's logo, a winged deer galloping through the air (on the About page), was made with Google Gemini; the white background was cut out of the video frame by frame, and it loops as a transparent animated WebP. The opening splash (Flying Deer Games) is two Gemini pictures of the same sky, one empty and one with the winged deer as a constellation: the deer's light is cut out of the second and appears over the first, traced by React Bits' ElectricLogo along its silhouette, with the studio's name in React Bits' ParticleText ([Unbounded](https://fonts.google.com/specimen/Unbounded), OFL).

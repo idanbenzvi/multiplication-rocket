@@ -1,0 +1,134 @@
+/* ==================== STUDIO SPLASH (Flying Deer Games) ==================== */
+.splash {
+  position: fixed;
+  inset: 0;
+  /* over everything, the game loading underneath */
+  z-index: 100;
+  overflow: hidden;
+  background: #02040a;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* leaving: the whole sky pulls toward you as it fades into the game */
+.splash.is-leaving {
+  animation: splashOut 0.8s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes splashOut {
+  to { opacity: 0; scale: 1.06; }
+}
+
+/* the empty sky: fades in and drifts slowly closer the whole time */
+.splash-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation:
+    splashSkyIn 1.4s ease-out both,
+    splashDrift 9s linear both;
+}
+@keyframes splashSkyIn {
+  from { opacity: 0; }
+}
+@keyframes splashDrift {
+  from { scale: 1.12; }
+  to { scale: 1; }
+}
+
+/* the deer, with the studio's name under it */
+.splash-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.25rem, 2vh, 1.25rem);
+  padding: 16px;
+  box-sizing: border-box;
+}
+.splash-deer-box {
+  position: relative;
+  /* the deer picture's own shape (1255 × 1499), as tall as fits */
+  aspect-ratio: 1255 / 1499;
+  height: min(56vh, 100vw);
+  max-width: 88vw;
+}
+.splash-deer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* comes in blazing cyan, settles, then glows on gently */
+  animation:
+    splashDeerIn 1.6s ease-out both,
+    splashDeerBreathe 2.8s ease-in-out 1.6s infinite alternate;
+}
+@keyframes splashDeerIn {
+  0% { opacity: 0; scale: 1.05; filter: brightness(2.8) blur(5px) drop-shadow(0 0 30px #52e5ff); }
+  40% { opacity: 1; filter: brightness(1.9) blur(0) drop-shadow(0 0 24px #52e5ff); }
+  100% { opacity: 1; scale: 1; filter: brightness(1.05) blur(0) drop-shadow(0 0 10px rgba(82, 229, 255, 0.45)); }
+}
+@keyframes splashDeerBreathe {
+  from { filter: brightness(1.05) blur(0) drop-shadow(0 0 10px rgba(82, 229, 255, 0.45)); }
+  to { filter: brightness(1.25) blur(0) drop-shadow(0 0 18px rgba(82, 229, 255, 0.7)); }
+}
+/* a burst of cyan light behind the deer as it appears */
+.splash-flare {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(202, 236, 255, 0.75), rgba(82, 170, 255, 0.35) 30%, transparent 62%);
+  mix-blend-mode: screen;
+  animation: splashFlare 1.5s ease-out both;
+}
+@keyframes splashFlare {
+  0% { opacity: 0; scale: 0.4; }
+  30% { opacity: 1; }
+  100% { opacity: 0; scale: 1.3; }
+}
+/* the lightning runs along the deer's outline, reaching past it; it quietens once the deer is lit.
+   Its blue haze fades out before the canvas's edges, so the canvas never shows as a box. */
+.splash-lightning {
+  position: absolute;
+  inset: -35%; /* LIGHTNING_ROOM = 1.7 */
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent);
+  mask-image: radial-gradient(closest-side, #000 72%, transparent);
+  transition: opacity 1.8s ease-in-out 1s;
+}
+.splash.has-deer .splash-lightning {
+  opacity: 0.55;
+}
+
+.splash-name {
+  width: min(94vw, 900px);
+  height: clamp(70px, 14vh, 150px);
+  flex-shrink: 0;
+}
+.splash-name canvas {
+  filter: drop-shadow(0 0 5px rgba(127, 224, 255, 0.75)) drop-shadow(0 0 14px rgba(82, 138, 255, 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-sky {
+    animation: splashSkyIn 0.6s ease-out both;
+  }
+  .splash-deer {
+    animation: splashSkyIn 0.8s ease-out both;
+    filter: drop-shadow(0 0 10px rgba(82, 229, 255, 0.45));
+  }
+  .splash-flare {
+    display: none;
+  }
+  .splash.is-leaving {
+    animation-name: splashOutCalm;
+  }
+  @keyframes splashOutCalm {
+    to { opacity: 0; }
+  }
+}

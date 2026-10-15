@@ -14,6 +14,7 @@ import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
 import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
+import { StudioSplash } from './components/splash/StudioSplash';
 import { activeProfile, pilotName, useMission, useProfileGateOpen } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { clampStage } from './game/addition';
@@ -271,6 +272,8 @@ function App() {
       {!gateOpen && <SplitSky />}
       {!gateOpen && <SunMonster />}
       <ModeWarp />
+      {/* the studio's opening, over the game while it loads */}
+      <StudioSplash />
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
         (mission === 'add' ? <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} /> : <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />)}
