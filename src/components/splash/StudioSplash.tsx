@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { DEV_MODE } from '../../dev/devMode';
@@ -62,6 +62,29 @@ export function StudioSplash() {
   const [done, setDone] = useState(false);
   const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   const leaving = useRef(false);
+  // the middle and width of the name's spot under the deer, in screen px
+  const nameRef = useRef<HTMLDivElement>(null);
+  const [nameSpot, setNameSpot] = useState<{ x: number; y: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = nameRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setNameSpot((prev) => {
+        const next = { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), width: Math.round(r.width) };
+        return prev && prev.x === next.x && prev.y === next.y && prev.width === next.width ? prev : next;
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
 
   // the game waits underneath until the splash is gone
   useEffect(() => {
@@ -144,29 +167,36 @@ export function StudioSplash() {
             </div>
           )}
         </div>
-        <div className="splash-name">
-          {reached('name') && (
-            <ParticleText
-              text={STUDIO}
-              fontFamily="'Unbounded', 'Fredoka', sans-serif"
-              fontWeight={700}
-              fontSize="clamp(1.7rem, 6.8vw, 4.4rem)"
-              color="#f2f8ff"
-              highlightColor="#7fe0ff"
-              particleSize={1.9}
-              density={2}
-              maxParticles={6000}
-              // the glow is one CSS drop-shadow on the canvas (splash.css), cheaper than one per particle
-              glow={false}
-              scatter={220}
-              gatherDuration={1700}
-              stagger={500}
-              pointerRepel={30}
-              style={{ minHeight: 0 }}
-            />
-          )}
-        </div>
+        {/* where the name goes: the particles themselves fly in over the whole screen (below) */}
+        <div className="splash-name" ref={nameRef} />
       </div>
+      {reached('name') && nameSpot && (
+        // The particles' canvas covers the whole screen, so they gather out of open space from all
+        // around (and no box edge cuts them off); the name forms at its spot under the deer.
+        <div className="splash-particles">
+          <ParticleText
+            text={STUDIO}
+            centerX={nameSpot.x}
+            centerY={nameSpot.y}
+            fitWidth={nameSpot.width}
+            fontFamily="'Unbounded', 'Fredoka', sans-serif"
+            fontWeight={700}
+            fontSize="clamp(1.7rem, 6.8vw, 4.4rem)"
+            color="#f2f8ff"
+            highlightColor="#7fe0ff"
+            particleSize={1.9}
+            density={2}
+            maxParticles={6000}
+            // the glow is one CSS drop-shadow on the canvas (splash.css), cheaper than one per particle
+            glow={false}
+            scatter={Math.max(360, nameSpot.width * 0.45)}
+            gatherDuration={2000}
+            stagger={800}
+            pointerRepel={30}
+            style={{ minHeight: 0 }}
+          />
+        </div>
+      )}
     </div>,
     document.body,
   );

@@ -110,8 +110,13 @@
   height: clamp(70px, 14vh, 150px);
   flex-shrink: 0;
 }
-.splash-name canvas {
-  filter: drop-shadow(0 0 5px rgba(127, 224, 255, 0.75)) drop-shadow(0 0 14px rgba(82, 138, 255, 0.45));
+/* the studio name's particles fly in over the whole screen (StudioSplash places the name) */
+.splash-particles {
+  position: absolute;
+  inset: 0;
+}
+.splash-particles canvas {
+  filter: drop-shadow(0 0 6px rgba(127, 224, 255, 0.7));
 }
 
 @media (prefers-reduced-motion: reduce) {

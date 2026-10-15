@@ -22,6 +22,14 @@ export interface ParticleTextProps {
   glow?: boolean;
   /** (added here) at most this many particles; by default it scales with the box's area */
   maxParticles?: number;
+  /**
+   * (added here) where the text's middle goes, in px from the box's top-left (default: the
+   * middle of the box), so a big box can give the particles room to fly in from far around it
+   */
+  centerX?: number;
+  centerY?: number;
+  /** (added here) the width the text must fit in, in px (default: the box's width) */
+  fitWidth?: number;
   className?: string;
   style?: CSSProperties;
 }
@@ -113,6 +121,9 @@ const ParticleText = ({
   fontFamily = 'inherit',
   glow = true,
   maxParticles: particleCap,
+  centerX,
+  centerY,
+  fitWidth,
   className = '',
   style
 }: ParticleTextProps) => {
@@ -281,7 +292,7 @@ const ParticleText = ({
       if (!offCtx) return;
 
       const content = String(text || ' ');
-      const maxTextWidth = width * 0.92;
+      const maxTextWidth = (fitWidth ?? width) * 0.92;
       offCtx.font = font;
       let metrics = offCtx.measureText(content);
       const measuredWidth = Math.max(1, metrics.width);
@@ -320,8 +331,8 @@ const ParticleText = ({
           const alpha = imageData.data[(y * offscreen.width + x) * 4 + 3];
           if (alpha > 40) {
             targets.push({
-              x: width / 2 - offscreen.width / 2 + x,
-              y: height / 2 - offscreen.height / 2 + y,
+              x: (centerX ?? width / 2) - offscreen.width / 2 + x,
+              y: (centerY ?? height / 2) - offscreen.height / 2 + y,
               alpha: alpha / 255
             });
           }
@@ -450,7 +461,10 @@ const ParticleText = ({
     fontWeight,
     fontFamily,
     glow,
-    particleCap
+    particleCap,
+    centerX,
+    centerY,
+    fitWidth
   ]);
 
   return (
