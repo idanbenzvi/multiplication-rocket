@@ -6,6 +6,7 @@ import { useCrewStore } from '../../game/useCrewStore';
 import { suggestSeats, type Seat } from '../../game/crew';
 import { useT } from '../../i18n/useLang';
 import { SEAT_COLORS } from './seatColors';
+import { playTrack } from '../../audio/useAudio';
 import { BACKDROP_VARIANTS, SHEET_VARIANTS, useModeWarp, warpTo } from '../warpTransition';
 
 // Pick two pilots (the first tapped takes the left seat), then check their
@@ -39,6 +40,8 @@ function SetupSheet() {
       { profileId: chosen[0], seat: seats[chosen[0]] ?? 'pilot' },
       { profileId: chosen[1], seat: seats[chosen[1]] ?? 'pilot' },
     ];
+    // the crew's own soundtrack starts with the warp, from the tap (browsers only start music from one)
+    playTrack('crew');
     warpTo(() => start(members), e.currentTarget);
     closeSetup();
   };

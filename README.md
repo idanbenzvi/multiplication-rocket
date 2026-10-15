@@ -27,6 +27,19 @@ Progress is saved automatically on the computer.
 
 Leaving the game (another tab or app, minimizing, locking the tablet) pauses it: music and sounds stop, the answer timer and any bonus round freeze, and a tap or key press carries on exactly where you left off.
 
+### Settings: the cockpit
+
+**⚙️** flies you into the rocket's cockpit: the camera dives in through the porthole and the
+settings are the dashboard's controls. A lever switches between answering by choosing and by
+typing, knobs set when a typed answer is checked and the language, throttles set the music and
+sound-effect volume, toggle switches turn the practice map and vibration on and off, a lit
+button opens the parent dashboard, and **Reset** is a red button under a safety cover that has
+to be lifted first. Little screens say what each control does, and through the windscreen space
+drifts by with numbers floating past. **Back to flight** (or ✕, or Escape) flies back out through
+the porthole. The game is paused while you're in the cockpit. When the rocket isn't on screen
+(during a bonus round or a crew flight, say), the cockpit opens out of the ⚙️ button instead, and
+with reduced motion it simply fades in.
+
 ### Tablets and phones
 
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),
@@ -315,9 +328,10 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 ## Sound
 
 The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
-has its own soundtrack, *The Final Lap*, which starts from the top whenever Monster Sun opens and
-hands back to the theme when it closes. Click 🔊 in the top bar for separate **music** and
-**sound-effect** volume sliders (all the way down = off). The
+has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; and the
+About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to
+whatever was playing when it closes. Click 🔊 in the top bar (or use the throttles in the cockpit)
+for separate **music** and **sound-effect** volume (all the way down = off). The
 sound effects are synthesized in the browser with Web Audio, so there are no sample files.
 
 ## Development

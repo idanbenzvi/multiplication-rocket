@@ -6,16 +6,21 @@ const LEGACY_MUSIC_KEY = 'multiplication-rocket:music'; // old on/off toggle
 const DEFAULT_MUSIC = 0.35;
 const DEFAULT_EFFECTS = 0.7;
 
-// Two soundtracks: the theme, and Monster Sun's own while that mode is open.
-// One plays at a time, at the music volume. Paths are relative to the page,
-// so they resolve both on a web server and from the Electron app's file:// URL.
-export type Track = 'theme' | 'sun';
+// The soundtracks: the theme; Monster Sun's own while that mode is open; The
+// View From Higher Ground on a crew flight; and Velvet Horizon while the About
+// page is open. One plays at a time, at the music volume. Paths are relative to the page, so they resolve both on a web
+// server and from the Electron app's file:// URL.
+export type Track = 'theme' | 'sun' | 'crew' | 'about';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
+  crew: new Audio('./audio/view-from-higher-ground.mp3'),
+  about: new Audio('./audio/velvet-horizon.mp3'),
 };
-// only fetched when someone opens Monster Sun
+// only fetched when someone opens Monster Sun, a crew flight or the About page
 tracks.sun.preload = 'none';
+tracks.crew.preload = 'none';
+tracks.about.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
 let current: Track = 'theme';
 
@@ -90,16 +95,21 @@ export function pauseMusic() {
 }
 
 /**
- * Switch soundtracks: Monster Sun's starts from the top each time it opens,
- * the theme carries on where it left off. Call it from a tap, so a browser
- * that only plays sound after a gesture lets it start.
+ * Switch soundtracks: the modes' and the About page's start from the top
+ * each time they open, the theme carries on where it left off. Call it from a
+ * tap, so a browser that only plays sound after a gesture lets it start.
  */
 export function playTrack(track: Track) {
   if (track === current) return;
   tracks[current].pause();
   current = track;
-  if (track === 'sun') tracks.sun.currentTime = 0;
+  if (track !== 'theme') tracks[track].currentTime = 0;
   applyMusic(useAudio.getState().musicVolume);
+}
+
+/** the soundtrack playing now (to go back to it afterwards) */
+export function currentTrack(): Track {
+  return current;
 }
 
 /** game resumed: music back on, if it isn't turned all the way down */
