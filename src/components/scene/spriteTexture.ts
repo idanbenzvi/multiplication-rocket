@@ -39,8 +39,13 @@ function drawPorthole(ctx: CanvasRenderingContext2D, width: number, height: numb
   ctx.restore();
 }
 
-/** an illustration drawn onto a canvas (its porthole's emoji too), as a texture or for a 2D canvas */
-export function rasterizeSprite(svg: string, width: number, height: number, porthole?: Porthole): Promise<HTMLCanvasElement> {
+/** an illustration drawn onto a canvas (the emoji in its windows too), as a texture or for a 2D canvas */
+export function rasterizeSprite(
+  svg: string,
+  width: number,
+  height: number,
+  portholes?: Porthole | readonly Porthole[],
+): Promise<HTMLCanvasElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
@@ -56,7 +61,7 @@ export function rasterizeSprite(svg: string, width: number, height: number, port
         return;
       }
       ctx.drawImage(img, 0, 0, width, height);
-      if (porthole) drawPorthole(ctx, width, height, porthole);
+      for (const p of portholeList(portholes)) drawPorthole(ctx, width, height, p);
       resolve(canvas);
     };
     img.onerror = () => {
@@ -67,8 +72,12 @@ export function rasterizeSprite(svg: string, width: number, height: number, port
   });
 }
 
-function loadSvgTexture(svg: string, width: number, height: number, porthole?: Porthole): Promise<THREE.CanvasTexture> {
-  return rasterizeSprite(svg, width, height, porthole).then((canvas) => {
+function portholeList(portholes?: Porthole | readonly Porthole[]): readonly Porthole[] {
+  return !portholes ? [] : 'emoji' in portholes ? [portholes] : portholes;
+}
+
+function loadSvgTexture(svg: string, width: number, height: number, portholes?: Porthole | readonly Porthole[]): Promise<THREE.CanvasTexture> {
+  return rasterizeSprite(svg, width, height, portholes).then((canvas) => {
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
@@ -80,8 +89,14 @@ function loadSvgTexture(svg: string, width: number, height: number, porthole?: P
 // use as a flat sprite. Cached by the SVG string itself, so regenerating the
 // same accent-colored rocket twice (e.g. across remounts) reuses the texture
 // instead of re-rasterizing.
-export function useSvgTexture(svg: string, width = 256, height = 512, porthole?: Porthole): THREE.CanvasTexture | null {
-  const key = porthole ? `${svg}|${porthole.emoji}` : svg;
+export function useSvgTexture(
+  svg: string,
+  width = 256,
+  height = 512,
+  portholes?: Porthole | readonly Porthole[],
+): THREE.CanvasTexture | null {
+  const emoji = portholeList(portholes).map((p) => p.emoji);
+  const key = emoji.length ? `${svg}|${emoji.join('|')}` : svg;
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(cache.get(key) ?? null);
 
   useEffect(() => {
@@ -93,7 +108,7 @@ export function useSvgTexture(svg: string, width = 256, height = 512, porthole?:
     }
     let promise = pending.get(key);
     if (!promise) {
-      promise = loadSvgTexture(svg, width, height, porthole);
+      promise = loadSvgTexture(svg, width, height, portholes);
       pending.set(key, promise);
     }
     promise
@@ -108,7 +123,7 @@ export function useSvgTexture(svg: string, width = 256, height = 512, porthole?:
     return () => {
       cancelled = true;
     };
-    // porthole is captured through `key` (its only varying part is the emoji)
+    // the windows are captured through `key` (their only varying part is the emoji)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, svg, width, height]);
 

@@ -201,7 +201,8 @@ Answer mode, language and sound are shared by everyone on the device.
 
 ## Crew Flight 👩‍🚀👨‍🚀 (two players)
 
-Two pilots fly **one rocket together on one device**, taking turns. Open it from **🎮 Game modes**
+Two pilots fly **one rocket together on one device**, taking turns. The crew's rocket has two
+windows, one above the other, with each pilot's animal looking out of one. Open it from **🎮 Game modes**
 in the top bar (**Fly together**, which needs 2+ pilots on the device), pick the two pilots, and
 give each a seat:
 

@@ -8,7 +8,7 @@ import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
-import { ROCKET_PORTHOLE, rocketSvg } from './illustrations';
+import { CREW_PORTHOLES, ROCKET_PORTHOLE, rocketSvg } from './illustrations';
 import { useProfiles } from '../../profiles/useProfiles';
 import { useSvgTexture } from './spriteTexture';
 
@@ -25,13 +25,26 @@ const HEIGHT = 2.3;
 // standing on the pad instead of a toy-model rocket.
 export function RocketSprite({ level }: Props) {
   const accent = useMemo(() => colorForLevel(level), [level]);
-  const svg = useMemo(() => rocketSvg(accent), [accent]);
-  // The active pilot's animal looks out of the porthole.
+  // The active pilot's animal looks out of the porthole; flying together, the
+  // rocket has two windows, one above the other, with a pilot at each.
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const crew = useCrewStore((s) => s.members);
+  const crewAvatars = useProfiles((s) =>
+    crew ? crew.map((m) => s.profiles.find((p) => p.id === m.profileId)?.avatar ?? '🚀').join(' ') : '',
+  );
+  const svg = useMemo(() => rocketSvg(accent, !!crew), [accent, crew]);
   // until this pilot has found the Academy, the window shimmers to invite taps
   const academySeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.academySeen);
-  const porthole = useMemo(() => (avatar ? { ...ROCKET_PORTHOLE, emoji: avatar } : undefined), [avatar]);
-  const texture = useSvgTexture(svg, 260, 520, porthole);
+  const portholes = useMemo(
+    () =>
+      crewAvatars
+        ? crewAvatars.split(' ').map((emoji, i) => ({ ...CREW_PORTHOLES[i], emoji }))
+        : avatar
+          ? { ...ROCKET_PORTHOLE, emoji: avatar }
+          : undefined,
+    [crewAvatars, avatar],
+  );
+  const texture = useSvgTexture(svg, 260, 520, portholes);
 
   // Secret door: three quick taps on the porthole open the Deep Space Academy.
   // Each tap pulls the camera a step closer to the window (FlightController
@@ -79,7 +92,7 @@ export function RocketSprite({ level }: Props) {
         <planeGeometry args={[WIDTH, HEIGHT]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.05} toneMapped={false} />
       </mesh>
-      {!academySeen && (
+      {!academySeen && !crew && (
         <PortholeShimmer
           x={(ROCKET_PORTHOLE.x - 0.5) * WIDTH}
           y={(0.5 - ROCKET_PORTHOLE.y) * HEIGHT}
