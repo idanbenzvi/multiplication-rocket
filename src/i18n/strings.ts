@@ -65,6 +65,14 @@ const en = {
   language: 'Language',
   progressSection: 'Progress',
   close: 'Close',
+  // the settings, as the rocket's cockpit
+  cockpit: {
+    seat: (name: string) => `${name}'s cockpit`,
+    back: 'Back to flight',
+    parents: 'Parent dashboard',
+    liftCover: 'Lift the cover',
+    lowerCover: 'Close the cover',
+  },
   deleteDigit: 'Delete',
   sound: 'Sound',
   music: 'Music',
@@ -729,6 +737,13 @@ const he: Strings = {
   language: 'שפה',
   progressSection: 'התקדמות',
   close: 'סגירה',
+  cockpit: {
+    seat: (name: string) => `תא הטייס של ${name}`,
+    back: 'חזרה לטיסה',
+    parents: 'לוח מעקב להורים',
+    liftCover: 'להרים את המכסה',
+    lowerCover: 'לסגור את המכסה',
+  },
   deleteDigit: 'מחיקה',
   sound: 'צלילים',
   music: 'מוזיקה',

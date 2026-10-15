@@ -246,4 +246,39 @@ export const sfx = {
     tone(c, 55, t, 1.6, { type: 'sawtooth', gain: 0.05, glideTo: 110, attack: 0.4 });
     noiseBurst(c, t, 1.4, 120, 900, 0.08);
   },
+
+  /** Into the cockpit through the porthole: a soft rush, the hatch's hiss and a "welcome aboard" chime. */
+  cockpitIn() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    noiseBurst(c, t, 0.9, 400, 3200, 0.08);
+    noiseBurst(c, t + 0.75, 0.45, 6000, 2500, 0.05);
+    [7, 4, 9].forEach((n, i) => tone(c, noteFreq(n), t + 0.9 + i * 0.09, 0.5, { gain: 0.08 }));
+  },
+
+  /** Back out of the cockpit to the flight: the rush the other way. */
+  cockpitOut() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    noiseBurst(c, t, 0.9, 3200, 400, 0.07);
+    tone(c, 660, t, 0.6, { type: 'triangle', gain: 0.04, glideTo: 220 });
+  },
+
+  /** A cockpit lever or switch thrown: a mechanical clunk, a little higher when it goes on. */
+  clunk(on: boolean) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.005;
+    noiseBurst(c, t, 0.06, 4200, 1800, 0.16);
+    tone(c, on ? 240 : 170, t + 0.01, 0.12, { type: 'triangle', gain: 0.12, glideTo: on ? 180 : 120 });
+  },
+
+  /** A knob clicking round a notch. */
+  knob() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    noiseBurst(c, c.currentTime + 0.005, 0.035, 5200, 3000, 0.1);
+  },
 };

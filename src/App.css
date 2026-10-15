@@ -1509,13 +1509,6 @@ button:focus-visible {
   background: rgba(255, 157, 118, 0.14);
   box-shadow: 0 0 16px rgba(255, 157, 118, 0.25);
 }
-.settings-option-small {
-  flex: 1;
-  align-items: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-}
 .settings-option-name {
   font-family: var(--font-display);
   font-weight: 700;
@@ -1596,9 +1589,6 @@ button:focus-visible {
   font-family: var(--font-display);
   font-weight: 600;
   color: #ffd77a;
-}
-.settings-toggle {
-  width: 100%;
 }
 
 /* ==================== BONUS ROUNDS: shared ==================== */

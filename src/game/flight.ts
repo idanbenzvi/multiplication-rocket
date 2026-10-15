@@ -80,3 +80,35 @@ export const portholeZoom = { level: 0, lastTap: 0, diveAt: 0 };
 export const ZOOM_RESET_MS = 1400;
 /** the final rush into the window, before the Academy opens */
 export const DIVE_MS = 950;
+
+// ---- the cockpit: settings open by flying the camera in through the porthole ----
+
+/** the porthole's glass, in world units (RocketSprite: ROCKET_PORTHOLE.radius × WIDTH) */
+export const PORTHOLE_RADIUS = (23 / 200) * 1.1;
+
+/** where the porthole is on screen (CSS px) as of the last frame drawn, and its glass's radius */
+export const portholeScreen = { x: 0, y: 0, r: 0 };
+
+/**
+ * How far in through the porthole the camera is: 0 = the usual view, 1 =
+ * through the glass. It runs from `from` to `to` over `ms` (eased), and the
+ * camera's distance to the window shrinks exponentially with it, so the
+ * window grows on screen at a steady rate (FlightController).
+ */
+export const cockpitDolly = { from: 0, to: 0, startedAt: 0, ms: 1 };
+
+export function cockpitDollyAt(now: number): number {
+  const d = cockpitDolly;
+  const k = Math.min(1, Math.max(0, (now - d.startedAt) / d.ms));
+  const eased = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+  return d.from + (d.to - d.from) * eased;
+}
+
+/** fly in (to 1) or back out (to 0), from wherever the camera is now */
+export function moveCockpitDolly(to: number, ms: number) {
+  const now = performance.now();
+  cockpitDolly.from = cockpitDollyAt(now);
+  cockpitDolly.to = to;
+  cockpitDolly.startedAt = now;
+  cockpitDolly.ms = ms;
+}

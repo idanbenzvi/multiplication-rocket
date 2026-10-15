@@ -3,7 +3,20 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
-import { courseRotation, DIVE_MS, flight, PORTHOLE_Y, portholeZoom, rocketWorld, targetSpeed, ZOOM_RESET_MS } from '../../game/flight';
+import {
+  cockpitDolly,
+  cockpitDollyAt,
+  courseRotation,
+  DIVE_MS,
+  flight,
+  PORTHOLE_RADIUS,
+  PORTHOLE_Y,
+  portholeScreen,
+  portholeZoom,
+  rocketWorld,
+  targetSpeed,
+  ZOOM_RESET_MS,
+} from '../../game/flight';
 
 const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
 const LOOK_AT = new Vector3(0, 0.5, 0);
@@ -14,10 +27,14 @@ const MAX_FOV_KICK = 16;
 // (0 = normal view, 1 = through the glass), which sits PORTHOLE_Y above
 // rocketWorld.
 const ZOOM_STAGES = [0, 0.38, 0.64, 0.8];
+/** fully zoomed, the camera is this far from the window (inside the near plane) */
+const NEAREST = 0.04;
 const zoomTarget = new Vector3();
 const zoomEye = new Vector3();
 const zoomLook = new Vector3();
 const baseEye = new Vector3();
+const portholeEdge = new Vector3();
+const cameraRight = new Vector3();
 let zoomValue = 0;
 
 // Easing rates (per second). Braking is deliberately quicker than speeding
@@ -61,7 +78,7 @@ export function FlightController() {
     [],
   );
 
-  useFrame(({ clock }, rawDelta) => {
+  useFrame(({ clock, size }, rawDelta) => {
     const dt = Math.min(rawDelta, 0.1); // a tab switch shouldn't teleport the speed
     const { progress, justLaunched } = useGameStore.getState();
 
@@ -109,6 +126,16 @@ export function FlightController() {
     }
     const zoomRate = z.diveAt ? 14 : zoomGoal > zoomValue ? 7 : 2.5;
     zoomValue += (zoomGoal - zoomValue) * (1 - Math.exp(-zoomRate * dt));
+    zoomTarget.set(rocketWorld.x, rocketWorld.y + PORTHOLE_Y, 0);
+    // Opening the settings flies in through the window to the cockpit (and
+    // back out): ever closer by the same factor each moment, so the window
+    // grows on screen at a steady rate. It overrides the taps' zoom.
+    const dolly = cockpitDollyAt(nowMs);
+    if (dolly > 0 || cockpitDolly.to > 0) {
+      const far = CAMERA_POS.distanceTo(zoomTarget) + NEAREST;
+      const d = far * (NEAREST / far) ** dolly;
+      zoomValue = Math.max(0, 1 - (d - NEAREST) / (far - NEAREST));
+    }
     const calm = 1 - zoomValue; // no rumble with your nose against the glass
 
     baseEye.set(
@@ -117,11 +144,10 @@ export function FlightController() {
       CAMERA_POS.z,
     );
     if (zoomValue > 0.001) {
-      zoomTarget.set(rocketWorld.x, rocketWorld.y + PORTHOLE_Y, 0);
       // slide along the line from the window to the usual camera spot; at 1
       // the camera is inside the near plane, so the ship vanishes: "in"
       const dist = baseEye.distanceTo(zoomTarget);
-      zoomEye.copy(baseEye).sub(zoomTarget).normalize().multiplyScalar(dist * (1 - zoomValue) + 0.04).add(zoomTarget);
+      zoomEye.copy(baseEye).sub(zoomTarget).normalize().multiplyScalar(dist * (1 - zoomValue) + NEAREST).add(zoomTarget);
       camera.position.copy(zoomEye);
       // Same viewing direction (and FOV) as normal: dollying straight along
       // the line to the window keeps the window under the child's finger,
@@ -140,6 +166,15 @@ export function FlightController() {
         camera.updateProjectionMatrix();
       }
     }
+
+    // where the window is on screen, for the cockpit seen through it (Cockpit.tsx)
+    camera.updateMatrixWorld();
+    cameraRight.setFromMatrixColumn(camera.matrixWorld, 0);
+    portholeEdge.copy(zoomTarget).addScaledVector(cameraRight, PORTHOLE_RADIUS).project(camera);
+    zoomTarget.project(camera);
+    portholeScreen.x = size.left + ((zoomTarget.x + 1) / 2) * size.width;
+    portholeScreen.y = size.top + ((1 - zoomTarget.y) / 2) * size.height;
+    portholeScreen.r = (Math.abs(portholeEdge.x - zoomTarget.x) / 2) * size.width;
   }, -1); // before everything else, so readers see this frame's values
 
   return null;
