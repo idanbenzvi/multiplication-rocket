@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
-import { DIVE_MS, flight, portholeZoom, rocketWorld, targetSpeed, ZOOM_RESET_MS } from '../../game/flight';
+import { getLevelConfig } from '../../game/levels';
+import { courseRotation, DIVE_MS, flight, PORTHOLE_Y, portholeZoom, rocketWorld, targetSpeed, ZOOM_RESET_MS } from '../../game/flight';
 
 const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
 const LOOK_AT = new Vector3(0, 0.5, 0);
@@ -10,10 +11,9 @@ const BASE_FOV = 50;
 const MAX_FOV_KICK = 16;
 
 // Porthole zoom: how far toward the window each tap stage takes the camera
-// (0 = normal view, 1 = through the glass). The window sits 1.17 above the
-// rocket group's origin (RocketSprite: plane centre 1.1 + porthole offset).
+// (0 = normal view, 1 = through the glass), which sits PORTHOLE_Y above
+// rocketWorld.
 const ZOOM_STAGES = [0, 0.38, 0.64, 0.8];
-const PORTHOLE_Y = 1.17;
 const zoomTarget = new Vector3();
 const zoomEye = new Vector3();
 const zoomLook = new Vector3();
@@ -26,6 +26,10 @@ const ACCEL_RATE = 1.4;
 const BRAKE_RATE = 3.2;
 const BOOST_DECAY = 2.2;
 const JOLT_DECAY = 3.0;
+// A new level's course: the world turns to it like a ship banking, easing in
+// and settling without overshoot (a critically damped spring; ~1.5 s).
+const TURN_RATE = 3.2;
+let courseSet = false;
 
 // Owns the flight state (game/flight.ts) and the camera. Everything else in
 // the scene only reads `flight`.
@@ -68,6 +72,23 @@ export function FlightController() {
     flight.jolt *= Math.exp(-JOLT_DECAY * dt);
     flight.effective = flight.speed + flight.boost;
     flight.approach = justLaunched ? 1 : progress.fuel / 100;
+
+    // The level's course: the turn starts as the new level begins (the launch
+    // overlay shows the level being left). With reduced motion there is no
+    // turn to watch: the new course is simply there when the overlay closes.
+    const calmTurn = flight.motionScale < 1;
+    const courseLevel = justLaunched && !calmTurn ? progress.level - 1 : progress.level;
+    const course = courseRotation(getLevelConfig(courseLevel).headingDeg);
+    if (!courseSet || calmTurn) {
+      // (the first frame starts on course rather than turning from straight up)
+      flight.heading = course;
+      flight.headingVel = 0;
+      courseSet = true;
+    } else {
+      const pull = TURN_RATE * TURN_RATE * (course - flight.heading) - 2 * TURN_RATE * flight.headingVel;
+      flight.headingVel += pull * dt;
+      flight.heading += flight.headingVel * dt;
+    }
 
     // Camera: FOV widens with speed (the classic racing-game speed cue), plus
     // a high-frequency rumble at speed and a hard knock on a wrong answer.

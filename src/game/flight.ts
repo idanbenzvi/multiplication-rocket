@@ -40,7 +40,20 @@ export const flight = {
   approach: 0,
   /** reduced-motion users get much less shake and blur */
   motionScale: 1,
+  /**
+   * The level's course, as a turn of the whole moving world (the rocket, the
+   * streaks, the stars, the sky) around the screen: radians, counter-clockwise
+   * (three.js rotation.z). Eased toward the level's heading when it changes.
+   */
+  heading: 0,
+  /** how fast the heading is turning (radians / second), for the eased turn */
+  headingVel: 0,
 };
+
+/** a level's heading (degrees from straight up, positive = right) as flight.heading */
+export function courseRotation(headingDeg: number): number {
+  return (-headingDeg * Math.PI) / 180;
+}
 
 /** a one-off surge (a meteor blasted, a constellation completed, …) */
 export function kick(amount: number) {
@@ -55,7 +68,10 @@ export function bump() {
 
 // ---- tapping the porthole: the camera zooms in a step per tap ----
 
-/** where the rocket group is this frame (FlyingRocket writes it) */
+/** the porthole's height above the rocket group's origin (RocketSprite: plane centre 1.1 + porthole offset) */
+export const PORTHOLE_Y = 1.17;
+
+/** the porthole is PORTHOLE_Y above this point this frame, in world space (FlyingRocket writes it) */
 export const rocketWorld = { x: 0, y: 0 };
 
 /** tap stage 0-3; diveAt = performance.now() when the third tap started the dive */

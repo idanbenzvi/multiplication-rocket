@@ -88,7 +88,8 @@ struct ColorStop {
 }
 
 void main() {
-  vec2 uv = vUv;
+  // (turned onto the level's course, uv can leave 0..1 near the corners)
+  vec2 uv = vec2(vUv.x, clamp(vUv.y, 0.0, 1.0));
 
   ColorStop colors[3];
   colors[0] = ColorStop(uColorStops[0], 0.0);
@@ -96,7 +97,7 @@ void main() {
   colors[2] = ColorStop(uColorStops[2], 1.0);
 
   vec3 rampColor;
-  COLOR_RAMP(colors, uv.x, rampColor);
+  COLOR_RAMP(colors, clamp(uv.x, 0.0, 1.0), rampColor);
 
   float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
   height = exp(height);

@@ -16,4 +16,14 @@ describe('the journey', () => {
     expect(lap2.destinationIndex).toBe(0);
     expect(lap2.destinationSector).toBe(2);
   });
+
+  it('flies a new course every level: straight up first, then up to 45° either way', () => {
+    expect(getLevelConfig(1).headingDeg).toBe(0);
+    for (let level = 1; level <= 40; level++) {
+      const { headingDeg } = getLevelConfig(level);
+      expect(Math.abs(headingDeg)).toBeLessThanOrEqual(45);
+      // a turn you can see from one level to the next
+      expect(Math.abs(headingDeg - getLevelConfig(level + 1).headingDeg)).toBeGreaterThanOrEqual(15);
+    }
+  });
 });

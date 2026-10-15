@@ -1,12 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { flight } from '../../game/flight';
+import { flight, PORTHOLE_Y } from '../../game/flight';
 
-const COUNT = 280;
-const X_RANGE = 7;
-const Y_TOP = 7;
-const Y_BOTTOM = -6;
+// (a field wide and tall enough to still fill the view when turned 45° onto a course)
+const COUNT = 440;
+const X_RANGE = 9;
+const Y_TOP = 9;
+const Y_BOTTOM = -8;
 const Z_NEAR = 3.2;
 const Z_FAR = -10;
 const PALETTE = ['#ffe1a8', '#c9a4de', '#7ec4b0', '#f2a6c0', '#bfe6f5', '#ffffff'].map(
@@ -17,7 +18,10 @@ const PALETTE = ['#ffe1a8', '#c9a4de', '#7ec4b0', '#f2a6c0', '#bfe6f5', '#ffffff
 // world streams downward past it: at cruise these are slow drifting specks,
 // and the faster the rocket goes the longer each one stretches into a streak
 // — the "stars turn into lines" motion-blur look of a jump to light speed.
+// The field is turned onto the level's course (flight.heading), so the dust
+// always streams past from where the nose points.
 export function SpeedStreaks() {
+  const courseRef = useRef<THREE.Group>(null);
   const { geometry, positions, colors, particles } = useMemo(() => {
     const positions = new Float32Array(COUNT * 2 * 3); // 2 verts per streak: head + tail
     const colors = new Float32Array(COUNT * 2 * 3);
@@ -47,6 +51,7 @@ export function SpeedStreaks() {
   );
 
   useFrame((_, rawDelta) => {
+    if (courseRef.current) courseRef.current.rotation.z = flight.heading;
     const dt = Math.min(rawDelta, 0.1);
     const s = flight.effective;
     const velocity = 0.5 + s * 26; // world units / second
@@ -83,5 +88,9 @@ export function SpeedStreaks() {
     geometry.attributes.color.needsUpdate = true;
   });
 
-  return <lineSegments geometry={geometry} material={material} frustumCulled={false} />;
+  return (
+    <group ref={courseRef} position={[0, PORTHOLE_Y, 0]}>
+      <lineSegments geometry={geometry} material={material} frustumCulled={false} position={[0, -PORTHOLE_Y, 0]} />
+    </group>
+  );
 }

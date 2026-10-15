@@ -24,6 +24,12 @@ const DESTINATION_EMOJIS = ['🌕', '🟡', '⚪', '☀️', '🔴', '☄️', '
 /** stops in one lap of the journey */
 export const DESTINATION_COUNT = DESTINATION_EMOJIS.length;
 
+// Each level flies its own course, so the sky turns with every new
+// destination: straight up at first, then leaning up to 45° one way or the
+// other (degrees from straight up, positive = the nose leans right). The
+// destination itself stays where it is in the sky.
+const HEADINGS = [0, -40, 35, -20, 45, -45, 20, -30];
+
 const cache = new Map<number, LevelConfig>();
 
 export function getLevelConfig(level: number): LevelConfig {
@@ -37,6 +43,7 @@ export function getLevelConfig(level: number): LevelConfig {
     destinationIndex: index,
     destinationSector: Math.floor((level - 1) / DESTINATION_EMOJIS.length) + 1,
     destinationEmoji: DESTINATION_EMOJIS[index],
+    headingDeg: HEADINGS[(level - 1) % HEADINGS.length],
   };
   cache.set(level, config);
   return config;

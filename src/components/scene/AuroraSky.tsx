@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AURORA_FRAG, auroraPaletteFor } from './auroraShader';
+import { flight } from '../../game/flight';
 
 // Northern-lights curtains across the top of the sky. The shader is React
 // Bits' Aurora (https://reactbits.dev/backgrounds/aurora), ported into the
@@ -12,9 +13,15 @@ import { AURORA_FRAG, auroraPaletteFor } from './auroraShader';
 // the game for attention.
 
 const VERT = /* glsl */ `
+uniform float uCourse; // the level's course (flight.heading): the curtains hang "above" the nose
+uniform float uAspect;
 varying vec2 vUv;
 void main() {
-  vUv = uv;
+  // turn the screen around its middle, in square (not stretched) units
+  vec2 p = (uv - 0.5) * vec2(uAspect, 1.0);
+  float c = cos(uCourse), s = sin(uCourse);
+  p = vec2(c * p.x + s * p.y, -s * p.x + c * p.y);
+  vUv = p / vec2(uAspect, 1.0) + 0.5;
   // Full-screen quad pinned to the far plane: covers the view, and anything
   // in the scene (planet, rocket) is in front of it.
   gl_Position = vec4(position.xy, 0.9999, 1.0);
@@ -44,6 +51,8 @@ export function AuroraSky({ level }: Props) {
           uColorStops: { value: auroraPaletteFor(level).map((c) => new THREE.Color(c)) },
           uBlend: { value: 0.75 }, // softer, more diffuse curtain edges
           uIntensity: { value: 0.4 },
+          uCourse: { value: 0 },
+          uAspect: { value: 1 },
         },
       }),
     // created once; colors are eased toward the level's palette each frame
@@ -51,9 +60,13 @@ export function AuroraSky({ level }: Props) {
     [],
   );
 
+  const size = useThree((s) => s.size);
+
   useFrame((_, rawDelta) => {
     const dt = Math.min(rawDelta, 0.1);
     const u = material.uniforms;
+    u.uCourse.value = flight.heading;
+    u.uAspect.value = size.width / Math.max(1, size.height);
     // A slow, constant drift — a quarter of upstream's default pace, and not
     // tied to flight speed (that made it surge and jitter with every answer).
     u.uTime.value += dt * 0.25;

@@ -34,4 +34,6 @@ export interface LevelConfig {
   destinationIndex: number; // into Strings.destinations — names are translated at render time
   destinationSector: number; // 1 on the first lap through the destinations, 2+ after
   destinationEmoji: string;
+  /** the course this level flies, in degrees from straight up (positive: the nose leans right) */
+  headingDeg: number;
 }

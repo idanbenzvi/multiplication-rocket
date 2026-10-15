@@ -18,21 +18,29 @@ import { skyForLevel } from './palette';
 
 // The distant star sphere turns around the camera's horizontal axis so the
 // far stars drift downward too — slow parallax behind the fast near streaks.
+// That axis is turned onto the level's course, so they drift past the way
+// the streaks do.
 function DriftingStars() {
+  const courseRef = useRef<Group>(null);
   const ref = useRef<Group>(null);
   useFrame((_, rawDelta) => {
+    if (courseRef.current) courseRef.current.rotation.z = flight.heading;
     if (ref.current) ref.current.rotation.x -= Math.min(rawDelta, 0.1) * (0.004 + flight.effective * 0.05);
   });
   return (
-    <group ref={ref}>
-      <Stars radius={60} depth={40} count={5000} factor={4} fade speed={0.4} />
+    <group ref={courseRef}>
+      <group ref={ref}>
+        <Stars radius={60} depth={40} count={5000} factor={4} fade speed={0.4} />
+      </group>
     </group>
   );
 }
 
 // Always in flight: the rocket holds its place on screen while the world
 // rushes past, faster as the level's fuel fills and the answer streak grows
-// (see game/flight.ts), with the destination planet growing ahead.
+// (see game/flight.ts), with the destination planet growing ahead. Each
+// level flies its own course (flight.heading): the rocket, streaks, stars and
+// sky turn with it, and only the destination stays where it is.
 export function RocketScene() {
   const progress = useGameStore((s) => s.progress);
   const justLaunched = useGameStore((s) => s.justLaunched);

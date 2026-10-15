@@ -12,17 +12,26 @@ import { flight } from '../../game/flight';
 const FRAGMENT = /* glsl */ `
 uniform float strength;
 uniform vec2 center;
-uniform vec2 window;
+uniform vec2 window; // the clear window around the rocket: half its width and height, in screen heights
+uniform float course; // the level's course (flight.heading): which way is "up" for the rocket
+
+vec2 turn(vec2 v, float a) {
+  float c = cos(a), s = sin(a);
+  return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
+}
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
   if (strength < 0.0005) { outputColor = inputColor; return; }
 
   vec2 toCenter = uv - center;
-  float r = length(toCenter / window);
+  // measured in the rocket's own frame, so the window leans with it
+  float r = length(turn(toCenter * vec2(aspect, 1.0), -course) / window);
   float mask = smoothstep(0.85, 1.7, r);
 
   vec2 radial = normalize(toCenter + vec2(1e-5));
-  vec2 dir = normalize(mix(vec2(0.0, 1.0), radial, 0.3));
+  // the world smears along the course
+  vec2 along = normalize(turn(vec2(0.0, 1.0), course) / vec2(aspect, 1.0));
+  vec2 dir = normalize(mix(along, radial, 0.3));
   vec2 span = dir * strength * mask;
 
   const int TAPS = 14;
@@ -53,18 +62,20 @@ class SpeedBlurEffect extends Effect {
       uniforms: new Map<string, Uniform>([
         ['strength', new Uniform(0)],
         ['center', new Uniform(new Vector2(0.5, 0.6))],
-        ['window', new Uniform(new Vector2(0.09, 0.26))],
+        ['window', new Uniform(new Vector2(0.16, 0.26))],
+        ['course', new Uniform(0)],
       ]),
     });
   }
 }
 
-// Rocket body center in world space (see FlyingRocket/RocketSprite).
+// Rocket body center in world space (see FlyingRocket/RocketSprite): it turns
+// onto each level's course about its porthole, right here, so this stays put.
 const ROCKET_CENTER = new Vector3(0, 1.15, 0);
 
 export function SpeedBlur() {
   const effect = useMemo(() => new SpeedBlurEffect(), []);
-  const { camera, size } = useThree();
+  const { camera } = useThree();
   const projected = useMemo(() => new Vector3(), []);
 
   useEffect(() => () => effect.dispose(), [effect]);
@@ -76,9 +87,7 @@ export function SpeedBlur() {
 
     projected.copy(ROCKET_CENTER).project(camera);
     (u.get('center') as Uniform<Vector2>).value.set(projected.x * 0.5 + 0.5, projected.y * 0.5 + 0.5);
-    // Keep the clear window rocket-shaped regardless of screen aspect.
-    const aspect = size.width / Math.max(1, size.height);
-    (u.get('window') as Uniform<Vector2>).value.set(0.16 / aspect, 0.26);
+    (u.get('course') as Uniform<number>).value = flight.heading;
   });
 
   return <primitive object={effect} dispose={null} />;
