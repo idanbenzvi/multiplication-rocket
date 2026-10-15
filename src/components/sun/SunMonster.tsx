@@ -14,6 +14,8 @@ import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import GradientText from '../reactbits/GradientText';
+import { playTrack } from '../../audio/useAudio';
+import { warpTo } from '../warpTransition';
 import '../sky/sky.css';
 import './sun.css';
 
@@ -76,6 +78,13 @@ function useNewEvents(events: SunEvent[], onEvent: (e: SunEvent) => void) {
 let warpBoost = 0;
 function warpKick(amount: number) {
   warpBoost = Math.max(warpBoost, amount);
+}
+
+// Back to the game through the warp; the theme music comes back from the tap
+// (browsers only start music from one).
+function warpHome(e: React.MouseEvent<HTMLElement>) {
+  playTrack('theme');
+  warpTo(useSunStore.getState().closeSun, e.currentTarget);
 }
 
 function Warp() {
@@ -214,7 +223,6 @@ function Lobby() {
   const join = useSunStore((s) => s.join);
   const start = useSunStore((s) => s.start);
   const leave = useSunStore((s) => s.leave);
-  const closeSun = useSunStore((s) => s.closeSun);
   const online = state.players.filter((p) => p.online).length;
   const seated = state.players.some((p) => p.id === myId);
 
@@ -291,7 +299,7 @@ function Lobby() {
           </CodeEntry>
         ))}
 
-      <button type="button" className="profile-secondary sky-close" onClick={role ? leave : closeSun}>
+      <button type="button" className="profile-secondary sky-close" onClick={role ? leave : warpHome}>
         {role ? t.sky.back : t.sky.close}
       </button>
     </div>
@@ -436,7 +444,6 @@ function Defeated({ state }: { state: SunState }) {
 function Fight({ state }: { state: SunState }) {
   const t = useT();
   const myId = useSunStore((s) => s.myId);
-  const closeSun = useSunStore((s) => s.closeSun);
   const fx = useRef<MonsterFx | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [pops, setPops] = useState<Record<string, number[]>>({});
@@ -534,7 +541,7 @@ function Fight({ state }: { state: SunState }) {
   return (
     <div className="sun-fight">
       <div className="sun-top">
-        <button type="button" className="sun-quit" onClick={closeSun} aria-label={t.sky.close}>
+        <button type="button" className="sun-quit" onClick={warpHome} aria-label={t.sky.close}>
           ✕
         </button>
         <div className="sky-round">
@@ -608,7 +615,6 @@ function Summary({ state }: { state: SunState }) {
   const role = useSunStore((s) => s.role);
   const myId = useSunStore((s) => s.myId);
   const start = useSunStore((s) => s.start);
-  const closeSun = useSunStore((s) => s.closeSun);
   const online = state.players.filter((p) => p.online).length;
   const awards = sunAwards(state.players);
   useEffect(() => {
@@ -678,7 +684,7 @@ function Summary({ state }: { state: SunState }) {
         <div className="sky-status">{t.sun.waitHost}</div>
       )}
       <Status />
-      <button type="button" className="profile-secondary sky-close" onClick={closeSun}>
+      <button type="button" className="profile-secondary sky-close" onClick={warpHome}>
         {t.sky.close}
       </button>
     </div>
@@ -691,13 +697,14 @@ export function SunMonster() {
   const state = useSunStore((s) => s.state);
   sunNames.fallback = t.defaultPilotName;
   if (!open) return null;
+  // no fade of its own: it opens behind the warp (warpTransition.ts), which clears to show it
   return createPortal(
-    <motion.div className="sun-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <div className="sun-overlay">
       <Warp />
       <div className="sun-content">
         {state.phase === 'lobby' ? <Lobby /> : state.phase === 'summary' ? <Summary state={state} /> : <Fight state={state} />}
       </div>
-    </motion.div>,
+    </div>,
     document.body,
   );
 }

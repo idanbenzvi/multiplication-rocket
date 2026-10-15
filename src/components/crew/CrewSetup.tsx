@@ -6,6 +6,7 @@ import { useCrewStore } from '../../game/useCrewStore';
 import { suggestSeats, type Seat } from '../../game/crew';
 import { useT } from '../../i18n/useLang';
 import { SEAT_COLORS } from './seatColors';
+import { BACKDROP_VARIANTS, SHEET_VARIANTS, useModeWarp, warpTo } from '../warpTransition';
 
 // Pick two pilots (the first tapped takes the left seat), then check their
 // seats: the one further along is suggested as Pilot, the other as
@@ -31,12 +32,15 @@ function SetupSheet() {
   };
 
   const ready = chosen.length === 2;
-  const launch = () => {
+  // the sheet dissolves into a warp, and the crew flight begins on the other side
+  const launch = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!ready) return;
-    start([
+    const members: Parameters<typeof start>[0] = [
       { profileId: chosen[0], seat: seats[chosen[0]] ?? 'pilot' },
       { profileId: chosen[1], seat: seats[chosen[1]] ?? 'pilot' },
-    ]);
+    ];
+    warpTo(() => start(members), e.currentTarget);
+    closeSetup();
   };
 
   return (
@@ -117,17 +121,28 @@ function SetupSheet() {
 export function CrewSetup() {
   const open = useCrewStore((s) => s.setupOpen);
   const closeSetup = useCrewStore((s) => s.closeSetup);
+  const leave = useModeWarp((s) => (s.run ? 'warp' : null));
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence custom={leave}>
       {open && (
-        <motion.div className="settings-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeSetup}>
+        <motion.div
+          className="settings-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          variants={BACKDROP_VARIANTS}
+          custom={leave}
+          exit="exit"
+          onClick={closeSetup}
+        >
           <motion.div
             className="settings-sheet crew-sheet"
             role="dialog"
             aria-modal="true"
             initial={{ y: 40, opacity: 0, scale: 0.96 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 40, opacity: 0 }}
+            variants={SHEET_VARIANTS}
+            custom={leave}
+            exit="exit"
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >

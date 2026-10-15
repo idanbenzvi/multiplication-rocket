@@ -14,6 +14,7 @@ import { NavigatorQuestion } from './NavigatorQuestion';
 import { Docking } from './Docking';
 import { SEAT_COLORS } from './seatColors';
 import GradientText from '../reactbits/GradientText';
+import { warpTo } from '../warpTransition';
 import './crew.css';
 
 interface Props {
@@ -132,7 +133,8 @@ function CrewSummary({ pilots }: { pilots: [Profile | undefined, Profile | undef
           <span>🛰️ {t.crew.summaryDocks(docks)}</span>
           <span>🚀 {t.crew.summaryLaunches(missionLaunches)}</span>
         </div>
-        <button type="button" className="profile-primary" onClick={close} autoFocus>
+        {/* back to solo play through the warp */}
+        <button type="button" className="profile-primary" onClick={(e) => warpTo(close, e.currentTarget)} autoFocus>
           {t.crew.backToSolo}
         </button>
       </motion.div>

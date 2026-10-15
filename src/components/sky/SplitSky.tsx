@@ -14,6 +14,7 @@ import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { SkyGrid } from './SkyGrid';
 import GradientText from '../reactbits/GradientText';
+import { warpTo } from '../warpTransition';
 import './sky.css';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
@@ -156,12 +157,16 @@ function GuestLobby() {
   );
 }
 
+// back to the game through the warp
+function warpHome(e: React.MouseEvent<HTMLElement>) {
+  warpTo(useSkyStore.getState().closeSky, e.currentTarget);
+}
+
 function Lobby() {
   const t = useT();
   const role = useSkyStore((s) => s.role);
   const host = useSkyStore((s) => s.host);
   const leave = useSkyStore((s) => s.leave);
-  const closeSky = useSkyStore((s) => s.closeSky);
   return (
     <div className="sky-panel">
       {/* the emoji stays outside: the gradient fill would flatten it */}
@@ -188,7 +193,7 @@ function Lobby() {
       )}
       {role === 'host' && <HostLobby />}
       {role === 'guest' && <GuestLobby />}
-      <button type="button" className="profile-secondary sky-close" onClick={role ? leave : closeSky}>
+      <button type="button" className="profile-secondary sky-close" onClick={role ? leave : warpHome}>
         {role ? t.sky.back : t.sky.close}
       </button>
     </div>
@@ -390,7 +395,6 @@ function Summary() {
   const state = useSkyStore((s) => s.state);
   const role = useSkyStore((s) => s.role);
   const startGame = useSkyStore((s) => s.startGame);
-  const closeSky = useSkyStore((s) => s.closeSky);
   return (
     <div className="sky-panel">
       <GradientText className="sky-title" colors={['#6ad7ff', '#c9a4de', '#ffd77a', '#6ad7ff']} animationSpeed={4}>
@@ -415,7 +419,7 @@ function Summary() {
       ) : (
         <div className="sky-status">{t.sky.waitHost}</div>
       )}
-      <button type="button" className="profile-secondary sky-close" onClick={closeSky}>
+      <button type="button" className="profile-secondary sky-close" onClick={warpHome}>
         {t.sky.close}
       </button>
     </div>
@@ -429,8 +433,9 @@ export function SplitSky() {
   skyNames.fallback = t.defaultPilotName;
   if (!open) return null;
   const { phase } = state;
+  // no fade of its own: it opens behind the warp (warpTransition.ts), which clears to show it
   return createPortal(
-    <motion.div className="sky-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <div className="sky-overlay">
       {phase === 'lobby' ? (
         <Lobby />
       ) : phase === 'summary' ? (
@@ -440,7 +445,7 @@ export function SplitSky() {
       ) : (
         <EclipsePlay state={state} />
       )}
-    </motion.div>,
+    </div>,
     document.body,
   );
 }

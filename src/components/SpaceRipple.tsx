@@ -11,6 +11,8 @@ interface Props {
   origin: { x: number; y: number };
   /** ring speed, CSS pixels per second */
   speed: number;
+  /** the clock startedAt is on: the game clock (stops while paused) unless given */
+  clock?: () => number;
 }
 
 // An energy pulse rippling through space: three expanding rings that act as
@@ -90,15 +92,15 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
   return sh;
 }
 
-export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
+export function SpaceRipple({ source, startedAt, origin, speed, clock = gameNow }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // If WebGL or the shader isn't available, draw CSS rings instead — the
   // pulse must never just be invisible.
   const [fallback, setFallback] = useState(false);
   const setStatus = useRippleStatus((s) => s.set);
   // latest props for the render loop, without restarting it
-  const live = useRef({ startedAt, origin, speed });
-  live.current = { startedAt, origin, speed };
+  const live = useRef({ startedAt, origin, speed, clock });
+  live.current = { startedAt, origin, speed, clock };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -172,7 +174,7 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
     const draw = () => {
       raf = requestAnimationFrame(draw);
       const src = source.current;
-      const { startedAt: t0, origin: o, speed: sp } = live.current;
+      const { startedAt: t0, origin: o, speed: sp, clock: now } = live.current;
       if (!t0 || !src) {
         canvas.style.visibility = 'hidden';
         return;
@@ -184,7 +186,7 @@ export function SpaceRipple({ source, startedAt, origin, speed }: Props) {
         canvas.width = Math.round(cssW * dpr);
         canvas.height = Math.round(cssH * dpr);
       }
-      const t = (gameNow() - t0) / 1000;
+      const t = (now() - t0) / 1000;
       // done once every ring has left the screen
       if (t * sp - 280 > Math.hypot(cssW, cssH) * 1.1) {
         canvas.style.visibility = 'hidden';

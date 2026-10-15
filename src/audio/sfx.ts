@@ -172,6 +172,16 @@ export const sfx = {
     for (let i = 0; i < 8; i++) tone(c, noteFreq(6 + i), t + 1.6 + i * 0.05, 0.4, { gain: 0.08 });
   },
 
+  /** Warping between the game and a game mode: a quick rising whoosh, a soft shimmer on arrival. */
+  warp() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    noiseBurst(c, t, 1.2, 300, 5000, 0.1);
+    tone(c, 120, t, 0.8, { type: 'triangle', gain: 0.06, glideTo: 960, attack: 0.25 });
+    [4, 7, 9].forEach((n, i) => tone(c, noteFreq(n), t + 0.75 + i * 0.05, 0.6, { gain: 0.07 }));
+  },
+
   /** Meteor Shower: the right meteor blasted — boom plus a ding that climbs with the run. */
   boom(run: number) {
     const c = audio();

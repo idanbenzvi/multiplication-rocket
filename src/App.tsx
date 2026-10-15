@@ -13,6 +13,7 @@ import { ReviewButton } from './components/ReviewButton';
 import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
 import { GameModesButton } from './components/GameModes';
+import { ModeWarp } from './components/ModeWarp';
 import { activeProfile, pilotName, useMission, useProfileGateOpen } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { clampStage } from './game/addition';
@@ -269,6 +270,7 @@ function App() {
       <CrewSetup />
       {!gateOpen && <SplitSky />}
       {!gateOpen && <SunMonster />}
+      <ModeWarp />
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
         (mission === 'add' ? <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} /> : <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />)}

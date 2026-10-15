@@ -76,6 +76,39 @@ button:focus-visible {
   }
 }
 
+/* --- the warp between the game and a game mode (ModeWarp.tsx) --- */
+.mode-warp {
+  position: fixed;
+  inset: 0;
+  /* over the game modes (40) and their sheets (30), under the pause screen (50) */
+  z-index: 45;
+  background: #07050f;
+}
+.mode-warp-stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* a soft flare at full speed, as the new mode opens behind it */
+.mode-warp-flare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 246, 224, 0.85), rgba(106, 215, 255, 0.3) 20%, transparent 50%);
+  mix-blend-mode: screen;
+  animation: modeWarpFlare 1.6s ease-in-out both;
+}
+@keyframes modeWarpFlare {
+  0%, 36% { opacity: 0; scale: 0.4; }
+  50% { opacity: 0.8; scale: 1; }
+  78%, 100% { opacity: 0; scale: 1.7; }
+}
+/* a game mode's panel arriving out of the warp: it zooms in out of the blur */
+@keyframes modeArrive {
+  from { opacity: 0; scale: 0.82; filter: blur(10px); }
+}
+
 /* ==================== TOP STATUS BAR ==================== */
 
 .hud-topbar {
