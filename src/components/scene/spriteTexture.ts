@@ -39,7 +39,8 @@ function drawPorthole(ctx: CanvasRenderingContext2D, width: number, height: numb
   ctx.restore();
 }
 
-function loadSvgTexture(svg: string, width: number, height: number, porthole?: Porthole): Promise<THREE.CanvasTexture> {
+/** an illustration drawn onto a canvas (its porthole's emoji too), as a texture or for a 2D canvas */
+export function rasterizeSprite(svg: string, width: number, height: number, porthole?: Porthole): Promise<HTMLCanvasElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
@@ -49,24 +50,29 @@ function loadSvgTexture(svg: string, width: number, height: number, porthole?: P
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
+      URL.revokeObjectURL(url);
       if (!ctx) {
-        URL.revokeObjectURL(url);
         reject(new Error('2d context unavailable'));
         return;
       }
       ctx.drawImage(img, 0, 0, width, height);
       if (porthole) drawPorthole(ctx, width, height, porthole);
-      URL.revokeObjectURL(url);
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-      resolve(texture);
+      resolve(canvas);
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('failed to rasterize sprite svg'));
     };
     img.src = url;
+  });
+}
+
+function loadSvgTexture(svg: string, width: number, height: number, porthole?: Porthole): Promise<THREE.CanvasTexture> {
+  return rasterizeSprite(svg, width, height, porthole).then((canvas) => {
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
   });
 }
 

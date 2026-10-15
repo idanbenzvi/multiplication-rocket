@@ -4,14 +4,17 @@ import { pauseGame, resumeGame } from '../../game/gameClock';
 import { DEV_MODE } from '../../dev/devMode';
 import ElectricLogo from '../reactbits/ElectricLogo';
 import ParticleText from '../reactbits/ParticleText';
+import { SplashShip } from './SplashShip';
 import './splash.css';
 
 // The studio's opening, Flying Deer Games: an empty starry sky; the winged
 // deer constellation traced into it by cyan lightning (React Bits'
 // ElectricLogo, running along the deer's silhouette) as the constellation
 // itself glows in; then the studio's name gathering out of drifting
-// particles (React Bits' ParticleText). The game loads underneath, paused,
-// and a tap or a key skips ahead to it.
+// particles (React Bits' ParticleText); and with a whoosh, the game's rocket
+// loops the loop through the deer and zooms away in a trail of sparkles
+// (SplashShip). The game loads underneath, paused, and a tap or a key skips
+// ahead to it.
 
 const SKY = './splash/space.webp';
 // the deer's light on transparency, cut from the constellation picture
@@ -20,14 +23,15 @@ const DEER = './splash/deer.webp';
 const DEER_SHAPE = './splash/deer-shape.png';
 
 const STUDIO = 'Flying Deer Games';
+const NAME_FONT = "'Unbounded', 'Fredoka', sans-serif";
 
 // the lightning and its haze reach well past the deer: its canvas is this much
 // bigger (splash.css: .splash-lightning's inset), and the deer fills the middle
 const LIGHTNING_ROOM = 1.7;
 
 /** what's on screen: each step adds to the ones before */
-type Step = 'loading' | 'sky' | 'lightning' | 'deer' | 'name';
-const ORDER: Step[] = ['loading', 'sky', 'lightning', 'deer', 'name'];
+type Step = 'loading' | 'sky' | 'lightning' | 'deer' | 'name' | 'ship';
+const ORDER: Step[] = ['loading', 'sky', 'lightning', 'deer', 'name', 'ship'];
 
 // when each step starts, and when the splash leaves, in ms after the pictures have loaded
 const TIMELINE: [Step | 'leave', number][] = [
@@ -35,9 +39,10 @@ const TIMELINE: [Step | 'leave', number][] = [
   ['lightning', 600],
   ['deer', 1900],
   ['name', 2900],
-  ['leave', 6800],
+  ['ship', 5600],
+  ['leave', 8800],
 ];
-// with reduced motion: the same steps, sooner, and no lightning
+// with reduced motion: the same steps, sooner, and no lightning or flying rocket
 const CALM_TIMELINE: [Step | 'leave', number][] = [
   ['sky', 0],
   ['deer', 300],
@@ -56,25 +61,24 @@ function loaded(src: string): Promise<void> {
   return img.decode().catch(() => undefined);
 }
 
-export function StudioSplash() {
-  const [step, setStep] = useState<Step>('loading');
-  const [isLeaving, setIsLeaving] = useState(false);
-  const [done, setDone] = useState(false);
-  const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-  const leaving = useRef(false);
-  // the middle and width of the name's spot under the deer, in screen px
-  const nameRef = useRef<HTMLDivElement>(null);
-  const [nameSpot, setNameSpot] = useState<{ x: number; y: number; width: number } | null>(null);
+interface Spot {
+  /** the middle, and the size, in screen px */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
+/** where an element is on screen, kept up to date as the window changes */
+function useSpot(ref: React.RefObject<HTMLElement | null>): Spot | null {
+  const [spot, setSpot] = useState<Spot | null>(null);
   useLayoutEffect(() => {
-    const el = nameRef.current;
+    const el = ref.current;
     if (!el) return;
     const measure = () => {
       const r = el.getBoundingClientRect();
-      setNameSpot((prev) => {
-        const next = { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), width: Math.round(r.width) };
-        return prev && prev.x === next.x && prev.y === next.y && prev.width === next.width ? prev : next;
-      });
+      const next = { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width), h: Math.round(r.height) };
+      setSpot((prev) => (prev && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h ? prev : next));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -84,7 +88,21 @@ export function StudioSplash() {
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [ref]);
+  return spot;
+}
+
+export function StudioSplash() {
+  const [step, setStep] = useState<Step>('loading');
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  const leaving = useRef(false);
+  // where the deer and the name's spot under it are, in screen px (the particles and the rocket are placed by them)
+  const deerRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
+  const deerSpot = useSpot(deerRef);
+  const nameSpot = useSpot(nameRef);
 
   // the game waits underneath until the splash is gone
   useEffect(() => {
@@ -105,7 +123,9 @@ export function StudioSplash() {
   useEffect(() => {
     let cancelled = false;
     const timers: number[] = [];
-    const ready = Promise.all([loaded(SKY), loaded(DEER), loaded(DEER_SHAPE)]);
+    // (the name's font too, so it's ready before the particles need it)
+    const font = document.fonts?.load(`700 32px ${NAME_FONT.split(',')[0]}`).catch(() => undefined);
+    const ready = Promise.all([loaded(SKY), loaded(DEER), loaded(DEER_SHAPE), font]);
     const wait = new Promise<void>((resolve) => timers.push(window.setTimeout(resolve, LOAD_WAIT_MS)));
     Promise.race([ready, wait]).then(() => {
       if (cancelled) return;
@@ -143,7 +163,7 @@ export function StudioSplash() {
     >
       {reached('sky') && <img className="splash-sky" src={SKY} alt="" draggable={false} />}
       <div className="splash-stage">
-        <div className="splash-deer-box">
+        <div className="splash-deer-box" ref={deerRef}>
           {reached('deer') && <div className="splash-flare" aria-hidden />}
           {reached('deer') && <img className="splash-deer" src={DEER} alt="" draggable={false} />}
           {!calm && reached('lightning') && (
@@ -178,8 +198,8 @@ export function StudioSplash() {
             text={STUDIO}
             centerX={nameSpot.x}
             centerY={nameSpot.y}
-            fitWidth={nameSpot.width}
-            fontFamily="'Unbounded', 'Fredoka', sans-serif"
+            fitWidth={nameSpot.w}
+            fontFamily={NAME_FONT}
             fontWeight={700}
             fontSize="clamp(1.7rem, 6.8vw, 4.4rem)"
             color="#f2f8ff"
@@ -189,7 +209,7 @@ export function StudioSplash() {
             maxParticles={6000}
             // the glow is one CSS drop-shadow on the canvas (splash.css), cheaper than one per particle
             glow={false}
-            scatter={Math.max(360, nameSpot.width * 0.45)}
+            scatter={Math.max(360, nameSpot.w * 0.45)}
             gatherDuration={2000}
             stagger={800}
             pointerRepel={30}
@@ -197,6 +217,7 @@ export function StudioSplash() {
           />
         </div>
       )}
+      {!calm && reached('ship') && deerSpot && <SplashShip deer={deerSpot} />}
     </div>,
     document.body,
   );
