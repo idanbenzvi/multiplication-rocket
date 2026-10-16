@@ -440,17 +440,22 @@ export class TrafficScene {
     });
   }
 
-  /** change lanes, out to the one farthest from the pilot that's free */
+  /** change lanes, out to the one farthest from the pilot that's free (from the pilot's own lane every
+   *  way out is next to it: then any free one, and only when none is, the least crowded) */
   private moveAway(s: Ship) {
     const away = (x: number, y: number) => Math.abs(x - this.lane.x) + Math.abs(y - this.lane.y);
-    const free = (x: number, y: number) => !this.ships.some((o) => o !== s && o.lx === x && o.ly === y && Math.abs(o.z - s.z) < 3);
+    const room = (x: number, y: number) =>
+      Math.min(Infinity, ...this.ships.filter((o) => o !== s && o.lx === x && o.ly === y).map((o) => Math.abs(o.z - s.z)));
     const options = [
       [s.lx + 1, s.ly],
       [s.lx - 1, s.ly],
       [s.lx, s.ly + 1],
       [s.lx, s.ly - 1],
     ].sort((p, q) => away(q[0], q[1]) - away(p[0], p[1]));
-    const [x, y] = options.find(([x, y]) => away(x, y) >= 2 && free(x, y)) ?? options[0];
+    const [x, y] =
+      options.find(([x, y]) => away(x, y) >= 2 && room(x, y) >= 3) ??
+      options.find(([x, y]) => room(x, y) >= 3) ??
+      [...options].sort((p, q) => room(q[0], q[1]) - room(p[0], p[1]))[0];
     s.lx = x;
     s.ly = y;
   }
