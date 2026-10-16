@@ -51,6 +51,10 @@ mistakes a thump; this can be switched off in Settings. iPhone and iPad browsers
 vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
 **⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon.
 
+A phone works on its side too: the rocket flies on the left with the question beside it, and the
+top bar tucks away into a drawer off the right edge. Swipe in from the right edge, shake the
+phone or tap the ☰ tab to pull it out; it tucks itself away again after a few seconds.
+
 ## How it works
 
 - **Fuel = speed × correctness.** A correct answer adds fuel. A fast answer (green **BIG BOOST** zone) adds much more. A wrong answer empties the tank, unless it was already full.

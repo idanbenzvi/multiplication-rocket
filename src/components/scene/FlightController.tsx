@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera, Vector3 } from 'three';
+import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
+import { sidewaysQuery } from '../useMenuDrawer';
 import { getLevelConfig } from '../../game/levels';
 import {
   cockpitDolly,
@@ -22,6 +23,10 @@ const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
 const LOOK_AT = new Vector3(0, 0.5, 0);
 const BASE_FOV = 50;
 const MAX_FOV_KICK = 16;
+// A phone on its side: the question sits on the right, so the picture slides
+// over (by this share of its width) and the rocket flies on the left.
+const SIDEWAYS_SHIFT = 0.22;
+let sideShift = 0;
 
 // Porthole zoom: how far toward the window each tap stage takes the camera
 // (0 = normal view, 1 = through the glass), which sits PORTHOLE_Y above
@@ -161,8 +166,12 @@ export function FlightController() {
     if (camera instanceof PerspectiveCamera) {
       const speedFov = BASE_FOV + Math.min(s, 1.1) * MAX_FOV_KICK * (0.5 + 0.5 * m);
       const fov = speedFov;
-      if (Math.abs(camera.fov - fov) > 0.01) {
+      // the picture slides, not the camera: the rocket keeps its look, just further left
+      sideShift += ((sidewaysQuery?.matches ? SIDEWAYS_SHIFT : 0) - sideShift) * (1 - Math.exp(-5 * dt));
+      const film = sideShift * camera.getFilmWidth() * camera.aspect * 2 * Math.tan(MathUtils.degToRad(fov) / 2);
+      if (Math.abs(camera.fov - fov) > 0.01 || Math.abs(camera.filmOffset - film) > 0.001) {
         camera.fov = fov;
+        camera.filmOffset = film;
         camera.updateProjectionMatrix();
       }
     }

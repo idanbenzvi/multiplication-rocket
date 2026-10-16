@@ -51,6 +51,8 @@ import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickS
 import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
 import { speedZone } from './game/scoring';
+import { MenuTab } from './components/MenuTab';
+import { useMenuDrawer, useSideways } from './components/useMenuDrawer';
 import './App.css';
 
 const ANSWER_FEEDBACK_DELAY_MS = 900;
@@ -111,19 +113,28 @@ function App() {
     init();
   }, [init]);
 
+  // A phone on its side: the top bar is a drawer off the right edge (see useMenuDrawer.ts)
+  const sideways = useSideways();
+  const menu = useMenuDrawer(sideways);
+
   // The top bar's height varies (it wraps to two rows on phones, and the
   // level banner can wrap too), so overlays position themselves below it
-  // via --hud-top instead of guessing a fixed offset.
+  // via --hud-top instead of guessing a fixed offset. With the top bar tucked
+  // away in its drawer, they have the whole height.
   const topbarRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = topbarRef.current;
     if (!el) return;
-    const apply = () => document.documentElement.style.setProperty('--hud-top', `${Math.ceil(el.getBoundingClientRect().bottom)}px`);
+    const apply = () =>
+      document.documentElement.style.setProperty(
+        '--hud-top',
+        sideways ? 'calc(env(safe-area-inset-top) + 8px)' : `${Math.ceil(el.getBoundingClientRect().bottom)}px`,
+      );
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [sideways]);
 
   useEffect(() => {
     if (!justLaunched) return;
@@ -225,7 +236,7 @@ function App() {
 
   return (
     <ClickSpark ref={sparkRef} sparkColor="#ffd77a" sparkSize={12} sparkRadius={22} sparkCount={10}>
-    <div className={`app-root ${paused ? 'is-paused' : ''}`}>
+    <div className={`app-root ${paused ? 'is-paused' : ''} ${sideways ? 'is-sideways' : ''}`}>
       <div className="starfield-layer">
         <RocketScene />
       </div>
@@ -237,7 +248,16 @@ function App() {
       <MilestoneBanner streak={milestone} />
       {!gateOpen && <BadgeToast />}
 
-      <header className="hud-topbar" ref={topbarRef}>
+      <header
+        className={`hud-topbar ${menu.open ? 'is-open' : ''}`}
+        ref={topbarRef}
+        onPointerDown={menu.poke}
+        onClick={(e) => {
+          // in the drawer: a button that opens something puts the drawer away (the sound panel opens inside it)
+          const target = e.target as Element;
+          if (menu.open && target.closest('button') && !target.closest('.audio-controls')) menu.hide();
+        }}
+      >
         <div className="hud-logo">
           🚀 <ShinyText text={mission === 'add' ? t.logoAdd : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
@@ -259,6 +279,7 @@ function App() {
           <AboutButton />
         </div>
       </header>
+      {sideways && <MenuTab open={menu.open} onOpen={menu.show} onClose={menu.hide} />}
 
       {!crewActive && (
         <FuelGauge

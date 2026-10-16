@@ -4752,3 +4752,202 @@ button:focus-visible {
   letter-spacing: 0.08em;
   vertical-align: middle;
 }
+
+/* ==================== A PHONE ON ITS SIDE ==================== */
+/* Too short for the top bar above the rocket and the question below it (see
+   useMenuDrawer.ts): the top bar waits in a drawer off the right edge, the
+   rocket flies on the left (FlightController slides the picture over), and
+   the question sits on the right, a little more compact. */
+.app-root.is-sideways .hud-topbar {
+  left: auto;
+  bottom: 0;
+  width: min(380px, 60vw);
+  z-index: 24;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: calc(0.9rem + env(safe-area-inset-top)) calc(0.9rem + env(safe-area-inset-right))
+    calc(0.9rem + env(safe-area-inset-bottom)) 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(15, 11, 28, 0.95);
+  border-bottom: none;
+  border-left: 1px solid rgba(255, 157, 118, 0.3);
+  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.55);
+  translate: 105% 0;
+  visibility: hidden;
+  transition: translate 0.3s cubic-bezier(0.4, 0, 0.6, 1), visibility 0s linear 0.3s;
+}
+.app-root.is-sideways .hud-topbar.is-open {
+  translate: 0 0;
+  visibility: visible;
+  transition: translate 0.35s cubic-bezier(0.2, 1.1, 0.4, 1);
+}
+.app-root.is-sideways .hud-logo {
+  text-align: center;
+}
+.app-root.is-sideways .hud-topbar-right {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+/* the sound panel opens along the drawer's foot, not off its edge */
+.app-root.is-sideways .audio-panel {
+  position: fixed;
+  top: auto;
+  left: 0.9rem;
+  right: calc(0.9rem + env(safe-area-inset-right));
+  bottom: calc(0.9rem + env(safe-area-inset-bottom));
+}
+
+/* the drawer's tab on the right edge */
+.menu-tab {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 34px);
+  right: 0;
+  z-index: 23;
+  width: 36px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 14px 0 0 14px;
+  border: 1px solid rgba(255, 157, 118, 0.45);
+  border-right: none;
+  background: rgba(26, 19, 46, 0.8);
+  backdrop-filter: blur(6px);
+  color: #ffd77a;
+  font-size: 1.2rem;
+  transition: translate 0.25s ease, opacity 0.25s ease;
+}
+.menu-tab.is-hidden {
+  translate: 100% 0;
+  opacity: 0;
+  pointer-events: none;
+}
+/* the first time: a nudge or three, and how to pull the menu out */
+.menu-tab.is-hinting {
+  animation: menuTabNudge 1s ease-in-out 3;
+}
+@keyframes menuTabNudge {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  40% {
+    translate: -8px 0;
+  }
+}
+.menu-tab-hint {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  translate: 0 -50%;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(26, 19, 46, 0.9);
+  border: 1px solid rgba(255, 215, 122, 0.4);
+  color: #fff4dc;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: menuHint 5s ease both;
+}
+@keyframes menuHint {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* behind the open drawer: a tap anywhere else puts it away */
+.menu-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 23;
+  background: rgba(7, 5, 15, 0.35);
+  animation: dimIn 0.25s ease-out both;
+}
+
+/* the question, beside the rocket */
+.app-root.is-sideways .hud-question-zone {
+  left: auto;
+  right: calc(2.9rem + env(safe-area-inset-right));
+  top: 0;
+  bottom: 0;
+  transform: none;
+  justify-content: center;
+  width: min(54vw, 470px);
+  gap: 0.4rem;
+}
+.app-root.is-sideways .strategy-hint {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+.app-root.is-sideways .question-card {
+  padding: 0.7rem 1.1rem;
+  gap: 0.5rem;
+}
+.app-root.is-sideways .equation-row,
+.app-root.is-sideways .answer-input {
+  font-size: 2rem;
+}
+.app-root.is-sideways .choice-grid {
+  gap: 0.45rem;
+  min-width: min(40vw, 300px);
+}
+.app-root.is-sideways .choice-btn {
+  min-height: 52px;
+  font-size: 1.7rem;
+}
+.app-root.is-sideways .numpad {
+  gap: 0.35rem;
+  width: min(40vw, 260px);
+}
+.app-root.is-sideways .numpad-key {
+  height: 40px;
+  font-size: 1.35rem;
+}
+.app-root.is-sideways .timer-slider-track {
+  height: 100px;
+}
+.app-root.is-sideways .mult-grid {
+  max-width: min(40vw, 46vh);
+}
+/* Stardust Run: the answers two by two, so they fit under the stops */
+.app-root.is-sideways .sd-panel {
+  width: min(440px, 62vw);
+  gap: 0.25rem;
+  padding: 0.5rem 0.9rem 0.7rem;
+}
+.app-root.is-sideways .sd-question {
+  font-size: 1.5rem;
+}
+.app-root.is-sideways .sd-hint {
+  min-height: 1.1em;
+  font-size: 0.85rem;
+}
+.app-root.is-sideways .sd-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+.app-root.is-sideways .sd-choice {
+  min-height: 44px;
+  font-size: 1.3rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-tab.is-hinting {
+    animation: none;
+  }
+}
