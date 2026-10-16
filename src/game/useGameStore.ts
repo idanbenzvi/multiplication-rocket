@@ -5,7 +5,7 @@ import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
-import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
+import { nextBonusRound, type BonusKind } from './bonusRounds';
 import { pickFact } from './questions';
 import { clampStage, stageReady } from './addition';
 import { localProgressStore } from '../storage/progressStore';
@@ -43,8 +43,8 @@ interface GameState {
   questionsSinceChallenge: number;
   /** a Meteor Shower or Constellation round in progress (replaces the question) */
   bonusRound: Exclude<BonusKind, 'wormhole'> | null;
-  /** which bonus kind comes next in the rotation */
-  bonusIndex: number;
+  /** the bonus kinds still to come, in a random order (see nextBonusRound) */
+  bonusQueue: BonusKind[];
   /** bumped on every new bonus round; used as its React key so each one starts fresh */
   bonusNonce: number;
   /** the Deep Space Academy (learn multiplication from scratch) is open */
@@ -136,7 +136,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   inWormhole: false,
   questionsSinceChallenge: 0,
   bonusRound: null,
-  bonusIndex: 0,
+  bonusQueue: [],
   bonusNonce: 0,
   academyOpen: false,
 
@@ -264,10 +264,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
-      const { bonusIndex } = get();
       const mission = activeMission();
-      const kind = BONUS_ROTATION[bonusIndex % BONUS_ROTATION.length];
-      const next = { questionsSinceChallenge: 0, bonusIndex: bonusIndex + 1, feedback: null, flare: 0 };
+      const { kind, queue } = nextBonusRound(get().bonusQueue);
+      const next = { questionsSinceChallenge: 0, bonusQueue: queue, feedback: null, flare: 0 };
       if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level, mission, clampStage(progress.stage)) });
       else set({ ...next, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
       return;

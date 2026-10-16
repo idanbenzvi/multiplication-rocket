@@ -8,10 +8,22 @@ import { additionTable, additionTrackKey, clampStage } from './addition';
 import { applyOp, pairKey } from './mission';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
-// wormhole.ts) and rotate, so a session sees all of them. Every round has an
-// addition version too: see each one below.
+// wormhole.ts) and come in a random order: every kind once, then a fresh
+// shuffle, so a session sees all of them (see nextBonusRound). Every round has
+// an addition version too: see each one below.
 export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust' | 'road' | 'traffic';
 export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust', 'road', 'traffic'];
+
+/** The bonus round to play now, and the ones still to come: every kind once in
+ *  a random order, then a fresh shuffle with the round just played moved to its
+ *  back, so none comes twice in a row. An empty queue starts a new shuffle. */
+export function nextBonusRound(queue: BonusKind[]): { kind: BonusKind; queue: BonusKind[] } {
+  const [kind, ...rest] = queue.length ? queue : shuffle(BONUS_ROTATION);
+  if (rest.length) return { kind, queue: rest };
+  const fresh = shuffle(BONUS_ROTATION);
+  if (fresh[0] === kind) fresh.push(fresh.shift()!);
+  return { kind, queue: fresh };
+}
 
 // ---------- Meteor Shower ----------
 
