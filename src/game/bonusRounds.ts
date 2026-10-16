@@ -5,13 +5,13 @@ import { distractors } from './distractors';
 import type { Mission } from './mission';
 import { pickFact } from './questions';
 import { additionTable, additionTrackKey, clampStage } from './addition';
-import { pairKey } from './mission';
+import { applyOp, pairKey } from './mission';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and rotate, so a session sees all of them. Every round has an
 // addition version too: see each one below.
-export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust' | 'road';
-export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust', 'road'];
+export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust' | 'road' | 'traffic';
+export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust', 'road', 'traffic'];
 
 // ---------- Meteor Shower ----------
 
@@ -388,4 +388,107 @@ export function buildRoad(progress: Progress, mission: Mission = 'mul'): RoadRun
     return { factKey, answer, choices: choicesAround(answer, slips) };
   });
   return { mission, values, steps };
+}
+
+// ---------- Space Traffic ----------
+
+export const TRAFFIC_PASSES = 5;
+
+/** the four ways round a slow ship, as they sit on the D-pad */
+export type TrafficDir = 'up' | 'left' | 'right' | 'down';
+export const TRAFFIC_DIRS: TrafficDir[] = ['up', 'left', 'right', 'down'];
+
+export interface TrafficDrill {
+  x: number;
+  y: number;
+  /** x × y, or x + y */
+  value: number;
+}
+
+export interface TrafficPass {
+  /** where a first-try answer is tracked */
+  factKey: string;
+  /** painted on the slow ship in the pilot's lane */
+  number: number;
+  /** the way round it: the D-pad side whose drill makes the number, so the ship swerves that way */
+  dir: TrafficDir;
+  /** a drill on each side of the D-pad; only drills[dir] makes the number */
+  drills: Record<TrafficDir, TrafficDrill>;
+}
+
+export interface TrafficRun {
+  mission: Mission;
+  passes: TrafficPass[];
+}
+
+/** a way round for each pass: every one of the four in a run, never the same twice in a row */
+export function trafficDirs(count = TRAFFIC_PASSES): TrafficDir[] {
+  for (;;) {
+    const dirs = Array.from({ length: count }, () => TRAFFIC_DIRS[Math.floor(Math.random() * TRAFFIC_DIRS.length)]);
+    const turns = dirs.every((d, i) => i === 0 || d !== dirs[i - 1]);
+    const all = count < TRAFFIC_DIRS.length || TRAFFIC_DIRS.every((d) => dirs.includes(d));
+    if (turns && all) return dirs;
+  }
+}
+
+// Three wrong drills, the nearest slips first: each tier is tried in a
+// random order, skipping a drill whose answer is already on the pad or is
+// the number itself (4 × 3 next to 3 × 4).
+function pickDecoys(n: number, tiers: Array<Array<[number, number]>>, op: (a: number, b: number) => number): Array<[number, number]> {
+  const picked: Array<[number, number]> = [];
+  const values = new Set([n]);
+  for (const tier of tiers) {
+    for (const [a, b] of shuffle(tier)) {
+      const v = op(a, b);
+      if (picked.length < 3 && !values.has(v)) {
+        values.add(v);
+        picked.push([a, b]);
+      }
+    }
+  }
+  return picked;
+}
+
+/**
+ * The pad's wrong drills for x × y (or x + y): one number the same and the
+ * other a step off, the classic slip (6 × 8 and 5 × 7 next to 6 × 7), then
+ * two steps off or both a step off. Adding two-digit numbers, a ten off is
+ * the likely slip after a one.
+ */
+export function trafficDecoys(mission: Mission, x: number, y: number, stage = 1): Array<[number, number]> {
+  const off = (d: number): Array<[number, number]> => [[x, y + d], [x, y - d], [x + d, y], [x - d, y]];
+  if (mission === 'add') {
+    const steps = clampStage(stage) === 3 ? [1, 10, 2] : [1, 2, 3];
+    return pickDecoys(x + y, steps.map((d) => off(d).filter(([a, b]) => a >= 1 && b >= 1)), (a, b) => a + b);
+  }
+  const inTable = ([a, b]: [number, number]) => a >= 2 && a <= 10 && b >= 2 && b <= 10;
+  const both: Array<[number, number]> = [[x + 1, y + 1], [x - 1, y - 1], [x + 1, y - 1], [x - 1, y + 1]];
+  return pickDecoys(x * y, [off(1), off(2), both].map((tier) => tier.filter(inTable)), (a, b) => a * b);
+}
+
+// Five slow ships, one per pass, each with a number from a fact the child
+// finds hard (the usual weighting; no ×1 freebies, no number twice). The
+// D-pad around it has that fact on the side the ship swerves to and a near
+// miss on each of the others, each drill shown either way round.
+export function buildTraffic(progress: Progress, mission: Mission = 'mul'): TrafficRun {
+  const stage = clampStage(progress.stage);
+  const facts = pool(progress).filter((f) => f.a >= 2);
+  const pick = (last?: string) => (mission === 'add' ? pickFact('add', progress, last) : pickNextFact(facts, progress.mastery, last));
+  const used = new Set<number>();
+  let last: string | undefined;
+  const passes = trafficDirs().map((dir): TrafficPass => {
+    let fact = pick(last);
+    for (let tries = 0; used.has(fact.answer) && tries < 40; tries++) fact = pick(last);
+    used.add(fact.answer);
+    last = fact.key;
+    const { x, y } = randomizeOrder(fact);
+    const decoys = trafficDecoys(mission, x, y, stage);
+    const drills = { [dir]: { x, y, value: fact.answer } } as Record<TrafficDir, TrafficDrill>;
+    shuffle(TRAFFIC_DIRS.filter((d) => d !== dir)).forEach((side, i) => {
+      const [a, b] = Math.random() < 0.5 ? decoys[i] : [decoys[i][1], decoys[i][0]];
+      drills[side] = { x: a, y: b, value: applyOp(mission, a, b) };
+    });
+    return { factKey: fact.key, number: fact.answer, dir, drills };
+  });
+  return { mission, passes };
 }

@@ -59,7 +59,7 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
 - **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings). With a mouse, just hover over *Stop & Review* for a quick read-only peek at the map, with a mastered / to-practice / not-tried-yet count, without pausing the game.
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
-- **Bonus rounds.** Every 6th question becomes a bonus round, rotating through seven kinds:
+- **Bonus rounds.** Every 6th question becomes a bonus round, rotating through eight kinds:
   - **Wormhole 🌀.** A target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
   - **Meteor Shower ☄️.** A drill shows at the top and numbered meteors fall across the sky. Tap the one with the answer before it burns up. A wrong tap cracks that meteor and makes the right one glow. Each hit in a row makes the next meteors fall faster. Five drills per round, each first-try hit adds fuel, and the answers count toward the mastery map.
   - **Build-a-Constellation ✨.** Make a number by dragging across a grid of stars to frame a rectangle. A live label reads "3 rows × 4 = 12", and the right size lights up as a constellation. It shows what multiplication *is* (rows times columns) and that one number can be built different ways. After two misses, a dotted outline hints at an answer.
@@ -76,6 +76,18 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
     After the fourth jump it charges, flies on to the middle of the screen, the view tilts up, and
     it blasts off skyward with a light trail, a motion-blur wake and a space-time ripple. A wrong pick gives the hint "×2 is the number twice:
     8 + 8". Only answers within the practised facts count toward the mastery map.
+  - **Space Traffic 🚦.** Seen from just behind the ship, lanes of slower spaceships stretch
+    ahead to the horizon: space buses, shuttles, saucers and racers, each with a number painted
+    on its back, ion engines glowing and trailing sparks back past the camera, and red and green
+    lights blinking on their wingtips. Five times a slow ship pulls into your lane (target
+    brackets lock on to it, say 42) and a D-pad shows a drill on each side: `6 × 7`, `6 × 8`,
+    `5 × 7`, `7 × 7`. The one that makes the number is the way round: tap it (or press that
+    arrow) and the ship barrel-rolls into that lane and races past, so every run swerves left,
+    right, up and down. It's the times table read backwards (which fact makes this number?),
+    and the wrong drills are near misses, one number a step off. A wrong pick brakes the ship
+    behind the slow one, shows what that drill makes ("6 × 8 = 48, not 42") and lights up the
+    right one. After the fifth the lane is clear and the ship races off to the vanishing point.
+    Each pass made with the first pick adds fuel, and first picks count toward the mastery map.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
@@ -177,6 +189,9 @@ Addition climbs three stages, shown under the destination:
   - **Stardust Run:** jumps of the same size along the stream (2s and 3s, crossing ten in 3s to
     6s, then +10, +20, +9 or +11), with a pattern to remember at the end ("+9 = add 10, then take
     away 1").
+  - **Space Traffic:** the slow ships carry sums, and the D-pad has the sum that makes the number
+    among near misses (`8 + 5` with `8 + 4`, `9 + 5`, `8 + 7`); with two-digit numbers, a ten off
+    too.
 - **Together:** a mixed crew works in Crew Flight: each pilot gets their own mission's questions,
   the navigator counts two groups of stars, and docking is an addition round. In Monster Sun each
   phone drills its own mission, and a missed + fact can go to any teammate, a missed × fact only
@@ -370,8 +385,10 @@ in the corner. Its rows can be tapped on tablets, or use the shortcuts:
 | Shift+B | Fleet Battle |
 | Shift+S | Stranded Fleet |
 | Shift+D | Stardust Run |
+| Shift+R | Acceleration Road |
+| Shift+T | Space Traffic |
 | Shift+K | Fleet Battle: collect all cannons |
-| Shift+G | Answer the current Stranded Fleet / Fleet Battle / Stardust Run stop correctly |
+| Shift+G | Answer the current Stranded Fleet / Fleet Battle / Stardust Run / Acceleration Road / Space Traffic stop correctly |
 | Shift+L | Complete the level (launch warp) |
 | Shift+F | Fuel to 95% |
 | Shift+A | Deep Space Academy |

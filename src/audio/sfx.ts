@@ -281,4 +281,21 @@ export const sfx = {
     if (!c || volume() === 0) return;
     noiseBurst(c, c.currentTime + 0.005, 0.035, 5200, 3000, 0.1);
   },
+
+  /** Space Traffic: the pilot swerves past a slow ship, which drops back with a falling whoosh. */
+  whoosh() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.32, 900, 5200, 0.12);
+    noiseBurst(c, t + 0.26, 0.6, 4200, 260, 0.16);
+    tone(c, 520, t + 0.22, 0.5, { type: 'triangle', gain: 0.04, glideTo: 160 });
+  },
+
+  /** Space Traffic: a slow ship closing in, each blip a little higher (0, 1, 2, …). */
+  blip(step: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    tone(c, noteFreq(5 + step), c.currentTime + 0.01, 0.14, { type: 'triangle', gain: 0.07 });
+  },
 };

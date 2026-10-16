@@ -46,8 +46,9 @@ export function RocketScene() {
   const justLaunched = useGameStore((s) => s.justLaunched);
   // paused (player left the tab/app): stop rendering the scene entirely
   const paused = usePause((s) => s.paused);
-  // Stardust Run covers the screen and runs a heavy fluid simulation: give it the GPU
-  const hidden = useGameStore((s) => s.bonusRound === 'stardust');
+  // Stardust Run covers the screen and runs a heavy fluid simulation, and Space
+  // Traffic covers it with its own canvases: give them the GPU
+  const hidden = useGameStore((s) => s.bonusRound === 'stardust' || s.bonusRound === 'traffic');
 
   // While the launch overlay is up, progress.level has already advanced —
   // keep rendering the level that's mid-launch until the player dismisses it.

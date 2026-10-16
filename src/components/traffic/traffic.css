@@ -1,0 +1,262 @@
+/* ==================== SPACE TRAFFIC ==================== */
+.traffic {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  touch-action: none;
+  animation: dimIn 0.5s ease-out both;
+}
+.traffic-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.traffic-title {
+  color: #ffd77a;
+}
+.traffic-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: clamp(2rem, 7vw, 3.4rem);
+}
+/* a pass made after a wrong drill */
+.traffic .meteor-pip.is-saved {
+  background: #ffd77a;
+  border-color: #ffd77a;
+  box-shadow: 0 0 10px rgba(255, 215, 122, 0.8);
+}
+
+/* the question and the D-pad: under the ship on a phone, bottom right on a wide screen */
+.traffic-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  width: min(360px, 94vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.8rem 0.75rem;
+  border-radius: 22px;
+  background: rgba(20, 13, 42, 0.82);
+  border: 1px solid rgba(255, 215, 122, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 4;
+  animation: trafficPanelIn 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes trafficPanelIn {
+  from { opacity: 0; scale: 0.85; }
+  to { opacity: 1; scale: 1; }
+}
+@media (orientation: landscape) and (min-width: 700px) {
+  .traffic-panel {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    margin: 0;
+  }
+}
+/* a phone on its side: a smaller D-pad, tucked into the corner under the top bar */
+@media (max-height: 500px) and (orientation: landscape) {
+  .traffic-panel {
+    left: auto;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    margin: 0;
+    width: min(300px, 46vw);
+    gap: 0.25rem;
+    padding: 0.45rem 0.6rem 0.5rem;
+  }
+  .traffic .traffic-pad {
+    gap: 0.3rem;
+  }
+  .traffic .traffic-ask {
+    font-size: 0.95rem;
+  }
+  .traffic .traffic-drill {
+    min-height: 40px;
+    font-size: 1.05rem;
+  }
+  .traffic .traffic-target {
+    font-size: 1.3rem;
+  }
+}
+.traffic-ask {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.05rem, 4vw, 1.25rem);
+  color: #fdf3e7;
+  text-align: center;
+}
+
+/* a cross: a drill on each side, the slow ship's number in the middle */
+.traffic-pad {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    '. up .'
+    'left mid right'
+    '. down .';
+  gap: 0.4rem;
+}
+.traffic-drill {
+  position: relative;
+  min-height: 54px;
+  padding: 0 0.35rem;
+  border-radius: 14px;
+  border: 2px solid rgba(143, 227, 255, 0.5);
+  background: linear-gradient(160deg, rgba(82, 39, 255, 0.3), rgba(106, 215, 255, 0.14));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 5vw, 1.4rem);
+  white-space: nowrap;
+  touch-action: manipulation;
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+.traffic-drill[data-dir='up'] {
+  grid-area: up;
+  padding-top: 0.55rem;
+}
+.traffic-drill[data-dir='down'] {
+  grid-area: down;
+  padding-bottom: 0.55rem;
+}
+.traffic-drill[data-dir='left'] {
+  grid-area: left;
+  padding-left: 0.95rem;
+}
+.traffic-drill[data-dir='right'] {
+  grid-area: right;
+  padding-right: 0.95rem;
+}
+.traffic-drill:hover:not(:disabled) {
+  border-color: #fff;
+}
+.traffic-drill:disabled {
+  cursor: default;
+}
+/* which way the ship goes: a small arrow on the button's outer edge */
+.traffic-arrow {
+  position: absolute;
+  font-size: 0.6rem;
+  line-height: 1;
+  color: rgba(255, 215, 122, 0.9);
+}
+[data-dir='up'] > .traffic-arrow {
+  top: 4px;
+  left: 50%;
+  translate: -50% 0;
+}
+[data-dir='down'] > .traffic-arrow {
+  bottom: 4px;
+  left: 50%;
+  translate: -50% 0;
+}
+[data-dir='left'] > .traffic-arrow {
+  left: 5px;
+  top: 50%;
+  translate: 0 -50%;
+}
+[data-dir='right'] > .traffic-arrow {
+  right: 5px;
+  top: 50%;
+  translate: 0 -50%;
+}
+.traffic-drill.is-wrong {
+  opacity: 0.38;
+  border-color: rgba(255, 120, 120, 0.7);
+  text-decoration: line-through;
+}
+.traffic-drill.is-correct {
+  background: linear-gradient(160deg, #8ff0a0, #49b86a);
+  color: #10301a;
+  border-color: #e3ffe8;
+  box-shadow: 0 0 22px rgba(126, 224, 143, 0.75);
+}
+.traffic-drill.is-correct > .traffic-arrow {
+  color: #10301a;
+}
+/* after a wrong drill, the way round glows */
+.traffic-drill.is-hint {
+  border-color: #ffd77a;
+  animation: trafficHint 0.7s ease-in-out infinite alternate;
+}
+@keyframes trafficHint {
+  from { box-shadow: 0 0 6px rgba(255, 215, 122, 0.4); }
+  to { box-shadow: 0 0 24px rgba(255, 215, 122, 0.95); }
+}
+/* the number on the slow ship's back */
+.traffic-target {
+  grid-area: mid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(24, 16, 44, 0.95);
+  border: 2px solid #ffd77a;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 6.5vw, 1.9rem);
+  color: #ffd77a;
+  text-shadow: 0 0 12px rgba(255, 215, 122, 0.8);
+  animation: trafficWarn 0.9s ease-in-out infinite alternate;
+}
+@keyframes trafficWarn {
+  from { box-shadow: 0 0 6px rgba(255, 107, 107, 0.3); }
+  to { box-shadow: 0 0 18px rgba(255, 107, 107, 0.85); }
+}
+.traffic-keys {
+  font-size: 0.8rem;
+  color: rgba(253, 243, 231, 0.6);
+}
+
+/* racing off: a flash of light from the vanishing point */
+.traffic-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% var(--vy, 25%), #fff 0%, rgba(230, 245, 255, 0.85) 40%, rgba(106, 215, 255, 0.3) 100%);
+  animation: trafficFlash 0.9s ease-out forwards;
+}
+@keyframes trafficFlash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* the summary: every number and the drill that made it */
+.traffic-recap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.45rem;
+  max-width: min(520px, 88vw);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+.traffic-recap span {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.traffic-recap .is-clean {
+  color: #7ee08f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .traffic-drill.is-hint,
+  .traffic-target {
+    animation: none;
+  }
+}

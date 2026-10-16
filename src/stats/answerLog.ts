@@ -8,7 +8,7 @@
 
 import { missionOfKey, type Mission } from '../game/mission';
 
-export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun' | 'road';
+export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun' | 'road' | 'traffic';
 
 export interface LoggedAnswer {
   /** Date.now() when answered (wall-clock, so days line up with the calendar) */
@@ -24,7 +24,7 @@ export interface LoggedAnswer {
 const PREFIX = 'multiplication-rocket:log:v1';
 const MAX_ENTRIES = 6000;
 // append only: the index is what's stored
-const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse', 'sun', 'road'];
+const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse', 'sun', 'road', 'traffic'];
 
 // compact row: [at, fact, correct 0/1, ms | -1, source index]
 type Row = [number, string, 0 | 1, number, number];

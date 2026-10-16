@@ -3,6 +3,7 @@
 
 // ---------- small illustrations ----------
 
+// (Space Traffic draws the same ship on a canvas: rearShipSvg in traffic/trafficArt.ts)
 export function RearShip({ color = '#ff9d76', size }: { color?: string; size: number }) {
   return (
     <svg width={size} height={size} viewBox="-50 -50 100 100" className="rear-ship">
