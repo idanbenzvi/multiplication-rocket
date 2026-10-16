@@ -12,10 +12,10 @@ import { useT } from '../../i18n/useLang';
 import { isTouchDevice } from '../../settings/useSettings';
 import { activeMission, useProfiles } from '../../profiles/useProfiles';
 import { colorForLevel } from '../scene/palette';
-import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { BRAKE_S, DODGE_S, lensFor, TrafficScene } from './trafficScene';
+import { TrafficPlume } from './trafficPlume';
 import { warmTraffic } from './trafficArt';
 import './traffic.css';
 
@@ -113,18 +113,16 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
   /** an answer is being played out: nothing else counts until the next ship (or the brakes let go) */
   const busy = useRef(false);
 
-  // the stars stream out of the vanishing point, faster with the ship
-  const warpRef = useRef<HTMLCanvasElement>(null);
-  const warpSpeed = useRef(0.6);
-  useWarpCanvas(warpRef, horizon, warpSpeed);
-
-  // every frame: move and draw the traffic (nothing in React re-renders for it)
+  // every frame: move and draw the sky and the traffic (nothing in React re-renders for it)
   const sceneRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = sceneRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
     warmTraffic();
+    // the ship's engines: the rocket's plume from the main game, on a little WebGL canvas of its own
+    const plume = TrafficPlume.create();
+    scene.plume = plume;
     let raf = 0;
     let last = performance.now();
     const loop = (nowMs: number) => {
@@ -146,10 +144,13 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       const now = gameNow() / 1000;
       scene.update(dt, now);
       scene.draw(ctx, lensFor(W, H), now);
-      warpSpeed.current = 0.25 + scene.speed * 0.04;
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      scene.plume = null;
+      plume?.dispose();
+    };
   }, [scene]);
 
   const startPass = useCallback(
@@ -263,7 +264,6 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
 
   return (
     <div className={`traffic is-${phase}`}>
-      <canvas ref={warpRef} className="battle-warp" />
       <canvas ref={sceneRef} className="traffic-canvas" />
       {flash && <div className="traffic-flash" style={{ '--vy': `${horizon * 100}%` } as React.CSSProperties} />}
 

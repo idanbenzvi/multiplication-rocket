@@ -76,14 +76,16 @@ vibration. To make it feel like an app, use **Share → Add to Home Screen** (iP
     After the fourth jump it charges, flies on to the middle of the screen, the view tilts up, and
     it blasts off skyward with a light trail, a motion-blur wake and a space-time ripple. A wrong pick gives the hint "×2 is the number twice:
     8 + 8". Only answers within the practised facts count toward the mastery map.
-  - **Space Traffic 🚦.** Seen from just behind the ship, lanes of slower spaceships stretch
-    ahead to the horizon: space buses, shuttles, saucers and racers, each with a number painted
-    on its back, ion engines glowing and trailing sparks back past the camera, and red and green
-    lights blinking on their wingtips. Five times a slow ship pulls into your lane (target
-    brackets lock on to it, say 42) and a D-pad shows a drill on each side: `6 × 7`, `6 × 8`,
-    `5 × 7`, `7 × 7`. The one that makes the number is the way round: tap it (or press that
-    arrow) and the ship barrel-rolls into that lane and races past, so every run swerves left,
-    right, up and down. It's the times table read backwards (which fact makes this number?),
+  - **Space Traffic 🚦.** Seen from just behind the ship, lanes of slower spaceships stretch ahead
+    to the horizon: space buses, shuttles, saucers and racers, each with a number painted on its
+    back, ion engines glowing and trailing sparks back past the camera, and red and green lights
+    blinking on their wingtips, while stars pour out of the vanishing point on trails that fade
+    behind them. Five times a slow ship pulls into your lane (target brackets lock on to it, say
+    42) and a D-pad shows a drill on each side: `6 × 7`, `6 × 8`, `5 × 7`, `7 × 7`. The one that
+    makes the number is the way round: tap it (or press that arrow) and the ship barrel-rolls into
+    that lane and blasts past in a cartoon motion blur (speed lines, afterimages and a ring of
+    stars bursting out), its engines flaring with the rocket's own plume, so every run swerves
+    left, right, up and down. It's the times table read backwards (which fact makes this number?),
     and the wrong drills are near misses, one number a step off. A wrong pick brakes the ship
     behind the slow one, shows what that drill makes ("6 × 8 = 48, not 42") and lights up the
     right one. After the fifth the lane is clear and the ship races off to the vanishing point.

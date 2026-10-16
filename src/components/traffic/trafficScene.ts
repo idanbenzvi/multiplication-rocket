@@ -1,5 +1,7 @@
 import type { TrafficDir } from '../../game/bonusRounds';
+import { BEAM_TOP_FRACTION } from '../scene/plume';
 import type { Porthole } from '../scene/spriteTexture';
+import { FadingStars } from './fadingStars';
 import { glow, HULLS, IONS, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, SHIP_KINDS, sprite, trafficSprite } from './trafficArt';
 
 // Space Traffic's world, seen from just behind the pilot's ship: lanes of
@@ -35,6 +37,12 @@ const BEACON_GAP = 3.2;
 const AMBIENT = 11;
 /** the lanes next to the pilot's stay clear this far ahead, so a swerve never meets anyone */
 const KEEP_CLEAR = 16;
+/** a cartoon motion blur when blasting past: afterimages of where a ship was this long ago (seconds), this faint */
+const SMEAR_S = [0.03, 0.06, 0.09];
+const SMEAR_ALPHA = [0.34, 0.2, 0.1];
+/** and speed lines streaming out of the vanishing point */
+const SPEED_LINES = 30;
+const SPEED_COLORS = ['#ffffff', '#ffffff', '#bfefff', '#ffc4ef'];
 
 /** how long things take, in seconds */
 const INTRO_FLY_S = 1.4;
@@ -119,6 +127,17 @@ interface Pt {
   s: number;
 }
 
+interface SpeedLine {
+  /** its angle round the vanishing point */
+  a: number;
+  /** how far out it has got: 0 near the vanishing point, 1 at the screen's far corner */
+  r: number;
+  len: number;
+  w: number;
+  v: number;
+  color: string;
+}
+
 const pick = <T,>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)];
 
 export interface SceneOptions {
@@ -133,9 +152,15 @@ export interface SceneOptions {
   calm: boolean;
 }
 
+/** the main game's engine plume, a frame at a time (see trafficPlume.ts) */
+export interface PlumeSource {
+  frame(now: number, s: number, sputter: number): CanvasImageSource;
+}
+
 export class TrafficScene {
   private ships: Ship[] = [];
   private particles: Particle[] = [];
+  private lines: SpeedLine[] = [];
   /** the pilot's lane, and the one it was in before swerving */
   private lane = { x: 0, y: 0 };
   private from = { x: 0, y: 0 };
@@ -162,9 +187,13 @@ export class TrafficScene {
   private readonly canopy?: Porthole;
   private readonly numbers: number[];
   private readonly calm: boolean;
+  /** the sky: stars pouring out of the vanishing point */
+  private readonly stars: FadingStars;
   speed = CRUISE;
   /** the pilot's ship on screen, as of the last frame drawn (spark bursts go off there) */
   shipScreen = { x: 0, y: 0 };
+  /** the engines' plume, as the rocket's in the main game; without one (no WebGL), plain ion trails */
+  plume: PlumeSource | null = null;
 
   constructor({ now, accent, avatar, numbers, calm }: SceneOptions) {
     this.startedAt = now;
@@ -172,6 +201,7 @@ export class TrafficScene {
     this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
     this.numbers = numbers.length ? numbers : [0];
     this.calm = calm;
+    this.stars = new FadingStars(calm);
     // the road is already busy when the round opens
     for (let i = 0; i < AMBIENT; i++) this.spawnAmbient(6 + Math.random() * (FAR - 6));
   }
@@ -224,6 +254,7 @@ export class TrafficScene {
   /** all the way through: the pilot races off towards the vanishing point */
   finale(now: number) {
     this.finaleAt = now;
+    this.stars.burst(120);
   }
 
   // ---------- every frame ----------
@@ -239,17 +270,25 @@ export class TrafficScene {
     this.movePilot(now, dt);
     this.moveTraffic(now, dt);
     this.moveParticles(now, dt);
+    this.moveSpeedLines(dt);
+    this.stars.update(dt, this.flow());
   }
 
-  private movePilot(now: number, dt: number) {
+  /** how fast the stars pour out of the vanishing point: 1 cruising, faster boosting past, a rush racing off */
+  private flow(): number {
+    return 0.5 + (0.5 * this.speed) / CRUISE;
+  }
+
+  /** where the pilot's ship is at a moment: its lane (between two while swerving), where it floats, how far it's rolled */
+  private pilotAt(now: number) {
     // flying in from just in front of the camera as the round opens
     const intro = clamp01((now - this.startedAt) / INTRO_FLY_S);
-    this.z = -2.6 * (1 - easeOut(intro));
+    let z = -2.6 * (1 - easeOut(intro));
     // swerving into the next lane, rolling right round on the way
     const k = clamp01((now - this.dodgeAt) / DODGE_S);
     const e = easeInOut(k);
-    const baseX = this.from.x + (this.lane.x - this.from.x) * e;
-    const baseY = this.from.y + (this.lane.y - this.from.y) * e;
+    const laneX = this.from.x + (this.lane.x - this.from.x) * e;
+    const laneY = this.from.y + (this.lane.y - this.from.y) * e;
     let roll = k < 1 ? this.rollSign * (this.calm ? Math.sin(Math.PI * k) * 0.35 : e * Math.PI * 2) : 0;
     // a wrong drill: a lurch that way, and back
     const b = (now - this.brakeAt) / 0.55;
@@ -262,29 +301,75 @@ export class TrafficScene {
       roll += this.brakeDir.x * Math.sin(Math.PI * b) * 0.3;
     }
     // floating at cruise, and a lean as it flies in
-    this.pos.x = baseX + nx + Math.sin(now * 1.3) * 0.03;
-    this.pos.y = baseY + ny + Math.sin(now * 1.7 + 1) * 0.025;
-    this.roll = roll + Math.sin(now * 0.9) * 0.04 + (1 - intro) * 0.5;
+    roll += Math.sin(now * 0.9) * 0.04 + (1 - intro) * 0.5;
     // the finale: off to the vanishing point, faster and faster
     if (now >= this.finaleAt) {
       const tf = now - this.finaleAt;
-      this.z = tf * tf * 16;
-      this.roll += this.calm ? 0 : Math.min(1, tf * 1.2) * Math.PI * 2;
+      z = tf * tf * 16;
+      roll += this.calm ? 0 : Math.min(1, tf * 1.2) * Math.PI * 2;
     }
+    return { laneX, laneY, x: laneX + nx + Math.sin(now * 1.3) * 0.03, y: laneY + ny + Math.sin(now * 1.7 + 1) * 0.025, z, roll };
+  }
+
+  private movePilot(now: number, dt: number) {
+    const p = this.pilotAt(now);
+    this.pos.x = p.x;
+    this.pos.y = p.y;
+    this.z = p.z;
+    this.roll = p.roll;
     // the camera follows the swerve a moment behind, so the move shows on screen (not the bobbing)
     const follow = 1 - Math.exp(-3.2 * dt);
-    this.cam.x += (baseX - this.cam.x) * follow;
-    this.cam.y += (baseY - this.cam.y) * follow;
+    this.cam.x += (p.laneX - this.cam.x) * follow;
+    this.cam.y += (p.laneY - this.cam.y) * follow;
+  }
+
+  /** speed lines stream out of the vanishing point, faster the faster the pilot goes */
+  private moveSpeedLines(dt: number) {
+    const k = this.rushing();
+    if (k <= 0) {
+      this.lines.length = 0;
+      return;
+    }
+    while (this.lines.length < SPEED_LINES) this.lines.push(this.speedLine(Math.random()));
+    for (const s of this.lines) {
+      s.r += s.v * (0.5 + k) * dt;
+      if (s.r > 1) Object.assign(s, this.speedLine(0));
+    }
+  }
+
+  private speedLine(r: number): SpeedLine {
+    return { a: Math.random() * Math.PI * 2, r, len: 0.08 + Math.random() * 0.22, w: 1.5 + Math.random() * 3, v: 1.4 + Math.random() * 1.4, color: pick(SPEED_COLORS) };
+  }
+
+  /** 0..1: how hard the pilot is blasting past everyone (boosting, or racing off at the end); never with reduced motion */
+  private rushing(): number {
+    return this.calm ? 0 : this.boost();
+  }
+
+  /** 0..1: how fast a nearby ship is rushing past the camera: nothing at cruising speed, all of it when the pilot boosts past */
+  private rush(s: Ship): number {
+    if (this.calm || s.z > 14) return 0;
+    return clamp01((this.speed - s.pace * CRUISE - 6) / 12);
+  }
+
+  /** 0..1: how hard the pilot's ship is smeared: mid-roll in a swerve, and racing off at the end */
+  private pilotSmear(now: number): number {
+    if (this.calm) return 0;
+    const k = (now - this.dodgeAt) / DODGE_S;
+    const swerve = k > 0 && k < 1 ? Math.sin(Math.PI * k) : 0;
+    const race = now >= this.finaleAt ? Math.min(1, (now - this.finaleAt) * 2) : 0;
+    return Math.max(swerve, race);
   }
 
   private moveTraffic(now: number, dt: number) {
     const blk = this.blocker;
     if (blk) {
       if (now >= this.passAt) {
-        // the pilot is swerving out of its way: it drops back past them
+        // the pilot is swerving out of its way: it drops back past them, and the stars burst out
         blk.role = 'passing';
         this.blocker = null;
         this.boostUntil = now + 1;
+        this.stars.burst();
       } else {
         // closing in, slowing to wait just ahead, and pulling away a little after a wrong drill
         const a = clamp01((now - this.blockerAt) / APPROACH_S);
@@ -372,11 +457,13 @@ export class TrafficScene {
 
   private moveParticles(now: number, dt: number) {
     // the pilot's engines stream ion sparks back past the camera: more of them, and hotter, when it's going fast
+    // (just a few through the plume, when there is one)
     const boost = this.boost();
+    const sparks = this.plume ? 0.3 : 1;
     if (now < this.finaleAt + 1.2) {
       for (const e of PILOT_ENGINES) {
         const w = this.pilotEngine(e);
-        this.emit(w.x, w.y, this.z - 0.05, (30 + boost * 60) * dt, () => -(1.4 + Math.random() * 1.6), this.pilotIon(), 0.035 + boost * 0.03, 0.45 + Math.random() * 0.35);
+        this.emit(w.x, w.y, this.z - 0.05, (30 + boost * 60) * sparks * dt, () => -(1.4 + Math.random() * 1.6), this.pilotIon(), 0.035 + boost * 0.03, 0.45 + Math.random() * 0.35);
       }
     }
     // nearby traffic leaves a few of its own
@@ -412,6 +499,12 @@ export class TrafficScene {
     return clamp01((this.speed - CRUISE) / (BOOST - CRUISE));
   }
 
+  /** the engines' thrust, on the main game's scale: 0.2 braking, 0.45 cruising, 1 boosting past, 1.3 racing off */
+  private thrust(): number {
+    if (this.speed < CRUISE) return 0.2 + (0.25 * Math.max(0, this.speed - BRAKING)) / (CRUISE - BRAKING);
+    return Math.min(1.3, 0.45 + (0.55 * (this.speed - CRUISE)) / (BOOST - CRUISE));
+  }
+
   /** the engines' color: cool ion blue at cruise, violet, then hot pink at full speed (like the rocket's plume) */
   private pilotIon(): string {
     const b = this.boost();
@@ -437,7 +530,7 @@ export class TrafficScene {
   // ---------- drawing ----------
 
   draw(ctx: CanvasRenderingContext2D, l: Lens, now: number) {
-    ctx.clearRect(0, 0, l.w, l.h);
+    this.stars.draw(ctx, l.w, l.h, l.cx, l.horizon, this.flow(), now);
     ctx.save();
     // a wrong drill jolts the view
     const kb = now - this.brakeAt;
@@ -446,6 +539,7 @@ export class TrafficScene {
       ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     }
     this.drawLanes(ctx, l);
+    this.drawSpeedLines(ctx, l);
     this.drawParticles(ctx, l);
     // the farthest first, so nearer ships cover them (the pilot's ship among them)
     const order: Array<Ship | null> = [...this.ships, null];
@@ -506,6 +600,83 @@ export class TrafficScene {
           ctx.stroke();
         }
       }
+    }
+    ctx.restore();
+  }
+
+  /** manga speed lines: slivers of light shooting out of the vanishing point, pointed at the inner end */
+  private drawSpeedLines(ctx: CanvasRenderingContext2D, l: Lens) {
+    const k = this.rushing();
+    if (k < 0.02) return;
+    const reach = Math.hypot(Math.max(l.cx, l.w - l.cx), Math.max(l.horizon, l.h - l.horizon));
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of this.lines) {
+      // speeding up on the way out, like anything rushing past
+      const r0 = reach * (0.2 + 0.9 * s.r * s.r);
+      const r1 = r0 + reach * s.len * (0.5 + k);
+      const c = Math.cos(s.a);
+      const sn = Math.sin(s.a);
+      const x0 = l.cx + c * r0;
+      const y0 = l.horizon + sn * r0;
+      const x1 = l.cx + c * r1;
+      const y1 = l.horizon + sn * r1;
+      const w = s.w * (0.5 + k * 0.8) * (0.4 + s.r);
+      const g = ctx.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, rgba(s.color, 0));
+      g.addColorStop(1, rgba(s.color, k * Math.min(1, s.r * 5) * 0.6));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1 - (sn * w) / 2, y1 + (c * w) / 2);
+      ctx.lineTo(x1 + (sn * w) / 2, y1 - (c * w) / 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /** a ship rushing past, smeared: fading afterimages back where it was a moment ago, and streaks of light behind it */
+  private smear(ctx: CanvasRenderingContext2D, l: Lens, s: Ship, p: Pt, W: number, H: number, bob: number, img: HTMLCanvasElement, strength: number) {
+    const k = SHIP_KINDS[s.kind];
+    const closing = this.speed - s.pace * CRUISE;
+    for (let i = SMEAR_S.length - 1; i >= 0; i--) {
+      const g = this.project(l, s.x, s.y + bob, s.z + closing * SMEAR_S[i]);
+      if (!g) continue;
+      const gw = s.size * g.s;
+      const gh = gw * k.aspect;
+      ctx.globalAlpha = strength * SMEAR_ALPHA[i];
+      ctx.drawImage(img, g.x - gw / 2, g.y - gh / 2, gw, gh);
+    }
+    const back = this.project(l, s.x, s.y + bob, s.z + closing * 0.15);
+    if (!back) return;
+    const mx = back.x - p.x;
+    const my = back.y - p.y;
+    const len = Math.hypot(mx, my);
+    if (len < 4) return;
+    // across the ship, square to the way it's moving
+    const ux = -my / len;
+    const uy = mx / len;
+    const half = (Math.abs(ux) * W + Math.abs(uy) * H) / 2;
+    const shrink = back.s / p.s;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 1;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(1.5, W * 0.025);
+    for (const u of [-0.85, -0.35, 0.3, 0.8]) {
+      const ax = p.x + ux * u * half;
+      const ay = p.y + uy * u * half;
+      const bx = back.x + ux * u * half * shrink;
+      const by = back.y + uy * u * half * shrink;
+      const g = ctx.createLinearGradient(ax, ay, bx, by);
+      g.addColorStop(0, rgba('#ffffff', 0.55 * strength));
+      g.addColorStop(1, rgba('#ffffff', 0));
+      ctx.strokeStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -581,8 +752,11 @@ export class TrafficScene {
       ctx.drawImage(glow('#ff5a6e'), p.x - r / 2, p.y - r / 2, r, r);
     }
     ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = fade;
     const img = trafficSprite(s.kind, s.hull);
+    // blasting past it: a cartoon motion blur, back the way it came
+    const rush = this.rush(s);
+    if (img && rush > 0.02) this.smear(ctx, l, s, p, W, H, bob, img, rush * fade);
+    ctx.globalAlpha = fade;
     if (img) ctx.drawImage(img, left, top, W, H);
     this.plate(ctx, l, left + k.plate.x * W, top + k.plate.y * H, k.plate.h * H, s, fade);
     // the engines: ion trails back towards the camera, and white-hot nozzles in a flickering halo
@@ -674,20 +848,23 @@ export class TrafficScene {
     const ion = this.pilotIon();
     const racing = now >= this.finaleAt;
     ctx.save();
-    // the engines' ion trails, long when racing
+    // the engines' plumes (or plain ion trails), long when racing
     ctx.globalCompositeOperation = 'lighter';
     const engines = PILOT_ENGINES.map((e) => this.pilotEngine(e));
     const len = racing ? 3 + (now - this.finaleAt) * 14 : 1.3 + boost * 1.8;
-    for (const e of engines) this.trail(ctx, l, e.x, e.y, this.z, len, e.r, ion, 0.6);
-    // the ship, rolled
+    if (this.plume) this.plumes(ctx, l, this.plume, engines, len, W, now);
+    else for (const e of engines) this.trail(ctx, l, e.x, e.y, this.z, len, e.r, ion, 0.6);
+    // the ship, rolled, smeared round as it rolls and as it races off (afterimages of where it just was)
     ctx.globalCompositeOperation = 'source-over';
     const img = sprite(this.pilotSvg, 384, 384, this.canopy);
     if (img) {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(this.roll);
-      ctx.drawImage(img, -W / 2, -W / 2, W, W);
-      ctx.restore();
+      const smear = this.pilotSmear(now);
+      for (let i = SMEAR_S.length - 1; i >= 0 && smear > 0; i--) {
+        const g = this.pilotAt(now - SMEAR_S[i] * 0.6);
+        const q = this.project(l, g.x, g.y, g.z);
+        if (q) this.rolled(ctx, img, q.x, q.y, PILOT_W * q.s, g.roll, smear * SMEAR_ALPHA[i]);
+      }
+      this.rolled(ctx, img, p.x, p.y, W, this.roll, 1);
     }
     // white-hot nozzles
     ctx.globalCompositeOperation = 'lighter';
@@ -710,6 +887,40 @@ export class TrafficScene {
       ctx.ellipse(p.x, p.y, W * 0.62, W * 0.56, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  /** the main game's plume out of each nozzle, streaming back past the camera; it sputters after a wrong drill, as the rocket's does */
+  private plumes(ctx: CanvasRenderingContext2D, l: Lens, plume: PlumeSource, engines: Array<{ x: number; y: number }>, len: number, W: number, now: number) {
+    const kb = (now - this.brakeAt) / 0.7;
+    const jolt = kb >= 0 && kb < 1 ? 1 - kb : 0;
+    const s = this.thrust();
+    const img = plume.frame(now, s, jolt * (0.4 + 0.6 * Math.abs(Math.sin(now * 38))));
+    for (const e of engines) {
+      const a = this.project(l, e.x, e.y, this.z);
+      const b = this.project(l, e.x, e.y, Math.max(this.z - len, NEAR - BACK + 0.05));
+      if (!a || !b) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const reach = Math.hypot(dx, dy);
+      if (reach < 1) continue;
+      // the plume's plane, its beam starting at the nozzle and pointing down the trail
+      const h = Math.max(reach * 1.25, W * 1.4);
+      const w = W * (0.8 + 0.25 * Math.min(s, 1));
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(Math.atan2(-dx, dy));
+      ctx.drawImage(img, -w / 2, -BEAM_TOP_FRACTION * h, w, h);
+      ctx.restore();
+    }
+  }
+
+  private rolled(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y: number, w: number, roll: number, alpha: number) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(roll);
+    ctx.drawImage(img, -w / 2, -w / 2, w, w);
     ctx.restore();
   }
 }
