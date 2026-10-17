@@ -18,11 +18,13 @@ you practise it right after a friend showed you.
 - **Players:** 2–6 phones. One hosts (shows a 4-digit code), the others join with the code. Same
   link as the two-phone games (PeerJS cloud for the introduction, then WebRTC data channels),
   but the host accepts several guests: a star, with the host as referee.
-- **Monsters:** 3 per game. Monster *k* (0-based) has `(5 + k) × players` hit points, so it's
-  "5 × X" right answers for X players to beat the first one.
+- **Monsters:** 3 per game, drawn from a roster of 25 (the three monster suns and 22 more, see
+  `roster.ts`): the host keeps a shuffled deck, so every one turns up once before any comes back,
+  and sends the fight's lineup with `start`. Monster *k* (0-based) of a fight has
+  `(5 + k) × players` hit points, so it's "5 × X" right answers for X players to beat the first one.
 - **Harder each time:** questions use factors 2–6 for the first monster, 2–8 for the second,
   2–10 for the third, weighted by each pilot's own mastery (facts they miss come up more).
-  Tougher monsters also have more rays, flicker faster and look meaner.
+  Tougher monsters also flicker faster.
 - **Answering:** 4 choices, one try. Right: monster −1 HP. Wrong: monster +1 HP (up to its full
   strength) and the right answer is shown.
 - **Hungry when it's quiet:** numbers drift through space around the fight. When nobody answers
@@ -37,7 +39,7 @@ you practise it right after a friend showed you.
     retry card for that fact, served after two more of their own answers.
   - A wrong help or retry card isn't passed on again (no ping-pong); the answer is shown.
 - **Saved:** the monster isn't destroyed, it's cured. Its letters swirl back into a friend (a
-  sun in sunglasses, a flower, a heart-eyed smiley, one per monster). The host taps "Next
+  sun in sunglasses, a flower, a rabbit with a top hat and a wand, a snowman…, one per monster). The host taps "Next
   monster". After the third: a summary with the three friends and each player's hits and helps.
 
 ## Making the teamwork visible
@@ -51,7 +53,7 @@ every phone plays each event once, so everyone sees everyone's play:
   gloats (^ ^, "YUM!") when fed, sweats and panics below a quarter, and assembles itself out of
   flying letters ("⚠️ Scramblax is coming!"). Cured, its scrambled letters fly out and swirl
   back, unscrambling as they land, into a friend that shines and floats hearts; the sunglasses
-  drop on, the petals spring open, or the heart eyes pop. The bar fills back up as a happy meter.
+  drop on, the petals spring open, the heart eyes pop, a hat drops on or a wand comes out. The bar fills back up as a happy meter.
 - **Team combo:** right answers in a row by anyone; every 5 → a shockwave and a banner.
 - Help is visible: "📨 Sent to Tal", a 🆘 on the helper's chip, "Ari needs your help!" for the
   helper, a pink rescue card, "🤝 You helped Ari!", and "Noa helped Ari" on everyone else's phone.
@@ -69,9 +71,12 @@ every phone plays each event once, so everyone sees everyone's play:
   `hello` and its own answers, and the host attributes them by connection. Each phone records
   its own pilot's answers (answer-log source `sun`).
 - `src/components/sun/`: `SunMonster.tsx` overlay (lobby, fight, defeated, summary) over the
-  shared warp starfield, and `MonsterCanvas.tsx`: the ASCII sun on a 2D canvas (characters
+  shared warp starfield, and `MonsterCanvas.tsx`: the ASCII monster on a 2D canvas (characters
   mutate every frame, shiver + flying characters on a hit, red flash on a heal, the friend it
-  turns into at zero).
+  turns into at zero). The monsters themselves are data in `roster.ts` (a body and limbs as
+  shapes on the 29×29 grid, eyes, a mouth, colours, and the friend: its letters, face and how
+  it shows off), built from `monsterArt.ts` (shapes, and a kit of faces, hats and props) and
+  `classics.ts` (the first three suns). `MonsterGallery.tsx` shows them all in dev mode (⇧U).
 - Entry: a "👾 Monster Sun" card next to "Two phones" in the pilot picker.
 
 ## Testing

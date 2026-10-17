@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { factAnswer, hungerDelay, initialSunState, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
+import { factAnswer, hungerDelay, initialSunState, nextLineup, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
 import { buildFactPool, pickNextFact } from './facts';
 import { recordOwn } from './ownAnswers';
 import { pairKey, parsePair } from './mission';
@@ -66,6 +66,8 @@ const answeredCards = new Set<number>();
 let hunger = 0;
 /** a new monster assembles itself before it gets hungry */
 const ARRIVAL_MS = 2000;
+/** host: the monsters still to come, each once before any comes again */
+let deck: number[] = [];
 
 // One id per phone tab: a reload keeps it, so the phone gets its seat back.
 function phoneId(): string {
@@ -261,7 +263,12 @@ export const useSunStore = create<SunStore>((set, get) => {
     },
 
     start: () => {
-      if (get().role === 'host') dispatch({ type: 'start' });
+      if (get().role !== 'host') return;
+      // the fight's three monsters, from the deck
+      const next = nextLineup(deck);
+      const before = get().state;
+      dispatch({ type: 'start', lineup: next.lineup });
+      if (get().state !== before) deck = next.deck;
     },
 
     next: () => {

@@ -12,7 +12,10 @@
 import { answerOfKey, missionOfKey, type Mission } from './mission';
 
 export const MAX_PLAYERS = 6;
+/** monsters in a fight */
 export const SUN_MONSTERS = 3;
+/** monsters in the roster (components/sun/roster.ts), a fight's three drawn from them */
+export const SUN_KINDS = 25;
 /** right answers each player is worth against the first monster ("5 × X") */
 export const HITS_PER_PLAYER = 5;
 /** help cards waiting on one phone at most */
@@ -92,8 +95,10 @@ export interface SunRescue {
 export interface SunState {
   phase: 'lobby' | 'fight' | 'defeated' | 'summary';
   players: SunPlayer[];
-  /** which monster (0-based) */
+  /** which monster of the fight (0-based) */
   monster: number;
+  /** which monsters of the roster this fight's are, in order */
+  lineup: number[];
   hp: number;
   maxHp: number;
   /** the team's right answers this game */
@@ -111,7 +116,8 @@ export interface SunState {
 export type SunAction =
   | { type: 'join'; player: SunPlayerInfo }
   | { type: 'leave'; id: string }
-  | { type: 'start' }
+  /** the host has drawn the fight's monsters from the roster */
+  | { type: 'start'; lineup?: number[] }
   | { type: 'answer'; id: string; fact: string; value: number; cardId?: number }
   /** the host's hunger timer: nobody has answered for a while */
   | { type: 'eat' }
@@ -142,7 +148,50 @@ export function dueCard(p: SunPlayer): SunCard | undefined {
 }
 
 export function initialSunState(): SunState {
-  return { phase: 'lobby', players: [], monster: 0, hp: 0, maxHp: 0, blows: 0, combo: 0, bestCombo: 0, defeated: 0, events: [], rescues: [], nextId: 1 };
+  return { phase: 'lobby', players: [], monster: 0, lineup: [0, 1, 2], hp: 0, maxHp: 0, blows: 0, combo: 0, bestCombo: 0, defeated: 0, events: [], rescues: [], nextId: 1 };
+}
+
+/** which monster of the roster the fight's current one is (the classic three for a state from before there were more) */
+export function monsterKind(s: SunState): number {
+  const kind = s.lineup?.[s.monster];
+  return typeof kind === 'number' && kind >= 0 && kind < SUN_KINDS ? kind : s.monster % SUN_KINDS;
+}
+
+function shuffle<T>(items: T[], rand: () => number): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.min(i, Math.floor(rand() * (i + 1)));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * The next fight's monsters, drawn from what's left of the deck: every
+ * monster once, shuffled, before any comes again (a fresh deck leaves out
+ * the ones already drawn for this fight, so none comes twice in one fight).
+ */
+export function nextLineup(deck: number[], rand: () => number = Math.random): { lineup: number[]; deck: number[] } {
+  let pile = deck.filter((k) => Number.isInteger(k) && k >= 0 && k < SUN_KINDS);
+  const lineup: number[] = [];
+  while (lineup.length < SUN_MONSTERS) {
+    if (pile.length === 0) {
+      pile = shuffle(
+        Array.from({ length: SUN_KINDS }, (_, k) => k).filter((k) => !lineup.includes(k)),
+        rand,
+      );
+    }
+    const next = pile.shift() as number;
+    if (!lineup.includes(next)) lineup.push(next);
+  }
+  return { lineup, deck: pile };
+}
+
+/** a lineup a phone sent: three different monsters of the roster, or null */
+function validLineup(lineup: unknown): number[] | null {
+  if (!Array.isArray(lineup) || lineup.length !== SUN_MONSTERS) return null;
+  if (!lineup.every((k) => Number.isInteger(k) && k >= 0 && k < SUN_KINDS)) return null;
+  return new Set(lineup).size === lineup.length ? (lineup as number[]) : null;
 }
 
 const fresh = (info: SunPlayerInfo): SunPlayer => ({
@@ -186,7 +235,8 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
       const players = s.players.filter((p) => p.online).map(fresh);
       if (players.length < 2) return s;
       const hp = maxHpFor(0, players.length);
-      return { ...initialSunState(), nextId: s.nextId, players, phase: 'fight', hp, maxHp: hp };
+      const lineup = validLineup(action.lineup) ?? nextLineup([], rand).lineup;
+      return { ...initialSunState(), nextId: s.nextId, players, lineup, phase: 'fight', hp, maxHp: hp };
     }
 
     case 'answer': {

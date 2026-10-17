@@ -7,6 +7,9 @@ import {
   initialSunState,
   MAX_PLAYERS,
   maxHpFor,
+  monsterKind,
+  nextLineup,
+  SUN_KINDS,
   SUN_MONSTERS,
   sunFactorMax,
   sunAwards,
@@ -174,6 +177,54 @@ describe('the hungry monster', () => {
     expect(hungerDelay(() => 0)).toBe(HUNGER_MIN_MS);
     expect(hungerDelay(() => 0.999)).toBeLessThan(HUNGER_MAX_MS);
     expect([HUNGER_MIN_MS, HUNGER_MAX_MS]).toEqual([5000, 8000]);
+  });
+});
+
+describe('the lineup', () => {
+  it('draws three different monsters a fight, every one of the roster once before any comes again', () => {
+    let deck: number[] = [];
+    const seen: number[] = [];
+    for (let fight = 0; fight < 8; fight++) {
+      const next = nextLineup(deck);
+      expect(new Set(next.lineup).size).toBe(SUN_MONSTERS);
+      seen.push(...next.lineup);
+      deck = next.deck;
+    }
+    // 8 fights: 24 different monsters, and the 25th is the next to come
+    expect(new Set(seen).size).toBe(24);
+    const ninth = nextLineup(deck).lineup;
+    expect(seen).not.toContain(ninth[0]);
+    expect(new Set(ninth).size).toBe(SUN_MONSTERS);
+  });
+
+  it('never puts the same monster twice in a fight, however the deck runs out', () => {
+    let deck: number[] = [];
+    for (let fight = 0; fight < 400; fight++) {
+      const next = nextLineup(deck);
+      expect(new Set(next.lineup).size).toBe(SUN_MONSTERS);
+      expect(next.lineup.every((k) => k >= 0 && k < SUN_KINDS)).toBe(true);
+      deck = next.deck;
+    }
+  });
+
+  it("fights the host's lineup, in order, and draws one of its own for a bad one", () => {
+    const lineup = [7, 3, 21];
+    let s = run(initialSunState(), { type: 'join', player: noa }, { type: 'join', player: ari }, { type: 'start', lineup });
+    expect(s.lineup).toEqual(lineup);
+    expect(monsterKind(s)).toBe(7);
+    for (let i = 0; i < 10; i++) s = run(s, right('n'));
+    s = run(s, { type: 'next' });
+    expect(monsterKind(s)).toBe(3);
+    for (const bad of [[1, 1, 2], [0, 1, SUN_KINDS], [0, 1], 'x']) {
+      const t = run(initialSunState(), { type: 'join', player: noa }, { type: 'join', player: ari }, { type: 'start', lineup: bad as number[] });
+      expect(new Set(t.lineup).size).toBe(SUN_MONSTERS);
+      expect(t.lineup.every((k) => k >= 0 && k < SUN_KINDS)).toBe(true);
+    }
+  });
+
+  it('shows the classic three for a state from a phone that has no lineup', () => {
+    const old = { ...fighting(), monster: 2, lineup: undefined } as unknown as SunState;
+    expect(monsterKind(old)).toBe(2);
   });
 });
 

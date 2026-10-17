@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { nextQuestion, sunNames, useSunStore, type SunQuestion } from '../../game/useSunStore';
-import { factAnswer, MAX_PLAYERS, SUN_MONSTERS, sunAwards, type SunEvent, type SunPlayer, type SunState } from '../../game/sun';
+import { factAnswer, MAX_PLAYERS, monsterKind, SUN_MONSTERS, sunAwards, type SunEvent, type SunPlayer, type SunState } from '../../game/sun';
 import { distractors } from '../../game/distractors';
 import { missionOfKey, OP_SYMBOL, parsePair } from '../../game/mission';
 import { useWarpCanvas } from '../useWarpCanvas';
@@ -434,7 +434,9 @@ function Defeated({ state }: { state: SunState }) {
   return (
     <motion.div className="sky-card sun-card sun-victory" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.2, type: 'spring', stiffness: 260, damping: 16 }}>
       <div className="sky-lit-title">{t.sun.saved}</div>
-      <div className="sky-hint">{t.sun.cured[state.monster % t.sun.cured.length](t.sun.names[state.monster % t.sun.names.length])}</div>
+      <div className="sky-hint">
+        {t.sun.names[monsterKind(state)]} {t.sun.cured[monsterKind(state)]}
+      </div>
       <div className="sun-team-line">
         <span>💥 {t.sun.teamHits(state.blows)}</span>
         {state.bestCombo >= 3 && <span>🔥 {t.sun.bestCombo(state.bestCombo)}</span>}
@@ -463,7 +465,8 @@ function Fight({ state }: { state: SunState }) {
   const [fired, setFired] = useState<Record<string, number>>({});
   const [blast, setBlast] = useState<number | null>(null);
   const [coming, setComing] = useState(false);
-  const name = t.sun.names[state.monster % t.sun.names.length];
+  const kind = monsterKind(state);
+  const name = t.sun.names[kind];
 
   const toast = useCallback((kind: Toast['kind'], body: React.ReactNode, id: number) => {
     setToasts((ts) => [...ts.slice(-1), { id, kind, body }]);
@@ -604,6 +607,7 @@ function Fight({ state }: { state: SunState }) {
         <div className="sun-arena">
           <MonsterCanvas
             monster={state.monster}
+            kind={kind}
             hp={hp}
             maxHp={state.maxHp}
             fx={monsterFx}
@@ -686,10 +690,10 @@ function Summary({ state }: { state: SunState }) {
       <div className="sun-friends">
         <div className="settings-label">💛 {t.sun.friends}</div>
         <div className="sun-friends-row">
-          {t.sun.names.slice(0, SUN_MONSTERS).map((n, k) => (
+          {Array.from({ length: SUN_MONSTERS }, (_, k) => monsterKind({ ...state, monster: k })).map((kind, k) => (
             <div key={k} className="sun-friend">
-              <MonsterCanvas monster={k} hp={0} maxHp={1} wait={0.2 + k * 0.5} />
-              <span className="sun-friend-name">{n}</span>
+              <MonsterCanvas monster={k} kind={kind} hp={0} maxHp={1} wait={0.2 + k * 0.5} />
+              <span className="sun-friend-name">{t.sun.names[kind]}</span>
             </div>
           ))}
         </div>

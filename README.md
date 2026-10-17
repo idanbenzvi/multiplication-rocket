@@ -290,8 +290,8 @@ Design notes: [`docs/plans/2026-10-08-split-sky.md`](docs/plans/2026-10-08-split
 
 ## Monster Sun 👾 (2–6 phones, co-op)
 
-A grumpy monster sun made of flickering characters is swallowing the stars, and up to six
-children team up to cure it, each on their own phone.
+A grumpy monster sun made of flickering characters and its gang are swallowing the stars, and
+up to six children team up to cure them, each on their own phone.
 
 - **Connect:** **🎮 Game modes → 👾 Monster Sun → Host a fight** shows a 4-digit code; every other phone taps
   **Join a fight** and types it. At least 2 phones are needed.
@@ -313,14 +313,25 @@ children team up to cure it, each on their own phone.
   as it fires) into the monster on all the phones. The monster winces when hit,
   chomps and gloats ("YUM!") when fed, and sweats and panics when it's nearly beaten. Whoever is
   helping someone shows a 🆘 on their chip, and everyone sees "Noa helped Ari".
+- **25 monsters:** the three monster suns (Glitchor, Scramblax, Hexaroth) and a gang of 22 more:
+  Abracadabbit the magical rabbit, Boogloo the ghost, Tentaclex the octopus, Pentagrump the star,
+  Clankatron the robot, Catastrophe the cat, Thundrix the storm cloud, Cometrix the comet,
+  Ringorax the ringed planet, three-eyed Zorbluk, Jellyzap the jellyfish, Hootzilla the owl,
+  Sizzlewing the dragon, Chompfin the piranha, Lunatick the moon, Pinchor the crab, Flapula the
+  bat, Frostbyte the snowflake, Blazorg the flame, Swirlox the black hole, Calculord the
+  calculator (made of digits) and four-eyed Gloopzilla the slime. Each is drawn in its own
+  characters (the robot in 0s and 1s), and a fight's three come from a shuffled deck, so every
+  one turns up once before any comes back.
 - **Cured, not destroyed:** at zero its scrambled letters fly out, swirl back and unscramble
-  into a friend: the first becomes a sun that puts on sunglasses, the second a flower that
-  blooms, the third a smiley with heart eyes. They shine, sparkle and float hearts, and the
-  summary shows all three as the team's new friends.
+  into a friend who shows off a moment later: the sun puts on sunglasses, the flower blooms, the
+  rabbit gets a top hat and waves a wand, the storm cloud makes a rainbow, the owl gets a
+  graduation cap, the snowflake turns into a snowman, the moon falls asleep in a night cap, the
+  calculator's eyes turn to hearts, and so on. They shine, sparkle and float hearts (or bubbles,
+  music notes, Zs, stars), and the summary shows all three as the team's new friends.
 - **Team combo:** right answers in a row by *anyone* build a shared combo; every 5 sends a
   shockwave through the monster.
-- **Three monsters**, each tougher: more hit points (6, then 7 per player), bigger tables (up to
-  6, 8, then 10), more rays and faster flicker.
+- **Three monsters a fight**, each tougher: more hit points (6, then 7 per player), bigger tables
+  (up to 6, 8, then 10) and faster flicker.
 - **The summary** shows the three friends, gives every pilot an award (🤝 Super helper first, then 💥 Monster smasher,
   🎯 Sharp eye, ⭐ Brave heart) and lists the facts the team "learned together".
 - A phone that drops or reloads can rejoin with the same code and keeps its seat and score.
@@ -404,6 +415,7 @@ in the corner. Its rows can be tapped on tablets, or use the shortcuts:
 | Shift+F | Fuel to 95% |
 | Shift+A | Deep Space Academy |
 | Shift+P | Practice map |
+| Shift+U | Monster Sun gallery: all 25 monsters, and (tap *Cure them all*) the friends they turn into |
 
 The panel's last line shows whether the Stranded Fleet energy pulse is running as a WebGL shader or has fallen back to CSS rings (with the reason), which is useful if the pulse looks wrong on a device.
 

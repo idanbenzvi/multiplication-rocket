@@ -3,6 +3,7 @@ import { useGameStore } from '../game/useGameStore';
 import { useAchievements } from '../game/useAchievements';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { useRippleStatus } from '../dev/rippleStatus';
+import { MonsterGallery } from './sun/MonsterGallery';
 
 interface Shortcut {
   key: string;
@@ -17,6 +18,7 @@ export function DevPanel() {
   const [open, setOpen] = useState(() => window.innerWidth >= 600);
   const store = useGameStore;
   const ripple = useRippleStatus();
+  const [gallery, setGallery] = useState(false);
 
   const shortcuts: Shortcut[] = [
     { key: 'W', label: 'Wormhole', run: () => store.getState().devStartBonus('wormhole') },
@@ -34,6 +36,7 @@ export function DevPanel() {
     { key: 'A', label: 'Deep Space Academy', run: () => store.getState().openAcademy() },
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
     { key: 'E', label: 'Earn the next badge', run: () => useAchievements.getState().devEarnNext() },
+    { key: 'U', label: 'Monster Sun gallery', run: () => setGallery(true) },
   ];
 
   useEffect(() => {
@@ -85,6 +88,7 @@ export function DevPanel() {
           </li>
         </ul>
       )}
+      {gallery && <MonsterGallery onClose={() => setGallery(false)} />}
     </div>
   );
 }
