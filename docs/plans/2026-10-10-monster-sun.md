@@ -25,6 +25,12 @@ you practise it right after a friend showed you.
   Tougher monsters also have more rays, flicker faster and look meaner.
 - **Answering:** 4 choices, one try. Right: monster −1 HP. Wrong: monster +1 HP (up to its full
   strength) and the right answer is shown.
+- **Hungry when it's quiet:** numbers drift through space around the fight. When nobody answers
+  for 5–8 s (a random time, counted from the last answer by anyone, or from a new monster
+  arriving), the monster eats one: it eyes the number, sucks it in, crunches it and gets 1 HP
+  back (not past full). The host's timer is the referee (`eat` action, an `eat` event for every
+  phone); each phone eats one of its own floating numbers, and its bar shows the HP once the
+  crunch has happened.
 - **Sharing misses:** a wrong answer to one of your own questions puts that fact in a random
   other online player's inbox as a help card. Help cards come before their own questions.
   - Helper right → the one who missed gets a tip ("🐱 Ari solved 7 × 8 = 56 for you!") and a

@@ -2,8 +2,10 @@
 // drills its own questions; a right answer is a blow (the monster sheds
 // characters), a wrong one heals it a little. A fact someone misses goes to
 // a random teammate as a help card; when they solve it, the one who missed
-// sees their answer and gets the fact again two questions later. The host
-// phone runs sunReducer as the referee. See docs/plans/2026-10-10-monster-sun.md.
+// sees their answer and gets the fact again two questions later. When nobody
+// answers for a while, the monster eats one of the numbers floating in space
+// and gets a little of its strength back. The host phone runs sunReducer as
+// the referee. See docs/plans/2026-10-10-monster-sun.md.
 // Every phone drills its own pilot's mission: × and + pilots can fight
 // side by side, and a missed fact only goes to a teammate who can solve it.
 
@@ -20,6 +22,14 @@ const RETRY_AFTER = 2;
 /** events kept: plenty for a phone that missed a few states */
 const MAX_EVENTS = 24;
 const MAX_RESCUES = 12;
+/** the monster gets hungry after this long without anyone answering (a random time in between) */
+export const HUNGER_MIN_MS = 5000;
+export const HUNGER_MAX_MS = 8000;
+
+/** how long the monster waits, from the last answer, before it eats a number */
+export function hungerDelay(rand: () => number = Math.random): number {
+  return HUNGER_MIN_MS + rand() * (HUNGER_MAX_MS - HUNGER_MIN_MS);
+}
 
 export interface SunPlayerInfo {
   /** stable per phone tab, so a reloaded phone gets its seat back */
@@ -68,7 +78,9 @@ export interface SunPlayer extends SunPlayerInfo {
  */
 export type SunEvent =
   | { id: number; kind: 'hit' | 'miss'; by: string }
-  | { id: number; kind: 'sent' | 'helped'; by: string; to: string; fact: string };
+  | { id: number; kind: 'sent' | 'helped'; by: string; to: string; fact: string }
+  /** nobody answered for a while: the monster ate a number (and healed by one) */
+  | { id: number; kind: 'eat' };
 
 /** a fact one pilot solved for another: "learned together" */
 export interface SunRescue {
@@ -101,6 +113,8 @@ export type SunAction =
   | { type: 'leave'; id: string }
   | { type: 'start' }
   | { type: 'answer'; id: string; fact: string; value: number; cardId?: number }
+  /** the host's hunger timer: nobody has answered for a while */
+  | { type: 'eat' }
   | { type: 'next' };
 
 /** the biggest factor in questions against this monster */
@@ -236,6 +250,13 @@ export function sunReducer(s: SunState, action: SunAction, rand: () => number = 
         phase: beaten ? 'defeated' : 'fight',
         defeated: s.defeated + (beaten ? 1 : 0),
       };
+    }
+
+    case 'eat': {
+      // a number for a snack, and a little strength back (it can't eat when it's at full strength)
+      if (s.phase !== 'fight' || s.hp >= s.maxHp) return s;
+      const event: SunEvent = { id: s.nextId, kind: 'eat' };
+      return { ...s, hp: s.hp + 1, nextId: s.nextId + 1, events: [...s.events, event].slice(-MAX_EVENTS) };
     }
 
     case 'next': {

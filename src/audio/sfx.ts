@@ -275,6 +275,25 @@ export const sfx = {
     tone(c, on ? 240 : 170, t + 0.01, 0.12, { type: 'triangle', gain: 0.12, glideTo: on ? 180 : 120 });
   },
 
+  /** Monster Sun: the hungry monster sucks a number in from space. */
+  slurp() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    noiseBurst(c, t + 0.25, 0.8, 300, 2600, 0.07);
+    tone(c, 330, t + 0.3, 0.7, { type: 'triangle', gain: 0.04, glideTo: 880, attack: 0.3 });
+  },
+
+  /** Monster Sun: the monster crunches the number, gulps, and its strength comes back. */
+  crunch() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    [0, 0.1, 0.19, 0.31].forEach((d, i) => noiseBurst(c, t + d, 0.08, 2400 - i * 250, 600, 0.24));
+    tone(c, 200, t + 0.42, 0.22, { gain: 0.16, glideTo: 90 });
+    tone(c, 110, t + 0.6, 0.6, { type: 'sawtooth', gain: 0.045, glideTo: 330, attack: 0.15 });
+  },
+
   /** A knob clicking round a notch. */
   knob() {
     const c = audio();

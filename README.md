@@ -299,6 +299,11 @@ children team up to cure it, each on their own phone.
   A right answer is a blow: the monster shivers and sheds characters. A wrong one feeds it back
   one hit point, and the right answer is shown. The first monster takes **5 right answers per
   player**.
+- **Don't keep it waiting:** numbers drift through space all around the monster. When nobody on
+  the team answers for 5 to 8 seconds, it gets hungry: it eyes a number, the number is sucked
+  in, and the monster crunches it (crumbs of digits fly, "CRUNCH!") and gets one hit point back,
+  the letters it had lost growing back out of its mouth. It keeps snacking every 5 to 8 seconds
+  while the team stays quiet, and can't eat past full strength.
 - **Help each other:** a question you miss is sent to a random teammate as a **🆘 Help Ari!**
   card. When they solve it, you see their answer ("help from Tal: 7 × 8 = 56"), and the same
   fact comes back to you two questions later to try again.

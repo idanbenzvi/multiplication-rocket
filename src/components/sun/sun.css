@@ -557,3 +557,12 @@
   border: 1px solid rgba(125, 255, 154, 0.45);
   font-size: 0.85rem;
 }
+
+/* numbers drifting through space behind the fight (the monster eats them when nobody answers) */
+.sun-numbers {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

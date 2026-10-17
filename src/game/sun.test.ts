@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   dueCard,
+  HUNGER_MAX_MS,
+  HUNGER_MIN_MS,
+  hungerDelay,
   initialSunState,
   MAX_PLAYERS,
   maxHpFor,
@@ -146,6 +149,31 @@ describe('the fight', () => {
   it('a player joining mid-fight makes the monster stronger by their share', () => {
     const s = run(fighting(), right('n'), { type: 'join', player: tal });
     expect(s).toMatchObject({ hp: 14, maxHp: 15 });
+  });
+});
+
+describe('the hungry monster', () => {
+  it('eats a number when nobody answers: one strength back, and every phone hears of it', () => {
+    const s = run(fighting(), right('n'), right('a'), { type: 'eat' });
+    expect(s).toMatchObject({ hp: 9, maxHp: 10, blows: 2 });
+    expect(s.events[s.events.length - 1]).toMatchObject({ kind: 'eat' });
+  });
+
+  it("can't eat past full strength, or outside a fight", () => {
+    const full = fighting();
+    expect(run(full, { type: 'eat' })).toBe(full);
+    const lobby = run(initialSunState(), { type: 'join', player: noa }, { type: 'join', player: ari });
+    expect(run(lobby, { type: 'eat' })).toBe(lobby);
+    let beaten = fighting();
+    for (let i = 0; i < 10; i++) beaten = run(beaten, right('n'));
+    expect(beaten.phase).toBe('defeated');
+    expect(run(beaten, { type: 'eat' })).toBe(beaten);
+  });
+
+  it('gets hungry 5 to 8 seconds after the last answer', () => {
+    expect(hungerDelay(() => 0)).toBe(HUNGER_MIN_MS);
+    expect(hungerDelay(() => 0.999)).toBeLessThan(HUNGER_MAX_MS);
+    expect([HUNGER_MIN_MS, HUNGER_MAX_MS]).toEqual([5000, 8000]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { factAnswer, initialSunState, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
+import { factAnswer, hungerDelay, initialSunState, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
 import { buildFactPool, pickNextFact } from './facts';
 import { recordOwn } from './ownAnswers';
 import { pairKey, parsePair } from './mission';
@@ -62,6 +62,10 @@ let group: Group | null = null;
 const connPlayer = new Map<string, string>();
 /** cards this phone has answered, in case the next one is asked before the referee's reply */
 const answeredCards = new Set<number>();
+/** host: the monster's hunger, counting down from the last answer */
+let hunger = 0;
+/** a new monster assembles itself before it gets hungry */
+const ARRIVAL_MS = 2000;
 
 // One id per phone tab: a reload keeps it, so the phone gets its seat back.
 function phoneId(): string {
@@ -130,13 +134,29 @@ export function nextQuestion(avoid?: string): SunQuestion {
 export const useSunStore = create<SunStore>((set, get) => {
   // host: apply an action and send the result to every phone
   const dispatch = (action: SunAction) => {
-    const state = sunReducer(get().state, action);
-    if (state === get().state) return;
-    set({ state });
-    group?.broadcast({ t: 'state', state } satisfies Msg);
+    const before = get().state;
+    const state = sunReducer(before, action);
+    if (state !== before) {
+      set({ state });
+      group?.broadcast({ t: 'state', state } satisfies Msg);
+    }
+    // the quiet time starts over with every answer, and with every new monster
+    if (action.type === 'answer') hungry();
+    else if (action.type === 'start' || action.type === 'next') hungry(ARRIVAL_MS);
+  };
+
+  // host: when nobody answers for 5–8 seconds, the monster eats a number (and again, while it stays quiet)
+  const hungry = (extra = 0) => {
+    window.clearTimeout(hunger);
+    if (get().role !== 'host' || get().state.phase !== 'fight') return;
+    hunger = window.setTimeout(() => {
+      dispatch({ type: 'eat' });
+      hungry();
+    }, extra + hungerDelay());
   };
 
   const resetLink = () => {
+    window.clearTimeout(hunger);
     link?.close();
     link = null;
     group?.close();

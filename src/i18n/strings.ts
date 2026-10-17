@@ -667,6 +667,9 @@ const en = {
     hit: 'Hit! 💥',
     oops: 'Oops! It is',
     taunts: ['HA HA!', 'YUM!', 'MORE!', 'HEH HEH!'],
+    // nobody answered for a while: it ate a number floating in space
+    crunch: ['CRUNCH!', 'NOM NOM!', 'MUNCH!', 'GULP!'],
+    ate: 'Too quiet! The monster gobbles numbers to get stronger. Keep answering!',
     comboLabel: 'Team combo',
     comboBlast: (n: number) => `🔥 Team combo ×${n}!`,
     coming: (name: string) => `${name} is coming!`,
@@ -1350,6 +1353,8 @@ const he: Strings = {
     hit: 'פגיעה! 💥',
     oops: 'אופס! התשובה היא',
     taunts: ['חה חה!', 'יאמי!', 'עוד!', 'הה הה!'],
+    crunch: ['קראנץ׳!', 'נום נום!', 'יאמי!', 'גלאפ!'],
+    ate: 'שקט מדי! המפלצת זוללת מספרים כדי להתחזק. תמשיכו לענות!',
     comboLabel: 'קומבו קבוצתי',
     comboBlast: (n) => `🔥 קומבו קבוצתי של ${n}!`,
     coming: (name) => `${name} מגיע!`,

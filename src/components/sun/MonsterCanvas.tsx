@@ -8,6 +8,9 @@ import { useEffect, useMemo, useRef } from 'react';
 //     the monster winces (> <), shivers and sheds characters (rays first,
 //     eyes last), each flying off as a spark;
 //   - a wrong answer feeds it: it chomps, swells and gloats in red;
+//   - left alone, it gets hungry: it eyes a number floating in space, opens
+//     wide, swallows it, crunches it (crumbs of digits fly) and powers up,
+//     the letters it had lost growing back out of its mouth;
 //   - weak, it trembles and sweats.
 // At zero it's cured: its scrambled letters fly out, swirl back and
 // unscramble into a friend that shines (a sun in sunglasses, a flower, a
@@ -46,6 +49,8 @@ interface Spark {
   fade: number;
   /** slows down and floats up instead of falling (hearts) */
   float?: boolean;
+  /** bigger than a knocked-off letter, in the numbers' own font (crumbs of a crunched number) */
+  crumb?: number;
 }
 
 interface Beam {
@@ -70,6 +75,32 @@ interface Floater {
   x: number;
   y: number;
   life: number;
+  color?: string;
+}
+
+/** a number on its way into the monster's mouth (canvas px) */
+interface Morsel {
+  text: string;
+  color: string;
+  size: number;
+  rot: number;
+  x: number;
+  y: number;
+  /** 0 → 1: from where it was caught, into the mouth */
+  p: number;
+  say: string;
+}
+
+/** a number from space, in screen px, as it's handed to the monster to eat */
+export interface Snack {
+  text: string;
+  color: string;
+  size: number;
+  rot: number;
+  x: number;
+  y: number;
+  /** what it says as it crunches ("CRUNCH!") */
+  say: string;
 }
 
 /** a sparkle around the cured friend, in grid units */
@@ -97,6 +128,15 @@ const PALETTES: Palette[] = [
 
 /** seconds a beam takes to reach the monster */
 const BEAM_S = 0.36;
+/** seconds a caught number takes into the mouth, then chewing, then the power coming back */
+const GULP_S = 0.42;
+const CHEW_S = 0.7;
+const POWER_AT_S = 0.55;
+/** seconds a letter that grows back takes to fly out of the mouth into place */
+const REGROW_S = 0.55;
+/** where the mouth is, in grid units */
+const MOUTH: [number, number] = [0, 0.17];
+const NUMBER_FONT = "'Fredoka', 'Trebuchet MS', sans-serif";
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
 
 const glyph = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
@@ -527,6 +567,12 @@ export interface MonsterFx {
   gloat: (text: string) => void;
   /** a team combo: a shockwave ring */
   ring: (color: string) => void;
+  /** where its mouth is on screen (and the canvas's own box), for a number to be pulled in */
+  mouth: () => { x: number; y: number; box: DOMRect } | null;
+  /** hungry: it eyes a spot on screen and opens wide */
+  hungry: (x: number, y: number) => void;
+  /** a number to eat, handed over from space: in it goes, crunch, and its strength comes back */
+  swallow: (snack: Snack) => void;
 }
 
 interface Props {
@@ -541,15 +587,18 @@ interface Props {
   /** the moment it's cured, and the moment its friend shows off (for the sounds) */
   onCured?: () => void;
   onCheer?: () => void;
+  /** it bites into a number it ate, and its strength comes back after (show the new strength then) */
+  onCrunch?: () => void;
+  onFed?: () => void;
 }
 
-export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, onCured, onCheer }: Props) {
+export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, onCured, onCheer, onCrunch, onFed }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cells = useMemo(() => buildMonster(monster), [monster]);
   const friend = useMemo(() => buildFriend(monster % 3), [monster]);
-  const live = useRef({ hp, maxHp, onCured, onCheer });
+  const live = useRef({ hp, maxHp, onCured, onCheer, onCrunch, onFed });
   useEffect(() => {
-    live.current = { hp, maxHp, onCured, onCheer };
+    live.current = { hp, maxHp, onCured, onCheer, onCrunch, onFed };
   });
 
   useEffect(() => {
@@ -572,6 +621,14 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
     let beams: Beam[] = [];
     let rings: Ring[] = [];
     let floaters: Floater[] = [];
+    let morsels: Morsel[] = [];
+    /** when each fed number's strength comes back */
+    let powerUps: number[] = [];
+    /** when each knocked-off letter grew back (0: never knocked off) */
+    const back = new Float32Array(total);
+    let hungerFor = 0;
+    let chew = 0;
+    let fedGlow = 0;
     let shake = 0;
     let redFlash = 0;
     let whiteFlash = 0;
@@ -582,6 +639,7 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
     let raf = 0;
     let last = performance.now();
     const t0 = last;
+    let mouthPx: [number, number] = [canvas.clientWidth / 2, canvas.clientWidth * 0.58];
 
     const colorOf = (c: Cell) => (c.kind === 'mouth' ? '#c0163f' : c.kind === 'ray' ? pal.ray : c.d < 0.22 ? pal.core : pal.mid);
     const burstAt = (x: number, y: number, n: number, colors: string[], speed: number) => {
@@ -615,6 +673,29 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
         ring: (color) => {
           rings.push({ color, life: 1, width: 8 }, { color: '#ffffff', life: 0.75, width: 3 });
           shake = Math.max(shake, 0.8);
+        },
+        mouth: () => {
+          const box = canvas.getBoundingClientRect();
+          if (!box.width) return null;
+          const k = box.width / Math.max(1, canvas.clientWidth);
+          return { x: box.left + mouthPx[0] * k, y: box.top + mouthPx[1] * k, box };
+        },
+        hungry: (x, y) => {
+          const box = canvas.getBoundingClientRect();
+          const half = box.width / 2 || 1;
+          const dx = (x - box.left - half) / half;
+          const dy = (y - box.top - half) / half;
+          const len = Math.hypot(dx, dy) || 1;
+          look = [dx / len, dy / len];
+          lookFor = 2.2;
+          hungerFor = 2.6;
+        },
+        swallow: (snack) => {
+          const box = canvas.getBoundingClientRect();
+          const k = Math.max(1, canvas.clientWidth) / (box.width || 1);
+          morsels.push({ ...snack, x: (snack.x - box.left) * k, y: (snack.y - box.top) * k, size: snack.size * k, p: 0 });
+          hungerFor = Math.max(hungerFor, GULP_S + 0.1);
+          lookFor = 0;
         },
       };
     }
@@ -653,9 +734,12 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
       hurt = Math.max(0, hurt - dt);
       gloat = Math.max(0, gloat - dt);
       lookFor = Math.max(0, lookFor - dt);
+      hungerFor = Math.max(0, hungerFor - dt);
+      chew = Math.max(0, chew - dt);
+      fedGlow = Math.max(0, fedGlow - dt * 0.8);
 
       const half = size / 2;
-      const swell = 1 + 0.07 * Math.sin(Math.min(1, gloat) * Math.PI);
+      const swell = 1 + 0.07 * Math.sin(Math.min(1, gloat) * Math.PI) + 0.06 * Math.sin((chew / CHEW_S) * Math.PI) + 0.04 * fedGlow;
       const scale = half * 0.92 * (1 + 0.025 * Math.sin(t * 2.4)) * swell;
       const jx = (Math.random() - 0.5) * 14 * shake;
       // the friend bobs, happily
@@ -665,10 +749,11 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
       const sin = Math.sin(rot);
       const at = (x: number, y: number): [number, number] => [half + jx + (x * cos - y * sin) * scale, half + jy + (x * sin + y * cos) * scale];
       const cell = (scale * 2) / N;
+      mouthPx = at(MOUTH[0], MOUTH[1]);
 
       // corona: fades as the monster weakens, flickers when it's nearly done
       if (gone < total) {
-        const pulse = (0.75 + 0.25 * Math.sin(t * 3.1)) * (low ? 0.6 + Math.random() * 0.4 : 1);
+        const pulse = (0.75 + 0.25 * Math.sin(t * 3.1)) * (low ? 0.6 + Math.random() * 0.4 : 1) * (1 + fedGlow);
         const g = ctx.createRadialGradient(half + jx, half + jy, 0, half + jx, half + jy, scale * 0.95);
         g.addColorStop(0, `rgba(${pal.glow}, ${0.55 * pulse * (0.35 + 0.65 * strength)})`);
         g.addColorStop(0.5, `rgba(${pal.glow}, ${0.18 * pulse * strength})`);
@@ -716,7 +801,9 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `700 ${cell * 1.08}px ${MONO}`;
-      const mouthCh = gloat > 0 ? (Math.floor(t * 12) % 2 ? '▲' : '▼') : hurt > 0 || low ? '~' : '▼';
+      // chewing, or chomping as it gloats; wide open when it's hungry
+      const mouthCh =
+        chew > 0 || gloat > 0 ? (Math.floor(t * (chew > 0 ? 16 : 12)) % 2 ? '▲' : '▼') : hungerFor > 0 ? 'O' : hurt > 0 || low ? '~' : '▼';
       const eyes: [Cell, number, number, number][] = [];
       for (let i = 0; i < total; i++) {
         const c = cells[i];
@@ -732,16 +819,26 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
           const speed = 120 + Math.random() * 220;
           sparks.push({ x: px, y: py, vx: Math.cos(away) * speed, vy: Math.sin(away) * speed, ch: c.kind === 'eye' ? '◉' : c.ch, color: c.kind === 'eye' ? pal.eye : colorOf(c), life: 1, fade: 0.9 });
         }
+        // healed: a letter it had lost grows back, flying out of its mouth
+        if (!shown[i] && visible && p >= 1) back[i] = t;
         shown[i] = visible;
         if (!visible || p <= 0) continue;
+        const grow = back[i] ? (t - back[i]) / REGROW_S : 1;
+        let gx = px;
+        let gy = py;
+        if (grow < 1) {
+          const g = easeOut(Math.max(0, grow));
+          gx = mouthPx[0] + (px - mouthPx[0]) * g;
+          gy = mouthPx[1] + (py - mouthPx[1]) * g;
+        }
         if (c.kind === 'eye') {
-          eyes.push([c, px, py, k]);
+          eyes.push([c, gx, gy, k]);
           continue;
         }
         if (c.kind !== 'mouth' && Math.random() < mutate * (low ? 2 : 1)) c.ch = glyph();
-        ctx.globalAlpha = Math.min(1, p * 1.5);
-        ctx.fillStyle = redFlash > 0.3 ? '#ff6b7a' : colorOf(c);
-        ctx.fillText(c.kind === 'mouth' ? mouthCh : c.ch, px, py);
+        ctx.globalAlpha = Math.min(1, p * 1.5, grow < 1 ? 0.3 + grow : 1);
+        ctx.fillStyle = grow < 0.6 ? '#ffffff' : redFlash > 0.3 ? '#ff6b7a' : colorOf(c);
+        ctx.fillText(c.kind === 'mouth' ? mouthCh : c.ch, gx, gy);
       }
       ctx.globalAlpha = 1;
 
@@ -757,7 +854,7 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
         ctx.fillStyle = pal.eye;
         ctx.shadowColor = pal.eye;
         ctx.shadowBlur = 14;
-        if (hurt > 0 || gloat > 0) {
+        if (hurt > 0 || gloat > 0 || chew > 0) {
           ctx.font = `900 ${cell * 3}px ${MONO}`;
           if (hurt > 0) ctx.fillText(c.x < 0 ? '>' : '<', px, py);
           else ctx.fillText('^', px, py + cell * 0.5);
@@ -838,10 +935,67 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
         ctx.lineWidth = 5;
         ctx.strokeStyle = '#2a0610';
         ctx.strokeText(f.text, fx0, y);
-        ctx.fillStyle = '#ff4d6a';
+        ctx.fillStyle = f.color ?? '#ff4d6a';
         ctx.fillText(f.text, fx0, y);
       }
       ctx.globalAlpha = 1;
+
+      // a number it caught, pulled in spinning and shrinking; then crunch, and its strength comes back
+      morsels = morsels.filter((m) => {
+        m.p += dt / GULP_S;
+        const q = Math.min(1, m.p);
+        const e = q * q;
+        // a little swirl on the way in
+        const side = Math.sin(q * Math.PI) * 0.18;
+        const dx = mouthPx[0] - m.x;
+        const dy = mouthPx[1] - m.y;
+        const x = m.x + dx * e - dy * side;
+        const y = m.y + dy * e + dx * side;
+        if (q < 1) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(m.rot + q * 7);
+          ctx.font = `700 ${(m.size * (1 - 0.7 * q)).toFixed(1)}px ${NUMBER_FONT}`;
+          ctx.shadowColor = m.color;
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = m.color;
+          ctx.fillText(m.text, 0, 0);
+          ctx.restore();
+          return true;
+        }
+        // crunch: it chews, and crumbs of the number fly out
+        chew = CHEW_S;
+        shake = Math.max(shake, 0.6);
+        const bits = [...m.text, '.', '•', ',', '·'];
+        for (let i = 0; i < 18; i++) {
+          // mostly out and down, like crumbs
+          const a = Math.PI / 2 + (Math.random() - 0.5) * 2.8;
+          const v = 70 + Math.random() * 170;
+          const digit = i < bits.length - 4 || i % 2 === 0;
+          sparks.push({
+            x: mouthPx[0],
+            y: mouthPx[1],
+            vx: Math.cos(a) * v,
+            vy: Math.sin(a) * v - 40,
+            ch: digit ? m.text[i % m.text.length] : bits[m.text.length + (i % 4)],
+            color: i % 3 ? m.color : '#ffffff',
+            life: 1,
+            fade: 0.8 + Math.random() * 0.5,
+            crumb: digit ? m.size * (0.45 + Math.random() * 0.35) : m.size * 0.5,
+          });
+        }
+        floaters.push({ text: m.say, x: (Math.random() - 0.5) * 0.25, y: 0.3, life: 1, color: '#ffd77a' });
+        powerUps.push(t + POWER_AT_S);
+        live.current.onCrunch?.();
+        return false;
+      });
+      powerUps = powerUps.filter((at0) => {
+        if (at0 > t) return true;
+        fedGlow = 1;
+        rings.push({ color: pal.mid, life: 0.9, width: 7 }, { color: '#ffffff', life: 0.6, width: 3 });
+        live.current.onFed?.();
+        return false;
+      });
 
       // beams: from a pilot's ship, arcing into the monster
       ctx.font = `700 ${cell * 1.3}px ${MONO}`;
@@ -900,7 +1054,15 @@ export function MonsterCanvas({ monster, hp, maxHp, fx, lurk = false, wait = 0, 
           }
           ctx.globalAlpha = Math.min(1, s.life * 1.5);
           ctx.fillStyle = s.color;
-          ctx.fillText(s.ch, s.x, s.y);
+          if (s.crumb) {
+            // a broken-off piece of the number, tumbling
+            ctx.save();
+            ctx.font = `700 ${s.crumb.toFixed(1)}px ${NUMBER_FONT}`;
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.life * 6 * (s.vx < 0 ? -1 : 1));
+            ctx.fillText(s.ch, 0, 0);
+            ctx.restore();
+          } else ctx.fillText(s.ch, s.x, s.y);
         }
       }
       ctx.globalAlpha = 1;

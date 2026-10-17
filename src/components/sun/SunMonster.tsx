@@ -8,6 +8,7 @@ import { missionOfKey, OP_SYMBOL, parsePair } from '../../game/mission';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { CodeDisplay, CodeEntry, LinkStatusLine } from '../sky/parts';
 import { MonsterCanvas, type MonsterFx } from './MonsterCanvas';
+import { NumberField, type NumberFieldFx } from './NumberField';
 import { pilotColor } from './pilotColors';
 import { RearShip } from '../spaceArt';
 import { useT } from '../../i18n/useLang';
@@ -79,6 +80,14 @@ let warpBoost = 0;
 function warpKick(amount: number) {
   warpBoost = Math.max(warpBoost, amount);
 }
+
+// The fight's monster, and the numbers drifting through space that it eats
+// when nobody answers (NumberField hands them to it): shared, as the numbers
+// are drawn behind the fight and the monster in it.
+const monsterFx: React.RefObject<MonsterFx | null> = { current: null };
+const numberField: React.RefObject<NumberFieldFx | null> = { current: null };
+/** the fight shows a meal's strength once the number is crunched, or after this at the latest */
+const FED_BY_MS = 4000;
 
 // Back to the game through the warp; the theme music comes back from the tap
 // (browsers only start music from one).
@@ -444,8 +453,11 @@ function Defeated({ state }: { state: SunState }) {
 function Fight({ state }: { state: SunState }) {
   const t = useT();
   const myId = useSunStore((s) => s.myId);
-  const fx = useRef<MonsterFx | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // strength the monster ate back but hasn't shown yet: it shows once the number is crunched
+  const [owing, setOwing] = useState(0);
+  const meals = useRef<number[]>([]);
+  const toldHungry = useRef(false);
   const [pops, setPops] = useState<Record<string, number[]>>({});
   // how many shots each pilot's ship has fired here (each one replays the kick)
   const [fired, setFired] = useState<Record<string, number>>({});
@@ -458,18 +470,38 @@ function Fight({ state }: { state: SunState }) {
     window.setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== id)), TOAST_MS);
   }, []);
 
+  const fed = useCallback((id?: number) => {
+    const i = id === undefined ? 0 : meals.current.indexOf(id);
+    if (i < 0 || i >= meals.current.length) return;
+    meals.current.splice(i, 1);
+    setOwing((n) => Math.max(0, n - 1));
+  }, []);
+
   // everything the team does shows on every phone
   useNewEvents(state.events, (e) => {
+    if (e.kind === 'eat') {
+      // too quiet: it eats a number from space, and is stronger once it's crunched it
+      meals.current.push(e.id);
+      setOwing((n) => n + 1);
+      window.setTimeout(() => fed(e.id), FED_BY_MS);
+      numberField.current?.feed(t.sun.crunch[Math.floor(Math.random() * t.sun.crunch.length)]);
+      sfx.slurp();
+      if (!toldHungry.current) {
+        toldHungry.current = true;
+        toast('team', <>👾 {t.sun.ate}</>, e.id);
+      }
+      return;
+    }
     const seat = seatOf(state, e.by);
     if (e.kind === 'hit') {
       const { nose } = shipSpot(seat, state.players.length);
-      fx.current?.beam(pilotColor(seat), nose.x, nose.y);
+      monsterFx.current?.beam(pilotColor(seat), nose.x, nose.y);
       setFired((f) => ({ ...f, [e.by]: (f[e.by] ?? 0) + 1 }));
       if (e.by !== myId) sfx.zap(seat);
       warpKick(0.35);
       setPops((ps) => ({ ...ps, [e.by]: [...(ps[e.by] ?? []).slice(-2), e.id] }));
     } else if (e.kind === 'miss') {
-      fx.current?.gloat(t.sun.taunts[Math.floor(Math.random() * t.sun.taunts.length)]);
+      monsterFx.current?.gloat(t.sun.taunts[Math.floor(Math.random() * t.sun.taunts.length)]);
       sfx.monsterLaugh();
     } else if (e.kind === 'sent' && e.to === myId) {
       toast('ask', <>{avatarOf(state, e.by)} 🆘 {t.sun.needsHelp(nameOf(state, e.by))}</>, e.id);
@@ -495,13 +527,19 @@ function Fight({ state }: { state: SunState }) {
     prevCombo.current = state.combo;
     // not on the hit that cures it: that moment belongs to the monster
     if (state.combo <= before || state.combo % COMBO_EVERY !== 0 || state.phase !== 'fight') return;
-    fx.current?.ring(GOLD);
+    monsterFx.current?.ring(GOLD);
     sfx.milestone(state.combo);
     warpKick(1.6);
     setBlast(state.combo);
     const timer = window.setTimeout(() => setBlast(null), 1700);
     return () => window.clearTimeout(timer);
   }, [state.combo, state.phase]);
+
+  // a new monster (or the end of this one) owes nothing
+  useEffect(() => {
+    meals.current = [];
+    setOwing(0);
+  }, [state.monster, state.phase]);
 
   // each monster arrives with a warning
   useEffect(() => {
@@ -534,8 +572,15 @@ function Fight({ state }: { state: SunState }) {
     haptics.tick();
     warpKick(1.2);
   }, []);
+  const onCrunch = useCallback(() => {
+    sfx.crunch();
+    haptics.tick();
+  }, []);
+  const onFed = useCallback(() => fed(), [fed]);
 
-  const strength = state.maxHp > 0 ? state.hp / state.maxHp : 0;
+  // what the bar and the monster show: a meal counts once it's crunched
+  const hp = Math.max(0, state.hp - owing);
+  const strength = state.maxHp > 0 ? hp / state.maxHp : 0;
   const low = state.phase === 'fight' && strength < 0.25;
   const saved = state.phase !== 'fight';
   return (
@@ -549,15 +594,24 @@ function Fight({ state }: { state: SunState }) {
         </div>
       </div>
       {/* once it's saved, the bar fills back up as a happy meter */}
-      <div ref={hpRef} className={`sun-hp ${low ? 'is-low' : ''} ${saved ? 'is-saved' : ''}`} role="meter" aria-valuemin={0} aria-valuemax={state.maxHp} aria-valuenow={state.hp}>
+      <div ref={hpRef} className={`sun-hp ${low ? 'is-low' : ''} ${saved ? 'is-saved' : ''}`} role="meter" aria-valuemin={0} aria-valuemax={state.maxHp} aria-valuenow={hp}>
         <div className="sun-hp-lag" style={{ width: `${strength * 100}%` }} />
         <div className="sun-hp-fill" style={{ width: `${saved ? 100 : strength * 100}%` }} />
-        <span className="sun-hp-text">{saved ? t.sun.savedBar : `👾 ${t.sun.hpLeft(state.hp)}`}</span>
+        <span className="sun-hp-text">{saved ? t.sun.savedBar : `👾 ${t.sun.hpLeft(hp)}`}</span>
       </div>
 
       <div className="sun-stage">
         <div className="sun-arena">
-          <MonsterCanvas monster={state.monster} hp={state.hp} maxHp={state.maxHp} fx={fx} onCured={onCured} onCheer={onCheer} />
+          <MonsterCanvas
+            monster={state.monster}
+            hp={hp}
+            maxHp={state.maxHp}
+            fx={monsterFx}
+            onCured={onCured}
+            onCheer={onCheer}
+            onCrunch={onCrunch}
+            onFed={onFed}
+          />
           <Squadron players={state.players} fired={fired} />
         </div>
 
@@ -701,6 +755,7 @@ export function SunMonster() {
   return createPortal(
     <div className="sun-overlay">
       <Warp />
+      {(state.phase === 'fight' || state.phase === 'defeated') && <NumberField fx={monsterFx} field={numberField} />}
       <div className="sun-content">
         {state.phase === 'lobby' ? <Lobby /> : state.phase === 'summary' ? <Summary state={state} /> : <Fight state={state} />}
       </div>
