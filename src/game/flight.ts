@@ -1,3 +1,5 @@
+import { gameNow } from './gameClock';
+
 // Flight speed model. Speed is a 0..~1.3 "how fast does it feel" value that
 // drives everything visual in the scene — star streak length, motion blur,
 // camera FOV/shake, engine exhaust — so they all move together.
@@ -64,6 +66,24 @@ export function kick(amount: number) {
 export function bump() {
   flight.jolt = 1;
   flight.boost = 0;
+}
+
+// ---- flying home: back in the game from wherever the rocket flew off to ----
+
+/** how long the rocket takes to fly home (ms) */
+export const HOME_MS = 1100;
+/** when it set off for home, in game time (FlyingRocket flies it in from there) */
+export const homecoming = { at: -Infinity };
+
+/**
+ * Back from a bonus round it left in (or a game mode, or the splash): the
+ * rocket flies in from just behind the camera to its place, engines blazing,
+ * and brakes into it. Not with reduced motion: it's simply there.
+ */
+export function flyHome() {
+  if (flight.motionScale < 1) return;
+  homecoming.at = gameNow();
+  kick(1.1);
 }
 
 // ---- tapping the porthole: the camera zooms in a step per tap ----

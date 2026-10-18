@@ -15,6 +15,7 @@ import { haptics } from '../../audio/haptics';
 import { SkyGrid } from './SkyGrid';
 import GradientText from '../reactbits/GradientText';
 import { warpTo } from '../warpTransition';
+import { flyHome } from '../../game/flight';
 import { ModeArrival } from '../arrival/ModeArrival';
 import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
 import './sky.css';
@@ -159,9 +160,12 @@ function GuestLobby() {
   );
 }
 
-// back to the game through the warp
+// back to the game through the warp, the rocket flying home as it clears
 function warpHome(e: React.MouseEvent<HTMLElement>) {
-  warpTo(useSkyStore.getState().closeSky, e.currentTarget);
+  warpTo(() => {
+    useSkyStore.getState().closeSky();
+    flyHome();
+  }, e.currentTarget);
 }
 
 function Lobby({ card }: { card: ArrivalCard }) {

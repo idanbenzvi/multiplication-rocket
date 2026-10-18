@@ -17,6 +17,7 @@ import { haptics } from '../../audio/haptics';
 import GradientText from '../reactbits/GradientText';
 import { playTrack } from '../../audio/useAudio';
 import { warpTo } from '../warpTransition';
+import { flyHome } from '../../game/flight';
 import { ModeArrival } from '../arrival/ModeArrival';
 import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
 import { useProfiles } from '../../profiles/useProfiles';
@@ -96,7 +97,11 @@ const FED_BY_MS = 4000;
 // (browsers only start music from one).
 function warpHome(e: React.MouseEvent<HTMLElement>) {
   playTrack('theme');
-  warpTo(useSunStore.getState().closeSun, e.currentTarget);
+  warpTo(() => {
+    useSunStore.getState().closeSun();
+    // the rocket flies home as the warp clears
+    flyHome();
+  }, e.currentTarget);
 }
 
 function Warp() {

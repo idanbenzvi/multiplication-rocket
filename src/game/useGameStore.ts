@@ -13,6 +13,10 @@ import { useSettings } from '../settings/useSettings';
 import { activeMission, useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 import { useAchievements } from './useAchievements';
+import { flyHome, kick } from './flight';
+
+/** bonus rounds the rocket flies off in (racing away, blasting off, jumping to lightspeed): it flies home after them */
+const FLIES_OFF: ReadonlySet<BonusKind> = new Set(['traffic', 'battle', 'stranded', 'stardust', 'road']);
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
 
@@ -310,6 +314,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
     });
+    // out of the tunnel: the rocket flies home
+    flyHome();
   },
 
 
@@ -347,6 +353,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
     });
+    // back in the game: the rocket flies home from a round it flew off in; one played over it just surges on
+    if (bonusRound && FLIES_OFF.has(bonusRound)) flyHome();
+    else kick(0.6);
   },
 
   openAcademy: () => {

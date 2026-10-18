@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useCrewStore, type CrewQuestion } from '../../game/useCrewStore';
 import { pilotName, useProfiles, type Profile } from '../../profiles/useProfiles';
 import { gameTimeout } from '../../game/gameClock';
-import { bump, kick } from '../../game/flight';
+import { bump, flyHome, kick } from '../../game/flight';
 import { speedZone } from '../../game/scoring';
 import { isTouchDevice, useSettings } from '../../settings/useSettings';
 import { sfx } from '../../audio/sfx';
@@ -134,8 +134,18 @@ function CrewSummary({ pilots }: { pilots: [Profile | undefined, Profile | undef
           <span>🛰️ {t.crew.summaryDocks(docks)}</span>
           <span>🚀 {t.crew.summaryLaunches(missionLaunches)}</span>
         </div>
-        {/* back to solo play through the warp */}
-        <button type="button" className="profile-primary" onClick={(e) => warpTo(close, e.currentTarget)} autoFocus>
+        {/* back to solo play through the warp, the rocket flying home as it clears */}
+        <button
+          type="button"
+          className="profile-primary"
+          onClick={(e) =>
+            warpTo(() => {
+              close();
+              flyHome();
+            }, e.currentTarget)
+          }
+          autoFocus
+        >
           {t.crew.backToSolo}
         </button>
       </motion.div>

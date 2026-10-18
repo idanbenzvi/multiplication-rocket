@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pauseGame, resumeGame } from '../../game/gameClock';
+import { flyHome } from '../../game/flight';
 import { DEV_MODE } from '../../dev/devMode';
 import ElectricLogo from '../reactbits/ElectricLogo';
 import ParticleText from '../reactbits/ParticleText';
@@ -117,6 +118,8 @@ export function StudioSplash() {
     window.setTimeout(() => {
       setDone(true);
       resumeGame('splash');
+      // and the rocket flies in to its place
+      flyHome();
     }, LEAVE_MS);
   };
 
