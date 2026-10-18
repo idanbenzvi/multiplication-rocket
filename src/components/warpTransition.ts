@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import type { Variants } from 'motion/react';
 import { sfx } from '../audio/sfx';
+import { flyAway } from '../game/flight';
 
 // Going from the game into a game mode (and back) is one continuous flight,
-// not a cut: the menu dissolves while a space-time ripple spreads from the
-// card that was tapped, the stars stretch into hyperspace, the new mode
-// opens behind them at top speed, and the warp slows and clears to show it
-// (its panel zooms in out of the blur: .sky-panel's modeArrive). The warp
-// itself is drawn by ModeWarp.tsx; this is what starts it.
+// not a cut: the rocket blasts off (flyOffTo) as the menu dissolves, then a
+// space-time ripple spreads from the card that was tapped, the stars stretch
+// into hyperspace, the new mode opens behind them at top speed, and the warp
+// slows and clears to show it (its panel zooms in out of the blur:
+// .sky-panel's modeArrive). The warp itself is drawn by ModeWarp.tsx; this is
+// what starts it.
 
 /** the swap happens here, behind the warp at full cover */
 export const PEAK_MS = 800;
@@ -30,9 +32,11 @@ export interface WarpRun {
 
 interface ModeWarpState {
   run: WarpRun | null;
+  /** a warp starts shortly (the rocket blasting off first: flyOffTo) */
+  due: boolean;
 }
 
-export const useModeWarp = create<ModeWarpState>(() => ({ run: null }));
+export const useModeWarp = create<ModeWarpState>(() => ({ run: null, due: false }));
 
 /** the middle of what was tapped, where the ripple starts */
 export function originOf(el: Element | null | undefined): Point {
@@ -40,11 +44,34 @@ export function originOf(el: Element | null | undefined): Point {
   return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 }
 
-/** warp from what's on screen to what `action` opens (or back); one at a time */
-export function warpTo(action: () => void, from?: Element | null) {
-  if (useModeWarp.getState().run) return;
-  sfx.warp();
-  useModeWarp.setState({ run: { id: performance.now(), origin: originOf(from), action } });
+/** the rocket is well on its way when the warp follows it (flyOffTo) */
+const LIFTOFF_MS = 450;
+
+/** warp from what's on screen to what `action` opens (or back), after `delayMs`; one at a time */
+export function warpTo(action: () => void, from?: Element | null, delayMs = 0) {
+  const { run, due } = useModeWarp.getState();
+  if (run || due) return;
+  // (where it was tapped, now: it may be gone by the time the warp starts)
+  const origin = originOf(from);
+  const go = () => {
+    sfx.warp();
+    useModeWarp.setState({ run: { id: performance.now(), origin, action }, due: false });
+  };
+  if (delayMs <= 0) {
+    go();
+    return;
+  }
+  useModeWarp.setState({ due: true });
+  window.setTimeout(go, delayMs);
+}
+
+/** leave the game for a game mode: the rocket blasts off (flyAway), and the warp follows it */
+export function flyOffTo(action: () => void, from?: Element | null) {
+  const { run, due } = useModeWarp.getState();
+  if (run || due) return;
+  const flying = flyAway();
+  if (flying) sfx.blastOff();
+  warpTo(action, from, flying ? LIFTOFF_MS : 0);
 }
 
 /**

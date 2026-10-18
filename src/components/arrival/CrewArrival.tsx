@@ -5,21 +5,22 @@ import { portholeCentre } from './portholeCentre';
 import { useArrivalCanvas } from './useArrivalCanvas';
 import './arrival.css';
 
-// Crew Flight's arrival (after React Bits Pro's Star Burst): as the warp
-// clears, stars stream out of the rocket's porthole (a quick inner layer and
-// a slower, bigger outer one) round a blooming flower of light, and the two
-// pilots' animals fly in from either side of the screen, each in its seat's
-// colour, and board through the porthole, the second just after the first.
+// Crew Flight's arrival (after React Bits Pro's Star Burst): the rocket flies
+// home as the warp clears (CrewSetup), and once it's there, stars stream out
+// of its porthole (a quick inner layer and a slower, bigger outer one) round a
+// blooming flower of light, and the two pilots' animals fly in from either
+// side of the screen, each in its seat's colour, and board through the
+// porthole, the second just after the first.
 // `onBoard` fires as each one gets there (for a sparkle). With reduced motion
 // there's none of it.
 
-/** the warp has mostly cleared (CrewFlight opens behind it) */
-const FROM_MS = 350;
+/** the rocket is nearly home (CrewFlight opens behind the warp, and the rocket flies in as it clears) */
+const FROM_MS = 800;
 /** the stars stream out till then, and it's all gone by the end */
-const STREAM_MS = 1300;
-const END_MS = 2300;
+const STREAM_MS = 1750;
+const END_MS = 2750;
 /** when each animal sets off, and how long it takes to board */
-const BOARD_MS = [450, 620];
+const BOARD_MS = [900, 1070];
 const FLY_MS = 850;
 
 const TAU = Math.PI * 2;

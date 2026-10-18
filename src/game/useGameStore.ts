@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { gameNow } from './gameClock';
+import { gameNow, gameTimeout } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
 import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
@@ -13,9 +13,13 @@ import { useSettings } from '../settings/useSettings';
 import { activeMission, useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 import { useAchievements } from './useAchievements';
-import { flyHome, kick } from './flight';
+import { AWAY_MS, flyAway, flyHome, kick } from './flight';
 
-/** bonus rounds the rocket flies off in (racing away, blasting off, jumping to lightspeed): it flies home after them */
+/**
+ * Bonus rounds the rocket leaves the game for (each in its own ship, which
+ * races away, blasts off or jumps to lightspeed at the end): it flies off
+ * before them and home after them. The others play over the rocket.
+ */
 const FLIES_OFF: ReadonlySet<BonusKind> = new Set(['traffic', 'battle', 'stranded', 'stardust', 'road']);
 
 export const MISTAKES_BEFORE_HEATMAP = 5;
@@ -45,8 +49,10 @@ interface GameState {
   /** true while the fly-through animation plays (the boost lands at its end) */
   inWormhole: boolean;
   questionsSinceChallenge: number;
-  /** a Meteor Shower or Constellation round in progress (replaces the question) */
+  /** a bonus round in progress (replaces the question) */
   bonusRound: Exclude<BonusKind, 'wormhole'> | null;
+  /** the rocket is flying off for this round, which starts once it's gone (flyAway) */
+  departing: Exclude<BonusKind, 'wormhole'> | null;
   /** the bonus kinds still to come, in a random order (see nextBonusRound) */
   bonusQueue: BonusKind[];
   /** bumped on every new bonus round; used as its React key so each one starts fresh */
@@ -125,6 +131,20 @@ function newQuestion(progress: Progress, avoidKey?: string): Question {
   return { fact, x, y, askedAt: gameNow() };
 }
 
+/** a bonus round begins: straight away, or (one the rocket leaves the game for) once it has flown off */
+function startBonus(kind: Exclude<BonusKind, 'wormhole'>) {
+  const begin = () => useGameStore.setState((s) => ({ bonusRound: kind, departing: null, bonusNonce: s.bonusNonce + 1 }));
+  if (!FLIES_OFF.has(kind) || !flyAway()) {
+    begin();
+    return;
+  }
+  useGameStore.setState({ departing: kind });
+  gameTimeout(() => {
+    // (unless something else took over meanwhile: a reset, another pilot)
+    if (useGameStore.getState().departing === kind) begin();
+  }, AWAY_MS);
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   progress: localProgressStore.load(),
   question: null,
@@ -140,6 +160,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   inWormhole: false,
   questionsSinceChallenge: 0,
   bonusRound: null,
+  departing: null,
   bonusQueue: [],
   bonusNonce: 0,
   academyOpen: false,
@@ -159,6 +180,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       inWormhole: false,
       questionsSinceChallenge: 0,
       bonusRound: null,
+      departing: null,
     });
     useAchievements.getState().track({ type: 'progress' }, progress);
   },
@@ -272,7 +294,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       const { kind, queue } = nextBonusRound(get().bonusQueue);
       const next = { questionsSinceChallenge: 0, bonusQueue: queue, feedback: null, flare: 0 };
       if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level, mission, clampStage(progress.stage)) });
-      else set({ ...next, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
+      else {
+        set(next);
+        startBonus(kind);
+      }
       return;
     }
     set({
@@ -360,7 +385,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   openAcademy: () => {
     const s = get();
-    if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
+    if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound || s.departing) return;
     set({ academyOpen: true });
     // this pilot has found the secret: stop the porthole's "tap me" shimmer
     const { activeId, update } = useProfiles.getState();
@@ -375,7 +400,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { progress } = get();
     const clear = { justLaunched: false, showHeatmap: false, inWormhole: false, feedback: null, flare: 0 };
     if (kind === 'wormhole') set({ ...clear, bonusRound: null, challenge: buildChallenge(progress.level, activeMission(), clampStage(progress.stage)) });
-    else set({ ...clear, challenge: null, bonusRound: kind, bonusNonce: get().bonusNonce + 1 });
+    else {
+      set({ ...clear, challenge: null });
+      startBonus(kind);
+    }
   },
 
   devLaunch: () => {
@@ -433,6 +461,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       inWormhole: false,
       questionsSinceChallenge: 0,
       bonusRound: null,
+      departing: null,
     });
   },
 }));

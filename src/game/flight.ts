@@ -68,12 +68,30 @@ export function bump() {
   flight.boost = 0;
 }
 
-// ---- flying home: back in the game from wherever the rocket flew off to ----
+// ---- flying off and flying home: leaving the game for a bonus round or a game mode, and back ----
 
+/** how long the rocket takes to fly off (ms) */
+export const AWAY_MS = 750;
+/** it stays gone this long after (by then a round or a mode covers the screen, and flyHome brings it back) */
+export const AWAY_HOLD_MS = 2500;
 /** how long the rocket takes to fly home (ms) */
 export const HOME_MS = 1100;
-/** when it set off for home, in game time (FlyingRocket flies it in from there) */
+/** when it set off, and when it set off for home, in game time (FlyingRocket flies it from there) */
+export const departure = { at: -Infinity };
 export const homecoming = { at: -Infinity };
+
+/**
+ * Off to a bonus round that it flies off in, or a game mode: the rocket pulls
+ * back for a beat, engines flaring, then blasts away up its course into the
+ * distance. False with reduced motion (it doesn't go anywhere: start at once).
+ */
+export function flyAway(): boolean {
+  if (flight.motionScale < 1) return false;
+  departure.at = gameNow();
+  homecoming.at = -Infinity;
+  kick(1.1);
+  return true;
+}
 
 /**
  * Back from a bonus round it left in (or a game mode, or the splash): the
@@ -82,6 +100,7 @@ export const homecoming = { at: -Infinity };
  */
 export function flyHome() {
   if (flight.motionScale < 1) return;
+  departure.at = -Infinity;
   homecoming.at = gameNow();
   kick(1.1);
 }

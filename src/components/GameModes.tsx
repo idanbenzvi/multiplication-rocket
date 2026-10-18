@@ -8,13 +8,14 @@ import { useSunStore } from '../game/useSunStore';
 import { useT } from '../i18n/useLang';
 import { playTrack } from '../audio/useAudio';
 import GradientText from './reactbits/GradientText';
-import { BACKDROP_VARIANTS, SHEET_VARIANTS, warpTo, type SheetLeave } from './warpTransition';
+import { BACKDROP_VARIANTS, flyOffTo, SHEET_VARIANTS, type SheetLeave } from './warpTransition';
 
 // The ways to play together, in their own top-bar button (separate from
 // choosing who's flying): Crew Flight (two pilots on one device), Two phones
 // (Split Sky, Eclipse Hunters) and Monster Sun (2-6 phones). Each starts with
-// the active pilot. The two-phone games are a warp away (ModeWarp); Fly
-// together hands over to the crew sheet, where its own launch warps.
+// the active pilot. The two-phone games are a warp away (ModeWarp), the rocket
+// blasting off first; Fly together hands over to the crew sheet, where its own
+// launch does the same.
 export function GameModesButton() {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -48,7 +49,7 @@ export function GameModesButton() {
       disabled: false,
       start: (card: Element) => {
         setLeave('warp');
-        warpTo(() => useSkyStore.getState().openSky(), card);
+        flyOffTo(() => useSkyStore.getState().openSky(), card);
       },
     },
     {
@@ -61,7 +62,7 @@ export function GameModesButton() {
         setLeave('warp');
         // Monster Sun's soundtrack starts with the warp, from the tap (browsers only start music from one)
         playTrack('sun');
-        warpTo(() => useSunStore.getState().openSun(), card);
+        flyOffTo(() => useSunStore.getState().openSun(), card);
       },
     },
   ];

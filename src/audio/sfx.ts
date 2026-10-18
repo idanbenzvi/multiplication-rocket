@@ -182,6 +182,15 @@ export const sfx = {
     [4, 7, 9].forEach((n, i) => tone(c, noteFreq(n), t + 0.75 + i * 0.05, 0.6, { gain: 0.07 }));
   },
 
+  /** The rocket blasting off for a bonus round or a game mode: a short engine roar, rising away. */
+  blastOff() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.75, 180, 2600, 0.14);
+    tone(c, 70, t + 0.08, 0.7, { type: 'sawtooth', gain: 0.05, glideTo: 520, attack: 0.12 });
+  },
+
   /** Meteor Shower: the right meteor blasted — boom plus a ding that climbs with the run. */
   boom(run: number) {
     const c = audio();

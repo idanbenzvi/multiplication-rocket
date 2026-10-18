@@ -7,7 +7,8 @@ import { suggestSeats, type Seat } from '../../game/crew';
 import { useT } from '../../i18n/useLang';
 import { SEAT_COLORS } from './seatColors';
 import { playTrack } from '../../audio/useAudio';
-import { BACKDROP_VARIANTS, SHEET_VARIANTS, useModeWarp, warpTo } from '../warpTransition';
+import { BACKDROP_VARIANTS, flyOffTo, SHEET_VARIANTS, useModeWarp } from '../warpTransition';
+import { flyHome } from '../../game/flight';
 
 // Pick two pilots (the first tapped takes the left seat), then check their
 // seats: the one further along is suggested as Pilot, the other as
@@ -42,7 +43,11 @@ function SetupSheet() {
     ];
     // the crew's own soundtrack starts with the warp, from the tap (browsers only start music from one)
     playTrack('crew');
-    warpTo(() => start(members), e.currentTarget);
+    // the rocket blasts off, and comes back with both pilots aboard
+    flyOffTo(() => {
+      start(members);
+      flyHome();
+    }, e.currentTarget);
     closeSetup();
   };
 
@@ -124,7 +129,7 @@ function SetupSheet() {
 export function CrewSetup() {
   const open = useCrewStore((s) => s.setupOpen);
   const closeSetup = useCrewStore((s) => s.closeSetup);
-  const leave = useModeWarp((s) => (s.run ? 'warp' : null));
+  const leave = useModeWarp((s) => (s.run || s.due ? 'warp' : null));
   return createPortal(
     <AnimatePresence custom={leave}>
       {open && (

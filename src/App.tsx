@@ -101,6 +101,11 @@ function App() {
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
   const bonusRound = useGameStore((s) => s.bonusRound);
+  // the rocket blasting off for a bonus round (it starts once it's gone)
+  const departing = useGameStore((s) => s.departing);
+  useEffect(() => {
+    if (departing) sfx.blastOff();
+  }, [departing]);
   const bonusNonce = useGameStore((s) => s.bonusNonce);
   const finishBonusRound = useGameStore((s) => s.finishBonusRound);
   const dismissHeatmap = useGameStore((s) => s.dismissHeatmap);
@@ -338,7 +343,7 @@ function App() {
 
           {challenge && <WormholeFlight level={displayLevel} active={inWormhole} onDone={handleWormholeDone} />}
 
-          {question && !challenge && !bonusRound && !justLaunched && !showHeatmap && (
+          {question && !challenge && !bonusRound && !departing && !justLaunched && !showHeatmap && (
             <div className="hud-question-zone">
               <StrategyHint
                 x={question.x}
