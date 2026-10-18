@@ -16,6 +16,8 @@ export interface Profile {
   mission?: Mission;
   /** addition Academy courses finished ('add1'-'add3') */
   academyDone?: string[];
+  /** false: no clock on their questions, and every right answer fills the same (the cockpit's "Speed boost") */
+  timedBoost?: boolean;
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -79,7 +81,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string, mission: Mission) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }
@@ -148,6 +150,19 @@ export function activeMission(): Mission {
 
 export function useMission(): Mission {
   return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.mission ?? 'mul');
+}
+
+/** a pilot races the clock for a bigger boost (unless it's switched off for them in the cockpit) */
+export function timedBoostOf(profileId: string | null | undefined): boolean {
+  return useProfiles.getState().profiles.find((p) => p.id === profileId)?.timedBoost !== false;
+}
+
+export function activeTimedBoost(): boolean {
+  return timedBoostOf(useProfiles.getState().activeId);
+}
+
+export function useTimedBoost(): boolean {
+  return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.timedBoost !== false);
 }
 
 /** a profile's level / correct count in their current mission, for the picker, read straight from storage */

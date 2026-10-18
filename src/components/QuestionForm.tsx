@@ -12,6 +12,7 @@ import { streakTier } from '../game/streak';
 import { distractors } from '../game/distractors';
 import type { AnswerMode, TypedCheck } from '../settings/useSettings';
 import { NumPad } from './NumPad';
+import { ARROW_DIRS, ARROW_GLYPHS, arrowChoice } from './arrowChoices';
 
 interface Props {
   question: Question;
@@ -25,6 +26,8 @@ interface Props {
   typedCheck: TypedCheck;
   /** finger-first device: typing uses the on-screen keypad, not the OS keyboard */
   touch: boolean;
+  /** the clock and its boost gauge (off for a pilot who plays without the speed boost) */
+  timed?: boolean;
 }
 
 const MAX_DIGITS = 3; // the biggest answer is 100
@@ -58,7 +61,7 @@ function shuffled<T>(items: T[]): T[] {
   return a;
 }
 
-export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, typedCheck, touch }: Props) {
+export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, typedCheck, touch, timed = true }: Props) {
   const t = useT();
   // The typed digits are stored *with the question they were typed for*.
   // Clearing them in an effect when a new question arrives isn't enough:
@@ -174,14 +177,17 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   );
 
   // Physical keys where there's no focused <input>: keypad mode (a tablet
-  // with a keyboard case) and choice mode (1-4 picks an answer).
+  // with a keyboard case) and choice mode (an arrow key picks an answer).
   useEffect(() => {
     if (mode === 'type' && !touch) return;
     const onKey = (e: KeyboardEvent) => {
       if (feedback === 'wrong') return; // Enter is handled by the focused Continue button
       if (mode === 'choice') {
-        const n = Number(e.key);
-        if (Number.isInteger(n) && n >= 1 && n <= choices.length) choose(choices[n - 1]);
+        const i = arrowChoice(e.key);
+        if (i >= 0 && i < choices.length) {
+          e.preventDefault(); // (not scrolling the page)
+          choose(choices[i]);
+        }
         return;
       }
       if (/^[0-9]$/.test(e.key)) typeDigit(e.key);
@@ -268,7 +274,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
           </div>
 
           {mode === 'choice' && feedback !== 'wrong' && (
-            <div className="choice-grid" dir="ltr">
+            <div className={`choice-grid ${touch ? '' : 'is-dpad'}`} dir="ltr">
               {choices.map((c, i) => {
                 const state =
                   feedback && c === picked ? (feedback === 'correct' ? 'is-right' : 'is-wrong') : '';
@@ -276,11 +282,12 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
                   <button
                     key={c}
                     type="button"
+                    data-dir={ARROW_DIRS[i]}
                     className={`choice-btn ${state}`}
                     onClick={() => choose(c)}
                     disabled={disabled || !!feedback}
                   >
-                    {!touch && <span className="choice-key">{i + 1}</span>}
+                    {!touch && <span className="choice-key">{ARROW_GLYPHS[i]}</span>}
                     {c}
                   </button>
                 );
@@ -311,7 +318,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
         </form>
       </ElectricBorder>
 
-      {feedback !== 'wrong' && (
+      {timed && feedback !== 'wrong' && (
         <div className={`timer-slider zone-${zone}`}>
           <div className="timer-slider-clock">{(elapsedMs / 1000).toFixed(1)}s</div>
           <div className="timer-slider-track">

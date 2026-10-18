@@ -5,6 +5,8 @@ export const FAST_MS = 5000;
 export const SLOW_MS = 10000;
 export const MAX_SPEED_FACTOR = 2;
 export const MIN_SPEED_FACTOR = 0.3;
+/** without the clock (a pilot with the speed boost switched off, a crew's navigator): every right answer earns the middle of the range */
+export const UNTIMED_SPEED_FACTOR = (MAX_SPEED_FACTOR + MIN_SPEED_FACTOR) / 2;
 
 export type SpeedZone = 'fast' | 'mid' | 'slow';
 

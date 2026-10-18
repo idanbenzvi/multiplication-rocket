@@ -166,6 +166,8 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
   const [locked, setLocked] = useState(false);
   const seat = members?.[turn.member].seat ?? 'pilot';
   const color = SEAT_COLORS[turn.member];
+  // the pilot's seat has the clock, unless this pilot plays without the speed boost
+  const timed = pilot?.timedBoost !== false;
 
   const handle = useCallback(
     (value: number, elapsedMs: number) => {
@@ -177,7 +179,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
         bump();
         return; // wrong answers wait for "Continue"
       }
-      sfx.correct(1, seat === 'pilot' && speedZone(elapsedMs) === 'fast');
+      sfx.correct(1, seat === 'pilot' && (!timed || speedZone(elapsedMs) === 'fast'));
       haptics.correct(1);
       kick(0.35);
       const el = document.querySelector('.crew-turn-zone .answer-input, .crew-turn-zone .choice-btn.is-right');
@@ -185,7 +187,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
       if (r) onBurst(r.left + r.width / 2, r.top + r.height / 2, color);
       gameTimeout(next, NEXT_TURN_DELAY_MS);
     },
-    [answer, next, seat, onBurst, color],
+    [answer, next, seat, timed, onBurst, color],
   );
 
   return (
@@ -215,6 +217,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
           mode={answerMode}
           typedCheck={typedCheck}
           touch={isTouchDevice}
+          timed={timed}
         />
       )}
     </div>

@@ -66,6 +66,9 @@ describe('fuel', () => {
 
   it('still rewards a fast pilot more than a slow one', () => {
     expect(fuelPerAnswer('pilot', 1, 1000)).toBeGreaterThan(fuelPerAnswer('pilot', 1, 20_000));
+    // a pilot without the clock earns a navigator's steady share, however long they take
+    expect(fuelPerAnswer('pilot', 1, 1000, false)).toBeCloseTo(fuelPerAnswer('navigator', 1, 0));
+    expect(fuelPerAnswer('pilot', 1, 20_000, false)).toBeCloseTo(fuelPerAnswer('navigator', 1, 0));
   });
 });
 

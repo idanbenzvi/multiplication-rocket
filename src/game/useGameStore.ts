@@ -3,14 +3,14 @@ import { gameNow, gameTimeout } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
 import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
-import { MAX_SPEED_FACTOR, speedFactor, speedZone } from './scoring';
+import { MAX_SPEED_FACTOR, speedFactor, speedZone, UNTIMED_SPEED_FACTOR } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { nextBonusRound, type BonusKind } from './bonusRounds';
 import { pickFact } from './questions';
 import { clampStage, stageReady } from './addition';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
-import { activeMission, useProfiles } from '../profiles/useProfiles';
+import { activeMission, activeTimedBoost, useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 import { useAchievements } from './useAchievements';
 import { AWAY_MS, flyAway, flyHome, kick } from './flight';
@@ -212,7 +212,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       totalCorrectAnswers += 1;
       bestStreak = Math.max(bestStreak, currentStreak);
 
-      const factor = speedFactor(elapsedMs);
+      // racing the clock, or (with the speed boost switched off for this pilot) a steady boost every time
+      const factor = activeTimedBoost() ? speedFactor(elapsedMs) : UNTIMED_SPEED_FACTOR;
       const baseIncrement = 100 / level.streakToLaunch;
       gainPercent = baseIncrement * factor;
       const result = addFuel({ ...progress, currentStreak }, nextMastery, gainPercent);

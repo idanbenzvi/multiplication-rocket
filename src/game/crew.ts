@@ -79,10 +79,11 @@ const AVERAGE_SPEED_FACTOR = (MAX_SPEED_FACTOR + MIN_SPEED_FACTOR) / 2;
 // The pilot's fuel follows the usual speed curve, normalized so an
 // average-speed answer is worth one share. A navigator's answer (untimed:
 // counting groups takes the time it takes) is always worth exactly one share,
-// so the younger child's part of the launch is as big as the older one's.
-export function fuelPerAnswer(seat: Seat, crewLevel: number, elapsedMs: number): number {
+// so the younger child's part of the launch is as big as the older one's; so
+// is the answer of a pilot who plays without the clock (`timed` false).
+export function fuelPerAnswer(seat: Seat, crewLevel: number, elapsedMs: number, timed = true): number {
   const share = 100 / turnsToLaunch(crewLevel);
-  return seat === 'pilot' ? (share * speedFactor(elapsedMs)) / AVERAGE_SPEED_FACTOR : share;
+  return seat === 'pilot' && timed ? (share * speedFactor(elapsedMs)) / AVERAGE_SPEED_FACTOR : share;
 }
 
 // ---------- navigator questions ----------

@@ -1413,6 +1413,51 @@ button:focus-visible {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.5);
 }
+/* on a computer: the four answers in a cross, picked with the arrow keys like a D-pad (arrowChoices.ts) */
+.choice-grid.is-dpad {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    '. up .'
+    'left . right'
+    '. down .';
+  gap: 0.45rem;
+}
+.choice-grid.is-dpad .choice-btn {
+  min-height: 54px;
+}
+.choice-grid.is-dpad .choice-btn[data-dir='up'] {
+  grid-area: up;
+}
+.choice-grid.is-dpad .choice-btn[data-dir='left'] {
+  grid-area: left;
+}
+.choice-grid.is-dpad .choice-btn[data-dir='right'] {
+  grid-area: right;
+}
+.choice-grid.is-dpad .choice-btn[data-dir='down'] {
+  grid-area: down;
+}
+/* the arrow sits on the side it points to */
+.choice-grid.is-dpad .choice-key {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+.choice-grid.is-dpad [data-dir='up'] .choice-key {
+  inset: 4px auto auto 50%;
+  translate: -50% 0;
+}
+.choice-grid.is-dpad [data-dir='down'] .choice-key {
+  inset: auto auto 4px 50%;
+  translate: -50% 0;
+}
+.choice-grid.is-dpad [data-dir='left'] .choice-key {
+  inset: 50% auto auto 7px;
+  translate: 0 -50%;
+}
+.choice-grid.is-dpad [data-dir='right'] .choice-key {
+  inset: 50% 7px auto auto;
+  translate: 0 -50%;
+}
 
 .numpad {
   display: grid;

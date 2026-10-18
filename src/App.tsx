@@ -15,7 +15,7 @@ import { PilotButton, ProfileGate } from './components/Profiles';
 import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
 import { StudioSplash } from './components/splash/StudioSplash';
-import { activeProfile, pilotName, useMission, useProfileGateOpen } from './profiles/useProfiles';
+import { activeProfile, pilotName, useMission, useProfileGateOpen, useTimedBoost } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { clampStage } from './game/addition';
 import { isTouchDevice, useSettings } from './settings/useSettings';
@@ -101,6 +101,8 @@ function App() {
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
   const bonusRound = useGameStore((s) => s.bonusRound);
+  // this pilot races the clock for a bigger boost (unless switched off for them in the cockpit)
+  const timed = useTimedBoost();
   // the rocket blasting off for a bonus round (it starts once it's gone)
   const departing = useGameStore((s) => s.departing);
   useEffect(() => {
@@ -170,7 +172,8 @@ function App() {
     if (correct) {
       const { progress: after, justLaunched: launching } = useGameStore.getState();
       const streak = after.currentStreak;
-      const zone = speedZone(elapsedMs);
+      // without the clock, every right answer gets the full celebration
+      const zone = timed ? speedZone(elapsedMs) : 'fast';
       const tier = streakTier(streak);
       // A launch resets the streak and plays its own sound (see the
       // justLaunched effect), so only celebrate the answer itself otherwise.
@@ -363,6 +366,7 @@ function App() {
                 mode={answerMode}
                 typedCheck={typedCheck}
                 touch={isTouchDevice}
+                timed={timed}
               />
             </div>
           )}

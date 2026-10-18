@@ -20,7 +20,7 @@ import {
 import { missionOfKey, pairKey } from './mission';
 import { pickFact } from './questions';
 import { clampStage } from './addition';
-import { missionOf } from '../profiles/useProfiles';
+import { missionOf, timedBoostOf } from '../profiles/useProfiles';
 import { loadProgressFor, saveProgressFor } from '../storage/progressStore';
 import { appendToLog } from '../stats/answerLog';
 import { useGameStore } from './useGameStore';
@@ -274,7 +274,7 @@ export const useCrewStore = create<CrewState>((set, get) => {
       nextStats[turn.member] = { correct: stats[turn.member].correct + (correct ? 1 : 0), answered: stats[turn.member].answered + 1 };
       set({ feedback: correct ? 'correct' : 'wrong', stats: nextStats });
       if (correct) {
-        const gain = fuelPerAnswer(member.seat, level, elapsedMs);
+        const gain = fuelPerAnswer(member.seat, level, elapsedMs, timedBoostOf(member.profileId));
         pour(turn.member === 0 ? [gain, 0] : [0, gain]);
       }
       return correct;

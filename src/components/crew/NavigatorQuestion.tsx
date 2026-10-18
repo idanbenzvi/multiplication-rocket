@@ -5,6 +5,8 @@ import { skipCounts } from '../../game/crew';
 import { missionOfKey } from '../../game/mission';
 import { useLang, useT } from '../../i18n/useLang';
 import { speak } from '../../audio/speech';
+import { isTouchDevice } from '../../settings/useSettings';
+import { ARROW_DIRS, ARROW_GLYPHS, arrowChoice } from '../arrowChoices';
 
 interface Props {
   question: CrewQuestion;
@@ -38,9 +40,12 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
   chooseRef.current = choose;
 
   useEffect(() => {
+    // an arrow key picks an answer
     const handler = (e: KeyboardEvent) => {
-      const n = Number(e.key);
-      if (Number.isInteger(n) && n >= 1 && n <= choices.length) chooseRef.current(choices[n - 1]);
+      const i = arrowChoice(e.key);
+      if (i < 0 || i >= choices.length) return;
+      e.preventDefault();
+      chooseRef.current(choices[i]);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -114,11 +119,19 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
           </button>
         </div>
       ) : (
-        <div className="choice-grid nav-choices" dir="ltr">
-          {choices.map((c) => {
+        <div className={`choice-grid nav-choices ${isTouchDevice ? '' : 'is-dpad'}`} dir="ltr">
+          {choices.map((c, i) => {
             const state = picked === c ? (c === answer ? 'is-right' : 'is-wrong') : '';
             return (
-              <button key={c} type="button" className={`choice-btn ${state}`} disabled={picked !== null} onClick={() => choose(c)}>
+              <button
+                key={c}
+                type="button"
+                data-dir={ARROW_DIRS[i]}
+                className={`choice-btn ${state}`}
+                disabled={picked !== null}
+                onClick={() => choose(c)}
+              >
+                {!isTouchDevice && <span className="choice-key">{ARROW_GLYPHS[i]}</span>}
                 {c}
               </button>
             );

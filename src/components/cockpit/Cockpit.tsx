@@ -98,6 +98,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const setMusicVolume = useAudio((s) => s.setMusicVolume);
   const setEffectsVolume = useAudio((s) => s.setEffectsVolume);
   const profile = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId));
+  const timedBoost = profile?.timedBoost !== false;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -362,6 +363,19 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
             <Module label={t.mistakeReviewLabel} screen={t.mistakeReviewHint}>
               <Toggle name={t.mistakeReviewLabel} on={mistakeReview} onChange={setMistakeReview} onWord={t.on} offWord={t.off} />
             </Module>
+
+            {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}
+            {profile && (
+              <Module label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint : t.timedBoostOffHint}>
+                <Toggle
+                  name={t.timedBoostLabel}
+                  on={timedBoost}
+                  onChange={(on) => useProfiles.getState().update(profile.id, { timedBoost: on })}
+                  onWord={t.on}
+                  offWord={t.off}
+                />
+              </Module>
+            )}
 
             {/* only where the device can actually vibrate (not iPhone/iPad) */}
             {canVibrate && (
