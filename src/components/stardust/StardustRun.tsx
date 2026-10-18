@@ -14,6 +14,7 @@ import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { Stardust } from './Stardust';
 import { AuroraBackdrop } from './AuroraBackdrop';
 import type { FluidApi } from './StardustFluid';
+import { calmMotion } from '../arrival/dropOut';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -29,9 +30,17 @@ interface Props {
 // table's pattern to remember. On the addition mission the jumps are all the
 // same size (+3, +10, +9), each question is the last stop plus the jump, and
 // the recap shows the run with a pattern for that jump.
+//
+// The round opens with the ship diving in from high on the left on a bright
+// wake of stardust, down past its first stop and pulling up onto it; it lands
+// in a swirl of stardust, and the path unrolls from there, stop by stop.
 type Phase = 'intro' | 'ask' | 'glide' | 'recap';
 
 const INTRO_MS = 2600;
+/** the ship swoops in and lands on the first stop; then the path unrolls, a stop at a time */
+const ARRIVE_MS = 1300;
+const UNROLL_MS = 90;
+const POP_MS = 260;
 const GLIDE_MS = 1350;
 const LIGHT_PAUSE_MS = 450; // after the last landing, before the recap
 const RECAP_STEP_MS = 380; // the recap lights the stops one after another
@@ -72,6 +81,18 @@ function onArc(a: Pt, c: Pt, b: Pt, t: number): Pt {
   return { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
 }
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
+const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
+
+/** a point on the cubic Bézier a → b → c → d */
+function onCurve(a: Pt, b: Pt, c: Pt, d: Pt, t: number): Pt {
+  const u = 1 - t;
+  return {
+    x: u * u * u * a.x + 3 * u * u * t * b.x + 3 * u * t * t * c.x + t * t * t * d.x,
+    y: u * u * u * a.y + 3 * u * u * t * b.y + 3 * u * t * t * c.y + t * t * t * d.y,
+  };
+}
 
 function patternText(t: Strings, run: Run): string {
   const { jump: table } = run;
@@ -156,11 +177,27 @@ export function StardustRun({ onDone, onBurst }: Props) {
   const warpRef = useRef<HTMLCanvasElement>(null);
   useWarpCanvas(warpRef, 0.4, warpSpeed);
   const fluid = useRef<FluidApi | null>(null);
+  const openedAt = useRef(gameNow());
+  const [calm] = useState(calmMotion);
+  /** 0..1 as the ship swoops in, while it still is */
+  const swooping = (now: number) => (calm || phase !== 'intro' ? 1 : clamp01((now - openedAt.current) / ARRIVE_MS));
 
   // where the ship is: parked over its stop, or on the arc to the next one
   const shipAt = useCallback(
     (now: number): { p: Pt; angle: number } => {
       const hover = (pt: Pt): Pt => ({ x: pt.x, y: pt.y - shipSize * 0.75 });
+      const sw = calm || phase !== 'intro' ? 1 : clamp01((now - openedAt.current) / ARRIVE_MS);
+      if (sw < 1) {
+        // diving in from high on the left, down past the first stop and pulling up onto it
+        const end = hover(stops[0]);
+        const a = { x: end.x - shipSize * 1.6, y: -shipSize };
+        const b = { x: end.x - shipSize * 0.4, y: end.y + h * 0.42 };
+        const c = { x: end.x - shipSize * 0.2, y: end.y + h * 0.1 };
+        const k = easeOut(sw);
+        const p = onCurve(a, b, c, end, k);
+        const q = onCurve(a, b, c, end, Math.min(1, k + 0.02));
+        return { p, angle: (Math.atan2(q.y - p.y, q.x - p.x) * 180) / Math.PI * (1 - k * k) };
+      }
       if (phase === 'glide') {
         const raw = Math.min(1, (now - glideStart.current) / GLIDE_MS);
         const k = easeInOut(raw);
@@ -176,7 +213,7 @@ export function StardustRun({ onDone, onBurst }: Props) {
       const bob = Math.sin(now / 520) * 4;
       return { p: { x: at.x, y: at.y + bob }, angle: Math.sin(now / 900) * 3 };
     },
-    [phase, step, lit, stops, shipSize, h],
+    [phase, step, lit, stops, shipSize, h, calm],
   );
 
   // every frame: re-render, and stir the stardust (the ship's wake, a gentle
@@ -199,8 +236,8 @@ export function StardustRun({ onDone, onBurst }: Props) {
       if (api) {
         const vx = p.x - prev.x;
         const vy = p.y - prev.y;
-        if (phase === 'glide') {
-          // the glide: a bright, fast wake straight from the engine
+        if (phase === 'glide' || swooping(now) < 1) {
+          // the glide (or swooping in): a bright, fast wake straight from the engine
           api.splat(p.x - shipSize * 0.7, p.y, vx * 4, vy * 4, [color[0] * 0.16, color[1] * 0.16, color[2] * 0.16]);
         } else if (tick.current % 5 === 0) {
           // idling: a soft exhaust puff behind the ship
@@ -223,6 +260,8 @@ export function StardustRun({ onDone, onBurst }: Props) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
+    // (swooping follows phase)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shipAt, phase, stops, shipSize]);
 
   /** a burst of stardust (and the game's sparkle) at a stop */
@@ -240,6 +279,31 @@ export function StardustRun({ onDone, onBurst }: Props) {
     },
     [onBurst],
   );
+
+  // landing on the first stop, in a swirl of stardust
+  useEffect(() => {
+    if (calm) return;
+    return gameTimeout(() => {
+      const api = fluid.current;
+      const pt = stops[0];
+      if (api) {
+        for (const [r, n, v] of [
+          [shipSize * 0.9, 10, 16],
+          [shipSize * 1.7, 14, 10],
+        ]) {
+          for (let k = 0; k < n; k++) {
+            const a = (k / n) * Math.PI * 2;
+            const c = DUST[k % DUST.length];
+            api.splat(pt.x + Math.cos(a) * r, pt.y + Math.sin(a) * r, -Math.sin(a) * v, Math.cos(a) * v, [c[0] * 0.26, c[1] * 0.26, c[2] * 0.26]);
+          }
+        }
+      }
+      onBurst(pt.x, pt.y, '#ffd77a');
+      sfx.pick(1);
+    }, ARRIVE_MS);
+    // once, as it lands
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // intro card → first question
   useEffect(() => {
@@ -334,6 +398,10 @@ export function StardustRun({ onDone, onBurst }: Props) {
   const prevValue = values[step];
   const lowest = Math.max(...stops.map((s) => s.y));
   const panelTop = lowest + Math.min(76, h * 0.09);
+  // the path unrolls from the first stop once the ship has landed on it
+  const since = calm || phase !== 'intro' ? Infinity : now - openedAt.current - ARRIVE_MS;
+  const unrolled = clamp01(since / ((stops.length - 1) * UNROLL_MS + POP_MS));
+  const popped = (i: number) => clamp01((since - i * UNROLL_MS) / POP_MS);
 
   return (
     <div className="stardust">
@@ -343,12 +411,16 @@ export function StardustRun({ onDone, onBurst }: Props) {
 
       {/* the path, the hops already made (+7 each), and the next one, dashed */}
       <svg className="sd-path" width={w} height={h} aria-hidden="true" direction="ltr">
-        <polyline points={stops.map((s) => `${s.x},${s.y}`).join(' ')} className="sd-track" />
+        <polyline
+          points={stops.map((s) => `${s.x},${s.y}`).join(' ')}
+          className="sd-track"
+          style={unrolled < 1 ? { clipPath: `inset(0 ${(1 - unrolled) * 100}% 0 0)` } : undefined}
+        />
         {stops.slice(0, -1).map((a, i) => {
           const b = stops[i + 1];
           const c = arcControl(a, b, h);
           const done = i + 1 < lit;
-          const next = i + 1 === lit && phase !== 'recap';
+          const next = i + 1 === lit && phase !== 'recap' && unrolled >= 1;
           if (!done && !next) return null;
           const mid = onArc(a, c, b, 0.5);
           return (
@@ -367,11 +439,12 @@ export function StardustRun({ onDone, onBurst }: Props) {
         const isLit = i < lit;
         const target = i === lit && phase === 'ask';
         const glow = phase === 'recap' && i < recapLit;
+        const pop = popped(i);
         return (
           <div
             key={i}
             className={`sd-stop ${isLit ? 'is-lit' : ''} ${target ? 'is-target' : ''} ${glow ? 'is-recap' : ''}`}
-            style={{ left: s.x, top: s.y }}
+            style={{ left: s.x, top: s.y, ...(pop < 1 && { opacity: pop, scale: String(0.4 + 0.6 * easeOutBack(pop)) }) }}
             dir="ltr"
           >
             <span className="sd-stop-dot">{isLit ? values[i] : '?'}</span>

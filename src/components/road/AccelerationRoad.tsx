@@ -13,6 +13,7 @@ import { SpaceRipple } from '../SpaceRipple';
 import GradientText from '../reactbits/GradientText';
 import { RearShip } from '../spaceArt';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
+import { calmMotion } from '../arrival/dropOut';
 import './road.css';
 
 interface Props {
@@ -28,9 +29,25 @@ interface Props {
 // time, so the ship really accelerates. ×2 you can see. After the fourth it
 // flies on to the middle of the screen, the view tilts up, and it blasts off
 // skyward with a light trail and a space-time ripple.
+//
+// The road builds itself as the round opens (after React Bits Pro's
+// Perspective Grid): a neon grid sweeps out to the horizon, the slabs rise
+// up out of it into place, nearest first, and the ship falls out of the sky
+// and bounces down on its pad. The grid stays on faintly under the road.
 type Phase = 'intro' | 'ask' | 'jump' | 'charge' | 'blast' | 'summary';
 
 const INTRO_MS = 2600;
+/** the grid sweeps out to the horizon in this long; the slabs rise from then, a little later the further off */
+const GRID_MS = 650;
+const SLABS_FROM_MS = 180;
+const SLAB_GAP_MS = 20;
+const SLAB_DROP_MS = 420;
+/** how far below the slabs rise from, and how high the ship drops from (world units) */
+const SLAB_DEPTH = 2.2;
+const SHIP_HEIGHT = 4;
+/** the ship falls, and lands on its pad */
+const SHIP_DROP_MS = 600;
+const LAND_MS = 1350;
 const CHARGE_MS = 1100;
 const BLAST_MS = 2200;
 const SUMMARY_MS = 4600;
@@ -111,6 +128,19 @@ interface Spark {
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+/** eases out past the end and back */
+const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
+const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
+/** a ball's fall: down, and two little bounces */
+function easeOutBounce(t: number): number {
+  const n = 7.5625;
+  const d = 2.75;
+  if (t < 1 / d) return n * t * t;
+  if (t < 2 / d) return n * (t -= 1.5 / d) * t + 0.75;
+  if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + 0.9375;
+  return n * (t -= 2.625 / d) * t + 0.984375;
+}
 
 /** how long jump k takes: barely longer though twice as far, so the ship speeds up */
 const jumpMs = (k: number) => 750 + 120 * k;
@@ -154,6 +184,9 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
   const warpSpeed = useRef(1.4);
   useWarpCanvas(warpRef, l.horizon / h, warpSpeed);
   const roadRef = useRef<HTMLCanvasElement>(null);
+  // the road building itself as the round opens
+  const openedAt = useRef(gameNow());
+  const [calm] = useState(calmMotion);
 
   const go = useCallback((p: Phase) => {
     phaseStart.current = gameNow();
@@ -168,8 +201,10 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
     const camFor = (z: number, y: number, tilt = 0): Cam => ({ z: z - BACK, y: l.height + y * 0.55, tilt });
     switch (phase) {
       case 'intro': {
-        const z = PADS[0] + 0.5 - 10 * (1 - easeInOut(Math.min(1, tp / (INTRO_MS / 1000))));
-        return { z, y: 0, cam: camFor(z, 0), energy: 0.5 };
+        // falling out of the sky onto the first pad, bouncing as it lands
+        const z = PADS[0] + 0.5;
+        const k = calm ? 1 : clamp01((now - openedAt.current - (LAND_MS - SHIP_DROP_MS)) / SHIP_DROP_MS);
+        return { z, y: SHIP_HEIGHT * (1 - easeOutBounce(k)), cam: camFor(z, 0), energy: 0.5 };
       }
       case 'jump': {
         const k = Math.min(1, tp / (jumpMs(step) / 1000));
@@ -247,6 +282,39 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
       const lz = lens(W, H);
       const time = gameNow() / 1000;
       const { cam, energy } = worldRef.current(gameNow());
+      const opened = calm ? Infinity : gameNow() - openedAt.current;
+
+      // the grid under the road: sweeping out to the horizon as the round opens, then on faintly
+      const sweep = easeOut(clamp01(opened / GRID_MS));
+      const gridGlow = 0.2 + 0.55 * (1 - clamp01((opened - 1200) / 1400));
+      const gridFar = cam.z + 0.3 + (FAR - 0.3) * sweep;
+      const gy = -THICK - 0.6;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineWidth = 1;
+      for (let x = -6.5; x <= 6.51; x += 0.65) {
+        const p0 = project(lz, cam, x, gy, cam.z + 0.3);
+        const p1 = project(lz, cam, x, gy, gridFar);
+        const g = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+        g.addColorStop(0, `rgba(255, 106, 213, ${0.55 * gridGlow})`);
+        g.addColorStop(1, 'rgba(106, 215, 255, 0)');
+        ctx.strokeStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      for (let u = Math.ceil(cam.z + 0.3); u < gridFar; u++) {
+        const fade = 1 - (u - cam.z) / FAR;
+        ctx.strokeStyle = `rgba(177, 140, 255, ${0.5 * gridGlow * fade})`;
+        const p0 = project(lz, cam, -6.5, gy, u);
+        const p1 = project(lz, cam, 6.5, gy, u);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      ctx.restore();
 
       // the road, far slabs first so nearer ones paint over them
       const near = Math.max(0, Math.floor(cam.z + 0.3));
@@ -255,11 +323,16 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
         const z1 = u + 1;
         if (z1 <= z0) continue;
         const dist = u - cam.z;
-        const fade = Math.max(0, Math.min(1, 1 - (dist - FAR * 0.45) / (FAR * 0.55)));
+        // rising into place as the round opens, nearest first
+        const dropped = clamp01((opened - SLABS_FROM_MS - Math.max(0, dist) * SLAB_GAP_MS) / SLAB_DROP_MS);
+        if (dropped <= 0) continue;
+        const lift = -SLAB_DEPTH * (1 - easeOutBack(dropped));
+        const P = (x: number, y: number, z: number) => project(lz, cam, x, y + lift, z);
+        const fade = Math.max(0, Math.min(1, 1 - (dist - FAR * 0.45) / (FAR * 0.55))) * Math.min(1, dropped * 4);
         if (road.holes.has(u)) {
           if (holesAhead.current.includes(u)) {
             // the hole to jump next: a pulsing red outline
-            const pts = [project(lz, cam, -HALF, 0, z0), project(lz, cam, HALF, 0, z0), project(lz, cam, HALF, 0, z1), project(lz, cam, -HALF, 0, z1)];
+            const pts = [P(-HALF, 0, z0), P(HALF, 0, z0), P(HALF, 0, z1), P(-HALF, 0, z1)];
             ctx.setLineDash([6, 6]);
             ctx.strokeStyle = `rgba(255, 90, 130, ${(0.35 + 0.3 * Math.sin(time * 6)) * fade})`;
             ctx.lineWidth = 2;
@@ -273,13 +346,13 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
         }
         if (fade <= 0) continue;
         const hue = (u * 21 + time * 80) % 360;
-        const a = project(lz, cam, -HALF, 0, z0);
-        const b = project(lz, cam, HALF, 0, z0);
-        const c = project(lz, cam, HALF, 0, z1);
-        const d = project(lz, cam, -HALF, 0, z1);
+        const a = P(-HALF, 0, z0);
+        const b = P(HALF, 0, z0);
+        const c = P(HALF, 0, z1);
+        const d = P(-HALF, 0, z1);
         // the front wall where the road breaks off (the far side of a hole), facing the ship
         if (road.holes.has(u - 1) && u > cam.z + 0.3) {
-          quad(ctx, [a, b, project(lz, cam, HALF, -THICK, u), project(lz, cam, -HALF, -THICK, u)], `hsla(${hue}, 85%, 30%, ${fade})`);
+          quad(ctx, [a, b, P(HALF, -THICK, u), P(-HALF, -THICK, u)], `hsla(${hue}, 85%, 30%, ${fade})`);
         }
         // the glowing top (the glow only on nearer slabs: it's costly), with a darker inset
         if (dist < 26) {
@@ -288,7 +361,7 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
         }
         quad(ctx, [a, b, c, d], `hsla(${hue}, 95%, 56%, ${0.9 * fade})`);
         ctx.shadowBlur = 0;
-        const inset = (x: number, z: number) => project(lz, cam, x * 0.86, 0, z);
+        const inset = (x: number, z: number) => P(x * 0.86, 0, z);
         const zm = (z0 + z1) / 2;
         const zi0 = z0 + (zm - z0) * 0.18;
         const zi1 = z1 - (z1 - zm) * 0.18;
@@ -306,8 +379,8 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.35 * fade})`;
           ctx.beginPath();
           for (const x of [-HALF / 3, HALF / 3]) {
-            const p0 = project(lz, cam, x, 0, z0);
-            const p1 = project(lz, cam, x, 0, z1);
+            const p0 = P(x, 0, z0);
+            const p1 = P(x, 0, z1);
             ctx.moveTo(p0.x, p0.y);
             ctx.lineTo(p1.x, p1.y);
           }
@@ -315,9 +388,9 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
         }
         if (road.boosts.has(u)) {
           // a boost pad: a glowing chevron pointing down the road
-          const tip = project(lz, cam, 0, 0, u + 0.8);
-          const lft = project(lz, cam, -0.45, 0, u + 0.25);
-          const rgt = project(lz, cam, 0.45, 0, u + 0.25);
+          const tip = P(0, 0, u + 0.8);
+          const lft = P(-0.45, 0, u + 0.25);
+          const rgt = P(0.45, 0, u + 0.25);
           ctx.strokeStyle = `rgba(255, 255, 255, ${(0.55 + 0.45 * Math.sin(time * 8 + u)) * fade})`;
           ctx.lineWidth = Math.max(1.5, ctx.lineWidth * 1.5);
           ctx.beginPath();
@@ -364,9 +437,22 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [road]);
+  }, [road, calm]);
 
-  // intro: the ship glides up to the first hole
+  // the ship lands on its pad as the road builds itself
+  useEffect(() => {
+    if (calm) return;
+    return gameTimeout(() => {
+      const ship = shipRef.current(gameNow());
+      onBurst(ship.x, ship.y + l.shipSize * 0.3, '#ffd77a');
+      sfx.pick(1);
+      haptics.tick();
+    }, LAND_MS);
+    // once, as it lands
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // intro: the road builds itself, then the first question
   useEffect(() => {
     const cancel = gameTimeout(() => {
       warpSpeed.current = 0.3;

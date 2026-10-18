@@ -8,6 +8,7 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
+import { ConstellationArrival } from './arrival/ConstellationArrival';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -200,6 +201,8 @@ export function SumConstellation({ onDone, onBurst }: Props) {
 
   return (
     <div className="constellation-round">
+      {/* the stars arriving as a turning globe that flattens into the chart */}
+      <ConstellationArrival gridRef={gridRef} />
       <div className="constellation-header" dir="auto">
         <span className="constellation-title">✨ {t.constellationTitle}</span>
         <span className="meteor-pips">
@@ -226,8 +229,9 @@ export function SumConstellation({ onDone, onBurst }: Props) {
         </div>
       )}
 
-      {(phase === 'building' || solved) && target && (
-        <div className="constellation-play">
+      {/* (laid out under the card while the round opens, for the stars to fly to) */}
+      {(phase === 'intro' || phase === 'building' || solved) && target && (
+        <div className={`constellation-play ${phase === 'intro' ? 'is-waiting' : ''}`}>
           <div className="constellation-target">
             {t.constellationCountOn}{' '}
             <GradientText className="constellation-number" colors={['#ffd77a', '#ff9d76', '#ffd77a']} animationSpeed={3}>

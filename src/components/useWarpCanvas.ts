@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePause } from '../game/gameClock';
+import { calmMotion, drawDropFlash, drawHyperGlow, DROP_END_MS, HYPER_TINTS, hyperspace, hyperStreak } from './arrival/dropOut';
 
 // ---------- forward-warp starfield (2D canvas) ----------
 
@@ -8,10 +9,17 @@ interface Star {
   y: number;
   z: number;
   color: string;
+  tint: string;
 }
 const STAR_COLORS = ['#ffffff', '#cfe9ff', '#ffd6f4', '#fff2c4'];
+/** how fast the stars rush past in hyperspace, and how far back their streaks reach */
+const HYPER_SPEED = 3.4;
+const HYPER_TRAIL = 0.65;
 
-export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>, horizonY: number, speedRef: React.RefObject<number>) {
+/** `arrive`: the round opens with the ship dropping out of hyperspace (see arrival/dropOut.ts) */
+export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>, horizonY: number, speedRef: React.RefObject<number>, arrive = false) {
+  // time since the round opened, frozen while the player is away (kept when the horizon moves and the sky restarts)
+  const elapsedRef = useRef(0);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -22,7 +30,9 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
       y: (Math.random() - 0.5) * 2,
       z: Math.random(),
       color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      tint: HYPER_TINTS[Math.floor(Math.random() * HYPER_TINTS.length)],
     }));
+    const arriving = arrive && !calmMotion();
     let raf = 0;
     let last = performance.now();
     const resize = () => {
@@ -40,6 +50,7 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
       }
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
+      const elapsed = (elapsedRef.current += dt * 1000);
       const w = canvas.width;
       const h = canvas.height;
       const cx = w / 2;
@@ -51,7 +62,9 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
       g.addColorStop(1, '#07050f');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
-      const speed = speedRef.current ?? 0.35;
+      const hyper = arriving ? hyperspace(elapsed) : 0;
+      drawHyperGlow(ctx, w, h, cx, cy, hyper);
+      const speed = Math.max(speedRef.current ?? 0.35, hyper * HYPER_SPEED);
       const scale = Math.max(w, h) * 0.5;
       for (const s of stars) {
         const z0 = s.z;
@@ -62,11 +75,18 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
           s.z = 1;
           continue;
         }
-        const x1 = cx + (s.x / z0) * scale * 0.25;
-        const y1 = cy + (s.y / z0) * scale * 0.25;
+        // in hyperspace the streaks reach far back towards the vanishing point
+        const tail = Math.min(1.6, z0 + hyper * HYPER_TRAIL);
+        const x1 = cx + (s.x / tail) * scale * 0.25;
+        const y1 = cy + (s.y / tail) * scale * 0.25;
         const x2 = cx + (s.x / s.z) * scale * 0.25;
         const y2 = cy + (s.y / s.z) * scale * 0.25;
         const near = 1 - s.z;
+        if (hyper > 0.05) {
+          ctx.globalAlpha = 1;
+          hyperStreak(ctx, x1, y1, x2, y2, (0.6 + near * 2.4) * (1 + hyper * 0.5), s.tint, (0.35 + near * 0.65) * (0.5 + 0.5 * hyper));
+          continue;
+        }
         ctx.strokeStyle = s.color;
         ctx.globalAlpha = 0.25 + near * 0.75;
         ctx.lineWidth = 0.6 + near * 2.4;
@@ -76,6 +96,7 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+      if (arriving && elapsed < DROP_END_MS) drawDropFlash(ctx, w, h, cx, cy, elapsed);
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
@@ -83,6 +104,8 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
     };
+    // (the arrival plays once, as the round opens: `arrive` never changes)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasRef, horizonY, speedRef]);
 }
 

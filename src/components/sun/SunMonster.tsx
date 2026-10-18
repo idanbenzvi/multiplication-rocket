@@ -17,6 +17,9 @@ import { haptics } from '../../audio/haptics';
 import GradientText from '../reactbits/GradientText';
 import { playTrack } from '../../audio/useAudio';
 import { warpTo } from '../warpTransition';
+import { ModeArrival } from '../arrival/ModeArrival';
+import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
+import { useProfiles } from '../../profiles/useProfiles';
 import '../sky/sky.css';
 import './sun.css';
 
@@ -221,8 +224,9 @@ function Roster({ players, pops, fight }: { players: SunPlayer[]; pops?: Record<
 
 // ---------- lobby ----------
 
-function Lobby() {
+function Lobby({ card }: { card: ArrivalCard }) {
   const t = useT();
+  const entrance = useCardEntrance(card);
   const role = useSunStore((s) => s.role);
   const code = useSunStore((s) => s.code);
   const status = useSunStore((s) => s.status);
@@ -246,7 +250,7 @@ function Lobby() {
   }, [state.players.length]);
 
   return (
-    <div className="sky-panel sun-panel">
+    <div className={`sky-panel sun-panel ${entrance.className}`} style={entrance.style}>
       <div className="sun-lurk">
         <MonsterCanvas monster={0} hp={1} maxHp={1} lurk />
       </div>
@@ -752,18 +756,25 @@ function Summary({ state }: { state: SunState }) {
 export function SunMonster() {
   const t = useT();
   const open = useSunStore((s) => s.open);
-  const state = useSunStore((s) => s.state);
   sunNames.fallback = t.defaultPilotName;
   if (!open) return null;
   // no fade of its own: it opens behind the warp (warpTransition.ts), which clears to show it
-  return createPortal(
+  return createPortal(<SunOverlay />, document.body);
+}
+
+/** the mode, from opening to closing: the ship arrives at the monster sun's eclipse (ModeArrival), then the lobby */
+function SunOverlay() {
+  const state = useSunStore((s) => s.state);
+  const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const [card, arrived] = useArrivalCard();
+  return (
     <div className="sun-overlay">
       <Warp />
+      <ModeArrival sky="eclipse" avatar={avatar} show={state.phase === 'lobby'} onArrived={arrived} />
       {(state.phase === 'fight' || state.phase === 'defeated') && <NumberField fx={monsterFx} field={numberField} />}
       <div className="sun-content">
-        {state.phase === 'lobby' ? <Lobby /> : state.phase === 'summary' ? <Summary state={state} /> : <Fight state={state} />}
+        {state.phase === 'lobby' ? <Lobby card={card} /> : state.phase === 'summary' ? <Summary state={state} /> : <Fight state={state} />}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }

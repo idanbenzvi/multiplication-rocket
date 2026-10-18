@@ -30,6 +30,9 @@
   background: #2a2048;
   border: 1px solid rgba(106, 215, 255, 0.35);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  /* over the mode's arrival sky (arrival.css) */
+  position: relative;
+  z-index: 1;
   /* (backwards: no lasting transform or filter once it has arrived) */
   animation: modeArrive 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
 }

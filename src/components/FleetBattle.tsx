@@ -13,6 +13,7 @@ import { NumPad } from './NumPad';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { CannonPickup, RearShip, Saucer } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
+import { calmMotion, DROP_MS, shipArrival, warpIn } from './arrival/dropOut';
 import GradientText from './reactbits/GradientText';
 
 interface Props {
@@ -21,12 +22,15 @@ interface Props {
 }
 
 // Warp in → collect the cannons → "how many ships?" → the fleet forms up and
-// fires → win, or see why the count was off and try again. On the addition
-// mission the cannons collected are what we have, and each ship brings one
-// more: "we have 7, how many more for 12?" (the missing part of the sum).
+// fires → win, or see why the count was off and try again. The round opens
+// out of hyperspace: the pilot's ship rushes in from behind the camera and
+// brakes into place as it drops out, and the enemy fleet warps in after it.
+// On the addition mission the cannons collected are what we have, and each
+// ship brings one more: "we have 7, how many more for 12?" (the missing part
+// of the sum).
 type Phase = 'warp' | 'collect' | 'question' | 'attack' | 'result' | 'summary';
 
-const WARP_MS = 2200;
+const WARP_MS = 2700; // out of hyperspace, and the card read
 const ARRIVE_MS = 1100; // reinforcements flying in to the orbit ring
 const ORBIT_MS = 2600; // circling the player's ship, faster and faster
 const BLAST_MS = 1300; // the big beam
@@ -132,7 +136,9 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   // ---- warp background ----
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const warpSpeed = useRef(0.9);
-  useWarpCanvas(canvasRef, horizonY, warpSpeed);
+  useWarpCanvas(canvasRef, horizonY, warpSpeed, true);
+  const openedAt = useRef(gameNow());
+  const [calm] = useState(calmMotion);
 
   // ---- the player's ship ----
   const ship = useRef({ x: 0.5, y: 0.82 });
@@ -398,7 +404,9 @@ export function FleetBattle({ onDone, onBurst }: Props) {
 
   // ---- render ----
   const now = gameNow() / 1000;
-  const shipPx = { x: ship.current.x * w, y: ship.current.y * h };
+  // flying in out of hyperspace as the round opens
+  const arrival = phase === 'warp' ? shipArrival(gameNow() - openedAt.current, calm) : { below: 0, scale: 1, burn: 0 };
+  const shipPx = { x: ship.current.x * w, y: (ship.current.y + arrival.below) * h };
   const shipSize = Math.min(96, unit * 0.16);
 
   // the orbit: ships fly in to a ring around the hub, then circle it with
@@ -510,15 +518,20 @@ export function FleetBattle({ onDone, onBurst }: Props) {
           );
         }
         const fizzling = attackStep === 'fizzle';
-        const arriving = phase === 'warp' || phase === 'collect';
+        // warping in after the pilot, row by row
+        const arriving = phase === 'warp' ? warpIn(gameNow() - openedAt.current - (calm ? 0 : DROP_MS + 120 + e.r * 90) - (i % 7) * 40, calm) : null;
         return (
           <div
             key={i}
-            className={`enemy ${arriving ? 'is-arriving' : ''} ${fizzling ? 'is-leftover' : ''}`}
+            className={`enemy ${fizzling ? 'is-leftover' : ''}`}
             style={{
               left: baseX,
               top: baseY + Math.sin(now * 1.4 + e.jitter) * 3,
-              animationDelay: `${(i % 7) * 40}ms`,
+              ...(arriving && {
+                opacity: arriving.opacity,
+                scale: `${arriving.sx} ${arriving.sy}`,
+                filter: `drop-shadow(0 0 6px rgba(159, 224, 168, 0.45)) brightness(${arriving.bright}) blur(${arriving.blur}px)`,
+              }),
             }}
           >
             <Saucer size={enemySize} />
@@ -527,7 +540,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
       })}
 
       {phase === 'warp' && (
-        <div className="round-card">
+        <div className="round-card is-after-drop">
           <GradientText className="round-card-title" colors={['#ff6ad5', '#6ad7ff', '#ffd77a', '#ff6ad5']} animationSpeed={3}>
             ⚔️ {t.battleTitle}
           </GradientText>
@@ -548,7 +561,10 @@ export function FleetBattle({ onDone, onBurst }: Props) {
 
       {/* the player's ship while collecting */}
       {(phase === 'warp' || phase === 'collect' || phase === 'question') && (
-        <div className="player-ship" style={{ left: shipPx.x, top: shipPx.y }}>
+        <div
+          className="player-ship"
+          style={{ left: shipPx.x, top: shipPx.y, scale: arrival.scale, '--burn': arrival.burn } as React.CSSProperties}
+        >
           <RearShip size={shipSize} />
           {avatar && <span className="player-ship-avatar" style={{ fontSize: shipSize * 0.2 }}>{avatar}</span>}
           {collected > 0 && <span className="player-ship-cannons">{'⚡'.repeat(collected)}</span>}

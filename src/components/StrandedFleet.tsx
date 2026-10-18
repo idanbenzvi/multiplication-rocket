@@ -12,6 +12,7 @@ import { useProfiles } from '../profiles/useProfiles';
 import { NumPad } from './NumPad';
 import { RearShip } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
+import { calmMotion, DROP_MS, shipArrival } from './arrival/dropOut';
 import GradientText from './reactbits/GradientText';
 import { SpaceRipple } from './SpaceRipple';
 import { DEV_SOLVE_EVENT } from '../dev/devMode';
@@ -23,20 +24,29 @@ interface Props {
   onBurst: (x: number, y: number, color: string) => void;
 }
 
-// Lightspeed in → stranded ships drift in one by one, each projecting a drill
-// that shares one hidden number ([ ] × 4 = 28, [ ] × 9 = 63, …, or on the
-// addition mission [ ] + 4 = 11, [ ] + 9 = 16, …) → guess it
-// (the earlier, the bigger the fuel bonus) → fuel lines power every ship →
-// the whole fleet jumps to lightspeed.
+// Out of hyperspace (the pilot's ship brakes in as it drops out, and distress
+// beacons ping where the stranded ships wait) → stranded ships drift in one
+// by one, each projecting a drill that shares one hidden number ([ ] × 4 =
+// 28, [ ] × 9 = 63, …, or on the addition mission [ ] + 4 = 11, [ ] + 9 = 16,
+// …) → guess it (the earlier, the bigger the fuel bonus) → fuel lines power
+// every ship → the whole fleet jumps to lightspeed.
 type Phase = 'warp' | 'reveal' | 'checking' | 'fuel' | 'jump' | 'summary';
 
-const WARP_MS = 2400;
+const WARP_MS = 2900; // out of hyperspace, the beacons, and the card read
 const SHIP_EVERY_MS = 1600; // a new stranded ship flies in
 const CHECK_MS = 2000; // showing why a wrong guess fails
 const FUEL_MS = 2100;
 const RIPPLE_REACH_S = 1.1; // the pulse reaches the farthest stranded ship in this time
 const JUMP_MS = 1700;
 const SUMMARY_MS = 2200;
+
+/** the distress beacons: each pings twice, this far apart, starting this long after the drop and one after another */
+const PING_GAP_MS = 650;
+const PING_MS = 1000;
+const PINGS_AFTER_MS = 250;
+const PING_STAGGER_MS = 130;
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 // Where the five stranded ships hang: a shallow arc across the middle on
 // wide screens, two columns on phones (an arc of five would overlap there).
@@ -104,9 +114,11 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   }, []);
   useEffect(() => () => timers.current.forEach((cancel) => cancel()), []);
 
-  const warpSpeed = useRef(1.4); // lightspeed on the way in
+  const warpSpeed = useRef(0.55); // coasting in, once out of hyperspace
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useWarpCanvas(canvasRef, 0.33, warpSpeed);
+  useWarpCanvas(canvasRef, 0.33, warpSpeed, true);
+  const openedAt = useRef(gameNow());
+  const [calm] = useState(calmMotion);
 
   // re-render every frame (ship wobble, drifting fleet); power each ship as
   // the pulse's leading ring reaches it
@@ -256,9 +268,12 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const correction = Math.max(0, Math.sin(now * 0.9) - 0.92) * 120;
   const bank = Math.sin(now * 1.3) * 14 + Math.sin(now * 3.1) * 4 + correction * Math.sign(Math.cos(now * 0.9));
   const sway = Math.sin(now * 0.8) * 0.06 + Math.sin(now * 2.3) * 0.012;
+  // flying in out of hyperspace as the round opens
+  const sinceOpen = gameNow() - openedAt.current;
+  const arrival = phase === 'warp' ? shipArrival(sinceOpen, calm) : { below: 0, scale: 1, burn: 0 };
   const pilot = {
     x: (0.5 + sway) * w,
-    y: (0.86 + Math.sin(now * 1.7) * 0.012) * h,
+    y: (0.86 + arrival.below + Math.sin(now * 1.7) * 0.012) * h,
   };
   const roll = Math.sin(now * 0.6) * 2.5 + bank * 0.08; // the whole view tilts with the ship
 
@@ -278,6 +293,24 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
             edges never show as it rolls; this layer is exactly screen-sized
             and placed back over the screen, so positions stay in screen pixels. */}
         <div className="stranded-screen" style={{ left: w * 0.06, top: h * 0.06, width: w, height: h }}>
+          {/* their distress beacons, pinging as the pilot arrives */}
+          {phase === 'warp' &&
+            !calm &&
+            SLOTS.map((slot, i) => {
+              const t0 = sinceOpen - DROP_MS - PINGS_AFTER_MS - i * PING_STAGGER_MS;
+              if (t0 < 0) return null;
+              return (
+                <div key={i} className="distress" style={{ left: slot.x * w, top: slot.y * h }}>
+                  {[t0, t0 - PING_GAP_MS].map((t, k) => {
+                    const p = t / PING_MS;
+                    if (p < 0 || p > 1) return null;
+                    const size = unit * 0.34 * easeOut(p);
+                    return <span key={k} className="distress-ping" style={{ width: size, height: size, opacity: (1 - p) ** 1.5 }} />;
+                  })}
+                  <span className="distress-beacon" style={{ opacity: Math.sin(t0 / 90) > -0.2 ? 1 : 0.25 }} />
+                </div>
+              );
+            })}
           {/* the stranded fleet */}
           {SLOTS.slice(0, shown).map((slot, i) => {
             const m = round.others[i];
@@ -316,7 +349,10 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
 
           {/* the pilot's ship, fighting the controls */}
           {phase !== 'summary' && (
-            <div className="player-ship pilot-ship" style={{ left: pilot.x, top: pilot.y, rotate: `${bank}deg` }}>
+            <div
+              className="player-ship pilot-ship"
+              style={{ left: pilot.x, top: pilot.y, rotate: `${bank}deg`, scale: arrival.scale, '--burn': arrival.burn } as React.CSSProperties}
+            >
               <RearShip size={shipSize} />
               {avatar && <span className="player-ship-avatar" style={{ fontSize: shipSize * 0.2 }}>{avatar}</span>}
             </div>
@@ -331,7 +367,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
       </div>
 
       {phase === 'warp' && (
-        <div className="round-card">
+        <div className="round-card is-after-drop">
           <GradientText className="round-card-title" colors={['#6ad7ff', '#ffffff', '#b18cff', '#6ad7ff']} animationSpeed={3}>
             🛸 {t.strandedTitle}
           </GradientText>

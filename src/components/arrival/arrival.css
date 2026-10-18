@@ -1,0 +1,46 @@
+/* ==================== ARRIVING IN A GAME MODE (ModeArrival.tsx) ==================== */
+
+.mode-arrival {
+  position: fixed;
+  inset: 0;
+  /* over the mode's starfield, under its lobby (.sky-panel is lifted over it) */
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+.mode-arrival.is-gone {
+  opacity: 0;
+}
+.mode-arrival canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.mode-arrival-ship {
+  will-change: left, top, scale, opacity;
+}
+
+/* the lobby's card can't be tapped till the ship is there (useCardEntrance: it zooms in then) */
+.sky-panel.is-waiting {
+  pointer-events: none;
+}
+
+/* an arrival drawn over the main game in a bonus round (WormholeArrival, MeteorArrival, …), under the round's own things */
+.arrival-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* the crew boarding through the porthole (CrewArrival.tsx): over the rocket, under the crew's bar */
+.crew-arrival {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}

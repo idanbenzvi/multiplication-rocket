@@ -8,6 +8,9 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
+import { RELEASE_MS, WormholeArrival } from './arrival/WormholeArrival';
+import { portholeCentre } from './arrival/portholeCentre';
+import { calmMotion } from './arrival/dropOut';
 
 interface Props {
   challenge: Challenge;
@@ -18,7 +21,8 @@ interface Props {
 }
 
 // Where the five drills float, as [left%, top%] of the viewport — around the
-// rocket rather than on top of it, and clear of the header card.
+// rocket rather than on top of it, and clear of the header card. They're
+// flung out of the wormhole as it opens round the rocket (WormholeArrival).
 const SLOTS: Array<[number, number]> = [
   [17, 42],
   [83, 40],
@@ -36,6 +40,8 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
   const [missed, setMissed] = useState<number[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const done = found.length >= CORRECT_PICKS || collapsed;
+  // where the drills are flung out from, as the wormhole opens
+  const [from] = useState(() => (calmMotion() ? null : portholeCentre()));
 
   // Latest values for the keyboard handler without re-subscribing each pick.
   const pickRef = useRef<(d: Drill, el: Element | null) => void>(() => {});
@@ -79,6 +85,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
 
   return (
     <div className={`wormhole-challenge ${collapsed ? 'is-collapsed' : ''}`}>
+      <WormholeArrival collapsed={collapsed} />
       <motion.div
         className="wormhole-header"
         initial={{ opacity: 0, y: -30, scale: 0.8 }}
@@ -115,41 +122,52 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
         return (
           <div key={drill.id} className="drill-slot" style={{ left: `${left}%`, top: `${top}%` }}>
             <motion.div
-              // Each bubble drifts on its own slow loop so the group never
-              // moves in lockstep.
-              animate={collapsed ? { scale: 0, opacity: 0, rotate: 180 } : { y: [0, -14, 0, 10, 0], x: [0, 8, 0, -8, 0] }}
+              // flung out of the wormhole as it opens
+              initial={from ? { x: from.x - (left / 100) * window.innerWidth, y: from.y - (top / 100) * window.innerHeight, scale: 0.2, opacity: 0 } : { opacity: 0 }}
+              animate={{ x: 0, y: 0, scale: 1, opacity: 1 }}
               transition={
-                collapsed
-                  ? { duration: 0.6, delay: i * 0.06 }
-                  : { duration: 4 + i * 0.7, repeat: Infinity, ease: 'easeInOut' }
+                from
+                  ? { delay: RELEASE_MS / 1000 + i * 0.06, type: 'spring', stiffness: 150, damping: 15, opacity: { delay: RELEASE_MS / 1000 + i * 0.06, duration: 0.15 } }
+                  : { duration: 0.3 }
               }
             >
-              <motion.button
-                type="button"
-                data-drill={drill.id}
-                className={`drill-bubble ${state}`}
-                onClick={(e) => pick(drill, e.currentTarget)}
-                disabled={done || isFound || isMissed}
-                aria-label={`${i + 1}: ${challenge.mission === 'add' ? t.drillLabelAdd(drill.x, drill.y) : t.drillLabel(drill.x, drill.y)}`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={
-                  isMissed
-                    ? { scale: 0.85, opacity: 0.55, x: [0, -10, 10, -6, 6, 0] }
-                    : isFound
-                      ? { scale: 1.12, opacity: 1 }
-                      : { scale: 1, opacity: 1 }
+              <motion.div
+                // Each bubble drifts on its own slow loop so the group never
+                // moves in lockstep.
+                animate={collapsed ? { scale: 0, opacity: 0, rotate: 180 } : { y: [0, -14, 0, 10, 0], x: [0, 8, 0, -8, 0] }}
+                transition={
+                  collapsed
+                    ? { duration: 0.6, delay: i * 0.06 }
+                    : { duration: 4 + i * 0.7, repeat: Infinity, ease: 'easeInOut' }
                 }
-                transition={{ delay: isFound || isMissed ? 0 : 0.15 + i * 0.08, type: 'spring', stiffness: 380, damping: 16 }}
-                whileHover={done ? undefined : { scale: 1.08 }}
-                whileTap={done ? undefined : { scale: 0.92 }}
               >
-                <span className="drill-key">{i + 1}</span>
-                <bdi dir="ltr" className="drill-text">
-                  {drill.x} {OP_SYMBOL[challenge.mission]} {drill.y}
-                </bdi>
-                {isFound && <span className="drill-mark">✓</span>}
-                {isMissed && <span className="drill-mark">✗</span>}
-              </motion.button>
+                <motion.button
+                  type="button"
+                  data-drill={drill.id}
+                  className={`drill-bubble ${state}`}
+                  onClick={(e) => pick(drill, e.currentTarget)}
+                  disabled={done || isFound || isMissed}
+                  aria-label={`${i + 1}: ${challenge.mission === 'add' ? t.drillLabelAdd(drill.x, drill.y) : t.drillLabel(drill.x, drill.y)}`}
+                  initial={false}
+                  animate={
+                    isMissed
+                      ? { scale: 0.85, opacity: 0.55, x: [0, -10, 10, -6, 6, 0] }
+                      : isFound
+                        ? { scale: 1.12, opacity: 1 }
+                        : { scale: 1, opacity: 1 }
+                  }
+                  transition={{ type: 'spring', stiffness: 380, damping: 16 }}
+                  whileHover={done ? undefined : { scale: 1.08 }}
+                  whileTap={done ? undefined : { scale: 0.92 }}
+                >
+                  <span className="drill-key">{i + 1}</span>
+                  <bdi dir="ltr" className="drill-text">
+                    {drill.x} {OP_SYMBOL[challenge.mission]} {drill.y}
+                  </bdi>
+                  {isFound && <span className="drill-mark">✓</span>}
+                  {isMissed && <span className="drill-mark">✗</span>}
+                </motion.button>
+              </motion.div>
             </motion.div>
           </div>
         );

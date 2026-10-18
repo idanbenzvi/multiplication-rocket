@@ -8,8 +8,9 @@ import { glow, rgba } from './trafficArt';
 // twinkle, each at its own pace, and the brightest glow. They fade in slowly on
 // the way out, so the far traffic round the vanishing point stays clear, and
 // out again before the edge. The faster the pilot flies, the faster they pour,
-// and a burst sends a ring of them out at once. With reduced motion they hold
-// still.
+// and a burst sends a ring of them out at once; in hyperspace (as the round
+// opens) every one is a streak all the way back to the vanishing point. With
+// reduced motion they hold still.
 
 /** trail and head colors */
 const TAIL = '#5227ff';
@@ -92,8 +93,8 @@ export class FadingStars {
     };
   }
 
-  /** the deep-space backdrop, and the stars pouring out of (ox, oy) */
-  draw(ctx: CanvasRenderingContext2D, w: number, h: number, ox: number, oy: number, flow: number, now: number) {
+  /** the deep-space backdrop, and the stars pouring out of (ox, oy); `hyper` 0..1, how deep in hyperspace */
+  draw(ctx: CanvasRenderingContext2D, w: number, h: number, ox: number, oy: number, flow: number, now: number, hyper = 0) {
     if (w !== this.size.w || h !== this.size.h) {
       this.size = { w, h };
       const n = Math.round(Math.max(140, Math.min(420, (COUNT * w * h) / (1280 * 720))));
@@ -115,12 +116,12 @@ export class FadingStars {
     ctx.lineCap = 'round';
     for (const s of this.stars) {
       // eased in, so a star only shows once it's out past the far traffic
-      const fadeIn = Math.min(1, s.r / FADE_IN);
+      const fadeIn = Math.max(hyper, Math.min(1, s.r / FADE_IN));
       const fade = Math.min(fadeIn * fadeIn, (1 - s.r) / FADE_OUT);
       if (fade <= 0) continue;
-      const alpha = fade * (s.far ? 0.45 : 1);
-      // the trail grows with the star's speed
-      const trail = Math.min(s.r, (TRAIL * rate(s, s.r) * Math.max(1, flow * 0.8)) / FULL_RATE);
+      const alpha = fade * (s.far ? 0.45 + 0.4 * hyper : 1);
+      // the trail grows with the star's speed (in hyperspace, all the way back)
+      const trail = Math.min(s.r, (TRAIL * rate(s, s.r) * Math.max(1, flow * 0.8)) / FULL_RATE + hyper * s.r);
       const c = Math.cos(s.a);
       const sn = Math.sin(s.a);
       const d1 = reach * s.r;
@@ -137,7 +138,7 @@ export class FadingStars {
       g.addColorStop(0.75, rgba(MID, alpha * 0.75 ** TRAIL_FADE));
       g.addColorStop(1, rgba(s.far ? MID : HEAD, alpha));
       ctx.strokeStyle = g;
-      ctx.lineWidth = s.far ? 0.6 : 1 + s.r * 0.6;
+      ctx.lineWidth = (s.far ? 0.6 : 1 + s.r * 0.6) * (1 + hyper * 1.8);
       ctx.beginPath();
       ctx.moveTo(x0, y0);
       ctx.lineTo(x1, y1);

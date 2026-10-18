@@ -35,7 +35,7 @@ interface Props {
 // On the addition mission the numbers are sums, and the drills sums too.
 type Phase = 'intro' | 'ask' | 'brake' | 'dodge' | 'finale' | 'summary';
 
-const INTRO_MS = 2800;
+const INTRO_MS = 3000;
 /** from the right drill to the next slow ship pulling in */
 const PASS_MS = 1500;
 const FINALE_MS = 2300;
@@ -166,7 +166,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
     [scene, run.passes],
   );
 
-  // the round opens with a whoosh; the first slow ship pulls in once the ship is in its lane
+  // the round opens with a whoosh out of hyperspace; the first slow ship pulls in once the ship is in its lane
   useEffect(() => {
     const cancels = [gameTimeout(() => sfx.warp(), 0), gameTimeout(() => startPass(0), INTRO_MS)];
     return () => {
@@ -281,7 +281,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       </div>
 
       {phase === 'intro' && (
-        <div className="round-card">
+        <div className="round-card is-after-drop">
           {/* (the emoji outside the gradient, which would paint over it) */}
           <div className="traffic-card-title">
             <span aria-hidden>🚦</span>

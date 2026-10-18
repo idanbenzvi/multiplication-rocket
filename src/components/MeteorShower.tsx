@@ -10,6 +10,7 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
+import { MeteorArrival } from './arrival/MeteorArrival';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -208,6 +209,8 @@ export function MeteorShower({ onDone, onBurst }: Props) {
 
   return (
     <div className="meteor-round">
+      {/* the shower arriving: rays and shooting stars from high above */}
+      <MeteorArrival />
       <div className="meteor-header" ref={headerRef}>
         <span className="meteor-title">☄️ {t.meteorTitle}</span>
         {drill && phase !== 'intro' && phase !== 'summary' && (

@@ -2,6 +2,7 @@ import type { TrafficDir } from '../../game/bonusRounds';
 import { BEAM_TOP_FRACTION } from '../scene/plume';
 import type { Porthole } from '../scene/spriteTexture';
 import { FadingStars } from './fadingStars';
+import { drawDropFlash, drawHyperGlow, DROP_END_MS, DROP_MS, hyperspace } from '../arrival/dropOut';
 import { glow, HULLS, IONS, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, SHIP_KINDS, sprite, trafficSprite } from './trafficArt';
 
 // Space Traffic's world, seen from just behind the pilot's ship: lanes of
@@ -10,6 +11,11 @@ import { glow, HULLS, IONS, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, SHIP
 // the lanes' edges (the pilot's own lane in gold) and rush past to show the
 // speed. Distances are in lanes (a lane is 1 wide); z is how far ahead of the
 // pilot's ship.
+//
+// The round opens out of hyperspace (arrival/dropOut.ts): the stars are long
+// streaks and the pilot's ship rushes in from behind the camera; as it drops
+// out it surges ahead and brakes back into its lane, the traffic and the lane
+// beacons appear round it, and the stars burst out of the vanishing point.
 //
 // It runs every frame on a 2D canvas, outside React: the round
 // (SpaceTraffic.tsx) says what happens (a slow ship pulls into the lane, the
@@ -45,7 +51,10 @@ const SPEED_LINES = 30;
 const SPEED_COLORS = ['#ffffff', '#ffffff', '#bfefff', '#ffc4ef'];
 
 /** how long things take, in seconds */
-const INTRO_FLY_S = 1.4;
+const DROP_S = DROP_MS / 1000;
+/** braking into the lane after dropping out, and the traffic fading in round it */
+const SETTLE_S = 0.8;
+const APPEAR_S = 0.6;
 const APPROACH_S = 2.3;
 export const DODGE_S = 0.75;
 export const BRAKE_S = 1.2;
@@ -58,6 +67,8 @@ const DIR_STEP: Record<TrafficDir, { x: number; y: number }> = {
 };
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
+/** eases out past the end and back */
+const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 
@@ -189,6 +200,8 @@ export class TrafficScene {
   private readonly calm: boolean;
   /** the sky: stars pouring out of the vanishing point */
   private readonly stars: FadingStars;
+  /** the stars have burst out as the ship dropped out of hyperspace */
+  private dropped = false;
   speed = CRUISE;
   /** the pilot's ship on screen, as of the last frame drawn (spark bursts go off there) */
   shipScreen = { x: 0, y: 0 };
@@ -263,7 +276,13 @@ export class TrafficScene {
     const passing = this.ships.some((s) => s.role === 'passing' && s.z > -1);
     // racing off at the end, then back to cruising behind the summary
     const racing = now >= this.finaleAt && now < this.finaleAt + 2.2;
-    const target = racing ? FINALE : now < this.boostUntil || passing ? BOOST : now - this.brakeAt < 0.7 ? BRAKING : CRUISE;
+    // out of hyperspace at full boost as the round opens, braking to cruise
+    const arriving = this.hyper(now) > 0.5;
+    if (!this.dropped && now - this.startedAt >= DROP_S) {
+      this.dropped = true;
+      this.stars.burst(120);
+    }
+    const target = racing ? FINALE : arriving || now < this.boostUntil || passing ? BOOST : now - this.brakeAt < 0.7 ? BRAKING : CRUISE;
     this.speed += (target - this.speed) * (1 - Math.exp(-(target > this.speed ? 3 : 4) * dt));
     this.travel += this.speed * dt;
 
@@ -271,19 +290,33 @@ export class TrafficScene {
     this.moveTraffic(now, dt);
     this.moveParticles(now, dt);
     this.moveSpeedLines(dt);
-    this.stars.update(dt, this.flow());
+    this.stars.update(dt, this.flow(now));
   }
 
-  /** how fast the stars pour out of the vanishing point: 1 cruising, faster boosting past, a rush racing off */
-  private flow(): number {
-    return 0.5 + (0.5 * this.speed) / CRUISE;
+  /** how fast the stars pour out of the vanishing point: 1 cruising, faster boosting past, a rush racing off (and in hyperspace) */
+  private flow(now: number): number {
+    return 0.5 + (0.5 * this.speed) / CRUISE + this.hyper(now) * 7;
+  }
+
+  /** 1 in hyperspace as the round opens, snapping to 0 as the ship drops out; always 0 with reduced motion */
+  private hyper(now: number): number {
+    return this.calm ? 0 : hyperspace((now - this.startedAt) * 1000);
+  }
+
+  /** 0..1: the traffic and the lanes appearing round the ship once it has dropped out */
+  private arrived(now: number): number {
+    return this.calm ? 1 : clamp01((now - this.startedAt - DROP_S) / APPEAR_S);
   }
 
   /** where the pilot's ship is at a moment: its lane (between two while swerving), where it floats, how far it's rolled */
   private pilotAt(now: number) {
-    // flying in from just in front of the camera as the round opens
-    const intro = clamp01((now - this.startedAt) / INTRO_FLY_S);
-    let z = -2.6 * (1 - easeOut(intro));
+    // flying in out of hyperspace from behind the camera as the round opens: surging ahead as it drops out,
+    // and braking back into place as the camera catches up
+    const since = now - this.startedAt;
+    const rush = clamp01(since / DROP_S);
+    const settle = clamp01((since - DROP_S) / SETTLE_S);
+    const intro = this.calm ? 1 : since < DROP_S ? rush * 0.5 : 0.5 + settle * 0.5;
+    let z = this.calm ? 0 : since < DROP_S ? -2.9 + 3.3 * easeOut(rush) : 0.4 * (1 - easeOutBack(settle));
     // swerving into the next lane, rolling right round on the way
     const k = clamp01((now - this.dodgeAt) / DODGE_S);
     const e = easeInOut(k);
@@ -535,7 +568,11 @@ export class TrafficScene {
   // ---------- drawing ----------
 
   draw(ctx: CanvasRenderingContext2D, l: Lens, now: number) {
-    this.stars.draw(ctx, l.w, l.h, l.cx, l.horizon, this.flow(), now);
+    const hyper = this.hyper(now);
+    this.stars.draw(ctx, l.w, l.h, l.cx, l.horizon, this.flow(now), now, hyper);
+    drawHyperGlow(ctx, l.w, l.h, l.cx, l.horizon, hyper);
+    const since = (now - this.startedAt) * 1000;
+    if (!this.calm && since < DROP_END_MS) drawDropFlash(ctx, l.w, l.h, l.cx, l.horizon, since);
     ctx.save();
     // a wrong drill jolts the view
     const kb = now - this.brakeAt;
@@ -543,21 +580,24 @@ export class TrafficScene {
       const shake = (1 - kb / 0.4) * 7;
       ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     }
-    this.drawLanes(ctx, l);
+    // the lanes and the traffic appear round the ship once it has dropped out of hyperspace
+    const arrived = this.arrived(now);
+    if (arrived > 0) this.drawLanes(ctx, l, arrived);
     this.drawSpeedLines(ctx, l);
     this.drawParticles(ctx, l);
     // the farthest first, so nearer ships cover them (the pilot's ship among them)
     const order: Array<Ship | null> = [...this.ships, null];
     order.sort((a, b) => (b ? b.z : this.z) - (a ? a.z : this.z));
     for (const s of order) {
-      if (s) this.drawShip(ctx, l, s, now);
-      else this.drawPilot(ctx, l, now);
+      if (s) {
+        if (arrived > 0) this.drawShip(ctx, l, s, now, arrived);
+      } else this.drawPilot(ctx, l, now);
     }
     ctx.restore();
   }
 
-  /** the lanes' edges: beacons rushing past (streaked at speed), the pilot's lane outlined in gold */
-  private drawLanes(ctx: CanvasRenderingContext2D, l: Lens) {
+  /** the lanes' edges: beacons rushing past (streaked at speed), the pilot's lane outlined in gold; `alpha` as they appear */
+  private drawLanes(ctx: CanvasRenderingContext2D, l: Lens, alpha: number) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
@@ -578,7 +618,7 @@ export class TrafficScene {
           const b = this.project(l, bx, by, FAR);
           if (a && b) {
             const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-            g.addColorStop(0, rgba(color, 0.32));
+            g.addColorStop(0, rgba(color, 0.32 * alpha));
             g.addColorStop(1, rgba(color, 0));
             ctx.strokeStyle = g;
             ctx.lineWidth = 2;
@@ -597,7 +637,7 @@ export class TrafficScene {
           if (!p || p.x < -40 || p.x > l.w + 40 || p.y < -40 || p.y > l.h + 40) continue;
           const q = this.project(l, bx, by, Math.max(zNear, z - streak)) ?? p;
           const fade = clamp01(1 - (z - FAR * 0.35) / (FAR * 0.65));
-          ctx.globalAlpha = fade * (ours ? 0.95 : 0.6);
+          ctx.globalAlpha = fade * alpha * (ours ? 0.95 : 0.6);
           ctx.lineWidth = Math.max(1, p.s * (ours ? 0.045 : 0.032));
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -729,7 +769,7 @@ export class TrafficScene {
     ctx.fill();
   }
 
-  private drawShip(ctx: CanvasRenderingContext2D, l: Lens, s: Ship, now: number) {
+  private drawShip(ctx: CanvasRenderingContext2D, l: Lens, s: Ship, now: number, arrived: number) {
     const k = SHIP_KINDS[s.kind];
     const bob = Math.sin(now * 1.6 + s.seed) * 0.03;
     const p = this.project(l, s.x, s.y + bob, s.z);
@@ -744,6 +784,7 @@ export class TrafficScene {
       clamp01((FAR + 4 - s.z) / 10),
       blocker ? clamp01((now - this.blockerAt) / 0.4) : 1,
       clamp01((s.z + BACK - NEAR) / (BACK - NEAR - 1)),
+      arrived,
     );
     if (fade <= 0) return;
     const left = p.x - W / 2;

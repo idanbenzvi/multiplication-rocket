@@ -15,6 +15,7 @@ import { Docking } from './Docking';
 import { SEAT_COLORS } from './seatColors';
 import GradientText from '../reactbits/GradientText';
 import { warpTo } from '../warpTransition';
+import { CrewArrival } from '../arrival/CrewArrival';
 import './crew.css';
 
 interface Props {
@@ -227,6 +228,15 @@ export function CrewFlight({ onBurst }: Props) {
 
   return (
     <>
+      {/* the crew boarding the rocket as the warp clears */}
+      <CrewArrival
+        avatars={[pilots[0]?.avatar, pilots[1]?.avatar]}
+        colors={SEAT_COLORS}
+        onBoard={(seat, x, y) => {
+          onBurst(x, y, SEAT_COLORS[seat]);
+          sfx.pick(seat + 1);
+        }}
+      />
       <CrewBar pilots={pilots} current={current} />
       {showTurn && turn?.kind === 'question' && (
         <QuestionTurn key={turn.askedAt} turn={turn} pilot={pilots[turn.member]} onBurst={onBurst} />

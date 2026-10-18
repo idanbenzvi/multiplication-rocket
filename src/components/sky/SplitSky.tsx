@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { skyNames, useSkyStore } from '../../game/useSkyStore';
 import { groupColumns, MAX_MISSES, type Side, type SkyStage, type SkyState } from '../../game/splitSky';
 import { additionStrategy } from '../../game/strategy';
-import { useMission } from '../../profiles/useProfiles';
+import { useMission, useProfiles } from '../../profiles/useProfiles';
 import type { DuoGame } from '../../game/duo';
 import { EclipsePlay } from './EclipsePlay';
 import { Choices, CodeDisplay, CodeEntry, StatusLine } from './parts';
@@ -15,6 +15,8 @@ import { haptics } from '../../audio/haptics';
 import { SkyGrid } from './SkyGrid';
 import GradientText from '../reactbits/GradientText';
 import { warpTo } from '../warpTransition';
+import { ModeArrival } from '../arrival/ModeArrival';
+import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
 import './sky.css';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
@@ -162,13 +164,14 @@ function warpHome(e: React.MouseEvent<HTMLElement>) {
   warpTo(useSkyStore.getState().closeSky, e.currentTarget);
 }
 
-function Lobby() {
+function Lobby({ card }: { card: ArrivalCard }) {
   const t = useT();
   const role = useSkyStore((s) => s.role);
   const host = useSkyStore((s) => s.host);
   const leave = useSkyStore((s) => s.leave);
+  const entrance = useCardEntrance(card);
   return (
-    <div className="sky-panel">
+    <div className={`sky-panel ${entrance.className}`} style={entrance.style}>
       {/* the emoji stays outside: the gradient fill would flatten it */}
       <div className="sky-title-row">
         <span aria-hidden>📱📱</span>
@@ -429,15 +432,23 @@ function Summary() {
 export function SplitSky() {
   const t = useT();
   const open = useSkyStore((s) => s.open);
-  const state = useSkyStore((s) => s.state);
   skyNames.fallback = t.defaultPilotName;
   if (!open) return null;
-  const { phase } = state;
   // no fade of its own: it opens behind the warp (warpTransition.ts), which clears to show it
-  return createPortal(
+  return createPortal(<SkyOverlay />, document.body);
+}
+
+/** the mode, from opening to closing: the ship arrives over a planet at sunrise (ModeArrival), then the lobby */
+function SkyOverlay() {
+  const state = useSkyStore((s) => s.state);
+  const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const [card, arrived] = useArrivalCard();
+  const { phase } = state;
+  return (
     <div className="sky-overlay">
+      <ModeArrival sky="horizon" avatar={avatar} show={phase === 'lobby'} onArrived={arrived} />
       {phase === 'lobby' ? (
-        <Lobby />
+        <Lobby card={card} />
       ) : phase === 'summary' ? (
         <Summary />
       ) : state.game === 'split' ? (
@@ -445,7 +456,6 @@ export function SplitSky() {
       ) : (
         <EclipsePlay state={state} />
       )}
-    </div>,
-    document.body,
+    </div>
   );
 }
