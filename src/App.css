@@ -2820,6 +2820,13 @@ button:focus-visible {
   color: #ffd77a;
   user-select: none;
 }
+.dev-status.dev-perf-event {
+  margin: 0;
+  padding: 0 0.3rem;
+  border: none;
+  color: #c8bcd9;
+  font-size: 11px;
+}
 .dev-panel-toggle {
   border: none;
   background: none;

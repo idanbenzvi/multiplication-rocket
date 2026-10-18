@@ -908,6 +908,13 @@ export default function StardustFluid({
       // in slower than ~20 fps the caller swaps in the light fallback
       let checkFrames = 0;
       let checkStart = 0;
+      // the canvas's size on the page, read when it changes (reading it every frame and every splat forced a layout each time)
+      const cssSize = { w: canvas.clientWidth, h: canvas.clientHeight };
+      const sizeWatch = new ResizeObserver(() => {
+        cssSize.w = canvas!.clientWidth;
+        cssSize.h = canvas!.clientHeight;
+      });
+      sizeWatch.observe(canvas);
       function updateFrame() {
         if (stopped) return;
         raf = requestAnimationFrame(updateFrame);
@@ -947,8 +954,8 @@ export default function StardustFluid({
       }
 
       function resizeCanvas() {
-        const width = scaleByPixelRatio(canvas!.clientWidth);
-        const height = scaleByPixelRatio(canvas!.clientHeight);
+        const width = scaleByPixelRatio(cssSize.w);
+        const height = scaleByPixelRatio(cssSize.h);
         if (canvas!.width !== width || canvas!.height !== height) {
           canvas!.width = width;
           canvas!.height = height;
@@ -1240,8 +1247,8 @@ export default function StardustFluid({
       apiRef.current = {
         splat(x, y, vx, vy, [r, g, b]) {
           if (stopped) return;
-          const cw = canvas!.clientWidth || 1;
-          const ch = canvas!.clientHeight || 1;
+          const cw = cssSize.w || 1;
+          const ch = cssSize.h || 1;
           const dx = correctDeltaX(vx / cw) * config.SPLAT_FORCE;
           const dy = correctDeltaY(-vy / ch) * config.SPLAT_FORCE;
           splat(x / cw, 1 - y / ch, dx, dy, { r, g, b });
@@ -1252,6 +1259,7 @@ export default function StardustFluid({
       return () => {
         stopped = true;
         cancelAnimationFrame(raf);
+        sizeWatch.disconnect();
         apiRef.current = null;
         gl.getExtension('WEBGL_lose_context')?.loseContext();
       };

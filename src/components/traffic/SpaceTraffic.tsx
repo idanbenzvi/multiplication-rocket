@@ -17,6 +17,7 @@ import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { BRAKE_S, DODGE_S, lensFor, TrafficScene } from './trafficScene';
 import { TrafficPlume } from './trafficPlume';
 import { warmTraffic } from './trafficArt';
+import { viewport } from '../viewport';
 import './traffic.css';
 
 interface Props {
@@ -133,8 +134,8 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       }
       const dt = Math.min(0.08, (nowMs - last) / 1000);
       last = nowMs;
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+      const W = viewport.w;
+      const H = viewport.h;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
         canvas.width = Math.round(W * dpr);
@@ -150,6 +151,8 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       cancelAnimationFrame(raf);
       scene.plume = null;
       plume?.dispose();
+      // its pixels back at once (some phones only free a canvas's memory when it's collected, and blank canvases past a limit)
+      canvas.width = canvas.height = 0;
     };
   }, [scene]);
 

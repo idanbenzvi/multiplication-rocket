@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- vendored from React Bits */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components -- vendored from React Bits */
 
 import { BloomEffect, EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset } from 'postprocessing';
 import { type FC, useEffect, useRef } from 'react';
@@ -907,21 +907,6 @@ const roadVertex = `
   }
 `;
 
-function resizeRendererToDisplaySize(
-  renderer: THREE.WebGLRenderer,
-  setSize: (width: number, height: number, updateStyle: boolean) => void
-) {
-  const canvas = renderer.domElement;
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  if (width <= 0 || height <= 0) return false;
-  const needResize = canvas.width !== width || canvas.height !== height;
-  if (needResize) {
-    setSize(width, height, false);
-  }
-  return needResize;
-}
-
 class App {
   container: HTMLElement;
   options: HyperspeedOptions;
@@ -944,6 +929,9 @@ class App {
   speedUp: number;
   timeOffset: number;
   hasValidSize: boolean;
+  /** Local change: the container's size is read only when it changes (ResizeObserver), not every frame (that forced a layout every frame), and set on the next frame */
+  sizeDirty: boolean;
+  resizeObserver: ResizeObserver;
 
   constructor(container: HTMLElement, options: HyperspeedOptions) {
     this.options = options;
@@ -1016,7 +1004,6 @@ class App {
 
     this.tick = this.tick.bind(this);
     this.init = this.init.bind(this);
-    this.setSize = this.setSize.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onMouseUp = this.onMouseUp.bind(this);
 
@@ -1024,28 +1011,29 @@ class App {
     this.onTouchEnd = this.onTouchEnd.bind(this);
     this.onContextMenu = this.onContextMenu.bind(this);
 
-    this.onWindowResize = this.onWindowResize.bind(this);
-    window.addEventListener('resize', this.onWindowResize);
-
-    if (container.offsetWidth > 0 && container.offsetHeight > 0) {
-      this.hasValidSize = true;
-    }
+    this.sizeDirty = true;
+    this.resizeObserver = new ResizeObserver(() => {
+      this.sizeDirty = true;
+    });
+    this.resizeObserver.observe(container);
   }
 
-  onWindowResize() {
+  /** Local change: the container's new size, read once after it changes */
+  applySize() {
+    this.sizeDirty = false;
     const width = this.container.offsetWidth;
     const height = this.container.offsetHeight;
-
     if (width <= 0 || height <= 0) {
       this.hasValidSize = false;
       return;
     }
-
-    this.renderer.setSize(width, height);
+    const first = !this.hasValidSize;
+    this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.composer.setSize(width, height);
     this.hasValidSize = true;
+    if (first) this.timer.reset();
   }
 
   initPasses() {
@@ -1102,6 +1090,12 @@ class App {
   }
 
   init() {
+    this.build();
+    this.start();
+  }
+
+  /** Local change: everything but running (built ahead of time off the page by prepareHyperspeed, started when shown) */
+  build() {
     this.initPasses();
     const options = this.options;
     this.road.init();
@@ -1122,7 +1116,25 @@ class App {
     this.container.addEventListener('touchend', this.onTouchEnd, { passive: true });
     this.container.addEventListener('touchcancel', this.onTouchEnd, { passive: true });
     this.container.addEventListener('contextmenu', this.onContextMenu);
+  }
 
+  /**
+   * Local change: compiles the scene's shaders without stalling the page
+   * (where the browser can compile in the background), for the target the
+   * scene really renders into (the composer's buffer, not the canvas: a
+   * different variant of each shader).
+   */
+  compileAhead(): Promise<void> {
+    const target = this.renderer.getRenderTarget();
+    this.renderer.setRenderTarget(this.composer.inputBuffer);
+    const done = this.renderer.compileAsync(this.scene, this.camera).then(() => undefined);
+    this.renderer.setRenderTarget(target);
+    return done;
+  }
+
+  /** Local change: running, from now (the initial boost starts with it) */
+  start() {
+    const options = this.options;
     if (options.initialBoostMs) {
       this.fovTarget = options.fovSpeedUp;
       this.speedUpTarget = options.speedUp;
@@ -1236,7 +1248,7 @@ class App {
       this.composer.dispose();
     }
 
-    window.removeEventListener('resize', this.onWindowResize);
+    this.resizeObserver.disconnect();
     if (this.container) {
       this.container.removeEventListener('mousedown', this.onMouseDown);
       this.container.removeEventListener('mouseup', this.onMouseUp);
@@ -1249,36 +1261,14 @@ class App {
     }
   }
 
-  setSize(width: number, height: number, updateStyles: boolean) {
-    this.composer.setSize(width, height, updateStyles);
-  }
-
   tick() {
     if (this.disposed) return;
 
-    if (!this.hasValidSize) {
-      const w = this.container.offsetWidth;
-      const h = this.container.offsetHeight;
-      if (w > 0 && h > 0) {
-        this.renderer.setSize(w, h, false);
-        this.camera.aspect = w / h;
-        this.camera.updateProjectionMatrix();
-        this.composer.setSize(w, h);
-        this.hasValidSize = true;
-        this.timer.reset();
-      } else {
-        requestAnimationFrame(this.tick);
-        return;
-      }
-    }
-
-    if (resizeRendererToDisplaySize(this.renderer, this.setSize)) {
-      const canvas = this.renderer.domElement;
-      if (this.hasValidSize) {
-        this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-        this.camera.updateProjectionMatrix();
-      }
-    }
+    // Local change: the size only when it has changed. (It used to compare the
+    // canvas's pixels with its size on the page, which never match at a pixel
+    // ratio over 1: every frame on a phone or tablet resized the composer and
+    // reallocated all its buffers.)
+    if (this.sizeDirty) this.applySize();
 
     if (this.hasValidSize) {
       this.timer.update();
@@ -1292,6 +1282,37 @@ class App {
 }
 
 const DEFAULT_EFFECT_OPTIONS: Partial<HyperspeedOptions> = {};
+
+function resolveOptions(effectOptions: Partial<HyperspeedOptions>): HyperspeedOptions {
+  const options: HyperspeedOptions = {
+    ...defaultOptions,
+    ...effectOptions,
+    colors: { ...defaultOptions.colors, ...effectOptions.colors }
+  };
+  if (typeof options.distortion === 'string') {
+    options.distortion = distortions[options.distortion];
+  }
+  return options;
+}
+
+// Local change: one Hyperspeed can be built ahead of time, off the page, with
+// its shaders compiled in the background, so it opens without a stall (the
+// launch screen's: see launchWarp.ts). The next Hyperspeed with the same
+// options takes it over, moving its container in and starting it.
+let warm: { effectOptions: Partial<HyperspeedOptions>; app: App; container: HTMLDivElement; ready: Promise<void> } | null = null;
+
+export function prepareHyperspeed(effectOptions: Partial<HyperspeedOptions>) {
+  if (warm) return;
+  const container = document.createElement('div');
+  container.style.cssText = 'width: 100%; height: 100%;';
+  const app = new App(container, resolveOptions(effectOptions));
+  const ready = app.loadAssets().then(() => {
+    if (app.disposed) return;
+    app.build();
+    return app.compileAhead();
+  });
+  warm = { effectOptions, app, container, ready };
+}
 
 const Hyperspeed: FC<HyperspeedProps> = ({ effectOptions = DEFAULT_EFFECT_OPTIONS, lightMode = false }) => {
   const hyperspeed = useRef<HTMLDivElement>(null);
@@ -1312,18 +1333,20 @@ const Hyperspeed: FC<HyperspeedProps> = ({ effectOptions = DEFAULT_EFFECT_OPTION
     const container = hyperspeed.current;
     if (!container) return;
 
-    const options: HyperspeedOptions = {
-      ...defaultOptions,
-      ...effectOptions,
-      colors: { ...defaultOptions.colors, ...effectOptions.colors }
-    };
-    if (typeof options.distortion === 'string') {
-      options.distortion = distortions[options.distortion];
+    // built ahead of time: move it in and start it (once its shaders are in)
+    if (warm && warm.effectOptions === effectOptions) {
+      const ready = warm;
+      warm = null;
+      container.appendChild(ready.container);
+      appRef.current = ready.app;
+      ready.ready.then(() => {
+        if (!ready.app.disposed) ready.app.start();
+      });
+    } else {
+      const myApp = new App(container, resolveOptions(effectOptions));
+      appRef.current = myApp;
+      myApp.loadAssets().then(myApp.init);
     }
-
-    const myApp = new App(container, options);
-    appRef.current = myApp;
-    myApp.loadAssets().then(myApp.init);
 
     return () => {
       if (appRef.current) {

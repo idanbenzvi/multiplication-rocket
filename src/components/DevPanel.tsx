@@ -3,6 +3,7 @@ import { useGameStore } from '../game/useGameStore';
 import { useAchievements } from '../game/useAchievements';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { useRippleStatus } from '../dev/rippleStatus';
+import { perfReport, usePerf } from '../dev/perfMonitor';
 import { MonsterGallery } from './sun/MonsterGallery';
 
 interface Shortcut {
@@ -18,6 +19,8 @@ export function DevPanel() {
   const [open, setOpen] = useState(() => window.innerWidth >= 600);
   const store = useGameStore;
   const ripple = useRippleStatus();
+  const perf = usePerf();
+  const [copied, setCopied] = useState(false);
   const [gallery, setGallery] = useState(false);
 
   const shortcuts: Shortcut[] = [
@@ -85,6 +88,34 @@ export function DevPanel() {
           <li className="dev-status">
             ripple:{' '}
             {ripple.status === 'webgl' ? 'WebGL ✓' : ripple.status === 'fallback' ? `fallback (${ripple.reason})` : 'not started yet'}
+          </li>
+          {/* hiccups on this device (dev/perfMonitor.ts) */}
+          <li className="dev-status">
+            ⏱ {perf.fps} fps · freezes {perf.freezes}
+            {perf.worst ? ` (worst ${perf.worst} ms)` : ''} · 3D lost {perf.lost}
+          </li>
+          {perf.events.slice(-4).map((e, i) => (
+            <li key={`${e.at}-${i}`} className="dev-status dev-perf-event">
+              {e.at}s {e.kind === 'freeze' ? `freeze ${e.ms} ms` : `3D ${e.kind}: ${e.what}`} · {e.where}
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.currentTarget.blur();
+                const text = perfReport();
+                try {
+                  await navigator.clipboard.writeText(text);
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 1500);
+                } catch {
+                  window.prompt('Copy the hiccup log:', text);
+                }
+              }}
+            >
+              {copied ? '✓ copied' : '📋 Copy the hiccup log'}
+            </button>
           </li>
         </ul>
       )}

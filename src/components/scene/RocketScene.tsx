@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -41,14 +41,28 @@ function DriftingStars() {
 // (see game/flight.ts), with the destination planet growing ahead. Each
 // level flies its own course (flight.heading): the rocket, streaks, stars and
 // sky turn with it, and only the destination stays where it is.
+/** bonus rounds drawn over the whole screen on their own canvases, and how long they take to cover the scene */
+const COVERING_ROUNDS: ReadonlySet<string> = new Set(['traffic', 'battle', 'stranded', 'stardust', 'road']);
+const COVERED_AFTER_MS = 900;
+
 export function RocketScene() {
   const progress = useGameStore((s) => s.progress);
   const justLaunched = useGameStore((s) => s.justLaunched);
   // paused (player left the tab/app): stop rendering the scene entirely
   const paused = usePause((s) => s.paused);
-  // Stardust Run covers the screen and runs a heavy fluid simulation, and Space
-  // Traffic covers it with its own canvases: give them the GPU
-  const hidden = useGameStore((s) => s.bonusRound === 'stardust' || s.bonusRound === 'traffic');
+  // The bonus rounds that cover the whole screen with their own canvases: once
+  // one has faded in over the scene, the scene stops drawing underneath and
+  // gives it the GPU (it starts again as the round ends, for the rocket to fly home)
+  const covering = useGameStore((s) => s.bonusRound !== null && COVERING_ROUNDS.has(s.bonusRound));
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    if (!covering) return;
+    const id = window.setTimeout(() => setHidden(true), COVERED_AFTER_MS);
+    return () => {
+      window.clearTimeout(id);
+      setHidden(false);
+    };
+  }, [covering]);
 
   // While the launch overlay is up, progress.level has already advanced —
   // keep rendering the level that's mid-launch until the player dismisses it.

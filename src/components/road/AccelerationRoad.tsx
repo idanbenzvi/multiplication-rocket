@@ -14,6 +14,7 @@ import GradientText from '../reactbits/GradientText';
 import { RearShip } from '../spaceArt';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { calmMotion } from '../arrival/dropOut';
+import { viewport } from '../viewport';
 import './road.css';
 
 interface Props {
@@ -270,8 +271,8 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
       }
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+      const W = viewport.w;
+      const H = viewport.h;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
         canvas.width = Math.round(W * dpr);
@@ -436,7 +437,11 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
       setFrame((f) => (f + 1) % 1_000_000);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      // its pixels back at once (some phones only free a canvas's memory when it's collected, and blank canvases past a limit)
+      canvas.width = canvas.height = 0;
+    };
   }, [road, calm]);
 
   // the ship lands on its pad as the road builds itself

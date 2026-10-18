@@ -2,8 +2,8 @@ import { motion } from 'motion/react';
 import { getLevelConfig } from '../game/levels';
 import { destinationName } from '../i18n/strings';
 import { useT } from '../i18n/useLang';
-import Hyperspeed, { type HyperspeedOptions } from './reactbits/Hyperspeed';
-import { hyperspeedPresets } from './reactbits/HyperSpeedPresets';
+import Hyperspeed from './reactbits/Hyperspeed';
+import { LAUNCH_WARP } from './launchWarp';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
 
@@ -14,21 +14,6 @@ interface Props {
   onContinue: () => void;
 }
 
-// Module-level so the reference is stable — Hyperspeed rebuilds its whole
-// three.js scene whenever effectOptions changes identity.
-const PRESET = hyperspeedPresets.one as unknown as HyperspeedOptions; // preset tuples widen to number[]
-const WARP_OPTIONS: Partial<HyperspeedOptions> = {
-  ...PRESET,
-  initialBoostMs: 1800,
-  colors: {
-    ...PRESET.colors,
-    background: 0x140e24,
-    leftCars: [0xff9d76, 0xffd77a, 0xf2a6c0],
-    rightCars: [0xc9a4de, 0x7ec4b0, 0x8fb8d9],
-    sticks: 0xffd77a,
-  },
-};
-
 export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
   const t = useT();
   const config = getLevelConfig(completedLevel);
@@ -36,7 +21,7 @@ export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
   return (
     <div className="launch-overlay">
       <div className="launch-warp">
-        <Hyperspeed effectOptions={WARP_OPTIONS} />
+        <Hyperspeed effectOptions={LAUNCH_WARP} />
       </div>
       <div className="launch-warp-hint">{t.holdToBoost}</div>
       <motion.div

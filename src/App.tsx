@@ -35,6 +35,7 @@ import { StardustRun } from './components/stardust/StardustRun';
 import { AccelerationRoad } from './components/road/AccelerationRoad';
 import { SpaceTraffic } from './components/traffic/SpaceTraffic';
 import { DevPanel } from './components/DevPanel';
+import { prepareLaunchWarp } from './components/launchWarp';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
 import { AdditionAcademy } from './components/academy/AdditionAcademy';
@@ -101,6 +102,11 @@ function App() {
   const collapseWormhole = useGameStore((s) => s.collapseWormhole);
   const [exitFlash, setExitFlash] = useState(0);
   const bonusRound = useGameStore((s) => s.bonusRound);
+  // the launch screen's hyperspeed is built ahead of time, once the tank is half full
+  const halfFull = progress.fuel >= 50;
+  useEffect(() => {
+    if (halfFull) prepareLaunchWarp();
+  }, [halfFull]);
   // this pilot races the clock for a bigger boost (unless switched off for them in the cockpit)
   const timed = useTimedBoost();
   // the rocket blasting off for a bonus round (it starts once it's gone)

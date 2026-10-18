@@ -169,6 +169,13 @@ export function SpaceRipple({ source, startedAt, origin, speed, clock = gameNow 
     // be over before its first frame appeared.
     const small = document.createElement('canvas');
     const smallCtx = small.getContext('2d');
+    // the canvas's size on the page, read when it changes (reading it every frame forced a layout each time)
+    const css = { w: canvas.clientWidth, h: canvas.clientHeight };
+    const sizeWatch = new ResizeObserver(() => {
+      css.w = canvas.clientWidth;
+      css.h = canvas.clientHeight;
+    });
+    sizeWatch.observe(canvas);
 
     let raf = 0;
     const draw = () => {
@@ -179,8 +186,8 @@ export function SpaceRipple({ source, startedAt, origin, speed, clock = gameNow 
         canvas.style.visibility = 'hidden';
         return;
       }
-      const cssW = canvas.clientWidth;
-      const cssH = canvas.clientHeight;
+      const cssW = css.w;
+      const cssH = css.h;
       const dpr = 1; // full-screen shader: native CSS resolution is plenty for a soft glow
       if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
         canvas.width = Math.round(cssW * dpr);
@@ -224,6 +231,7 @@ export function SpaceRipple({ source, startedAt, origin, speed, clock = gameNow 
     raf = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(raf);
+      sizeWatch.disconnect();
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [source, setStatus]);

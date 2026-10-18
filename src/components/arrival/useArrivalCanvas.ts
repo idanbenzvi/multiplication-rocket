@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { usePause } from '../../game/gameClock';
+import { viewport } from '../viewport';
 
 /** what an arrival draws each frame: `ms` since it began (frozen while paused), `dt` seconds since the last frame */
 export type ArrivalDraw = (ctx: CanvasRenderingContext2D, w: number, h: number, ms: number, dt: number) => void;
@@ -28,8 +29,8 @@ export function useArrivalCanvas(canvasRef: React.RefObject<HTMLCanvasElement | 
       const pause = usePause.getState();
       if (pausedBy === 'game' ? pause.paused : pause.away) return;
       ms += dt * 1000;
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+      const W = viewport.w;
+      const H = viewport.h;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
         canvas.width = Math.round(W * dpr);
@@ -40,6 +41,10 @@ export function useArrivalCanvas(canvasRef: React.RefObject<HTMLCanvasElement | 
       drawRef.current(ctx, W, H, ms, dt);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      // its pixels back at once (some phones only free a canvas's memory when it's collected, and blank canvases past a limit)
+      canvas.width = canvas.height = 0;
+    };
   }, [canvasRef, on, pausedBy]);
 }

@@ -103,6 +103,8 @@ export function useWarpCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      // its pixels back at once (some phones only free a canvas's memory when it's collected, and blank canvases past a limit)
+      canvas.width = canvas.height = 0;
     };
     // (the arrival plays once, as the round opens: `arrive` never changes)
     // eslint-disable-next-line react-hooks/exhaustive-deps
