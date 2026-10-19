@@ -17,3 +17,9 @@ export const DEV_COLLECT_EVENT = 'mr-dev-collect';
 
 /** dispatched in dev mode: answer the current Stranded Fleet / Fleet Battle / Stardust Run stop correctly */
 export const DEV_SOLVE_EVENT = 'mr-dev-solve';
+
+/** dispatched in dev mode: answer the Black Sun's question wrong */
+export const DEV_MISS_EVENT = 'mr-dev-miss';
+
+/** dispatched in dev mode: the Black Sun's run jumps to one short of the cure */
+export const DEV_ALMOST_EVENT = 'mr-dev-almost';

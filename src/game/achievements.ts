@@ -23,13 +23,18 @@ export interface AchievementStats {
   /** bonus rounds finished without a single wrong answer */
   perfectRounds: number;
   academyGraduated: boolean;
+  /** times the Black Sun (the final boss) was cured */
+  blackSun: number;
   /** local calendar days (YYYY-MM-DD) with at least one correct answer, most recent last */
   practiceDays: string[];
 }
 
 export function emptyStats(): AchievementStats {
-  return { fastAnswers: 0, comebacks: 0, wormholes: 0, bonusKinds: [], perfectRounds: 0, academyGraduated: false, practiceDays: [] };
+  return { fastAnswers: 0, comebacks: 0, wormholes: 0, bonusKinds: [], perfectRounds: 0, academyGraduated: false, blackSun: 0, practiceDays: [] };
 }
+
+/** the Black Sun's badge: Master of Universal Multiples, and the Space Admiral rank with it */
+export const ADMIRAL_BADGE = 'spaceAdmiral';
 
 export type BadgeGroup = 'journey' | 'knowledge' | 'streak' | 'speed' | 'missions';
 export const BADGE_GROUPS: BadgeGroup[] = ['knowledge', 'journey', 'streak', 'speed', 'missions'];
@@ -112,6 +117,8 @@ export const BADGES: BadgeDef[] = [
   { id: 'missionSpecialist', icon: '🎯', group: 'missions', goal: (c) => count(c.stats.bonusKinds.length, BONUS_ROTATION.length) },
   { id: 'flawless', icon: '💎', group: 'missions', goal: (c) => count(c.stats.perfectRounds, 5) },
   { id: 'academyGraduate', icon: '🎓', group: 'missions', goal: (c) => count(c.stats.academyGraduated ? 1 : 0, 1) },
+  // the final boss: it makes its pilot a Space Admiral (see rankFor)
+  { id: ADMIRAL_BADGE, icon: '🌞', group: 'missions', goal: (c) => count(c.stats.blackSun, 1) },
 ];
 
 export const BADGE_BY_ID: Record<string, BadgeDef> = Object.fromEntries(BADGES.map((b) => [b.id, b]));
@@ -121,15 +128,24 @@ export function badgeEarned(badge: BadgeDef, progress: Progress, stats: Achievem
   return have >= need;
 }
 
-// Ranks, by number of badges earned. The top rank needs nearly all of them,
-// so an Honored Captain has really shown what they know.
-export const RANK_ICONS = ['🔰', '🎗️', '🎖️', '🏅', '🥇', '⭐', '🌟'];
+// Ranks, by number of badges earned. Honored Captain needs nearly all of
+// them, so an Honored Captain has really shown what they know. Above it is
+// Space Admiral, which no number of badges reaches: only curing the Black
+// Sun, the final boss, does (it can come straight from any rank).
+export const RANK_ICONS = ['🔰', '🎗️', '🎖️', '🏅', '🥇', '⭐', '🌟', '🌞'];
 export const RANK_THRESHOLDS = [0, 3, 6, 10, 14, 18, 23];
+export const ADMIRAL_RANK = RANK_THRESHOLDS.length;
 
-export function rankFor(earnedCount: number): number {
+export function rankFor(earnedCount: number, admiral = false): number {
+  if (admiral) return ADMIRAL_RANK;
   let rank = 0;
   for (let i = 0; i < RANK_THRESHOLDS.length; i++) if (earnedCount >= RANK_THRESHOLDS[i]) rank = i;
   return rank;
+}
+
+/** a pilot's rank from the badges they've earned (id -> when) */
+export function rankOf(earned: Record<string, number>): number {
+  return rankFor(Object.keys(earned).length, !!earned[ADMIRAL_BADGE]);
 }
 
 /** local calendar day, so "practice days" line up with the child's days */

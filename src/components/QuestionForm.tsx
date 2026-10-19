@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { gameNow } from '../game/gameClock';
+import { gameNow, usePause } from '../game/gameClock';
 import type { Question } from '../game/useGameStore';
 import { FAST_MS, SLOW_MS, speedZone } from '../game/scoring';
 import { MultiplicationGrid } from './MultiplicationGrid';
@@ -182,6 +182,8 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
     if (mode === 'type' && !touch) return;
     const onKey = (e: KeyboardEvent) => {
       if (feedback === 'wrong') return; // Enter is handled by the focused Continue button
+      // (not while the game waits paused, under a game mode, the cockpit or the badges)
+      if (usePause.getState().paused) return;
       if (mode === 'choice') {
         const i = arrowChoice(e.key);
         if (i >= 0 && i < choices.length) {

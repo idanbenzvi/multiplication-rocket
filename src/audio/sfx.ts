@@ -109,6 +109,28 @@ function noiseBurst(c: AudioContext, start: number, dur: number, fromHz: number,
   src.start(start);
 }
 
+// A brassy note for fanfares: a sawtooth whose filter opens on the attack
+// and closes as it fades, so it blares instead of buzzing.
+function brass(c: AudioContext, freq: number, start: number, dur: number, gain = 0.12) {
+  const osc = c.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(freq, start);
+  const filter = c.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.Q.value = 2;
+  filter.frequency.setValueAtTime(freq * 1.2, start);
+  filter.frequency.exponentialRampToValueAtTime(freq * 6, start + 0.06);
+  filter.frequency.exponentialRampToValueAtTime(freq * 1.5, start + dur);
+  const out = c.createGain();
+  out.gain.setValueAtTime(0.0001, start);
+  out.gain.exponentialRampToValueAtTime(Math.max(gain * volume(), 0.0002), start + 0.03);
+  out.gain.setValueAtTime(Math.max(gain * volume() * 0.8, 0.0002), start + dur * 0.6);
+  out.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.connect(filter).connect(out).connect(c.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.05);
+}
+
 export const sfx = {
   /**
    * Correct answer. `streak` is the streak *including* this answer; `fast`
@@ -326,4 +348,154 @@ export const sfx = {
     if (!c || volume() === 0) return;
     tone(c, noteFreq(5 + step), c.currentTime + 0.01, 0.14, { type: 'triangle', gain: 0.07 });
   },
+
+  // ---- the Black Sun (the final boss) ----
+
+  /** a number swallowed by the black hole: a falling "fwoop" and the little star blast as it crosses over (quiet for the ones drifting in by themselves) */
+  swallow(loud: boolean) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    const k = loud ? 1 : 0.3;
+    tone(c, 900, t, 0.45, { type: 'sine', gain: 0.09 * k, glideTo: 70 });
+    noiseBurst(c, t, 0.4, 2600, 300, 0.05 * k);
+    tone(c, noteFreq(9), t + 0.38, 0.25, { gain: 0.06 * k, type: 'triangle' });
+    noiseBurst(c, t + 0.38, 0.22, 7000, 11000, 0.04 * k);
+  },
+
+  /** the ship fires the answer at the sun as a bolt of light; the bolt climbs with the run */
+  bolt(run: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    const lift = Math.min(run, 14);
+    tone(c, noteFreq(2 + Math.floor(lift / 2)), t, 0.2, { type: 'square', gain: 0.045, glideTo: noteFreq(9 + Math.floor(lift / 2)) });
+    tone(c, noteFreq(4 + Math.floor(lift / 2)), t + 0.02, 0.35, { gain: 0.12 });
+  },
+
+  /** the bolt lands: a boom, and the black shell cracking */
+  impact(run: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.45, 1800, 140, 0.22);
+    tone(c, 110 - Math.min(run, 14) * 2, t, 0.4, { type: 'triangle', gain: 0.2, glideTo: 48 });
+    [0, 0.05, 0.11].forEach((d, i) => noiseBurst(c, t + 0.08 + d, 0.06, 5200 - i * 600, 2400, 0.08));
+  },
+
+  /** a checkpoint: a layer of the dark shell shatters off, and a power chord rings out */
+  checkpoint(n: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    for (let i = 0; i < 7; i++) noiseBurst(c, t + i * 0.035, 0.12, 9000 - i * 500, 3500, 0.09);
+    noiseBurst(c, t, 0.9, 900, 120, 0.18);
+    const root = n >= 10 ? 4 : 2;
+    [0, 2, 4].forEach((d) => brass(c, noteFreq(root + d) / 2, t + 0.12, 0.9, 0.07));
+    tone(c, noteFreq(root + 7), t + 0.2, 0.9, { gain: 0.12 });
+  },
+
+  /** the sun gets its strength back: a dark swell rising */
+  sunHeal() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    tone(c, 62, t, 1.1, { type: 'sawtooth', gain: 0.06, glideTo: 124, attack: 0.35 });
+    tone(c, 93, t + 0.1, 1.0, { type: 'sawtooth', gain: 0.035, glideTo: 186, attack: 0.35 });
+    noiseBurst(c, t, 1.0, 200, 1200, 0.06);
+  },
+
+  /** the sun winds up a fireball: a rumble climbing, crackling */
+  fireballCharge() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 48, t, 0.95, { type: 'sawtooth', gain: 0.07, glideTo: 150, attack: 0.25 });
+    noiseBurst(c, t, 0.95, 300, 2600, 0.12);
+    for (let i = 0; i < 6; i++) noiseBurst(c, t + 0.1 + i * 0.13, 0.05, 6000, 3000, 0.05);
+  },
+
+  /** the fireball roars off at the ship */
+  fireballLaunch() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 1.1, 2400, 220, 0.24);
+    tone(c, 160, t, 0.9, { type: 'sawtooth', gain: 0.05, glideTo: 60 });
+  },
+
+  /** dodged: the ship rolls aside, the fireball roars past, and a relieved "phew" */
+  dodge() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.3, 900, 5200, 0.12);
+    tone(c, noteFreq(4), t + 0.25, 0.2, { gain: 0.12 });
+    tone(c, noteFreq(7), t + 0.36, 0.4, { gain: 0.13 });
+  },
+
+  /** the fireball hits the ship: a blast and a thump */
+  burn() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.8, 2200, 90, 0.3);
+    tone(c, 80, t, 0.6, { type: 'triangle', gain: 0.25, glideTo: 35 });
+    tone(c, 300, t + 0.15, 0.4, { type: 'triangle', gain: 0.06, glideTo: 180 });
+  },
+
+  /** the 15th bolt: the dark shell shatters, everything it swallowed bursting out */
+  shatter() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 2.2, 3000, 60, 0.32);
+    tone(c, 55, t, 1.6, { type: 'triangle', gain: 0.28, glideTo: 30 });
+    for (let i = 0; i < 14; i++) noiseBurst(c, t + 0.05 + i * 0.045, 0.1, 11000 - i * 350, 4000, 0.07);
+    for (let i = 0; i < 10; i++) tone(c, noteFreq(6 + (i % 7)), t + 0.5 + i * 0.07, 0.4, { gain: 0.06, type: 'triangle' });
+  },
+
+  /** the sun lights up gold and smiles: a warm swelling chord and a climb of bells */
+  sunrise() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.02;
+    [130.81, 164.81, 196, 246.94].forEach((f, i) => tone(c, f, t + i * 0.05, 2.6, { type: 'triangle', gain: 0.07, attack: 0.6 }));
+    [0, 2, 4, 5, 7, 9, 10, 12, 14].forEach((n, i) => tone(c, noteFreq(n), t + 0.6 + i * 0.12, 0.9, { gain: 0.11 }));
+    noiseBurst(c, t + 0.5, 2, 4000, 11000, 0.04);
+  },
+
+  /** a little world blooms green round the happy sun */
+  bloom(i: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, noteFreq(7 + i * 2), t, 0.5, { gain: 0.1 });
+    tone(c, noteFreq(9 + i * 2), t + 0.07, 0.6, { gain: 0.08, type: 'triangle' });
+  },
+
+  /** Space Admiral! A fanfare */
+  admiral() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.05;
+    const G4 = 392;
+    const C5 = 523.25;
+    const E5 = 659.25;
+    const G5 = 783.99;
+    const C6 = 1046.5;
+    // ta-ta-taaa, ta-ta-TAAAA
+    [
+      [G4, 0, 0.16],
+      [G4, 0.18, 0.16],
+      [C5, 0.36, 0.5],
+      [E5, 0.9, 0.16],
+      [E5, 1.08, 0.16],
+      [G5, 1.26, 0.5],
+    ].forEach(([f, d, len]) => brass(c, f, t + d, len, 0.11));
+    [C5, E5, G5, C6].forEach((f) => brass(c, f, t + 1.8, 1.8, 0.06));
+    [0, 4, 7, 12, 16].forEach((n, i) => tone(c, noteFreq(n + 7), t + 1.8 + i * 0.08, 1.4, { gain: 0.08 }));
+    noiseBurst(c, t + 1.8, 1.6, 5000, 12000, 0.05);
+  },
 };
+

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAchievements } from '../../game/useAchievements';
 import { BADGE_BY_ID, RANK_ICONS } from '../../game/achievements';
+import { useMission } from '../../profiles/useProfiles';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { BadgeArt } from './BadgeArt';
@@ -17,16 +18,18 @@ export function BadgeToast() {
   const t = useT();
   const unlock = useAchievements((s) => s.queue[0]);
   const shiftQueue = useAchievements((s) => s.shiftQueue);
+  const mission = useMission();
 
   useEffect(() => {
     if (!unlock) return;
     sfx.milestone(unlock.promotedTo !== null ? 20 : 10);
-    const id = window.setTimeout(shiftQueue, unlock.promotedTo !== null ? PROMOTION_MS : SHOW_MS);
+    // (longer for a promotion, or the news that the final boss is waiting)
+    const id = window.setTimeout(shiftQueue, unlock.promotedTo !== null || unlock.badgeId === 'grandMaster' ? PROMOTION_MS : SHOW_MS);
     return () => window.clearTimeout(id);
   }, [unlock, shiftQueue]);
 
   const badge = unlock && BADGE_BY_ID[unlock.badgeId];
-  const text = badge && badgeText(t, badge.id);
+  const text = badge && badgeText(t, badge.id, mission);
 
   return (
     <AnimatePresence>
@@ -51,6 +54,8 @@ export function BadgeToast() {
             <span className="badge-toast-kicker">{t.badges.newBadge}</span>
             <span className="badge-toast-name">{text.name}</span>
             <span className="badge-toast-desc">{text.desc}</span>
+            {/* every fact mastered: the final boss is waiting */}
+            {badge.id === 'grandMaster' && <span className="badge-toast-promo">{t.boss.awaits}</span>}
             {unlock.promotedTo !== null && (
               <span className="badge-toast-promo">
                 {RANK_ICONS[unlock.promotedTo]}{' '}

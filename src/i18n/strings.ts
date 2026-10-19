@@ -1,5 +1,6 @@
 import { isAddKind } from '../game/addition';
 import { formatFactKey } from '../game/facts';
+import type { Mission } from '../game/mission';
 
 export type Lang = 'en' | 'he';
 
@@ -460,7 +461,8 @@ const en = {
     isNew: 'NEW',
     close: 'Close',
     groups: { knowledge: 'Knowledge', journey: 'Journey', streak: 'Streaks', speed: 'Speed', missions: 'Missions' },
-    ranks: ['Cadet', 'Ensign', 'Lieutenant', 'Lieutenant Commander', 'Commander', 'Captain', 'Honored Captain'],
+    ranks: ['Cadet', 'Ensign', 'Lieutenant', 'Lieutenant Commander', 'Commander', 'Captain', 'Honored Captain', 'Space Admiral'],
+    toAdmiral: 'Cure the Black Sun, the final boss, to become Space Admiral',
     list: {
       firstStar: { name: 'First Star', desc: 'Master your first fact' },
       starCluster: { name: 'Star Cluster', desc: 'Master 10 facts' },
@@ -487,6 +489,8 @@ const en = {
       missionSpecialist: { name: 'Mission Specialist', desc: 'Finish every kind of bonus round' },
       flawless: { name: 'Flawless', desc: 'Finish 5 bonus rounds without a mistake' },
       academyGraduate: { name: 'Academy Graduate', desc: 'Finish the Deep Space Academy' },
+      spaceAdmiral: { name: 'Master of Universal Multiples', desc: 'Cure the Black Sun, the final boss' },
+      spaceAdmiralAdd: { name: 'Master of Universal Sums', desc: 'Cure the Black Sun, the final boss' },
     },
   },
 
@@ -525,7 +529,7 @@ const en = {
   modes: {
     button: 'Game modes',
     title: 'Game modes',
-    subtitle: 'Play together, on one device or on a few',
+    subtitle: 'Play together, on one device or on a few, or face the final boss',
     needTwoPilots: 'Add a second pilot to fly together',
   },
   crew: {
@@ -745,6 +749,56 @@ const en = {
     summaryHits: (n: number) => (n === 1 ? '1 hit' : `${n} hits`),
     summaryHelped: (n: number) => (n === 1 ? '1 help' : `${n} helps`),
     offline: 'offline',
+  },
+  boss: {
+    card: 'The Black Sun',
+    cardHint: 'The final boss!',
+    cardLocked: (have: number, need: number) => `🔒 Master every fact to face it: ${have} / ${need}`,
+    cardNew: 'It has appeared! Do you dare?',
+    cardCured: (n: number) => (n === 1 ? '🌞 Cured! Fight it again' : `🌞 Cured ${n} times! Fight it again`),
+    title: 'The Black Sun',
+    kicker: '☠️ Final boss',
+    intro: 'The monster sun has turned into a black hole, and it swallows numbers! Only a true master can cure it.',
+    rules: [
+      '🎯 Answer 15 in a row to cure it.',
+      '🕳️ A miss before 5 in a row: it swallows your run.',
+      '🛡️ Every 5 in a row is a checkpoint. Miss after one, and it throws a fireball: dodge it, and your run is safe!',
+    ],
+    fight: 'Fight! ⚔️',
+    back: 'Back',
+    awakens: 'The Black Sun awakens!',
+    life: 'Black Sun',
+    run: (n: number) => (n === 1 ? '🔥 1 in a row' : `🔥 ${n} in a row`),
+    toGo: (n: number) => (n === 1 ? '1 to go!' : `${n} to go`),
+    checkpoint: (n: number) => `🛡️ Checkpoint: ${n} in a row!`,
+    checkpointHint: "A miss won't break your run now: dodge the fireball instead!",
+    fireball: '☄️ Fireball! Dodge it!',
+    dodgeKeys: '← or → to dodge',
+    dodge: 'Dodge!',
+    dodgeLeft: 'Dodge left',
+    dodgeRight: 'Dodge right',
+    dodged: 'Dodged! 😎 Your run is safe',
+    burned: (n: number) => `Ouch! 🔥 Back to checkpoint ${n}`,
+    swallowed: 'Swallowed! 🕳️ Your run starts again',
+    gained: (n: number) => `+${n} ❤`,
+    itIs: 'It is',
+    again: '🔁 Again! You missed this one',
+    taunts: ['HA HA HA!', 'YUM, NUMBERS!', 'MINE NOW!', 'GULP!'],
+    hits: ['Zap!', 'Pow!', 'Direct hit!', 'Bullseye!', 'Boom!'],
+    lastOne: 'One more to cure it!',
+    cured: 'The Black Sun is cured! ☀️',
+    admiralKicker: '⭐ Final boss defeated ⭐',
+    admiralTitle: 'Space Admiral level achieved!',
+    admiralSub: 'You are now master of universal multiples',
+    admiralSubAdd: 'You are now master of universal sums',
+    admiralName: (name: string) => `Admiral ${name}`,
+    statRun: (n: number) => `🔥 ${n} in a row`,
+    statDodged: (n: number) => (n === 1 ? '😎 1 fireball dodged' : `😎 ${n} fireballs dodged`),
+    statAnswers: (n: number) => (n === 1 ? '🎯 1 answer' : `🎯 ${n} answers`),
+    flyHome: 'Back to flight 🚀',
+    fightAgain: 'Fight again',
+    awaits: '🌑 The Black Sun has appeared: find it in 🎮 Game modes!',
+    ribbon: 'ADMIRAL',
   },
   sector: (n: number) => `Sector ${n}`,
 };
@@ -1199,7 +1253,8 @@ const he: Strings = {
     isNew: 'חדש',
     close: 'סגירה',
     groups: { knowledge: 'ידע', journey: 'מסע', streak: 'רצפים', speed: 'מהירות', missions: 'משימות' },
-    ranks: ['צוער', 'סגן משנה', 'סגן', 'סרן', 'רב־סרן', 'קפטן', 'קפטן מהולל'],
+    ranks: ['צוער', 'סגן משנה', 'סגן', 'סרן', 'רב־סרן', 'קפטן', 'קפטן מהולל', 'אדמירל חלל'],
+    toAdmiral: 'רפאו את השמש השחורה, האויב האחרון, כדי להיות אדמירל חלל',
     list: {
       firstStar: { name: 'כוכב ראשון', desc: 'שלטו בתרגיל הראשון' },
       starCluster: { name: 'צביר כוכבים', desc: 'שלטו ב־10 תרגילים' },
@@ -1226,6 +1281,8 @@ const he: Strings = {
       missionSpecialist: { name: 'מומחה משימות', desc: 'סיימו כל סוג של סבב בונוס' },
       flawless: { name: 'ללא רבב', desc: 'סיימו 5 סבבי בונוס בלי אף טעות' },
       academyGraduate: { name: 'בוגר האקדמיה', desc: 'סיימו את אקדמיית החלל העמוק' },
+      spaceAdmiral: { name: 'מאסטר הכפל של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
+      spaceAdmiralAdd: { name: 'מאסטר החיבור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
     },
   },
 
@@ -1264,7 +1321,7 @@ const he: Strings = {
   modes: {
     button: 'מצבי משחק',
     title: 'מצבי משחק',
-    subtitle: 'משחקים יחד, במכשיר אחד או בכמה',
+    subtitle: 'משחקים יחד, במכשיר אחד או בכמה, או מתמודדים מול האויב האחרון',
     needTwoPilots: 'הוסיפו טייס נוסף כדי לטוס יחד',
   },
   crew: {
@@ -1482,6 +1539,56 @@ const he: Strings = {
     summaryHelped: (n) => (n === 1 ? 'עזרה אחת' : `${n} עזרות`),
     offline: 'מנותק',
   },
+  boss: {
+    card: 'השמש השחורה',
+    cardHint: 'האויב האחרון!',
+    cardLocked: (have, need) => `🔒 שלטו בכל התרגילים כדי להתמודד: ${have} / ${need}`,
+    cardNew: 'היא הופיעה! מעזים?',
+    cardCured: (n) => (n === 1 ? '🌞 רופאה! לקרב נוסף' : `🌞 רופאה ${n} פעמים! לקרב נוסף`),
+    title: 'השמש השחורה',
+    kicker: '☠️ האויב האחרון',
+    intro: 'שמש המפלצת הפכה לחור שחור, והיא בולעת מספרים! רק אלופים אמיתיים יכולים לרפא אותה.',
+    rules: [
+      '🎯 ענו נכון 15 פעמים ברצף כדי לרפא אותה.',
+      '🕳️ טעות לפני 5 ברצף: היא בולעת את הרצף.',
+      '🛡️ כל 5 ברצף הם נקודת ביטחון. טעות אחרי נקודה כזאת, והיא יורה כדור אש: התחמקו ממנו, והרצף נשמר!',
+    ],
+    fight: 'לקרב! ⚔️',
+    back: 'חזרה',
+    awakens: 'השמש השחורה מתעוררת!',
+    life: 'השמש השחורה',
+    run: (n) => (n === 1 ? '🔥 אחת ברצף' : `🔥 ${n} ברצף`),
+    toGo: (n) => (n === 1 ? 'עוד אחת!' : `עוד ${n}`),
+    checkpoint: (n) => `🛡️ נקודת ביטחון: ${n} ברצף!`,
+    checkpointHint: 'מעכשיו טעות לא שוברת את הרצף: מתחמקים מכדור האש!',
+    fireball: '☄️ כדור אש! התחמקו!',
+    dodgeKeys: '← או → כדי להתחמק',
+    dodge: 'התחמקו!',
+    dodgeLeft: 'התחמקות שמאלה',
+    dodgeRight: 'התחמקות ימינה',
+    dodged: 'התחמקתם! 😎 הרצף נשמר',
+    burned: (n) => `אאוץ'! 🔥 חזרה לנקודת הביטחון ${n}`,
+    swallowed: 'נבלע! 🕳️ הרצף מתחיל מחדש',
+    gained: (n) => `+${n} ❤`,
+    itIs: 'התשובה:',
+    again: '🔁 שוב! בזה טעיתם',
+    taunts: ['חה חה חה!', 'יאמי, מספרים!', 'זה שלי!', 'גלופ!'],
+    hits: ['זאפ!', 'פאו!', 'פגיעה ישירה!', 'בול!', 'בום!'],
+    lastOne: 'עוד אחת והיא נרפאת!',
+    cured: 'השמש השחורה נרפאה! ☀️',
+    admiralKicker: '⭐ האויב האחרון הובס ⭐',
+    admiralTitle: 'הושגה דרגת אדמירל חלל!',
+    admiralSub: 'מעכשיו: מאסטר הכפל של היקום',
+    admiralSubAdd: 'מעכשיו: מאסטר החיבור של היקום',
+    admiralName: (name) => `האדמירל ${name}`,
+    statRun: (n) => `🔥 ${n} ברצף`,
+    statDodged: (n) => (n === 1 ? '😎 כדור אש אחד נחמק' : `😎 ${n} כדורי אש נחמקו`),
+    statAnswers: (n) => (n === 1 ? '🎯 תשובה אחת' : `🎯 ${n} תשובות`),
+    flyHome: 'חזרה לטיסה 🚀',
+    fightAgain: 'לקרב נוסף',
+    awaits: '🌑 השמש השחורה הופיעה: חפשו אותה ב־🎮 מצבי משחק!',
+    ribbon: 'אדמירל',
+  },
   sector: (n) => `גזרה ${n}`,
 };
 
@@ -1500,7 +1607,8 @@ export function destinationName(
   return config.destinationSector === 1 ? base : `${base} (${t.sector(config.destinationSector)})`;
 }
 
-/** a badge's translated name and description, by badge id (game/achievements.ts) */
-export function badgeText(t: Strings, id: string): { name: string; desc: string } {
-  return t.badges.list[id as keyof Strings['badges']['list']] ?? { name: id, desc: '' };
+/** a badge's translated name and description, by badge id (game/achievements.ts); some say it differently on the addition mission */
+export function badgeText(t: Strings, id: string, mission: Mission = 'mul'): { name: string; desc: string } {
+  const list = t.badges.list as Record<string, { name: string; desc: string }>;
+  return (mission === 'add' ? list[`${id}Add`] : undefined) ?? list[id] ?? { name: id, desc: '' };
 }

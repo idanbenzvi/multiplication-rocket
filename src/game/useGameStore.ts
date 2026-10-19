@@ -12,6 +12,7 @@ import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 import { activeMission, activeTimedBoost, useProfiles } from '../profiles/useProfiles';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
+import { resetBossRecord } from '../storage/bossRecord';
 import { useAchievements } from './useAchievements';
 import { AWAY_MS, flyAway, flyHome, kick } from './flight';
 
@@ -447,6 +448,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // a reset is a fresh start: the dashboard's history (of this mission) goes too
     const activeId = useProfiles.getState().activeId;
     if (activeId) clearLog(activeId, activeMission());
+    resetBossRecord(activeId, activeMission());
     useAchievements.getState().reset();
     const progress = localProgressStore.load();
     set({

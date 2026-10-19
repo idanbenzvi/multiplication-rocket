@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../game/useGameStore';
 import { useAchievements } from '../game/useAchievements';
-import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
+import { DEV_ALMOST_EVENT, DEV_COLLECT_EVENT, DEV_MISS_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
+import { useBossStore } from '../game/useBossStore';
+import { flyOffTo } from './warpTransition';
+import { playTrack } from '../audio/useAudio';
 import { useRippleStatus } from '../dev/rippleStatus';
 import { perfReport, usePerf } from '../dev/perfMonitor';
 import { MonsterGallery } from './sun/MonsterGallery';
@@ -40,6 +43,16 @@ export function DevPanel() {
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },
     { key: 'E', label: 'Earn the next badge', run: () => useAchievements.getState().devEarnNext() },
     { key: 'U', label: 'Monster Sun gallery', run: () => setGallery(true) },
+    {
+      key: 'X',
+      label: 'The Black Sun (final boss)',
+      run: () => {
+        playTrack('sun');
+        flyOffTo(() => useBossStore.getState().openBoss());
+      },
+    },
+    { key: 'J', label: 'Black Sun: answer wrong', run: () => window.dispatchEvent(new Event(DEV_MISS_EVENT)) },
+    { key: 'Y', label: 'Black Sun: one short of the cure', run: () => window.dispatchEvent(new Event(DEV_ALMOST_EVENT)) },
   ];
 
   useEffect(() => {

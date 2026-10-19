@@ -5,8 +5,8 @@ import { pauseGame, resumeGame } from '../../game/gameClock';
 import { useLang, useT } from '../../i18n/useLang';
 import { useGameStore } from '../../game/useGameStore';
 import { useAchievements, useRank } from '../../game/useAchievements';
-import { BADGE_GROUPS, BADGES, RANK_ICONS, RANK_THRESHOLDS } from '../../game/achievements';
-import { activeProfile, pilotName } from '../../profiles/useProfiles';
+import { ADMIRAL_RANK, BADGE_GROUPS, BADGES, RANK_ICONS, RANK_THRESHOLDS } from '../../game/achievements';
+import { activeProfile, pilotName, useMission } from '../../profiles/useProfiles';
 import { BadgeArt } from './BadgeArt';
 import { badgeText } from '../../i18n/strings';
 import GradientText from '../reactbits/GradientText';
@@ -18,6 +18,7 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
   const t = useT();
   const tb = t.badges;
   const lang = useLang((s) => s.lang);
+  const mission = useMission();
   const progress = useGameStore((s) => s.progress);
   const stats = useAchievements((s) => s.stats);
   const earned = useAchievements((s) => s.earned);
@@ -41,7 +42,7 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
 
   // progress through the current rank, towards the next one
   const rankStart = RANK_THRESHOLDS[rank];
-  const rankFill = nextAt === undefined ? 1 : (earnedCount - rankStart) / (nextAt - rankStart);
+  const rankFill = nextAt === undefined || rankStart === undefined ? 1 : Math.min(1, (earnedCount - rankStart) / (nextAt - rankStart));
 
   return createPortal(
     <motion.div className="badges-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -72,7 +73,8 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
               <span style={{ width: `${Math.round(rankFill * 100)}%` }} />
             </div>
             <div className="badges-rank-next">
-              {nextAt === undefined ? tb.topRank : tb.toNextRank(nextAt - earnedCount, tb.ranks[rank + 1])}
+              {/* Honored Captain's next step isn't more badges: it's the Black Sun */}
+              {rank >= ADMIRAL_RANK ? tb.topRank : nextAt === undefined ? tb.toAdmiral : tb.toNextRank(nextAt - earnedCount, tb.ranks[rank + 1])}
               <span className="badges-count">{tb.earnedCount(earnedCount, BADGES.length)}</span>
             </div>
           </div>
@@ -92,7 +94,7 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
             <h3>{tb.groups[group]}</h3>
             <div className="badges-grid">
               {BADGES.filter((b) => b.group === group).map((b) => {
-                const text = badgeText(t, b.id);
+                const text = badgeText(t, b.id, mission);
                 const isEarned = !!earned[b.id];
                 const { have, need } = b.goal({ progress, stats });
                 return (

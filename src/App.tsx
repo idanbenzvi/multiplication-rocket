@@ -43,6 +43,7 @@ import { CrewFlight } from './components/crew/CrewFlight';
 import { CrewSetup } from './components/crew/CrewSetup';
 import { SplitSky } from './components/sky/SplitSky';
 import { SunMonster } from './components/sun/SunMonster';
+import { BlackSun } from './components/boss/BlackSun';
 import { useCrewStore } from './game/useCrewStore';
 import { usePause } from './game/gameClock';
 import { DEV_MODE } from './dev/devMode';
@@ -307,6 +308,7 @@ function App() {
       <CrewSetup />
       {!gateOpen && <SplitSky />}
       {!gateOpen && <SunMonster />}
+      {!gateOpen && <BlackSun />}
       <ModeWarp />
       {/* the studio's opening, over the game while it loads */}
       <StudioSplash />

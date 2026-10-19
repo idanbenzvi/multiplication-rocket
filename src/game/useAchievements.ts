@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Progress } from './types';
 import type { BonusKind } from './bonusRounds';
-import { BADGES, badgeEarned, dayKey, emptyStats, rankFor, type AchievementStats } from './achievements';
+import { ADMIRAL_BADGE, BADGES, badgeEarned, dayKey, emptyStats, rankOf, type AchievementStats } from './achievements';
 import { useProfiles } from '../profiles/useProfiles';
 
 // Per-pilot badges, saved on the device next to their progress. The game
@@ -55,6 +55,8 @@ export type AchievementEvent =
   | { type: 'answer'; correct: boolean; fast: boolean; comeback: boolean }
   | { type: 'bonus'; kind: BonusKind; perfect: boolean }
   | { type: 'academy' }
+  /** the Black Sun cured (its finale shows the badge, so it gets no toast) */
+  | { type: 'boss' }
   /**
    * Nothing new happened, just (re)check the badges against this progress.
    * Used when a pilot's game loads, so progress from before badges existed
@@ -104,6 +106,8 @@ function applyEvent(stats: AchievementStats, event: AchievementEvent): Achieveme
       };
     case 'academy':
       return { ...stats, academyGraduated: true };
+    case 'boss':
+      return { ...stats, blackSun: stats.blackSun + 1 };
     case 'progress':
       return stats;
   }
@@ -125,14 +129,12 @@ export const useAchievements = create<AchievementsState>((set, get) => {
 
       const earned = { ...state.earned };
       const queue = [...state.queue];
-      let count = Object.keys(earned).length;
-      let rank = rankFor(count);
+      let rank = rankOf(earned);
       const now = Date.now();
       for (const b of fresh) {
         earned[b.id] = now;
-        count++;
-        const nextRank = rankFor(count);
-        if (event.type !== 'progress') queue.push({ badgeId: b.id, promotedTo: nextRank > rank ? nextRank : null });
+        const nextRank = rankOf(earned);
+        if (event.type !== 'progress' && b.id !== ADMIRAL_BADGE) queue.push({ badgeId: b.id, promotedTo: nextRank > rank ? nextRank : null });
         rank = nextRank;
       }
       const next = { earned, stats, unseen: [...state.unseen, ...fresh.map((b) => b.id)] };
@@ -165,11 +167,11 @@ export const useAchievements = create<AchievementsState>((set, get) => {
       const state = get();
       const badge = BADGES.find((b) => !state.earned[b.id]);
       if (!badge) return;
-      const count = Object.keys(state.earned).length + 1;
-      const promoted = rankFor(count) > rankFor(count - 1);
-      const next = { earned: { ...state.earned, [badge.id]: Date.now() }, unseen: [...state.unseen, badge.id], stats: state.stats };
+      const earned = { ...state.earned, [badge.id]: Date.now() };
+      const promoted = rankOf(earned) > rankOf(state.earned);
+      const next = { earned, unseen: [...state.unseen, badge.id], stats: state.stats };
       saveFrom(next);
-      set({ ...next, queue: [...state.queue, { badgeId: badge.id, promotedTo: promoted ? rankFor(count) : null }] });
+      set({ ...next, queue: [...state.queue, { badgeId: badge.id, promotedTo: promoted ? rankOf(earned) : null }] });
     },
   };
 });
@@ -180,5 +182,5 @@ useProfiles.subscribe((s, prev) => {
 });
 
 export function useRank(): number {
-  return useAchievements((s) => rankFor(Object.keys(s.earned).length));
+  return useAchievements((s) => rankOf(s.earned));
 }

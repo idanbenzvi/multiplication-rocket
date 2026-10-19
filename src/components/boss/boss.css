@@ -1,0 +1,758 @@
+/* ==================== THE BLACK SUN (the final boss) ==================== */
+
+.boss-overlay {
+  --boss-slot: clamp(290px, 40dvh, 360px);
+  --boss-side: min(420px, 44vw);
+  --heat: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  background: #07050f;
+  color: #fdf3e7;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.boss-stars,
+.boss-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.boss-stars {
+  opacity: 0.75;
+}
+
+/* ---------- the top: quit, the Black Sun's life, the run ---------- */
+
+.boss-hud {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 10px);
+  inset-inline: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  transition: opacity 0.5s ease;
+}
+.is-wide .boss-hud {
+  /* over the sun, beside the panel */
+  left: 12px;
+  right: calc(var(--boss-side) + 12px);
+}
+.boss-hud.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.boss-quit {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(20, 12, 36, 0.7);
+  color: #e2d5ef;
+  font-size: 1rem;
+}
+.boss-life {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.boss-life-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff9db0;
+  text-shadow: 0 0 10px rgba(255, 45, 85, 0.8);
+}
+.boss-life-bar {
+  display: flex;
+  gap: 6px;
+}
+.boss-shield {
+  position: relative;
+  display: flex;
+  gap: 3px;
+  padding: 4px 5px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 79, 109, 0.5);
+  background: rgba(30, 6, 22, 0.75);
+  box-shadow: 0 0 12px rgba(255, 45, 85, 0.25);
+}
+.boss-shield.is-broken {
+  border-style: dashed;
+  border-color: rgba(255, 215, 122, 0.6);
+  background: rgba(40, 30, 10, 0.5);
+  box-shadow: none;
+}
+.boss-shield-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 122, 0.9));
+  animation: boss-shield-in 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes boss-shield-in {
+  from {
+    scale: 2.4;
+    opacity: 0;
+  }
+}
+.boss-pip {
+  width: clamp(9px, 3.2vw, 15px);
+  height: 13px;
+  border-radius: 3px;
+  transform: skewX(-12deg);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+.boss-pip.is-lit {
+  background: linear-gradient(180deg, #ff6b8a, #a3134f 60%, #5b0a3a);
+  box-shadow: 0 0 8px rgba(255, 45, 85, 0.75);
+}
+.boss-shield.is-broken .boss-pip {
+  opacity: 0.25;
+}
+.boss-pip.is-healed {
+  animation: boss-pip-heal 0.9s ease-out both;
+}
+@keyframes boss-pip-heal {
+  0% {
+    background: #fff;
+    box-shadow: 0 0 18px #ff2d55;
+    scale: 1.5;
+  }
+  40% {
+    background: #ff2d55;
+  }
+}
+.boss-life-pop {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  translate: -50% 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ff5d73;
+  text-shadow: 0 0 10px rgba(255, 45, 85, 0.9);
+  pointer-events: none;
+}
+.boss-run {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffd77a;
+  text-shadow: 0 0 10px rgba(255, 190, 90, 0.7);
+}
+.boss-run-to-go {
+  color: #c8bcd9;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+/* ---------- the bottom (or the side): the rules, the questions, the dodge ---------- */
+
+.boss-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  height: var(--boss-slot);
+  padding: 0 12px calc(env(safe-area-inset-bottom) + 12px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+.boss-slot > * {
+  pointer-events: auto;
+}
+.is-wide .boss-slot {
+  left: auto;
+  top: 0;
+  width: var(--boss-side);
+  height: auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px) 0;
+  align-items: center;
+}
+
+.boss-intro {
+  /* (taller than its slot on a small phone: it grows upwards, under the ship) */
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  gap: 0.6rem;
+  padding: 1.05rem 1.2rem;
+  border-color: rgba(255, 79, 109, 0.5);
+  background: rgba(30, 14, 44, 0.9);
+  box-shadow: 0 0 40px rgba(255, 45, 85, 0.25), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.boss-intro > *,
+.boss-panel > *,
+.boss-admiral-card > * {
+  flex-shrink: 0;
+}
+.boss-kicker {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ff7a8a;
+}
+.boss-title {
+  font-size: 1.9rem;
+  line-height: 1.25;
+}
+.boss-rules {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.86rem;
+  line-height: 1.3;
+  color: #e9def5;
+}
+.boss-intro-buttons {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.6rem;
+  align-items: center;
+}
+.boss-intro-buttons .profile-primary {
+  margin-top: 0;
+}
+.boss-go:not(:disabled) {
+  background: linear-gradient(90deg, #ffd77a, #ff5c8a 55%, #b45cff);
+  color: #24071a;
+  font-weight: 800;
+  box-shadow: 0 0 22px rgba(255, 92, 138, 0.55);
+  animation: boss-go 1.6s ease-in-out infinite;
+}
+@keyframes boss-go {
+  50% {
+    box-shadow: 0 0 36px rgba(255, 92, 138, 0.9);
+  }
+}
+
+.boss-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: min(440px, 100%);
+  padding: 0.8rem 0.9rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(22, 10, 34, 0.86);
+  border: 1px solid rgba(255, 79, 109, calc(0.3 + var(--heat) * 0.6));
+  box-shadow:
+    0 0 calc(14px + var(--heat) * 34px) rgba(255, calc(80 + var(--heat) * 130), 90, calc(0.2 + var(--heat) * 0.4)),
+    0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.boss-panel.is-retry {
+  border-color: rgba(255, 106, 213, 0.75);
+}
+.boss-retry {
+  align-self: center;
+  padding: 0.15rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 106, 213, 0.18);
+  border: 1px solid rgba(255, 106, 213, 0.6);
+  color: #ffc7ee;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.boss-equation {
+  justify-content: center;
+  font-size: clamp(1.9rem, 7vw, 2.5rem);
+}
+.boss-answer.is-right {
+  color: #7ee08f;
+  text-shadow: 0 0 14px rgba(126, 224, 143, 0.8);
+}
+.boss-answer.is-wrong {
+  color: #ffd77a;
+}
+.boss-choices {
+  min-width: 0;
+}
+.boss-choices .choice-btn {
+  min-height: 58px;
+  font-size: 1.6rem;
+  border-color: rgba(255, 157, 176, 0.5);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.16), rgba(160, 30, 90, 0.25) 100%);
+  box-shadow: 0 0 14px rgba(255, 79, 109, 0.22);
+}
+.boss-choices.is-dpad .choice-btn {
+  min-height: 50px;
+}
+.boss-choices .choice-btn.is-faded {
+  opacity: 0.32;
+}
+.boss-choices .choice-btn.is-taken {
+  animation: boss-taken 0.5s ease-in both;
+}
+@keyframes boss-taken {
+  to {
+    color: transparent;
+    scale: 0.92;
+  }
+}
+.boss-choices .choice-btn.is-fired {
+  color: transparent;
+  text-shadow: none;
+}
+.boss-feedback {
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #e2d5ef;
+}
+.boss-fact {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffd77a;
+}
+.boss-praise {
+  position: absolute;
+  top: -2.4rem;
+  inset-inline: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #ffd77a;
+  text-shadow: 0 0 16px rgba(255, 190, 90, 0.9), 0 2px 0 #7a3a12;
+  pointer-events: none;
+}
+
+.boss-dodge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: min(440px, 100%);
+  margin-bottom: 0.6rem;
+}
+.boss-dodge-btn {
+  flex: none;
+  width: clamp(76px, 22vw, 104px);
+  height: clamp(76px, 22vw, 104px);
+  border-radius: 50%;
+  border: 3px solid #ffb347;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 220, 160, 0.4), rgba(200, 60, 20, 0.55));
+  color: #fff6e0;
+  font-size: clamp(1.8rem, 7vw, 2.4rem);
+  box-shadow: 0 0 26px rgba(255, 120, 40, 0.75);
+  animation: boss-dodge-pulse 0.5s ease-in-out infinite alternate;
+}
+.boss-dodge-btn:active {
+  scale: 0.9;
+}
+@keyframes boss-dodge-pulse {
+  to {
+    box-shadow: 0 0 40px rgba(255, 160, 60, 1);
+  }
+}
+.boss-dodge-word {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  font-weight: 800;
+  color: #ffb347;
+  text-shadow: 0 0 12px rgba(255, 90, 40, 0.9);
+  animation: boss-shake 0.18s linear infinite;
+}
+@keyframes boss-shake {
+  25% {
+    translate: -2px 1px;
+  }
+  75% {
+    translate: 2px -1px;
+  }
+}
+
+/* ---------- banners ---------- */
+
+.boss-banner {
+  position: absolute;
+  top: var(--boss-banner-y, 38%);
+  left: 50%;
+  z-index: 4;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: max-content;
+  max-width: 90vw;
+  padding: 0.55rem 1.2rem;
+  border-radius: 18px;
+  font-family: var(--font-display);
+  text-align: center;
+  pointer-events: none;
+}
+.is-wide .boss-banner {
+  left: calc((100% - var(--boss-side)) / 2);
+  max-width: calc(96vw - var(--boss-side));
+}
+.boss-banner-text {
+  font-size: clamp(1.25rem, 5vw, 1.8rem);
+  font-weight: 800;
+}
+.boss-banner-hint {
+  max-width: 22em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.92;
+}
+.boss-banner.is-awakens,
+.boss-banner.is-swallowed {
+  color: #fff;
+  background: rgba(70, 8, 50, 0.88);
+  border: 2px solid #b45cff;
+  box-shadow: 0 0 34px rgba(180, 92, 255, 0.7);
+}
+.boss-banner.is-awakens {
+  border-color: #ff2d55;
+  box-shadow: 0 0 34px rgba(255, 45, 85, 0.7);
+  animation: boss-warn 0.45s steps(2) infinite;
+}
+@keyframes boss-warn {
+  50% {
+    border-color: #ffd77a;
+  }
+}
+.boss-banner.is-checkpoint,
+.boss-banner.is-lastOne {
+  color: #2a1505;
+  background: linear-gradient(90deg, #fff1b0, #ffd77a, #ff9d4a);
+  box-shadow: 0 0 44px rgba(255, 200, 90, 0.95);
+}
+.boss-banner.is-lastOne {
+  animation: boss-last 0.6s ease-in-out infinite alternate;
+}
+@keyframes boss-last {
+  to {
+    box-shadow: 0 0 64px rgba(255, 230, 140, 1);
+  }
+}
+.boss-banner.is-fireball {
+  color: #fff6e0;
+  background: rgba(120, 24, 6, 0.9);
+  border: 2px solid #ffb347;
+  box-shadow: 0 0 40px rgba(255, 120, 40, 0.9);
+}
+/* (the text shakes: the banner's own translate centres it) */
+.boss-banner.is-fireball .boss-banner-text {
+  animation: boss-shake 0.12s linear infinite;
+}
+.boss-banner.is-dodged {
+  color: #062433;
+  background: linear-gradient(90deg, #a8f0ff, #6ad7ff);
+  box-shadow: 0 0 36px rgba(106, 215, 255, 0.9);
+}
+.boss-banner.is-burned {
+  color: #fff;
+  background: rgba(130, 14, 30, 0.9);
+  border: 2px solid #ff5a3c;
+  box-shadow: 0 0 36px rgba(255, 70, 50, 0.8);
+}
+
+/* the fireball's coming: the dodge buttons want to be found */
+.boss-overlay.is-dodging .boss-hud {
+  opacity: 0.55;
+}
+
+/* ---------- the admiral ---------- */
+
+.boss-admiral {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(env(safe-area-inset-bottom) + 14px);
+  background: linear-gradient(180deg, rgba(7, 5, 15, 0) 30%, rgba(30, 12, 40, 0.55) 65%, rgba(20, 8, 30, 0.85));
+  overflow-y: auto;
+}
+.is-wide .boss-admiral {
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline-end: max(16px, 4vw);
+  background: linear-gradient(90deg, rgba(7, 5, 15, 0) 35%, rgba(30, 12, 40, 0.6) 62%, rgba(20, 8, 30, 0.85));
+}
+.boss-admiral-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(460px, 100%);
+  text-align: center;
+}
+.is-wide .boss-admiral-card {
+  width: min(480px, 52vw);
+}
+.boss-admiral-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin-bottom: -0.3rem;
+  perspective: 600px;
+  filter: drop-shadow(0 0 22px rgba(255, 215, 122, 0.7));
+}
+.boss-admiral-badge .admiral-badge {
+  position: relative;
+  width: clamp(130px, 34vw, 190px);
+  height: clamp(130px, 34vw, 190px);
+}
+.is-tall .boss-admiral-badge .admiral-badge {
+  width: clamp(120px, 20dvh, 190px);
+  height: clamp(120px, 20dvh, 190px);
+}
+.boss-admiral-rays {
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 230, 150, 0.45) 0deg 6deg, rgba(255, 230, 150, 0) 6deg 18deg);
+  mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+  animation: boss-rays 14s linear infinite;
+}
+@keyframes boss-rays {
+  to {
+    rotate: 360deg;
+  }
+}
+.boss-admiral-kicker {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffe6a0;
+}
+.boss-admiral-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 6.6vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.08;
+  text-transform: uppercase;
+  filter: drop-shadow(0 0 18px rgba(255, 190, 90, 0.55));
+}
+.boss-admiral-title .animated-gradient-text {
+  margin: 0;
+}
+.boss-admiral-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 3.8vw, 1.25rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.boss-admiral-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 215, 122, 0.12);
+  border: 1px solid rgba(255, 215, 122, 0.5);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff1c9;
+}
+.boss-admiral-avatar {
+  font-size: 1.4rem;
+}
+.boss-admiral-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.8rem;
+  font-size: 0.88rem;
+  color: #e2d5ef;
+}
+.boss-admiral-buttons {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.2rem;
+}
+.boss-admiral-buttons .profile-primary {
+  margin-top: 0;
+}
+
+/* a short screen (a phone on its side): all of it, smaller */
+@media (max-height: 520px) {
+  .boss-admiral-card {
+    gap: 0.25rem;
+  }
+  .boss-admiral-badge .admiral-badge,
+  .is-tall .boss-admiral-badge .admiral-badge {
+    width: 92px;
+    height: 92px;
+  }
+  .boss-admiral-title {
+    font-size: 1.35rem;
+  }
+  .boss-admiral-sub {
+    font-size: 0.85rem;
+  }
+  .boss-admiral-name {
+    font-size: 0.9rem;
+    padding: 0.1rem 0.7rem;
+  }
+  .boss-admiral-buttons .profile-primary,
+  .boss-admiral-buttons .profile-secondary {
+    min-height: 42px;
+  }
+}
+
+/* the badge itself (also the Space Admiral rank's insignia, in BadgeArt) */
+.admiral-badge {
+  display: block;
+  overflow: visible;
+}
+.admiral-badge.is-live .admiral-badge-rays {
+  transform-origin: 0 0;
+  animation: boss-rays 18s linear infinite;
+}
+.admiral-badge-shine {
+  animation: admiral-shine 3.2s ease-in-out 1.2s infinite;
+}
+@keyframes admiral-shine {
+  0% {
+    translate: 0 0;
+  }
+  45%,
+  100% {
+    translate: 230px 0;
+  }
+}
+.badge-art.badge-art-drawn {
+  background: none;
+  box-shadow: none;
+}
+.badge-art.badge-art-drawn.is-locked {
+  box-shadow: none;
+}
+
+/* ---------- its card in Game modes ---------- */
+
+.boss-card-icon {
+  position: relative;
+  display: inline-block;
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #1d1030, #06030c 70%);
+  box-shadow: 0 0 0 2px rgba(255, 210, 160, 0.7), 0 0 14px 4px #ff9d4a, 0 0 30px 8px rgba(255, 92, 138, 0.6);
+}
+.boss-card-icon::before,
+.boss-card-icon::after {
+  content: '';
+  position: absolute;
+  top: 40%;
+  width: 22%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3d6, #ff3b5c 70%);
+  box-shadow: 0 0 6px #ff3b5c;
+}
+.boss-card-icon::before {
+  left: 20%;
+  rotate: 18deg;
+}
+.boss-card-icon::after {
+  right: 20%;
+  rotate: -18deg;
+}
+.pilot-card-boss {
+  border-style: solid !important;
+  border-color: rgba(255, 92, 138, 0.55) !important;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 92, 138, 0.16), rgba(30, 8, 30, 0.6)) !important;
+}
+.pilot-card-boss.is-new {
+  animation: boss-card-new 1.4s ease-in-out infinite;
+}
+@keyframes boss-card-new {
+  50% {
+    box-shadow: 0 0 28px rgba(255, 92, 138, 0.8);
+  }
+}
+.pilot-card-boss.is-cured {
+  border-color: rgba(255, 215, 122, 0.7) !important;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 215, 122, 0.18), rgba(40, 24, 8, 0.5)) !important;
+}
+.pilot-card-boss.is-cured .boss-card-icon {
+  background: radial-gradient(circle at 40% 35%, #fffbe6, #ffd36b 55%, #ff9f2e);
+  box-shadow: 0 0 0 2px #ffe680, 0 0 16px 6px rgba(255, 210, 107, 0.8);
+}
+.pilot-card-boss.is-cured .boss-card-icon::before,
+.pilot-card-boss.is-cured .boss-card-icon::after {
+  top: 36%;
+  height: 10%;
+  background: none;
+  border-top: 2.5px solid #6b2f0e;
+  border-radius: 50% 50% 0 0;
+  box-shadow: none;
+  rotate: 0deg;
+}
+.boss-card-new {
+  top: 8px;
+}
+
+/* the game modes button: a dot while the Black Sun is new */
+.modes-button.has-new {
+  position: relative;
+}
+.modes-button.has-new::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  inset-inline-end: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff5d73;
+  box-shadow: 0 0 0 2px #140f26, 0 0 8px #ff5d73;
+  animation: badge-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boss-dodge-btn,
+  .boss-dodge-word,
+  .boss-banner-text,
+  .boss-go,
+  .pilot-card-boss.is-new,
+  .boss-admiral-rays,
+  .admiral-badge-shine,
+  .admiral-badge.is-live .admiral-badge-rays {
+    animation: none !important;
+  }
+}

@@ -1,4 +1,5 @@
-import type { BadgeGroup } from '../../game/achievements';
+import { ADMIRAL_BADGE, ADMIRAL_RANK, type BadgeGroup } from '../../game/achievements';
+import { AdmiralBadge } from '../boss/AdmiralBadge';
 
 // Badge and rank pictures. Dropping an image named after a badge into
 // src/assets/badges (e.g. firstStar.png, or rank-0.png … rank-6.png for the
@@ -21,8 +22,18 @@ interface Props {
   size?: number;
 }
 
+// The Black Sun's badge, which is also the Space Admiral's insignia, is drawn in code (an image dropped in still wins).
+const DRAWN = new Set([ADMIRAL_BADGE, `rank-${ADMIRAL_RANK}`]);
+
 export function BadgeArt({ name, icon, group = 'rank', locked = false, size = 64 }: Props) {
   const art = ART_BY_NAME[name];
+  if (!art && DRAWN.has(name)) {
+    return (
+      <span className={`badge-art badge-art-drawn ${locked ? 'is-locked' : ''}`} style={{ width: size, height: size }} aria-hidden="true">
+        <AdmiralBadge size={size} />
+      </span>
+    );
+  }
   return (
     <span
       className={`badge-art badge-art-${group} ${locked ? 'is-locked' : ''} ${art ? 'has-image' : ''}`}

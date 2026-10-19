@@ -19,18 +19,18 @@ const EYES_S = 1.45;
 const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
-type RGB = [number, number, number];
-const hex = (h: string): RGB => {
+export type RGB = [number, number, number];
+export const hex = (h: string): RGB => {
   const n = parseInt(h.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
-const mix = (a: RGB, b: RGB, m: number): RGB => [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m];
-const css = (c: RGB, a: number) => `rgba(${c[0] | 0}, ${c[1] | 0}, ${c[2] | 0}, ${a})`;
+export const mix = (a: RGB, b: RGB, m: number): RGB => [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m];
+export const css = (c: RGB, a: number) => `rgba(${c[0] | 0}, ${c[1] | 0}, ${c[2] | 0}, ${a})`;
 /** the corona's colors (near the rim, further out, furthest), drifting from one palette to the other */
-const GOLD: RGB[] = [hex('#fff4d6'), hex('#ffb04a'), hex('#ff5c8a')];
-const PINK: RGB[] = [hex('#ffe9f2'), hex('#ff7a59'), hex('#b45cff')];
+export const GOLD: RGB[] = [hex('#fff4d6'), hex('#ffb04a'), hex('#ff5c8a')];
+export const PINK: RGB[] = [hex('#ffe9f2'), hex('#ff7a59'), hex('#b45cff')];
 
-interface Flare {
+export interface Flare {
   a: number;
   born: number;
   life: number;
@@ -45,9 +45,9 @@ export interface Point {
 }
 
 export class EclipseScene {
-  private readonly calm: boolean;
-  private flares: Flare[] = [];
-  private nextFlare = 2.6;
+  protected readonly calm: boolean;
+  protected flares: Flare[] = [];
+  protected nextFlare = 2.6;
   private readonly streamers = Array.from({ length: STREAMERS }, () => ({ phase: Math.random() * TAU, rate: 0.5 + Math.random() * 0.9, reach: 0.6 + Math.random() * 0.5 }));
 
   constructor(calm: boolean) {
@@ -85,6 +85,22 @@ export class EclipseScene {
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
+    this.drawCorona(ctx, s, R, t, b, intro, [c0, c1, c2], spin);
+    this.drawFlares(ctx, s, R, t, c0, c1);
+    ctx.restore();
+
+    this.drawDisc(ctx, s, R, t, b);
+    this.drawEyes(ctx, s, R, t, look);
+    if (!this.calm) this.drawDiamond(ctx, w, s, R, t);
+  }
+
+  /**
+   * The corona, drawn additively: the outer glow, the streamers and the bright
+   * ring hugging the rim, in `[c0, c1, c2]` (near the rim, further out,
+   * furthest). `swirl` bends the streamers round the way the corona turns (0:
+   * straight out), as if something were sucking it in.
+   */
+  protected drawCorona(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, b: number, intro: number, [c0, c1, c2]: RGB[], spin: number, swirl = 0) {
     // the outer glow
     const og = ctx.createRadialGradient(s.x, s.y, R * 0.95, s.x, s.y, R * 3.3);
     og.addColorStop(0, css(c1, 0.75 * b));
@@ -99,8 +115,9 @@ export class EclipseScene {
       const a = (i / STREAMERS) * TAU + spin;
       const pulse = this.calm ? 0.5 : 0.5 + 0.5 * Math.sin(t * st.rate + st.phase);
       const len = R * st.reach * (0.25 + 0.75 * pulse) * (0.75 + 0.25 * Math.sin(a * 3 + t * 0.3)) * (0.6 + 0.4 * intro);
-      const tipX = s.x + Math.cos(a) * (R + len);
-      const tipY = s.y + Math.sin(a) * (R + len);
+      const ta = a + (swirl * len) / R;
+      const tipX = s.x + Math.cos(ta) * (R + len);
+      const tipY = s.y + Math.sin(ta) * (R + len);
       const g = ctx.createLinearGradient(s.x + Math.cos(a) * R, s.y + Math.sin(a) * R, tipX, tipY);
       g.addColorStop(0, css(c0, 0.5 * b));
       g.addColorStop(0.35, css(c1, 0.28 * b));
@@ -122,16 +139,10 @@ export class EclipseScene {
     ctx.beginPath();
     ctx.arc(s.x, s.y, R * 1.22, 0, TAU);
     ctx.fill();
-    this.drawFlares(ctx, s, R, t, c0, c1);
-    ctx.restore();
-
-    this.drawDisc(ctx, s, R, t, b);
-    this.drawEyes(ctx, s, R, t, look);
-    if (!this.calm) this.drawDiamond(ctx, w, s, R, t);
   }
 
   /** prominences: loops of fire arcing off the rim, growing and fading; one every few seconds once it's open */
-  private drawFlares(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, c0: RGB, c1: RGB) {
+  protected drawFlares(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, c0: RGB, c1: RGB) {
     if (!this.calm && t > this.nextFlare) {
       this.flares.push({ a: Math.random() * TAU, born: t, life: 1.6 + Math.random() * 0.8, height: 0.3 + Math.random() * 0.35, spread: 0.12 + Math.random() * 0.12 });
       this.nextFlare = t + 2.8 + Math.random() * 3;
@@ -165,7 +176,7 @@ export class EclipseScene {
   }
 
   /** the dark disc, its outline wobbling, lit along one edge */
-  private drawDisc(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, b: number) {
+  protected drawDisc(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, b: number) {
     const wob = this.calm ? 0 : 1;
     ctx.save();
     ctx.beginPath();
@@ -190,7 +201,7 @@ export class EclipseScene {
   }
 
   /** two angry glowing eyes open in the dark, look at the ship, and blink now and then */
-  private drawEyes(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, look: Point | null) {
+  protected drawEyes(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, look: Point | null) {
     const open = this.calm ? 1 : easeOut(clamp01((t - EYES_S) / 0.2));
     if (open <= 0) return;
     // a blink every few seconds
@@ -237,7 +248,7 @@ export class EclipseScene {
   }
 
   /** the diamond ring: a blinding point on the rim with a star of spikes and a lens streak, as the eclipse peaks */
-  private drawDiamond(ctx: CanvasRenderingContext2D, w: number, s: Point, R: number, t: number) {
+  protected drawDiamond(ctx: CanvasRenderingContext2D, w: number, s: Point, R: number, t: number) {
     const k = (t - DIAMOND_S[0]) / (DIAMOND_S[1] - DIAMOND_S[0]);
     if (k <= 0 || k >= 1) return;
     const f = Math.sin(Math.PI * k) ** 0.7;

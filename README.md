@@ -338,6 +338,49 @@ up to six children team up to cure them, each on their own phone.
 
 Design notes: [`docs/plans/2026-10-10-monster-sun.md`](docs/plans/2026-10-10-monster-sun.md).
 
+## The Black Sun 🌑 (the final boss, solo)
+
+The finale, for a pilot who has **mastered every fact** of their mission (each one right at least
+4 times out of 5: all 55 of the times table, or all 60 of the addition mission). Until then its
+card in **🎮 Game modes** is locked and shows how close they are ("41 / 55"); once it opens it
+stays open, the 🎮 button gets a dot and the card says *It has appeared!* (the Grand Master badge's
+toast says so too).
+
+- **Arrival:** the same as Monster Sun's: out of the warp the pilot's ship flies in at a sun in
+  total eclipse, the corona flares, a diamond ring flashes and two grumpy eyes open and follow
+  the ship. The rules card comes in below (beside it on a wide screen).
+- **It turns into a black hole:** *Fight!* and the corona is sucked round into a swirl, a
+  whirlpool of hot matter spins up round it (spiral arms winding in, brighter on the side coming
+  towards you), and numbers drift in from all round, spiralling in faster and faster, stretched
+  thin as they near it, until they touch the dark and are swallowed in a little star blast.
+- **Cure it with 15 right in a row.** Its life bar is those 15, in three shields of five. A right
+  answer flies up off its button to the ship, which fires it at the sun as a bolt of light: the
+  sun winces, the dark shell cracks, and the cracks of light spread with every hit.
+- **A miss before 5 in a row:** the number is pulled off its button into the hole, the sun
+  laughs, its cracks seal and it gets that life back: the run starts again.
+- **Checkpoints:** every 5 in a row a layer of the shell shatters off and that shield breaks for
+  good. After one, a miss doesn't break the run: the sun winds up (eyes blazing, a furnace in its
+  mouth) and spits a **fireball** at the ship. **Dodge it** (← or →, A or D, the big arrow buttons,
+  a swipe, or a tap on either side of the ship) and the ship barrel-rolls out of the way and the
+  run carries on. Get hit and the run falls back to the last checkpoint. Each fireball comes a
+  little faster than the one before.
+- **No skipping what you don't know:** every fact you miss comes back two questions later
+  (*🔁 Again!*), so a run can't get past one you don't know. The questions lean on the pilot's
+  own weakest facts and the hard middle of the table, and the last stretch only asks 3 to 9.
+  On a computer the four answers sit in the arrow-key cross, as in the game.
+- **The cure:** the 15th bolt shatters the shell. Everything it swallowed bursts back out, the
+  ship does a victory roll and a loop and flies in close to watch, and the sun lights up gold
+  from the middle out and smiles: rays grow, a rainbow arcs over it, hearts float up, and three
+  dead little worlds round it bloom blue and green one by one. Then, to a fanfare and fireworks:
+  **SPACE ADMIRAL LEVEL ACHIEVED! YOU ARE NOW MASTER OF UNIVERSAL MULTIPLES** (or *sums*), with the
+  pilot's name and a gold medal: the cured sun under five admiral's stars, in a laurel wreath.
+- **Space Admiral** is a new rank above Honored Captain, reached only this way (from any rank),
+  and the medal is its insignia and a badge of its own (*Master of Universal Multiples*).
+- Every answer counts toward the practice map and the parent dashboard, like the other modes.
+  With reduced motion the whole thing plays without the motion (the fireball still comes).
+
+Design notes: [`docs/plans/2026-10-19-black-sun.md`](docs/plans/2026-10-19-black-sun.md).
+
 ## Parent dashboard 👪
 
 **⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A
@@ -366,7 +409,8 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 ## Sound
 
 The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
-has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; and the
+(and the Black Sun's fight) has its own soundtrack, *The Final Lap*; a crew flight (and the Space
+Admiral's finale) plays *The View From Higher Ground*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to
 whatever was playing when it closes. Click 🔊 in the top bar (or use the throttles in the cockpit)
 for separate **music** and **sound-effect** volume (all the way down = off). The
@@ -416,6 +460,9 @@ in the corner. Its rows can be tapped on tablets, or use the shortcuts:
 | Shift+A | Deep Space Academy |
 | Shift+P | Practice map |
 | Shift+U | Monster Sun gallery: all 25 monsters, and (tap *Cure them all*) the friends they turn into |
+| Shift+X | The Black Sun (open even if the pilot hasn't mastered everything yet); in it, Shift+G answers right |
+| Shift+J | The Black Sun: answer wrong |
+| Shift+Y | The Black Sun: the run jumps to one short of the cure |
 
 The panel's last line shows whether the Stranded Fleet energy pulse is running as a WebGL shader or has fallen back to CSS rings (with the reason), which is useful if the pulse looks wrong on a device.
 

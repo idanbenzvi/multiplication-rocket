@@ -61,3 +61,7 @@ missions = magenta, ranks = gold.
 | `missionSpecialist.png` | Mission Specialist | every bonus round kind | a target with six mission icons around it |
 | `flawless.png` | Flawless | 5 perfect bonus rounds | a sparkling diamond |
 | `academyGraduate.png` | Academy Graduate | the Deep Space Academy | a graduation cap floating in space |
+
+`spaceAdmiral` (Master of Universal Multiples, for curing the Black Sun) and `rank-7` (Space
+Admiral) are drawn in code: `src/components/boss/AdmiralBadge.tsx`. An image dropped in under
+either name still replaces it.
