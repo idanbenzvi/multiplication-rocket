@@ -28,6 +28,7 @@ import { BlackSunScene } from './blackSunScene';
 import { AdmiralBadge } from './AdmiralBadge';
 import '../sky/sky.css';
 import './boss.css';
+import { useBack } from '../../native/back';
 
 // The Black Sun, the final boss (game/blackSun.ts has the rules, and
 // blackSunScene.ts draws it). It opens through the warp like Monster Sun,
@@ -61,13 +62,13 @@ const centre = (el: Element | null | undefined) => {
 };
 
 // Back to the game through the warp; the theme comes back from the tap (browsers only start music from one).
-function warpHome(e: React.MouseEvent<HTMLElement>) {
+function warpHome(e?: React.MouseEvent<HTMLElement>) {
   playTrack('theme');
   warpTo(() => {
     useBossStore.getState().closeBoss();
     // the rocket flies home as the warp clears
     flyHome();
-  }, e.currentTarget);
+  }, e?.currentTarget);
 }
 
 // ---------- the starfield behind it all: it surges with the fight ----------
@@ -125,6 +126,8 @@ function BossOverlay() {
   const phase = useBossStore((s) => s.phase);
   const question = useBossStore((s) => s.question);
   const wide = useWide();
+  // Back: home, from the intro, the fight or the admiral's card alike
+  useBack(warpHome);
   const [calm] = useState(calmMotion);
   const [scene] = useState(() => new BlackSunScene(calm, mission, avatar, isAdmiral(), activeShip()));
   const canvasRef = useRef<HTMLCanvasElement>(null);

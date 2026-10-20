@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAudio } from '../audio/useAudio';
 import { sfx } from '../audio/sfx';
 import { useT } from '../i18n/useLang';
+import { useBack } from '../native/back';
 
 function speakerIcon(volume: number): string {
   if (volume === 0) return '🔇';
@@ -26,6 +27,7 @@ export function AudioControls() {
   const setEffectsVolume = useAudio((s) => s.setEffectsVolume);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  useBack(open && (() => setOpen(false)));
 
   useEffect(() => {
     if (!open) return;

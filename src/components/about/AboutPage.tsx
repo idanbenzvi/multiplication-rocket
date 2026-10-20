@@ -4,12 +4,15 @@ import { motion } from 'motion/react';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { useLang, useT } from '../../i18n/useLang';
 import { CycleScene } from './CycleScene';
+import { useBack } from '../../native/back';
 
 // About the maker and the game, over a colour-cycling pixel-art canyon
 // (CycleScene). The game is paused while it's open (the clock resumes on close).
 export function AboutPage({ onClose }: { onClose: () => void }) {
   const t = useT().about;
   const lang = useLang((s) => s.lang);
+
+  useBack(onClose);
 
   useEffect(() => {
     pauseGame('about');

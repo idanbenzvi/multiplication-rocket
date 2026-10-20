@@ -9,6 +9,7 @@ import { readLog } from '../../stats/answerLog';
 import { computeDashboard, type Day, type PeriodStats, type Range } from '../../stats/metrics';
 import { LineChart, StackedBars } from './charts';
 import { BackupCard } from './Backup';
+import { useBack } from '../../native/back';
 
 type P = Strings['parents'];
 
@@ -18,6 +19,7 @@ type P = Strings['parents'];
 export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel: () => void }) {
   const t = useT().parents;
   const [q] = useState(() => ({ a: 12 + Math.floor(Math.random() * 8), b: 3 + Math.floor(Math.random() * 7) }));
+  useBack(onCancel);
   const [value, setValue] = useState('');
   const [wrong, setWrong] = useState(false);
   const submit = () => {
@@ -152,6 +154,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
   const profiles = useProfiles((s) => s.profiles);
   const activeId = useProfiles((s) => s.activeId);
   const [pilotId, setPilotId] = useState(activeId ?? profiles[0]?.id ?? '');
+  useBack(onClose);
   const [range, setRange] = useState<Range>(7);
   // each mission has its own progress: the pilot's current one to start with
   const [mission, setMission] = useState<PilotMission>(() => missionOf(pilotId));

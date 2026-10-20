@@ -9,6 +9,7 @@ import { useAchievements } from '../../game/useAchievements';
 import { useGameStore } from '../../game/useGameStore';
 import { haptics } from '../../audio/haptics';
 import { useWarpCanvas } from '../useWarpCanvas';
+import { useBack } from '../../native/back';
 
 // What both Academies share: the screen (warp in, a panel of steps with
 // Back / Read to me / Next, a celebration on the last one), and the pieces
@@ -177,7 +178,8 @@ export function AcademyScreen({ course, menu, menuSubtitle, onBackFromStart, onC
     window.setTimeout(onClose, 700);
   }, [onClose]);
 
-  // Esc leaves from the menu too (a course handles its own keys)
+  // Esc (and Back) leaves from the menu too (a course handles its own keys)
+  useBack(!course && phase === 'learn' && leave);
   useEffect(() => {
     if (course || phase !== 'learn') return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && leave();
@@ -277,6 +279,9 @@ function CourseRunner({
       );
     }
   }, [current.id, onBurst, onFinish]);
+
+  // Back: the step before (from the first, back to the courses, if there are any), or leave
+  useBack(active && (() => (step > 0 || onBackFromStart ? go(-1) : leave())));
 
   // keyboard: ← → to move, Esc to leave
   useEffect(() => {

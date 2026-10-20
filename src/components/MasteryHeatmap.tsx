@@ -7,6 +7,7 @@ import { ADD_KINDS, type AddKind } from '../game/addition';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
+import { useBack } from '../native/back';
 
 interface Props {
   mastery: Record<string, FactStat>;
@@ -33,6 +34,7 @@ const KIND_EXAMPLES: Record<AddKind, string> = {
 export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, auto = false }: Props) {
   const t = useT();
   const [tab, setTab] = useState<Mission>('mul');
+  useBack(onContinue);
   const mission: Mission = pilotMission === 'mix' ? tab : pilotMission;
   const sym = OP_SYMBOL[mission];
   const day = dayNumber();

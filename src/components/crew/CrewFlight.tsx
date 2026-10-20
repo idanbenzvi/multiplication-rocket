@@ -18,6 +18,7 @@ import GradientText from '../reactbits/GradientText';
 import { warpTo } from '../warpTransition';
 import { CrewArrival } from '../arrival/CrewArrival';
 import './crew.css';
+import { useBack } from '../../native/back';
 
 interface Props {
   onBurst: (x: number, y: number, color: string) => void;
@@ -112,6 +113,12 @@ function CrewSummary({ pilots }: { pilots: [Profile | undefined, Profile | undef
   const docks = useCrewStore((s) => s.docks);
   const missionLaunches = useCrewStore((s) => s.missionLaunches);
   const close = useCrewStore((s) => s.close);
+  useBack(() =>
+    warpTo(() => {
+      close();
+      flyHome();
+    }),
+  );
   return (
     <motion.div className="crew-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <motion.div className="crew-panel" initial={{ scale: 0.85 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
@@ -238,6 +245,8 @@ export function CrewFlight({ onBurst }: Props) {
   const finishDocking = useCrewStore((s) => s.finishDocking);
   const dismissLaunch = useCrewStore((s) => s.dismissLaunch);
   const land = useCrewStore((s) => s.land);
+  // Back lands the flight (its summary has its own way home)
+  useBack(!summary && land);
 
   const current = turn?.kind === 'docking' ? 'both' : turn ? turn.member : null;
   const showTurn = !launching && !summary;

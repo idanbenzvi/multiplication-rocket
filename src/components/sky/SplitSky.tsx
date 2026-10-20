@@ -19,6 +19,7 @@ import { flyHome } from '../../game/flight';
 import { ModeArrival } from '../arrival/ModeArrival';
 import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
 import './sky.css';
+import { useBack } from '../../native/back';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
@@ -161,11 +162,11 @@ function GuestLobby() {
 }
 
 // back to the game through the warp, the rocket flying home as it clears
-function warpHome(e: React.MouseEvent<HTMLElement>) {
+function warpHome(e?: React.MouseEvent<HTMLElement>) {
   warpTo(() => {
     useSkyStore.getState().closeSky();
     flyHome();
-  }, e.currentTarget);
+  }, e?.currentTarget);
 }
 
 function Lobby({ card }: { card: ArrivalCard }) {
@@ -174,6 +175,7 @@ function Lobby({ card }: { card: ArrivalCard }) {
   const host = useSkyStore((s) => s.host);
   const leave = useSkyStore((s) => s.leave);
   const entrance = useCardEntrance(card);
+  useBack(role ? leave : warpHome);
   return (
     <div className={`sky-panel ${entrance.className}`} style={entrance.style}>
       {/* the emoji stays outside: the gradient fill would flatten it */}
@@ -399,6 +401,7 @@ function JoinHint({ round, adding }: { round: SkyState['rounds'][number]; adding
 
 function Summary() {
   const t = useT();
+  useBack(warpHome);
   const state = useSkyStore((s) => s.state);
   const role = useSkyStore((s) => s.role);
   const startGame = useSkyStore((s) => s.startGame);

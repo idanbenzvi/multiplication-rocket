@@ -23,6 +23,7 @@ import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/ar
 import { useProfiles } from '../../profiles/useProfiles';
 import '../sky/sky.css';
 import './sun.css';
+import { useBack } from '../../native/back';
 
 const RIGHT_PAUSE_MS = 700;
 const WRONG_PAUSE_MS = 2000;
@@ -95,13 +96,13 @@ const FED_BY_MS = 4000;
 
 // Back to the game through the warp; the theme music comes back from the tap
 // (browsers only start music from one).
-function warpHome(e: React.MouseEvent<HTMLElement>) {
+function warpHome(e?: React.MouseEvent<HTMLElement>) {
   playTrack('theme');
   warpTo(() => {
     useSunStore.getState().closeSun();
     // the rocket flies home as the warp clears
     flyHome();
-  }, e.currentTarget);
+  }, e?.currentTarget);
 }
 
 function Warp() {
@@ -243,6 +244,7 @@ function Lobby({ card }: { card: ArrivalCard }) {
   const leave = useSunStore((s) => s.leave);
   const online = state.players.filter((p) => p.online).length;
   const seated = state.players.some((p) => p.id === myId);
+  useBack(role ? leave : warpHome);
 
   // a chime for every pilot who joins the team
   const count = useRef(state.players.length);
@@ -463,6 +465,7 @@ function Defeated({ state }: { state: SunState }) {
 
 function Fight({ state }: { state: SunState }) {
   const t = useT();
+  useBack(warpHome);
   const myId = useSunStore((s) => s.myId);
   const [toasts, setToasts] = useState<Toast[]>([]);
   // strength the monster ate back but hasn't shown yet: it shows once the number is crunched
@@ -679,6 +682,7 @@ function Fight({ state }: { state: SunState }) {
 
 function Summary({ state }: { state: SunState }) {
   const t = useT();
+  useBack(warpHome);
   const role = useSunStore((s) => s.role);
   const myId = useSunStore((s) => s.myId);
   const start = useSunStore((s) => s.start);

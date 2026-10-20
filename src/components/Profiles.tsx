@@ -9,6 +9,7 @@ import { missionHint, missionName, shipName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
 import { RestoreDialog } from './parents/Backup';
 import { useHangar } from '../profiles/useHangar';
+import { useBack } from '../native/back';
 
 // After switching or creating a pilot, reload the game with their progress.
 function startGameForActive() {
@@ -228,6 +229,8 @@ export function ProfileGate() {
   const [view, setView] = useState<GateView>({ kind: 'pick' });
   const [restoring, setRestoring] = useState(false);
   const active = profiles.find((p) => p.id === activeId);
+  // a new pilot or an edit, from "Who's flying?": Back is its Cancel
+  useBack(profiles.length > 0 && !!active?.name && !chosen && view.kind !== 'pick' && (() => setView({ kind: 'pick' })));
 
   let content: React.ReactNode = null;
   if (profiles.length === 0) {
@@ -262,6 +265,8 @@ export function PilotButton() {
   const active = profiles.find((p) => p.id === activeId);
   const [view, setView] = useState<GateView | null>(null);
   const close = () => setView(null);
+  // Back: the pilots again from a new one or an edit (their Cancel), and from the pilots, closed
+  useBack(view && (view.kind === 'pick' ? close : () => setView({ kind: 'pick' })));
 
   return (
     <>

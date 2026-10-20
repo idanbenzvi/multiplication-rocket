@@ -13,6 +13,7 @@ import { haptics } from '../audio/haptics';
 import { colorForLevel } from './scene/palette';
 import { SHIPS, type ShipId } from './scene/ships';
 import { ShipPicture } from './ShipPicture';
+import { useBack } from '../native/back';
 
 // The hangar: where a pilot picks the ship they fly (ships.ts): the classic
 // rocket, the Explorer or Nova. It opens by itself once, when the game starts
@@ -42,6 +43,8 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   const isActive = useProfiles((s) => s.activeId === pilot.id);
   const admiral = useAdmiral() && isActive;
   const [picked, setPicked] = useState<ShipId | null>(pilot.ship ?? null);
+  // (the first time, there's a ship to choose: Back sends the app away rather than skipping it)
+  useBack(!first && close);
   const [stats] = useState(() => profileStats(pilot.id));
   // a pilot who's flown before is told there's something new, and which
   const returning = first && stats.correct > 0;

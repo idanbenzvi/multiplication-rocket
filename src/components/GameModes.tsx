@@ -13,6 +13,7 @@ import { useT } from '../i18n/useLang';
 import { playTrack } from '../audio/useAudio';
 import GradientText from './reactbits/GradientText';
 import { BACKDROP_VARIANTS, flyOffTo, SHEET_VARIANTS, type SheetLeave } from './warpTransition';
+import { useBack } from '../native/back';
 
 /**
  * The Black Sun for the active pilot: it opens once every fact of their
@@ -54,6 +55,7 @@ export function GameModesButton() {
     setLeave(null);
     setOpen(false);
   };
+  useBack(open && close);
 
   const modes = [
     {

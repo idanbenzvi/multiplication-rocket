@@ -10,6 +10,7 @@ import { activeProfile, pilotName, useMission } from '../../profiles/useProfiles
 import { BadgeArt } from './BadgeArt';
 import { badgeText } from '../../i18n/strings';
 import GradientText from '../reactbits/GradientText';
+import { useBack } from '../../native/back';
 
 // The pilot's rank, the ladder up to Honored Captain, and every badge:
 // earned ones in color, locked ones dimmed with how close they are.
@@ -24,6 +25,7 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
   const earned = useAchievements((s) => s.earned);
   // captured on open, so NEW tags stay up while the screen is showing
   const [unseen] = useState(() => new Set(useAchievements.getState().unseen));
+  useBack(onClose);
   const rank = useRank();
   const earnedCount = Object.keys(earned).length;
   const nextAt = RANK_THRESHOLDS[rank + 1];

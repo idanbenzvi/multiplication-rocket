@@ -9,6 +9,7 @@ import { SEAT_COLORS } from './seatColors';
 import { playTrack } from '../../audio/useAudio';
 import { BACKDROP_VARIANTS, flyOffTo, SHEET_VARIANTS, useModeWarp } from '../warpTransition';
 import { flyHome } from '../../game/flight';
+import { useBack } from '../../native/back';
 
 // Pick two pilots (the first tapped takes the left seat), then check their
 // seats: the one further along is suggested as Pilot, the other as
@@ -18,6 +19,7 @@ function SetupSheet() {
   const profiles = useProfiles((s) => s.profiles);
   const closeSetup = useCrewStore((s) => s.closeSetup);
   const start = useCrewStore((s) => s.start);
+  useBack(closeSetup);
   const [chosen, setChosen] = useState<string[]>([]);
   const [seats, setSeats] = useState<Record<string, Seat>>({});
 

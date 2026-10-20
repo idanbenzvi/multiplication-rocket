@@ -14,6 +14,7 @@ import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '..
 import { CockpitSpace } from './CockpitSpace';
 import { GuardedButton, Module, PushButton, Selector, Throttle, Toggle } from './controls';
 import './cockpit.css';
+import { useBack } from '../../native/back';
 
 // The settings, as the rocket's cockpit. Opening them flies the camera in
 // through the porthole (the cockpit is seen through the window, growing
@@ -218,6 +219,9 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     },
     [],
   );
+
+  // (Back too; a dialog over the cockpit takes it first)
+  useBack(!covered && !leaving && onClose);
 
   useEffect(() => {
     if (covered || leaving) return;

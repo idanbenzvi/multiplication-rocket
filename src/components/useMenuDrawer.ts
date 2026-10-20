@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBack } from '../native/back';
 
 // A phone on its side is too short for the top bar above the rocket and the
 // question below it. There the top bar becomes a drawer tucked off the right
@@ -45,6 +46,7 @@ export function useMenuDrawer(enabled: boolean) {
 
   const poke = useCallback(() => setTouched((n) => n + 1), []);
   const hide = useCallback(() => setOpen(false), []);
+  useBack(enabled && open && hide);
   // iPhones only report motion once asked, from a tap: the first time the tab is tapped, so a shake works after that
   const show = useCallback(() => {
     setOpen(true);

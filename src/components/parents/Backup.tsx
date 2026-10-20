@@ -14,6 +14,7 @@ import {
   storageKept,
   type Backup,
 } from '../../storage/backup';
+import { useBack } from '../../native/back';
 
 // Saving and restoring backups (storage/backup.ts): a card on the parent
 // dashboard, and the restore dialog it opens (the welcome screen opens it
@@ -71,6 +72,7 @@ export function RestoreDialog({ onClose }: { onClose: () => void }) {
   const [bad, setBad] = useState(false);
   const [failed, setFailed] = useState(false);
   const pilots = backup ? backupPilots(backup) : [];
+  useBack(onClose);
 
   const read = async (file: File | undefined) => {
     if (!file) return;
