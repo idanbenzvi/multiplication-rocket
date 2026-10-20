@@ -7,7 +7,7 @@ import { kick } from '../../game/flight';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
-import { useProfiles } from '../../profiles/useProfiles';
+import { useProfiles, useShip } from '../../profiles/useProfiles';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { SpaceRipple } from '../SpaceRipple';
 import GradientText from '../reactbits/GradientText';
@@ -151,6 +151,7 @@ const jumpLift = (k: number) => 0.7 + JUMP_UNIT * 2 ** k * 0.11;
 export function AccelerationRoad({ onDone, onBurst }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const shipId = useShip();
   const run = useMemo(() => buildRoad(useGameStore.getState().progress, roundOp()), []);
   const road = useMemo(makeRoad, []);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
@@ -581,7 +582,7 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
         ))}
       {phase !== 'summary' && (
         <div
-          className={`road-ship ${phase === 'charge' ? 'is-charging' : ''}`}
+          className={`road-ship is-${shipId} ${phase === 'charge' ? 'is-charging' : ''}`}
           style={{ left: ship.x, top: ship.y, width: shipPx, height: shipPx, scale: `1 ${ship.stretch}`, '--flame': Math.min(2.2, 0.7 + energy * 0.22) } as React.CSSProperties}
         >
           <span className="road-flame is-left" />

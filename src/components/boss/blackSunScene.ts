@@ -1,5 +1,6 @@
 import { EclipseScene, GOLD, hex, mix, PINK, type Point, type RGB } from '../arrival/eclipse';
-import { glow, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, sprite } from '../traffic/trafficArt';
+import { glow, pilotCanopy, pilotEngines, rearShipSvg, rgba, sprite } from '../traffic/trafficArt';
+import type { ShipId } from '../scene/ships';
 import { pickOp, type PilotMission } from '../../game/mission';
 
 // The Black Sun's sky, on one canvas (after Monster Sun's arrival,
@@ -251,6 +252,8 @@ export class BlackSunScene extends EclipseScene {
   private stage: Stage = 'arrive';
   private readonly mission: PilotMission;
   private shipSvg: string;
+  /** the ship the pilot flies (seen from behind) */
+  private readonly shipId: ShipId;
   /** when the ship was promoted to the admiral's livery (it flashes gold) */
   private promotedAt = -Infinity;
   private readonly canopy?: { emoji: string; x: number; y: number; radius: number };
@@ -312,11 +315,12 @@ export class BlackSunScene extends EclipseScene {
   private flash = 0;
   private burstNumbers: Array<{ text: string; color: string; a: number; v: number; spin: number; size: number }> = [];
 
-  constructor(calm: boolean, mission: PilotMission, avatar?: string, admiral = false) {
+  constructor(calm: boolean, mission: PilotMission, avatar?: string, admiral = false, ship: ShipId = 'classic') {
     super(calm);
     this.mission = mission;
-    this.shipSvg = rearShipSvg(undefined, admiral);
-    this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
+    this.shipId = ship;
+    this.shipSvg = rearShipSvg(undefined, admiral, ship);
+    this.canopy = avatar ? { emoji: avatar, ...pilotCanopy(ship) } : undefined;
     // the ship's drawing, ready by the time it flies in
     sprite(this.shipSvg, 384, 384, this.canopy);
     this.cracks = makeCracks();
@@ -519,7 +523,7 @@ export class BlackSunScene extends EclipseScene {
     // the engines: a flame out of each nozzle, longer as it burns harder
     ctx.globalCompositeOperation = 'lighter';
     const flick = 1 + Math.sin(this.t * 43) * 0.08 + Math.sin(this.t * 27) * 0.05;
-    for (const e of PILOT_ENGINES) {
+    for (const e of pilotEngines(this.shipId)) {
       const ex = (e.x - 0.5) * p.w;
       const ey = (e.y - 0.5) * p.w;
       const fw = e.r * p.w * 3.2 * flick;
@@ -749,7 +753,7 @@ export class BlackSunScene extends EclipseScene {
 
   /** the pilot is a Space Admiral now: their ship takes on the admiral's livery, in a flash of gold */
   promote() {
-    this.shipSvg = rearShipSvg(undefined, true);
+    this.shipSvg = rearShipSvg(undefined, true, this.shipId);
     sprite(this.shipSvg, 384, 384, this.canopy);
     this.promotedAt = this.t;
   }

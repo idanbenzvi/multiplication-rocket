@@ -10,7 +10,7 @@ import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
 import { isTouchDevice } from '../../settings/useSettings';
-import { useProfiles } from '../../profiles/useProfiles';
+import { activeShip, useProfiles } from '../../profiles/useProfiles';
 import { colorForLevel } from '../scene/palette';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
@@ -84,6 +84,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       numbers: trafficNumbers(run.mission, clampStage(progress.stage)).filter((n) => !asked.has(n)),
       calm: !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
       admiral: isAdmiral(),
+      ship: activeShip(),
     });
     // one scene a round (the pilot's animal is in it from the start)
     // eslint-disable-next-line react-hooks/exhaustive-deps

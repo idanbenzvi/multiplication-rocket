@@ -3,7 +3,8 @@ import { BEAM_TOP_FRACTION } from '../scene/plume';
 import type { Porthole } from '../scene/spriteTexture';
 import { FadingStars } from './fadingStars';
 import { drawDropFlash, drawHyperGlow, DROP_END_MS, DROP_MS, hyperspace } from '../arrival/dropOut';
-import { glow, HULLS, IONS, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, SHIP_KINDS, sprite, trafficSprite } from './trafficArt';
+import { glow, HULLS, IONS, pilotCanopy, pilotEngines, rearShipSvg, rgba, SHIP_KINDS, sprite, trafficSprite } from './trafficArt';
+import type { ShipId } from '../scene/ships';
 
 // Space Traffic's world, seen from just behind the pilot's ship: lanes of
 // slower ships stretch ahead to a vanishing point, laid out on a grid, so the
@@ -163,6 +164,8 @@ export interface SceneOptions {
   calm: boolean;
   /** a Space Admiral: the ship wears the admiral's livery */
   admiral?: boolean;
+  /** the ship the pilot flies (seen from behind) */
+  ship?: ShipId;
 }
 
 /** the main game's engine plume, a frame at a time (see trafficPlume.ts) */
@@ -197,6 +200,8 @@ export class TrafficScene {
   private blockerFrom = 0;
   private nextSpawn = 0;
   private readonly pilotSvg: string;
+  /** the pilot's ship's engines, as fractions of its drawing */
+  private readonly engines: ReturnType<typeof pilotEngines>;
   private readonly canopy?: Porthole;
   private readonly numbers: number[];
   private readonly calm: boolean;
@@ -210,10 +215,11 @@ export class TrafficScene {
   /** the engines' plume, as the rocket's in the main game; without one (no WebGL), plain ion trails */
   plume: PlumeSource | null = null;
 
-  constructor({ now, accent, avatar, numbers, calm, admiral = false }: SceneOptions) {
+  constructor({ now, accent, avatar, numbers, calm, admiral = false, ship = 'classic' }: SceneOptions) {
     this.startedAt = now;
-    this.pilotSvg = rearShipSvg(accent, admiral);
-    this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
+    this.pilotSvg = rearShipSvg(accent, admiral, ship);
+    this.engines = pilotEngines(ship);
+    this.canopy = avatar ? { emoji: avatar, ...pilotCanopy(ship) } : undefined;
     this.numbers = numbers.length ? numbers : [0];
     this.calm = calm;
     this.stars = new FadingStars(calm);
@@ -501,7 +507,7 @@ export class TrafficScene {
     const boost = this.boost();
     const sparks = this.plume ? 0.3 : 1;
     if (now < this.finaleAt + 1.2) {
-      for (const e of PILOT_ENGINES) {
+      for (const e of this.engines) {
         const w = this.pilotEngine(e);
         this.emit(w.x, w.y, this.z - 0.05, (30 + boost * 60) * sparks * dt, () => -(1.4 + Math.random() * 1.6), this.pilotIon(), 0.035 + boost * 0.03, 0.45 + Math.random() * 0.35);
       }
@@ -898,7 +904,7 @@ export class TrafficScene {
     ctx.save();
     // the engines' plumes (or plain ion trails), long when racing
     ctx.globalCompositeOperation = 'lighter';
-    const engines = PILOT_ENGINES.map((e) => this.pilotEngine(e));
+    const engines = this.engines.map((e) => this.pilotEngine(e));
     const len = racing ? 3 + (now - this.finaleAt) * 14 : 1.3 + boost * 1.8;
     if (this.plume) this.plumes(ctx, l, this.plume, engines, len, W, now);
     else for (const e of engines) this.trail(ctx, l, e.x, e.y, this.z, len, e.r, ion, 0.6);

@@ -113,6 +113,13 @@ export const PORTHOLE_Y = 1.17;
 /** the porthole is PORTHOLE_Y above this point this frame, in world space (FlyingRocket writes it) */
 export const rocketWorld = { x: 0, y: 0 };
 
+/**
+ * The ship's window, in the rocket group's units (RocketSprite writes it for
+ * the ship flying): how far off the centre line it is (the Explorer's visor
+ * is left of it), and its glass's radius.
+ */
+export const porthole = { x: 0, radius: (23 / 200) * 1.1 };
+
 /** tap stage 0-3; diveAt = performance.now() when the third tap started the dive */
 export const portholeZoom = { level: 0, lastTap: 0, diveAt: 0 };
 /** without another tap within this, the zoom eases back out */
@@ -121,9 +128,6 @@ export const ZOOM_RESET_MS = 1400;
 export const DIVE_MS = 950;
 
 // ---- the cockpit: settings open by flying the camera in through the porthole ----
-
-/** the porthole's glass, in world units (RocketSprite: ROCKET_PORTHOLE.radius × WIDTH) */
-export const PORTHOLE_RADIUS = (23 / 200) * 1.1;
 
 /** where the porthole is on screen (CSS px) as of the last frame drawn, and its glass's radius */
 export const portholeScreen = { x: 0, y: 0, r: 0 };

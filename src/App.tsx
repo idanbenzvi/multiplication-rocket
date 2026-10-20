@@ -12,6 +12,7 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { ReviewButton } from './components/ReviewButton';
 import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
+import { Hangar } from './components/Hangar';
 import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
 import { StudioSplash } from './components/splash/StudioSplash';
@@ -307,6 +308,7 @@ function App() {
       )}
 
       <ProfileGate />
+      <Hangar />
       <CrewSetup />
       {!gateOpen && <SplitSky />}
       {!gateOpen && <SunMonster />}

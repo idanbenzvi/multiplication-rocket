@@ -6,7 +6,7 @@ import { isAdmiral } from '../../game/useAchievements';
 import { CHECKPOINT_EVERY, fireballFlightMs, RUN_TO_WIN, type BossQuestion } from '../../game/blackSun';
 import { distractors } from '../../game/distractors';
 import { missionOfKey, OP_SYMBOL, type PilotMission } from '../../game/mission';
-import { activeProfile, pilotName, useMission, useProfiles } from '../../profiles/useProfiles';
+import { activeProfile, activeShip, pilotName, useMission, useProfiles } from '../../profiles/useProfiles';
 import { isTouchDevice } from '../../settings/useSettings';
 import { usePause } from '../../game/gameClock';
 import { flyHome } from '../../game/flight';
@@ -126,7 +126,7 @@ function BossOverlay() {
   const question = useBossStore((s) => s.question);
   const wide = useWide();
   const [calm] = useState(calmMotion);
-  const [scene] = useState(() => new BlackSunScene(calm, mission, avatar, isAdmiral()));
+  const [scene] = useState(() => new BlackSunScene(calm, mission, avatar, isAdmiral(), activeShip()));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const bannerY = useRef(0);

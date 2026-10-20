@@ -10,8 +10,8 @@ import {
   courseRotation,
   DIVE_MS,
   flight,
-  PORTHOLE_RADIUS,
   PORTHOLE_Y,
+  porthole,
   portholeScreen,
   portholeZoom,
   rocketWorld,
@@ -179,7 +179,7 @@ export function FlightController() {
     // where the window is on screen, for the cockpit seen through it (Cockpit.tsx)
     camera.updateMatrixWorld();
     cameraRight.setFromMatrixColumn(camera.matrixWorld, 0);
-    portholeEdge.copy(zoomTarget).addScaledVector(cameraRight, PORTHOLE_RADIUS).project(camera);
+    portholeEdge.copy(zoomTarget).addScaledVector(cameraRight, porthole.radius).project(camera);
     zoomTarget.project(camera);
     portholeScreen.x = size.left + ((zoomTarget.x + 1) / 2) * size.width;
     portholeScreen.y = size.top + ((1 - zoomTarget.y) / 2) * size.height;

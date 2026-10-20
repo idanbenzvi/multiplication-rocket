@@ -24,7 +24,8 @@
   container-type: inline-size;
   filter: drop-shadow(0 0 10px rgba(255, 215, 122, 0.55));
 }
-.road-ship svg {
+.road-ship svg,
+.road-ship .rear-ship {
   position: relative;
   width: 100%;
   height: 100%;
@@ -54,6 +55,15 @@
 }
 .road-flame.is-right {
   left: 61%;
+}
+/* the Explorer's one copper bell, in the middle */
+.road-ship.is-explorer .road-flame.is-left {
+  left: 50%;
+  top: 70%;
+  width: 22%;
+}
+.road-ship.is-explorer .road-flame.is-right {
+  display: none;
 }
 @keyframes roadFlame {
   from { scale: 0.9 0.85; opacity: 0.85; }

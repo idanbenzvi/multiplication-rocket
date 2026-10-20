@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AWAY_HOLD_MS, AWAY_MS, departure, flight, HOME_MS, homecoming, PORTHOLE_Y, rocketWorld } from '../../game/flight';
+import { AWAY_HOLD_MS, AWAY_MS, departure, flight, HOME_MS, homecoming, porthole, PORTHOLE_Y, rocketWorld } from '../../game/flight';
 import { gameNow } from '../../game/gameClock';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
@@ -60,7 +60,7 @@ function awayOffset(now: number) {
 // down-and-back on a wrong answer, like hitting the brakes.
 //
 // It flies the level's course (flight.heading): the whole ship turns about
-// its porthole, so it keeps its place on screen (and the porthole stays
+// its porthole (the ship's window, wherever it is), so it keeps its place on screen (and the porthole stays
 // under a tapping finger), and its bob and surges follow its nose. Off to a
 // bonus round or a game mode it flies away (awayOffset), and back from one it
 // flies home to its place (homeOffset).
@@ -84,13 +84,15 @@ export function FlyingRocket({ level }: Props) {
     const x = Math.sin(t * 0.7) * 0.05 + Math.sin(t * 61) * vibration;
     const y = bob + surge + Math.cos(t * 57) * vibration;
     course.rotation.z = flight.heading;
+    // (the pivot is the ship's window, which can be off the centre line)
+    course.position.x = porthole.x;
     const now = gameNow();
     const home = departure.at > homecoming.at ? awayOffset(now) : homeOffset(now);
-    group.position.set(x + home.x, y - PORTHOLE_Y + home.y, home.z);
+    group.position.set(x + home.x - porthole.x, y - PORTHOLE_Y + home.y, home.z);
     // the porthole in world space: the pivot, plus this frame's float turned onto the course
     const c = Math.cos(flight.heading);
     const sn = Math.sin(flight.heading);
-    rocketWorld.x = x * c - y * sn;
+    rocketWorld.x = porthole.x + x * c - y * sn;
     rocketWorld.y = x * sn + y * c;
     group.rotation.z = Math.sin(t * 0.9) * 0.03 - s * 0.04 + Math.sin(t * 19) * flight.jolt * 0.06 * m + home.bank;
   });

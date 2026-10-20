@@ -457,6 +457,19 @@ const en = {
     close: 'Close',
   },
 
+  hangar: {
+    title: 'Choose your ship',
+    newShip: 'A new ship has landed in the hangar! 🛬',
+    hint: 'You can switch ships any time: ✏️ next to your name.',
+    go: 'Fly this one! 🚀',
+    close: 'Close',
+    classic: 'Classic Rocket',
+    classicHint: 'The rocket that started it all, in each level’s colour',
+    explorer: 'Explorer',
+    explorerHint: 'A glass visor, glowing light lines, an open engine bay and four landing legs',
+    label: 'Ship',
+    change: 'Change ship',
+  },
   backup: {
     title: '💾 Backup',
     intro: 'Progress is saved in this browser only. Save a backup file now and then, to restore it here or on another device.',
@@ -1287,6 +1300,19 @@ const he: Strings = {
     close: 'סגירה',
   },
 
+  hangar: {
+    title: 'בחרו חללית',
+    newShip: 'חללית חדשה נחתה בהאנגר! 🛬',
+    hint: 'אפשר להחליף חללית מתי שרוצים: ✏️ ליד השם.',
+    go: 'טסים בזאת! 🚀',
+    close: 'סגירה',
+    classic: 'הטיל הקלאסי',
+    classicHint: 'הטיל שבו הכול התחיל, בצבע של כל שלב',
+    explorer: 'הסייר',
+    explorerHint: 'חלון זכוכית ענק, פסי אור זוהרים, תא מנוע פתוח וארבע רגלי נחיתה',
+    label: 'חללית',
+    change: 'החלפת חללית',
+  },
   backup: {
     title: '💾 גיבוי',
     intro: 'ההתקדמות נשמרת רק בדפדפן הזה. כדאי לשמור קובץ גיבוי מדי פעם, כדי לשחזר אותו כאן או במכשיר אחר.',

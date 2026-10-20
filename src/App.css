@@ -2440,22 +2440,10 @@ button:focus-visible {
     font-size: 1.05rem;
   }
 }
-.wormhole-rocket img {
+.wormhole-rocket .ship-picture {
   display: block;
   width: 100%;
-}
-/* the pilot's avatar in the porthole (same spot as in the 3D rocket's texture) */
-.rocket-porthole-avatar {
-  position: absolute;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  overflow: hidden;
-  font-size: calc(min(18vw, 120px) * 0.18);
-  line-height: 1;
+  height: auto;
 }
 
 /* ==================== FLEET BATTLE ==================== */
@@ -5210,4 +5198,178 @@ button:focus-visible {
   .menu-tab.is-hinting {
     animation: none;
   }
+}
+
+/* ==================== THE HANGAR (Hangar.tsx) ==================== */
+.hangar {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(255, 157, 118, 0.18), transparent 55%),
+    radial-gradient(ellipse at 50% 30%, rgba(82, 39, 255, 0.4), rgba(15, 11, 28, 0.94) 70%);
+  backdrop-filter: blur(6px);
+}
+.hangar-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(720px, 100%);
+  margin: auto;
+  padding: 1.2rem 1.1rem 1rem;
+  border-radius: 24px;
+  background: #2a2048;
+  border: 1px solid rgba(255, 157, 118, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.hangar-close {
+  position: absolute;
+  top: 0.7rem;
+  inset-inline-end: 0.7rem;
+}
+.hangar-kicker {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  background: linear-gradient(90deg, #ffd77a, #ff9d76, #8fe6ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hangar-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: #fdf3e7;
+}
+.hangar-ships {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+.hangar-ship {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem 0.6rem 0.8rem;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2d5ef;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.hangar-ship.is-on {
+  border-color: #ff9d76;
+  background: rgba(255, 157, 118, 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 157, 118, 0.18), 0 0 30px rgba(255, 157, 118, 0.35);
+}
+.hangar-ship.is-explorer.is-on {
+  border-color: #45f0fa;
+  background: rgba(69, 240, 250, 0.1);
+  box-shadow: 0 0 0 4px rgba(69, 240, 250, 0.16), 0 0 30px rgba(69, 240, 250, 0.35);
+}
+.hangar-bay {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: clamp(170px, 36vh, 320px);
+}
+.hangar-glow {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  width: 70%;
+  height: 16%;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 190, 120, 0.45), transparent 70%);
+  filter: blur(4px);
+}
+.hangar-ship.is-explorer .hangar-glow {
+  background: radial-gradient(ellipse, rgba(69, 240, 250, 0.4), transparent 70%);
+}
+.hangar-picture {
+  position: relative;
+  height: 100%;
+  width: auto;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.45));
+  animation: hangarBob 3.2s ease-in-out infinite;
+}
+.hangar-ship.is-on .hangar-picture {
+  animation: hangarLift 1.6s ease-in-out infinite;
+}
+@keyframes hangarBob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+@keyframes hangarLift {
+  0%, 100% { translate: 0 -6px; rotate: -1deg; }
+  50% { translate: 0 -12px; rotate: 1deg; }
+}
+.hangar-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fdf3e7;
+}
+.hangar-hint {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: #c9a4de;
+}
+.hangar-go {
+  width: min(360px, 100%);
+}
+.hangar-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #a898bf;
+}
+@media (max-width: 420px) {
+  .hangar-card {
+    padding: 1rem 0.7rem 0.9rem;
+  }
+  .hangar-title {
+    font-size: 1.35rem;
+  }
+  .hangar-ships {
+    gap: 0.5rem;
+  }
+  .hangar-name {
+    font-size: 1rem;
+  }
+  .hangar-hint {
+    font-size: 0.72rem;
+  }
+}
+@media (max-height: 500px) {
+  .hangar-bay {
+    height: clamp(120px, 42vh, 220px);
+  }
+  .hangar-card {
+    gap: 0.35rem;
+    padding-top: 0.8rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hangar-picture,
+  .hangar-ship.is-on .hangar-picture {
+    animation: none;
+  }
+}
+.profile-ship {
+  text-align: start;
+  padding: 0 1rem;
 }

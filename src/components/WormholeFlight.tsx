@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { gameTimeout } from '../game/gameClock';
 import { motion } from 'motion/react';
 import { sfx } from '../audio/sfx';
 import { useT } from '../i18n/useLang';
-import { ROCKET_PORTHOLE, rocketSvg } from './scene/illustrations';
 import { useAdmiral } from '../game/useAchievements';
-import { useProfiles } from '../profiles/useProfiles';
+import { useProfiles, useShip } from '../profiles/useProfiles';
+import { ShipPicture } from './ShipPicture';
 import { colorForLevel } from './scene/palette';
 import LightTunnel from './reactbits/LightTunnel';
 
@@ -32,10 +32,7 @@ export function WormholeFlight({ level, active, onDone }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
   const admiral = useAdmiral();
-  const rocketSrc = useMemo(
-    () => `data:image/svg+xml;utf8,${encodeURIComponent(rocketSvg(colorForLevel(level), false, admiral))}`,
-    [level, admiral],
-  );
+  const ship = useShip();
 
   useEffect(() => {
     if (!active) return;
@@ -89,19 +86,7 @@ export function WormholeFlight({ level, active, onDone }: Props) {
             animate={{ y: ['32vh', '30vh', '-4vh'], scale: [1, 1, 0.08], opacity: [0, 1, 1], rotate: [0, -4, 12] }}
             transition={{ duration: 2.1, delay: 0.5, times: [0, 0.2, 1], ease: 'easeIn' }}
           >
-            <img src={rocketSrc} alt="" />
-            {avatar && (
-              <span
-                className="rocket-porthole-avatar"
-                style={{
-                  left: `${ROCKET_PORTHOLE.x * 100}%`,
-                  top: `${ROCKET_PORTHOLE.y * 100}%`,
-                  width: `${ROCKET_PORTHOLE.radius * 200}%`,
-                }}
-              >
-                {avatar}
-              </span>
-            )}
+            <ShipPicture ship={ship} accent={colorForLevel(level)} admiral={admiral} avatar={avatar} />
           </motion.div>
 
           <motion.div

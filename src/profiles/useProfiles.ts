@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { PILOT_MISSIONS, type PilotMission } from '../game/mission';
+import type { ShipId } from '../components/scene/ships';
 
 // Pilot profiles: each child on the device gets a name, an animal avatar and
 // their own saved progress (see storage/progressStore.ts, which keys
@@ -18,6 +19,8 @@ export interface Profile {
   academyDone?: string[];
   /** false: no clock on their questions, and every right answer fills the same (the cockpit's "Speed boost") */
   timedBoost?: boolean;
+  /** the ship they fly (chosen in the hangar; till then, the classic rocket, and the hangar opens for them) */
+  ship?: ShipId;
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -81,7 +84,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string, mission: PilotMission) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost' | 'ship'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }
@@ -164,6 +167,19 @@ export function activeTimedBoost(): boolean {
 
 export function useTimedBoost(): boolean {
   return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.timedBoost !== false);
+}
+
+/** the ship a pilot flies (the classic rocket until they've chosen) */
+export function shipOf(profileId: string | null | undefined): ShipId {
+  return useProfiles.getState().profiles.find((p) => p.id === profileId)?.ship ?? 'classic';
+}
+
+export function activeShip(): ShipId {
+  return shipOf(useProfiles.getState().activeId);
+}
+
+export function useShip(): ShipId {
+  return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.ship ?? 'classic');
 }
 
 /** a profile's level / correct count in their current mission, for the picker, read straight from storage */

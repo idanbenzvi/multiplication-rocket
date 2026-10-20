@@ -114,6 +114,25 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 |---|---|---|
 | ![Meteor Shower](docs/meteor-shower.png) | ![Build-a-Constellation](docs/constellation.png) | ![Fleet Battle](docs/fleet-battle.png) |
 
+## Two ships: the classic rocket or the Explorer 🛸
+
+Each pilot picks the ship they fly in the **hangar**, which opens when the game starts for a pilot
+who hasn't chosen yet. Later, ✏️ next to their name has a **Change ship** button.
+
+- **Classic Rocket:** the original, its nose and band in each level's colour.
+- **Explorer:** a ship from a concept art. It has an egg of a hull with a navy nose and cyan light
+  lines, a big glass visor with the cockpit behind it (the pilot's animal sits in the seat), vents
+  and a side thruster, an open engine bay over a copper bell, and four swept landing legs tipped
+  orange. It's the concept art itself, cut out of its background (`scripts/explorer-ship.py`), at
+  the classic's scale:
+  - the plume comes out of its bell;
+  - its visor is the window to tap for the Academy;
+  - the cockpit opens through it.
+
+  In the rounds that fly behind the ship, its back is drawn to match, with one copper engine. A
+  Space Admiral's Explorer has gold trim and the admiral's medal. A crew flight always takes the
+  classic rocket, with a window for each pilot.
+
 ## Deep Space Academy 🪐 (hidden)
 
 **Tap the rocket's window three times quickly** to warp into the Deep Space Academy. Until a pilot has found it, their window shimmers (a pulsing halo, a glint sweeping across the glass) to invite the taps. Each tap pulls the camera closer to the ship, and the third dives through the window into the Academy. If the taps stop, the camera eases back out. The Academy is a calm

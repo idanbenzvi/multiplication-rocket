@@ -8,6 +8,7 @@ import { useT } from '../i18n/useLang';
 import { missionHint, missionName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
 import { RestoreDialog } from './parents/Backup';
+import { useHangar } from '../profiles/useHangar';
 
 // After switching or creating a pilot, reload the game with their progress.
 function startGameForActive() {
@@ -38,6 +39,8 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
   // a new pilot chooses; an existing one (even from before missions) has one
   const [mission, setMission] = useState<PilotMission | null>(profile ? (profile.mission ?? 'mul') : null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // (changed in the hangar, over this editor)
+  const ship = useProfiles((s) => s.profiles.find((p) => p.id === profile?.id)?.ship);
   const canSave = name.trim().length > 0 && mission !== null;
 
   const save = () => {
@@ -114,6 +117,14 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
           </button>
         ))}
       </div>
+      {profile && (
+        <>
+          <div className="profile-label">{t.hangar.label}</div>
+          <button type="button" className="profile-secondary profile-ship" onClick={() => useHangar.getState().open(profile.id)}>
+            🚀 {ship === 'explorer' ? t.hangar.explorer : t.hangar.classic} · {t.hangar.change}
+          </button>
+        </>
+      )}
       <button type="button" className="profile-primary" onClick={save} disabled={!canSave}>
         {profile ? t.save : t.letsFly}
       </button>

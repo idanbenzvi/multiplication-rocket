@@ -1,5 +1,6 @@
 import { rasterizeSprite, type Porthole } from '../scene/spriteTexture';
 import { goldGradient, starPoints } from '../scene/illustrations';
+import { explorerRearSvg, REAR_ENGINES, REAR_WINDOWS, type ShipId } from '../scene/ships';
 
 // The slow ships of Space Traffic, seen from behind: the same picture-book
 // style as the rest of the game (thick ink outlines, flat pastel fills, a
@@ -133,8 +134,13 @@ export const SHIP_KINDS: ShipKind[] = [
   },
 ];
 
-/** the pilot's ship: RearShip (spaceArt.tsx) as markup, to rasterize, in the admiral's livery for a Space Admiral; keep the two drawings the same */
-export function rearShipSvg(color = '#ff9d76', admiral = false): string {
+/**
+ * The pilot's ship from behind, as markup to rasterize: the classic's is
+ * RearShip (spaceArt.tsx), keep the two drawings the same; the Explorer's is
+ * explorerRearSvg (ships.ts). In the admiral's livery for a Space Admiral.
+ */
+export function rearShipSvg(color = '#ff9d76', admiral = false, ship: ShipId = 'classic'): string {
+  if (ship === 'explorer') return explorerRearSvg(admiral);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
     ${admiral ? `<defs>${goldGradient('rear-gold')}</defs>` : ''}
     <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill="${admiral ? 'url(#rear-gold)' : color}" stroke="#2b2033" stroke-width="4" stroke-linejoin="round"/>
@@ -153,12 +159,9 @@ export function rearShipSvg(color = '#ff9d76', admiral = false): string {
   </svg>`;
 }
 
-/** the pilot's ship (RearShip): its two engines and its canopy, as fractions of the drawing */
-export const PILOT_ENGINES: Array<Spot & { r: number }> = [
-  { x: 39 / 100, y: 78 / 100, r: 7 / 100 },
-  { x: 61 / 100, y: 78 / 100, r: 7 / 100 },
-];
-export const PILOT_CANOPY = { x: 0.5, y: 0.44, radius: 0.13 };
+/** the pilot's ship from behind: its engines and its canopy, as fractions of the drawing (the classic's two engines, the Explorer's bell) */
+export const pilotEngines = (ship: ShipId = 'classic'): Array<Spot & { r: number }> => REAR_ENGINES[ship];
+export const pilotCanopy = (ship: ShipId = 'classic') => REAR_WINDOWS[ship];
 
 // ---------- rasterized once, drawn every frame ----------
 
