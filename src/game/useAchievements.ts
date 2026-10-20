@@ -184,3 +184,12 @@ useProfiles.subscribe((s, prev) => {
 export function useRank(): number {
   return useAchievements((s) => rankOf(s.earned));
 }
+
+/** the active pilot is a Space Admiral (they've cured the Black Sun): their ship wears the admiral's livery */
+export function useAdmiral(): boolean {
+  return useAchievements((s) => !!s.earned[ADMIRAL_BADGE]);
+}
+
+export function isAdmiral(): boolean {
+  return !!useAchievements.getState().earned[ADMIRAL_BADGE];
+}

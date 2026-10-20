@@ -1,17 +1,43 @@
+import { useId } from 'react';
+import { useAdmiral } from '../game/useAchievements';
+import { GOLD_STOPS, starPoints } from './scene/illustrations';
+
 // Drawings shared by the forward-looking bonus rounds (Fleet Battle,
 // Stranded Fleet): the rear-view ship, the saucer, the cannon pickup.
 
 // ---------- small illustrations ----------
 
-// (Space Traffic draws the same ship on a canvas: rearShipSvg in traffic/trafficArt.ts)
-export function RearShip({ color = '#ff9d76', size }: { color?: string; size: number }) {
+// (Space Traffic and the Black Sun draw the same ship on a canvas: rearShipSvg in traffic/trafficArt.ts)
+// The pilot's own ship (drawn with no colour given) wears the admiral's
+// livery once they're a Space Admiral: gold wings with a navy star each, and
+// a navy band with a gold star across the hull.
+export function RearShip({ color, size }: { color?: string; size: number }) {
+  const admiral = useAdmiral() && color === undefined;
+  const gold = `rear-gold-${useId().replace(/:/g, '')}`;
   return (
     <svg width={size} height={size} viewBox="-50 -50 100 100" className="rear-ship">
-      <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill={color} stroke="#2b2033" strokeWidth="4" strokeLinejoin="round" />
+      {admiral && (
+        <defs>
+          <linearGradient id={gold} x1="0" y1="0" x2="1" y2="1">
+            {GOLD_STOPS.map(([offset, c]) => (
+              <stop key={offset} offset={offset} stopColor={c} />
+            ))}
+          </linearGradient>
+        </defs>
+      )}
+      <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill={admiral ? `url(#${gold})` : (color ?? '#ff9d76')} stroke="#2b2033" strokeWidth="4" strokeLinejoin="round" />
       <ellipse cx="0" cy="4" rx="22" ry="30" fill="#faf3e6" stroke="#2b2033" strokeWidth="5" />
       <circle cx="0" cy="-6" r="13" fill="#bfe6f5" stroke="#2b2033" strokeWidth="4" />
       <circle cx="-11" cy="28" r="7" fill="#6ad7ff" stroke="#2b2033" strokeWidth="3" />
       <circle cx="11" cy="28" r="7" fill="#6ad7ff" stroke="#2b2033" strokeWidth="3" />
+      {admiral && (
+        <>
+          <polygon points={starPoints(-25, 12, 5)} fill="#24206e" />
+          <polygon points={starPoints(25, 12, 5)} fill="#24206e" />
+          <rect x="-20" y="10" width="40" height="9" rx="3" fill="#24206e" stroke="#2b2033" strokeWidth="2" />
+          <polygon points={starPoints(0, 14.6, 4.6)} fill="#ffcf4a" />
+        </>
+      )}
     </svg>
   );
 }

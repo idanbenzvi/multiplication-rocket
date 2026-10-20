@@ -16,6 +16,7 @@ import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { BRAKE_S, DODGE_S, lensFor, TrafficScene } from './trafficScene';
 import { TrafficPlume } from './trafficPlume';
+import { isAdmiral } from '../../game/useAchievements';
 import { warmTraffic } from './trafficArt';
 import { viewport } from '../viewport';
 import './traffic.css';
@@ -82,6 +83,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       avatar,
       numbers: trafficNumbers(run.mission, clampStage(progress.stage)).filter((n) => !asked.has(n)),
       calm: !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+      admiral: isAdmiral(),
     });
     // one scene a round (the pilot's animal is in it from the start)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,7 +124,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
     if (!canvas || !ctx) return;
     warmTraffic();
     // the ship's engines: the rocket's plume from the main game, on a little WebGL canvas of its own
-    const plume = TrafficPlume.create();
+    const plume = TrafficPlume.create(isAdmiral());
     scene.plume = plume;
     let raf = 0;
     let last = performance.now();

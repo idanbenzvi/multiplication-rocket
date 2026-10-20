@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { sfx } from '../audio/sfx';
 import { useT } from '../i18n/useLang';
 import { ROCKET_PORTHOLE, rocketSvg } from './scene/illustrations';
+import { useAdmiral } from '../game/useAchievements';
 import { useProfiles } from '../profiles/useProfiles';
 import { colorForLevel } from './scene/palette';
 import LightTunnel from './reactbits/LightTunnel';
@@ -30,9 +31,10 @@ const DURATION_S = 3.1;
 export function WormholeFlight({ level, active, onDone }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
+  const admiral = useAdmiral();
   const rocketSrc = useMemo(
-    () => `data:image/svg+xml;utf8,${encodeURIComponent(rocketSvg(colorForLevel(level)))}`,
-    [level],
+    () => `data:image/svg+xml;utf8,${encodeURIComponent(rocketSvg(colorForLevel(level), false, admiral))}`,
+    [level, admiral],
   );
 
   useEffect(() => {

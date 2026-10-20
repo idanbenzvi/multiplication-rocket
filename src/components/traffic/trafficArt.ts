@@ -1,4 +1,5 @@
 import { rasterizeSprite, type Porthole } from '../scene/spriteTexture';
+import { goldGradient, starPoints } from '../scene/illustrations';
 
 // The slow ships of Space Traffic, seen from behind: the same picture-book
 // style as the rest of the game (thick ink outlines, flat pastel fills, a
@@ -132,14 +133,23 @@ export const SHIP_KINDS: ShipKind[] = [
   },
 ];
 
-/** the pilot's ship: RearShip (spaceArt.tsx) as markup, to rasterize; keep the two drawings the same */
-export function rearShipSvg(color = '#ff9d76'): string {
+/** the pilot's ship: RearShip (spaceArt.tsx) as markup, to rasterize, in the admiral's livery for a Space Admiral; keep the two drawings the same */
+export function rearShipSvg(color = '#ff9d76', admiral = false): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
-    <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill="${color}" stroke="#2b2033" stroke-width="4" stroke-linejoin="round"/>
+    ${admiral ? `<defs>${goldGradient('rear-gold')}</defs>` : ''}
+    <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill="${admiral ? 'url(#rear-gold)' : color}" stroke="#2b2033" stroke-width="4" stroke-linejoin="round"/>
     <ellipse cx="0" cy="4" rx="22" ry="30" fill="#faf3e6" stroke="#2b2033" stroke-width="5"/>
     <circle cx="0" cy="-6" r="13" fill="#bfe6f5" stroke="#2b2033" stroke-width="4"/>
     <circle cx="-11" cy="28" r="7" fill="#6ad7ff" stroke="#2b2033" stroke-width="3"/>
     <circle cx="11" cy="28" r="7" fill="#6ad7ff" stroke="#2b2033" stroke-width="3"/>
+    ${
+      admiral
+        ? `<polygon points="${starPoints(-25, 12, 5)}" fill="#24206e"/>
+    <polygon points="${starPoints(25, 12, 5)}" fill="#24206e"/>
+    <rect x="-20" y="10" width="40" height="9" rx="3" fill="#24206e" stroke="#2b2033" stroke-width="2"/>
+    <polygon points="${starPoints(0, 14.6, 4.6)}" fill="#ffcf4a"/>`
+        : ''
+    }
   </svg>`;
 }
 

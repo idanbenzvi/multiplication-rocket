@@ -10,6 +10,7 @@ import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
 import { CREW_PORTHOLES, ROCKET_PORTHOLE, rocketSvg } from './illustrations';
 import { useProfiles } from '../../profiles/useProfiles';
+import { useAdmiral } from '../../game/useAchievements';
 import { useSvgTexture } from './spriteTexture';
 
 interface Props {
@@ -32,7 +33,9 @@ export function RocketSprite({ level }: Props) {
   const crewAvatars = useProfiles((s) =>
     crew ? crew.map((m) => s.profiles.find((p) => p.id === m.profileId)?.avatar ?? '🚀').join(' ') : '',
   );
-  const svg = useMemo(() => rocketSvg(accent, !!crew), [accent, crew]);
+  // a Space Admiral flies in the admiral's livery (solo: a crew's rocket is everyone's)
+  const admiral = useAdmiral() && !crew;
+  const svg = useMemo(() => rocketSvg(accent, !!crew, admiral), [accent, crew, admiral]);
   // until this pilot has found the Academy, the window shimmers to invite taps
   const academySeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.academySeen);
   const portholes = useMemo(

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { useBossStore } from '../../game/useBossStore';
+import { isAdmiral } from '../../game/useAchievements';
 import { CHECKPOINT_EVERY, fireballFlightMs, RUN_TO_WIN, type BossQuestion } from '../../game/blackSun';
 import { distractors } from '../../game/distractors';
 import { missionOfKey, OP_SYMBOL, type PilotMission } from '../../game/mission';
@@ -125,7 +126,7 @@ function BossOverlay() {
   const question = useBossStore((s) => s.question);
   const wide = useWide();
   const [calm] = useState(calmMotion);
-  const [scene] = useState(() => new BlackSunScene(calm, mission, avatar));
+  const [scene] = useState(() => new BlackSunScene(calm, mission, avatar, isAdmiral()));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const bannerY = useRef(0);
@@ -285,6 +286,8 @@ function BossOverlay() {
     scene.cure(() => {
       setAdmiral(true);
       sfx.admiral();
+      // the ship wears the admiral's livery from now on (it already does if this isn't their first cure)
+      scene.promote();
     });
     scene.after(0.45, () => sfx.shatter());
     scene.after(1.5, () => sfx.sunrise());

@@ -386,6 +386,11 @@ toast says so too).
   pilot's name and a gold medal: the cured sun under five admiral's stars, in a laurel wreath.
 - **Space Admiral** is a new rank above Honored Captain, reached only this way (from any rank),
   and the medal is its insignia and a badge of its own (*Master of Universal Multiples*).
+- **The admiral's livery:** from then on the admiral's rocket flies in gold and navy: a gold nose
+  cone with a navy star, gold fins and window rim, gold pinstripes, a navy band of five gold stars,
+  the admiral's medal under the window, and an engine plume burning gold (solo flights; a crew's
+  rocket is everyone's). Their ship in the bonus rounds, Space Traffic and the Black Sun has gold
+  wings and the starred band too, and in the Black Sun's finale it takes them on in a flash of gold.
 - Every answer counts toward the practice map and the parent dashboard, like the other modes.
   With reduced motion the whole thing plays without the motion (the fireball still comes).
 

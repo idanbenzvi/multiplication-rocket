@@ -15,16 +15,19 @@ export class TrafficPlume {
   private readonly material = plumeMaterial(true);
   private last = -1;
 
-  /** null without WebGL: the ship keeps plain ion trails then */
-  static create(): TrafficPlume | null {
+  /** null without WebGL: the ship keeps plain ion trails then; `gold`: a Space Admiral's */
+  static create(gold = false): TrafficPlume | null {
     try {
-      return new TrafficPlume();
+      return new TrafficPlume(gold);
     } catch {
       return null;
     }
   }
 
-  private constructor() {
+  private readonly gold: boolean;
+
+  private constructor(gold: boolean) {
+    this.gold = gold;
     this.canvas = document.createElement('canvas');
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: false, preserveDrawingBuffer: true, powerPreference: 'low-power' });
     this.renderer.setPixelRatio(1);
@@ -39,7 +42,7 @@ export class TrafficPlume {
   frame(now: number, s: number, sputter: number): HTMLCanvasElement {
     const dt = this.last < 0 ? 0 : Math.min(0.1, Math.max(0, now - this.last));
     this.last = now;
-    stepPlume(this.material, dt, s, sputter);
+    stepPlume(this.material, dt, s, sputter, this.gold);
     this.renderer.render(this.scene, this.camera);
     return this.canvas;
   }

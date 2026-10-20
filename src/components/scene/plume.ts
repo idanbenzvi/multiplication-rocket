@@ -17,6 +17,10 @@ export const BEAM_TOP_FRACTION = 0.1;
 const COLD = new THREE.Color('#6ad7ff');
 const WARM = new THREE.Color('#b18cff');
 const HOT = new THREE.Color('#ff6ad5');
+// a Space Admiral's: gold at cruise → amber → white-hot gold
+const GOLD_COLD = new THREE.Color('#ffd77a');
+const GOLD_WARM = new THREE.Color('#ffa94d');
+const GOLD_HOT = new THREE.Color('#fff4d0');
 const color = new THREE.Color();
 
 // The shader writes its light with full alpha, for adding into the scene. On a
@@ -62,8 +66,8 @@ export function plumeMaterial(lightAsAlpha = false): THREE.ShaderMaterial {
 }
 
 /** Moves the plume on by `dt` seconds at speed `s` (0 idle, 1 flat out, up to
- *  1.3 in overdrive); `sputter` (0..1) makes it flicker and dip. */
-export function stepPlume(material: THREE.ShaderMaterial, dt: number, s: number, sputter: number) {
+ *  1.3 in overdrive); `sputter` (0..1) makes it flicker and dip; `gold`: a Space Admiral's. */
+export function stepPlume(material: THREE.ShaderMaterial, dt: number, s: number, sputter: number, gold = false) {
   const u = material.uniforms;
 
   // Time runs faster at speed, so the wisps and fog visibly rush.
@@ -81,8 +85,8 @@ export function stepPlume(material: THREE.ShaderMaterial, dt: number, s: number,
   u.uFalloffStart.value = 1.6 + s * 0.7;
 
   const k = Math.min(s / 0.9, 1);
-  if (k < 0.5) color.copy(COLD).lerp(WARM, k * 2);
-  else color.copy(WARM).lerp(HOT, (k - 0.5) * 2);
+  if (k < 0.5) color.copy(gold ? GOLD_COLD : COLD).lerp(gold ? GOLD_WARM : WARM, k * 2);
+  else color.copy(gold ? GOLD_WARM : WARM).lerp(gold ? GOLD_HOT : HOT, (k - 0.5) * 2);
   (u.uColor.value as THREE.Vector3).set(color.r, color.g, color.b);
 
   u.uFade.value = (0.75 + s * 0.55) * (1 - sputter * 0.85);

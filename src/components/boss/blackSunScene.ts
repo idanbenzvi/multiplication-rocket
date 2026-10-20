@@ -250,7 +250,9 @@ export class BlackSunScene extends EclipseScene {
   private jobs: Array<{ at: number; fn: () => void }> = [];
   private stage: Stage = 'arrive';
   private readonly mission: PilotMission;
-  private readonly shipSvg = rearShipSvg();
+  private shipSvg: string;
+  /** when the ship was promoted to the admiral's livery (it flashes gold) */
+  private promotedAt = -Infinity;
   private readonly canopy?: { emoji: string; x: number; y: number; radius: number };
 
   /** the free part of the screen (not under the top bar or the question panel), set by the overlay */
@@ -310,9 +312,10 @@ export class BlackSunScene extends EclipseScene {
   private flash = 0;
   private burstNumbers: Array<{ text: string; color: string; a: number; v: number; spin: number; size: number }> = [];
 
-  constructor(calm: boolean, mission: PilotMission, avatar?: string) {
+  constructor(calm: boolean, mission: PilotMission, avatar?: string, admiral = false) {
     super(calm);
     this.mission = mission;
+    this.shipSvg = rearShipSvg(undefined, admiral);
     this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
     // the ship's drawing, ready by the time it flies in
     sprite(this.shipSvg, 384, 384, this.canopy);
@@ -528,6 +531,21 @@ export class BlackSunScene extends EclipseScene {
     ctx.globalCompositeOperation = 'source-over';
     if (img) ctx.drawImage(img, -p.w / 2, -p.w / 2, p.w, p.w);
     ctx.restore();
+    // promoted: a flash of gold and a ring of light round it
+    const kp = (this.t - this.promotedAt) / 1.2;
+    if (kp >= 0 && kp < 1) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 1 - kp;
+      const r = p.w * (1.4 + kp * 1.6);
+      ctx.drawImage(glow('#ffd77a'), p.x - r / 2, p.y - r / 2, r, r);
+      ctx.strokeStyle = `rgba(255, 230, 150, ${0.9 * (1 - kp)})`;
+      ctx.lineWidth = Math.max(1.5, p.w * 0.05);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.w * (0.5 + kp * 1.2), 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
     // hit: it glows red for a moment
     const kh = (this.t - this.hitAt) / 0.9;
     if (kh >= 0 && kh < 1) {
@@ -727,6 +745,13 @@ export class BlackSunScene extends EclipseScene {
       blobs: Array.from({ length: 4 }, () => ({ x: rand(-0.6, 0.6), y: rand(-0.6, 0.6), rx: rand(0.25, 0.5), ry: rand(0.15, 0.35), a: rand(0, Math.PI) })),
       bloomAt: this.curedAt + CURE.blooms[i],
     }));
+  }
+
+  /** the pilot is a Space Admiral now: their ship takes on the admiral's livery, in a flash of gold */
+  promote() {
+    this.shipSvg = rearShipSvg(undefined, true);
+    sprite(this.shipSvg, 384, 384, this.canopy);
+    this.promotedAt = this.t;
   }
 
   /** when each little world blooms (seconds from now), for its sound */

@@ -161,6 +161,8 @@ export interface SceneOptions {
   numbers: number[];
   /** reduced motion: the ship banks instead of rolling right round, and nothing shakes */
   calm: boolean;
+  /** a Space Admiral: the ship wears the admiral's livery */
+  admiral?: boolean;
 }
 
 /** the main game's engine plume, a frame at a time (see trafficPlume.ts) */
@@ -208,9 +210,9 @@ export class TrafficScene {
   /** the engines' plume, as the rocket's in the main game; without one (no WebGL), plain ion trails */
   plume: PlumeSource | null = null;
 
-  constructor({ now, accent, avatar, numbers, calm }: SceneOptions) {
+  constructor({ now, accent, avatar, numbers, calm, admiral = false }: SceneOptions) {
     this.startedAt = now;
-    this.pilotSvg = rearShipSvg(accent);
+    this.pilotSvg = rearShipSvg(accent, admiral);
     this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
     this.numbers = numbers.length ? numbers : [0];
     this.calm = calm;
