@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { useLang, useT } from '../../i18n/useLang';
-import Dither from './Dither';
+import { CycleScene } from './CycleScene';
 
-// About the maker and the game, over a dithered-wave background. The game is
-// paused while it's open (the clock resumes on close).
+// About the maker and the game, over a colour-cycling pixel-art canyon
+// (CycleScene). The game is paused while it's open (the clock resumes on close).
 export function AboutPage({ onClose }: { onClose: () => void }) {
   const t = useT().about;
   const lang = useLang((s) => s.lang);
@@ -23,19 +23,7 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <motion.div className="about-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="about-bg" aria-hidden="true">
-        <Dither
-          waveColor={[0.45, 0.32, 0.95]}
-          backgroundColor={[0.03, 0.02, 0.09]}
-          waveSpeed={0.01}
-          waveFrequency={3}
-          waveAmplitude={0.3}
-          colorNum={4}
-          pixelSize={2}
-          enableMouseInteraction
-          mouseRadius={0.4}
-        />
-      </div>
+      <CycleScene className="about-bg" />
       <motion.div
         className="about-card"
         dir={lang === 'he' ? 'rtl' : 'ltr'}
