@@ -13,6 +13,14 @@ reach the destination planet, which grows in the sky as you get closer, and warp
 
 **[idanbenzvi.github.io/multiplication-rocket](https://idanbenzvi.github.io/multiplication-rocket/)**. Nothing to install. Works on computers and tablets.
 
+## Android app (in progress)
+
+On the `androidcapacitor` branch the game is also an Android app, built with
+[Capacitor](https://capacitorjs.com): the web build bundled into the app, so it plays offline.
+With Java 21 and the Android SDK installed (`JAVA_HOME`, `ANDROID_HOME`), `npm run android:apk`
+builds a debug APK to install on a phone or tablet. What's done and what's next is in
+[docs/plans/2026-10-21-android.md](docs/plans/2026-10-21-android.md).
+
 ## Download & play (no installation needed)
 
 Grab the file for your computer from the **[latest release](https://github.com/idanbenzvi/multiplication-rocket/releases/latest)**:
