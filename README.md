@@ -114,24 +114,31 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 |---|---|---|
 | ![Meteor Shower](docs/meteor-shower.png) | ![Build-a-Constellation](docs/constellation.png) | ![Fleet Battle](docs/fleet-battle.png) |
 
-## Two ships: the classic rocket or the Explorer 🛸
+## Three ships: the classic rocket, the Explorer or Nova 🛸
 
 Each pilot picks the ship they fly in the **hangar**, which opens when the game starts for a pilot
-who hasn't chosen yet. Later, ✏️ next to their name has a **Change ship** button.
+who hasn't chosen yet, and once more when a new ship lands (it's marked *New!*). Later, ✏️ next to
+their name has a **Change ship** button.
 
 - **Classic Rocket:** the original, its nose and band in each level's colour.
 - **Explorer:** a ship from a concept art. It has an egg of a hull with a navy nose and cyan light
   lines, a big glass visor with the cockpit behind it (the pilot's animal sits in the seat), vents
   and a side thruster, an open engine bay over a copper bell, and four swept landing legs tipped
-  orange. It's the concept art itself, cut out of its background (`scripts/explorer-ship.py`), at
+  orange. It's the concept art itself, cut out of its background (`scripts/ship-cutout.py`), at
   the classic's scale:
   - the plume comes out of its bell;
   - its visor is the window to tap for the Academy;
   - the cockpit opens through it.
 
-  In the rounds that fly behind the ship, its back is drawn to match, with one copper engine. A
-  Space Admiral's Explorer has gold trim and the admiral's medal. A crew flight always takes the
-  classic rocket, with a window for each pilot.
+  In the rounds that fly behind the ship, its back is drawn to match, with one copper engine.
+- **Nova:** lilac and rose gold, from a second concept art. It has mint-glowing light lines, a cream
+  panel scrolled with filigree round a great round window (the pilot sits in the cockpit's seat),
+  a rose-gold engine bay with its pipes and a little gear, and four legs curving out like petals,
+  striped cream and mint. It's cut out the same way, its window the Explorer's size, and its back
+  is drawn to match in the rounds.
+
+A Space Admiral's Explorer or Nova has gold trim and the admiral's medal. A crew flight always takes
+the classic rocket, with a window for each pilot.
 
 ## Deep Space Academy 🪐 (hidden)
 

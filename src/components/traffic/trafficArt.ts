@@ -1,6 +1,6 @@
 import { rasterizeSprite, type Porthole } from '../scene/spriteTexture';
 import { goldGradient, starPoints } from '../scene/illustrations';
-import { explorerRearSvg, REAR_ENGINES, REAR_WINDOWS, type ShipId } from '../scene/ships';
+import { REAR_ENGINES, REAR_WINDOWS, rearSvg, type ShipId } from '../scene/ships';
 
 // The slow ships of Space Traffic, seen from behind: the same picture-book
 // style as the rest of the game (thick ink outlines, flat pastel fills, a
@@ -136,11 +136,11 @@ export const SHIP_KINDS: ShipKind[] = [
 
 /**
  * The pilot's ship from behind, as markup to rasterize: the classic's is
- * RearShip (spaceArt.tsx), keep the two drawings the same; the Explorer's is
- * explorerRearSvg (ships.ts). In the admiral's livery for a Space Admiral.
+ * RearShip (spaceArt.tsx), keep the two drawings the same; the others' are
+ * in ships.ts. In the admiral's livery for a Space Admiral.
  */
 export function rearShipSvg(color = '#ff9d76', admiral = false, ship: ShipId = 'classic'): string {
-  if (ship === 'explorer') return explorerRearSvg(admiral);
+  if (ship !== 'classic') return rearSvg(ship, admiral);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
     ${admiral ? `<defs>${goldGradient('rear-gold')}</defs>` : ''}
     <path d="M-46 14 L-14 -4 L-14 22 Z M46 14 L14 -4 L14 22 Z" fill="${admiral ? 'url(#rear-gold)' : color}" stroke="#2b2033" stroke-width="4" stroke-linejoin="round"/>

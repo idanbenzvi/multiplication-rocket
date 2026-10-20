@@ -5,14 +5,19 @@ import { AWAY_HOLD_MS, AWAY_MS, departure, flight, HOME_MS, homecoming, porthole
 import { gameNow } from '../../game/gameClock';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
+import { shipArt } from './ships';
+import { useShip } from '../../profiles/useProfiles';
+import { useCrewStore } from '../../game/useCrewStore';
 
 interface Props {
   level: number;
 }
 
 // Where the engine bell's bottom edge lands in group space (RocketSprite is
-// a 2.3-tall plane centered at y=1.1; the nozzle is ~81% down the artwork).
-const NOZZLE_Y = 0.4;
+// a 2.3-tall plane centered at y=1.1), for a nozzle this far down the
+// ship's 400-tall frame: the plume starts a little inside it (the classic's,
+// ~81% down the artwork, at 0.4).
+const nozzleY = (frameY: number) => 2.25 - (frameY / 400) * 2.3 + 0.0245;
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 /** eases out past the end and back */
@@ -65,6 +70,10 @@ function awayOffset(now: number) {
 // bonus round or a game mode it flies away (awayOffset), and back from one it
 // flies home to its place (homeOffset).
 export function FlyingRocket({ level }: Props) {
+  const ship = useShip();
+  const crew = useCrewStore((s) => !!s.members);
+  // (the colour doesn't move the nozzle)
+  const nozzle = shipArt(ship, '#000', crew).nozzle;
   const courseRef = useRef<THREE.Group>(null);
   const groupRef = useRef<THREE.Group>(null);
 
@@ -100,7 +109,7 @@ export function FlyingRocket({ level }: Props) {
   return (
     <group ref={courseRef} position={[0, PORTHOLE_Y, 0]}>
       <group ref={groupRef} position={[0, -PORTHOLE_Y, 0]}>
-        <EngineExhaust nozzleY={NOZZLE_Y} />
+        <EngineExhaust nozzleY={nozzleY(nozzle)} />
         <RocketSprite level={level} />
       </group>
     </group>

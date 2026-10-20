@@ -5,7 +5,7 @@ import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Pr
 import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
 import { useT } from '../i18n/useLang';
-import { missionHint, missionName } from '../i18n/strings';
+import { missionHint, missionName, shipName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
 import { RestoreDialog } from './parents/Backup';
 import { useHangar } from '../profiles/useHangar';
@@ -121,7 +121,7 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
         <>
           <div className="profile-label">{t.hangar.label}</div>
           <button type="button" className="profile-secondary profile-ship" onClick={() => useHangar.getState().open(profile.id)}>
-            🚀 {ship === 'explorer' ? t.hangar.explorer : t.hangar.classic} · {t.hangar.change}
+            🚀 {shipName(t, ship ?? 'classic')} · {t.hangar.change}
           </button>
         </>
       )}

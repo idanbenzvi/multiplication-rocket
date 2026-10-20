@@ -1,6 +1,7 @@
 import { isAddKind } from '../game/addition';
 import { formatFactKey } from '../game/facts';
 import type { PilotMission } from '../game/mission';
+import type { ShipId } from '../components/scene/ships';
 
 export type Lang = 'en' | 'he';
 
@@ -467,6 +468,9 @@ const en = {
     classicHint: 'The rocket that started it all, in each level’s colour',
     explorer: 'Explorer',
     explorerHint: 'A glass visor, glowing light lines, an open engine bay and four landing legs',
+    nova: 'Nova',
+    novaHint: 'Lilac and rose gold, with mint light lines, filigree and four graceful legs',
+    newBadge: 'New!',
     label: 'Ship',
     change: 'Change ship',
   },
@@ -1310,6 +1314,9 @@ const he: Strings = {
     classicHint: 'הטיל שבו הכול התחיל, בצבע של כל שלב',
     explorer: 'הסייר',
     explorerHint: 'חלון זכוכית ענק, פסי אור זוהרים, תא מנוע פתוח וארבע רגלי נחיתה',
+    nova: 'נובה',
+    novaHint: 'לילך וזהב ורוד, פסי אור בצבע מנטה, עיטורים וארבע רגליים חינניות',
+    newBadge: 'חדש!',
     label: 'חללית',
     change: 'החלפת חללית',
   },
@@ -1717,6 +1724,14 @@ export function badgeText(t: Strings, id: string, mission: PilotMission = 'mul')
 }
 
 /** a mission's name, and what it's about */
+export function shipName(t: Strings, ship: ShipId): string {
+  return ship === 'nova' ? t.hangar.nova : ship === 'explorer' ? t.hangar.explorer : t.hangar.classic;
+}
+
+export function shipHint(t: Strings, ship: ShipId): string {
+  return ship === 'nova' ? t.hangar.novaHint : ship === 'explorer' ? t.hangar.explorerHint : t.hangar.classicHint;
+}
+
 export function missionName(t: Strings, mission: PilotMission): string {
   return mission === 'add' ? t.missionAdd : mission === 'mix' ? t.missionMix : t.missionMul;
 }

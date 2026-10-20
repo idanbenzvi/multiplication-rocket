@@ -56,13 +56,13 @@
 .road-flame.is-right {
   left: 61%;
 }
-/* the Explorer's one copper bell, in the middle */
-.road-ship.is-explorer .road-flame.is-left {
+/* the pictured ships' one bell, in the middle */
+.road-ship:not(.is-classic) .road-flame.is-left {
   left: 50%;
   top: 70%;
   width: 22%;
 }
-.road-ship.is-explorer .road-flame.is-right {
+.road-ship:not(.is-classic) .road-flame.is-right {
   display: none;
 }
 @keyframes roadFlame {

@@ -2,7 +2,7 @@ import { useId, useMemo } from 'react';
 import { useAdmiral } from '../game/useAchievements';
 import { useShip } from '../profiles/useProfiles';
 import { GOLD_STOPS, starPoints } from './scene/illustrations';
-import { explorerRearSvg } from './scene/ships';
+import { rearSvg } from './scene/ships';
 
 // Drawings shared by the forward-looking bonus rounds (Fleet Battle,
 // Stranded Fleet): the rear-view ship, the saucer, the cannon pickup.
@@ -11,17 +11,18 @@ import { explorerRearSvg } from './scene/ships';
 
 // (Space Traffic and the Black Sun draw the same ship on a canvas: rearShipSvg in traffic/trafficArt.ts)
 // The pilot's own ship (drawn with no colour given) is the one they fly
-// (the Explorer's back is drawn in ships.ts), and wears the admiral's livery
+// (the Explorer's and Nova's backs are drawn in ships.ts), and wears the admiral's livery
 // once they're a Space Admiral: gold wings with a navy star each, and a navy
 // band with a gold star across the hull. Other ships (a fleet, teammates)
 // are always the classic, in their colour.
 export function RearShip({ color, size }: { color?: string; size: number }) {
   const own = color === undefined;
   const admiral = useAdmiral() && own;
-  const explorer = useShip() === 'explorer' && own;
+  const ship = useShip();
+  const pictured = own && ship !== 'classic' ? ship : null;
   const gold = `rear-gold-${useId().replace(/:/g, '')}`;
-  const explorerSrc = useMemo(() => (explorer ? `data:image/svg+xml;utf8,${encodeURIComponent(explorerRearSvg(admiral))}` : ''), [explorer, admiral]);
-  if (explorer) return <img src={explorerSrc} width={size} height={size} className="rear-ship" alt="" draggable={false} />;
+  const src = useMemo(() => (pictured ? `data:image/svg+xml;utf8,${encodeURIComponent(rearSvg(pictured, admiral))}` : ''), [pictured, admiral]);
+  if (pictured) return <img src={src} width={size} height={size} className="rear-ship" alt="" draggable={false} />;
   return (
     <svg width={size} height={size} viewBox="-50 -50 100 100" className="rear-ship">
       {admiral && (

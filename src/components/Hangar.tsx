@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { useT } from '../i18n/useLang';
+import { shipHint, shipName } from '../i18n/strings';
 import { profileStats, useProfileGateOpen, useProfiles, type Profile } from '../profiles/useProfiles';
 import { useHangar } from '../profiles/useHangar';
 import { useCrewStore } from '../game/useCrewStore';
@@ -13,10 +14,11 @@ import { colorForLevel } from './scene/palette';
 import { SHIPS, type ShipId } from './scene/ships';
 import { ShipPicture } from './ShipPicture';
 
-// The hangar: where a pilot picks the ship they fly (ships.ts), the classic
-// rocket or the Explorer. It opens by itself when the game starts for a
+// The hangar: where a pilot picks the ship they fly (ships.ts): the classic
+// rocket, the Explorer or Nova. It opens by itself when the game starts for a
 // pilot who hasn't picked one yet (a new pilot, or one from before there was
-// a choice), and from a pilot's ✏️ to change ships.
+// a choice) or who hasn't seen the newest ship yet (marked new), and from a
+// pilot's ✏️ to change ships.
 
 export function Hangar() {
   const gateOpen = useProfileGateOpen();
@@ -25,8 +27,9 @@ export function Hangar() {
   const profiles = useProfiles((s) => s.profiles);
   const crew = useCrewStore((s) => s.active);
   const pilot = profiles.find((p) => p.id === (asked ?? activeId));
-  // a pilot who hasn't chosen yet: when the game starts
-  const first = !asked && !!pilot && !pilot.ship && !gateOpen && !crew;
+  // when the game starts, for a pilot who hasn't chosen yet, or hasn't seen the newest ship
+  // (one who chose before there were more saw two)
+  const first = !asked && !!pilot && (!pilot.ship || (pilot.shipsSeen ?? 2) < SHIPS.length) && !gateOpen && !crew;
   if (!pilot || !(asked || first)) return null;
   return <HangarView key={pilot.id} pilot={pilot} first={first} />;
 }
@@ -40,8 +43,9 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   const admiral = useAdmiral() && isActive;
   const [picked, setPicked] = useState<ShipId | null>(pilot.ship ?? null);
   const [stats] = useState(() => profileStats(pilot.id));
-  // a pilot who's flown before is told there's something new
+  // a pilot who's flown before is told there's something new, and which
   const returning = first && stats.correct > 0;
+  const seen = pilot.ship ? (pilot.shipsSeen ?? 2) : stats.correct > 0 ? 1 : SHIPS.length;
 
   useEffect(() => {
     pauseGame('hangar');
@@ -55,7 +59,7 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   };
   const fly = () => {
     if (!picked) return;
-    update(pilot.id, { ship: picked });
+    update(pilot.id, { ship: picked, shipsSeen: SHIPS.length });
     sfx.blastOff();
     close();
   };
@@ -84,11 +88,12 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
               transition={{ delay: 0.15 + i * 0.12, type: 'spring', stiffness: 260, damping: 22 }}
             >
               <span className="hangar-bay" aria-hidden>
+                {i >= seen && <span className="hangar-new">{h.newBadge}</span>}
                 <span className="hangar-glow" />
                 <ShipPicture ship={ship} accent={colorForLevel(stats.level)} admiral={admiral} avatar={pilot.avatar} fit className="hangar-picture" />
               </span>
-              <span className="hangar-name">{ship === 'explorer' ? h.explorer : h.classic}</span>
-              <span className="hangar-hint">{ship === 'explorer' ? h.explorerHint : h.classicHint}</span>
+              <span className="hangar-name">{shipName(t, ship)}</span>
+              <span className="hangar-hint">{shipHint(t, ship)}</span>
             </motion.button>
           ))}
         </div>

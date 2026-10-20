@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXPLORER_VISOR, explorerRearSvg, REAR_ENGINES, REAR_WINDOWS, shipArt, spriteSize } from './ships';
+import { EXPLORER_VISOR, explorerRearSvg, NOVA_WINDOW, novaRearSvg, REAR_ENGINES, REAR_WINDOWS, shipArt, SHIPS, spriteSize } from './ships';
 import { ROCKET_PORTHOLE } from './illustrations';
 import { rearShipSvg } from '../traffic/trafficArt';
 
@@ -24,6 +24,19 @@ describe('the ships', () => {
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('flies Nova from its picture, its window right of the middle, its nozzle lower down (it stands taller)', () => {
+    const nova = shipArt('nova', '#fff');
+    expect(nova.picture?.url).toBe('./ships/nova.webp');
+    expect(nova.windows).toEqual([NOVA_WINDOW]);
+    expect(NOVA_WINDOW.y).toBeCloseTo(ROCKET_PORTHOLE.y);
+    expect(NOVA_WINDOW.x).toBeGreaterThan(0.55);
+    expect(nova.nozzle).toBeGreaterThan(shipArt('classic', '#fff').nozzle);
+    expect(shipArt('nova', '#fff', false, true).picture?.url).toBe('./ships/nova-admiral.webp');
+    expect(novaRearSvg(true)).toContain('nr-gold');
+    expect(rearShipSvg(undefined, false, 'nova')).toBe(novaRearSvg(false));
+    expect(SHIPS).toEqual(['classic', 'explorer', 'nova']);
   });
 
   it("gives a Space Admiral's Explorer gold trim and the medal", () => {

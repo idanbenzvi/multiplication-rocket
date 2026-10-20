@@ -21,6 +21,8 @@ export interface Profile {
   timedBoost?: boolean;
   /** the ship they fly (chosen in the hangar; till then, the classic rocket, and the hangar opens for them) */
   ship?: ShipId;
+  /** how many ships the hangar had when they last chose (it opens again when there's a new one) */
+  shipsSeen?: number;
 }
 
 export const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐧', '🦄', '🐙'];
@@ -84,7 +86,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string, mission: PilotMission) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost' | 'ship'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost' | 'ship' | 'shipsSeen'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }
