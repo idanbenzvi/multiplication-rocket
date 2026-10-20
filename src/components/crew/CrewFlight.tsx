@@ -4,7 +4,8 @@ import { useCrewStore, type CrewQuestion } from '../../game/useCrewStore';
 import { pilotName, useProfiles, type Profile } from '../../profiles/useProfiles';
 import { gameTimeout } from '../../game/gameClock';
 import { bump, flyHome, kick } from '../../game/flight';
-import { speedZone } from '../../game/scoring';
+import { paceMs, speedZone } from '../../game/scoring';
+import { loadProgressFor } from '../../storage/progressStore';
 import { isTouchDevice, useSettings } from '../../settings/useSettings';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
@@ -166,8 +167,9 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
   const [locked, setLocked] = useState(false);
   const seat = members?.[turn.member].seat ?? 'pilot';
   const color = SEAT_COLORS[turn.member];
-  // the pilot's seat has the clock, unless this pilot plays without the speed boost
+  // the pilot's seat has the clock, unless this pilot plays without the speed boost, at their own pace
   const timed = pilot?.timedBoost !== false;
+  const [pace] = useState(() => paceMs(pilot ? loadProgressFor(pilot.id).pace : undefined));
 
   const handle = useCallback(
     (value: number, elapsedMs: number) => {
@@ -179,7 +181,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
         bump();
         return; // wrong answers wait for "Continue"
       }
-      sfx.correct(1, seat === 'pilot' && (!timed || speedZone(elapsedMs) === 'fast'));
+      sfx.correct(1, seat === 'pilot' && (!timed || speedZone(elapsedMs, pace) === 'fast'));
       haptics.correct(1);
       kick(0.35);
       const el = document.querySelector('.crew-turn-zone .answer-input, .crew-turn-zone .choice-btn.is-right');
@@ -187,7 +189,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
       if (r) onBurst(r.left + r.width / 2, r.top + r.height / 2, color);
       gameTimeout(next, NEXT_TURN_DELAY_MS);
     },
-    [answer, next, seat, timed, onBurst, color],
+    [answer, next, seat, timed, pace, onBurst, color],
   );
 
   return (
@@ -218,6 +220,7 @@ function QuestionTurn({ turn, pilot, onBurst }: { turn: CrewQuestion; pilot: Pro
           typedCheck={typedCheck}
           touch={isTouchDevice}
           timed={timed}
+          paceMs={pace}
         />
       )}
     </div>

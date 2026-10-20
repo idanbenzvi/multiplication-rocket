@@ -7,6 +7,8 @@ export interface Fact {
   answer: number;
 }
 
+import type { Pace } from './scoring';
+
 export interface FactStat {
   attempts: number;
   correct: number;
@@ -25,6 +27,8 @@ export interface Progress {
   mastery: Record<string, FactStat>;
   /** addition only: the stage reached (1: sums within 10, 2: within 20, 3: within 100) */
   stage?: number;
+  /** how fast this pilot answers: the speed boost's window follows it (scoring.ts); the default until they've answered against the clock */
+  pace?: Pace;
 }
 
 export interface LevelConfig {

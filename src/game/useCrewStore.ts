@@ -23,6 +23,7 @@ import { clampStage } from './addition';
 import { missionOf, timedBoostOf } from '../profiles/useProfiles';
 import { loadProgressFor, saveProgressFor } from '../storage/progressStore';
 import { appendToLog } from '../stats/answerLog';
+import { nextPace, paceMs } from './scoring';
 import { useGameStore } from './useGameStore';
 import { playTrack } from '../audio/useAudio';
 
@@ -170,6 +171,8 @@ function record(profileId: string, factKey: string, correct: boolean, ms: number
       ...progress,
       mastery: recordAttempt(progress.mastery, factKey, correct),
       totalCorrectAnswers: progress.totalCorrectAnswers + (correct ? 1 : 0),
+      // a right answer against the clock moves the pilot's pace, as in their solo flights
+      pace: correct && ms !== null && timedBoostOf(profileId) ? nextPace(progress.pace, ms) : progress.pace,
     },
     mission,
   );
@@ -269,12 +272,14 @@ export const useCrewStore = create<CrewState>((set, get) => {
       if (!turn || turn.kind !== 'question' || !members || feedback) return false;
       const member = members[turn.member];
       const correct = value === turn.fact.answer;
+      // the pace they raced (the answer moves it)
+      const pace = paceMs(loadProgressFor(member.profileId).pace);
       record(member.profileId, turn.fact.key, correct, member.seat === 'pilot' ? elapsedMs : null);
       const nextStats = [...stats] as [MemberStats, MemberStats];
       nextStats[turn.member] = { correct: stats[turn.member].correct + (correct ? 1 : 0), answered: stats[turn.member].answered + 1 };
       set({ feedback: correct ? 'correct' : 'wrong', stats: nextStats });
       if (correct) {
-        const gain = fuelPerAnswer(member.seat, level, elapsedMs, timedBoostOf(member.profileId));
+        const gain = fuelPerAnswer(member.seat, level, elapsedMs, timedBoostOf(member.profileId), pace);
         pour(turn.member === 0 ? [gain, 0] : [0, gain]);
       }
       return correct;

@@ -58,6 +58,7 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 ## How it works
 
 - **Fuel = speed × correctness.** A correct answer adds fuel. A fast answer (green **BIG BOOST** zone) adds much more. A wrong answer empties the tank, unless it was already full.
+- **The clock follows each child's own pace.** The BIG BOOST window starts at 5 seconds (and the small boost past 10) and adapts to how fast the child really answers: the median of their last five right answers, with a little headroom, so a typical answer just makes the big boost. It's quick to give more time (a few slow answers ease it off, up to 10 seconds) and slow to take it back (getting faster tightens it a little at a time, down to 2.5 seconds), and one answer left while distracted doesn't move it. It's kept for each pilot and each mission, a crew flight's pilot races their own, and the cockpit's **Speed boost** switch shows where it stands.
 - **No skipping facts you still miss.** Even with a full tank, the rocket won't launch while a recently missed fact is still unresolved. The game keeps asking it until it's fixed.
 - **Wrong answers teach.** A miss shows the fact as a grid (*x rows of y*) before moving on.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.

@@ -6,6 +6,7 @@ import { useAudio } from '../../audio/useAudio';
 import { pauseGame, resumeGame, usePause } from '../../game/gameClock';
 import { cockpitDolly, cockpitDollyAt, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
 import { useGameStore } from '../../game/useGameStore';
+import { paceMs } from '../../game/scoring';
 import { useCrewStore } from '../../game/useCrewStore';
 import { useLang, useT } from '../../i18n/useLang';
 import { pilotName, useProfiles } from '../../profiles/useProfiles';
@@ -99,6 +100,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const setEffectsVolume = useAudio((s) => s.setEffectsVolume);
   const profile = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId));
   const timedBoost = profile?.timedBoost !== false;
+  // the big boost's window, as it has followed this pilot's pace
+  const paceSeconds = String(Math.round(paceMs(useGameStore((s) => s.progress.pace)) / 100) / 10);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -366,7 +369,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
             {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}
             {profile && (
-              <Module label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint : t.timedBoostOffHint}>
+              <Module label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint(paceSeconds) : t.timedBoostOffHint}>
                 <Toggle
                   name={t.timedBoostLabel}
                   on={timedBoost}

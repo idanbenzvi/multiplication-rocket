@@ -52,7 +52,7 @@ import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
-import { speedZone } from './game/scoring';
+import { paceMs, speedZone } from './game/scoring';
 import { MenuTab } from './components/MenuTab';
 import { useMenuDrawer, useSideways } from './components/useMenuDrawer';
 import './App.css';
@@ -171,6 +171,8 @@ function App() {
 
   const handleAnswer = (value: number, elapsedMs: number) => {
     setLocked(true);
+    // the pace the question was raced at (the answer moves it)
+    const pace = paceMs(useGameStore.getState().progress.pace);
     const correct = submitAnswer(value, elapsedMs);
     if (!correct) {
       sfx.wrong();
@@ -180,7 +182,7 @@ function App() {
       const { progress: after, justLaunched: launching } = useGameStore.getState();
       const streak = after.currentStreak;
       // without the clock, every right answer gets the full celebration
-      const zone = timed ? speedZone(elapsedMs) : 'fast';
+      const zone = timed ? speedZone(elapsedMs, pace) : 'fast';
       const tier = streakTier(streak);
       // A launch resets the streak and plays its own sound (see the
       // justLaunched effect), so only celebrate the answer itself otherwise.
@@ -375,6 +377,7 @@ function App() {
                 typedCheck={typedCheck}
                 touch={isTouchDevice}
                 timed={timed}
+                paceMs={paceMs(progress.pace)}
               />
             </div>
           )}

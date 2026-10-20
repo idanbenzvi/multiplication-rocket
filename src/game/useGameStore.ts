@@ -3,7 +3,7 @@ import { gameNow, gameTimeout } from './gameClock';
 import type { Fact, FactStat, Progress } from './types';
 import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
-import { MAX_SPEED_FACTOR, speedFactor, speedZone, UNTIMED_SPEED_FACTOR } from './scoring';
+import { MAX_SPEED_FACTOR, nextPace, paceMs, speedFactor, speedZone, UNTIMED_SPEED_FACTOR } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
 import { nextBonusRound, type BonusKind } from './bonusRounds';
 import { pickFact } from './questions';
@@ -207,14 +207,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     let launched = false;
     let stageUp = false;
     let gainPercent = 0;
+    const timed = activeTimedBoost();
+    // the clock they raced is the pace they had (this answer moves it for the next one)
+    const pace = paceMs(progress.pace);
 
     if (isCorrect) {
       currentStreak += 1;
       totalCorrectAnswers += 1;
       bestStreak = Math.max(bestStreak, currentStreak);
 
-      // racing the clock, or (with the speed boost switched off for this pilot) a steady boost every time
-      const factor = activeTimedBoost() ? speedFactor(elapsedMs) : UNTIMED_SPEED_FACTOR;
+      // racing the clock at their own pace, or (with the speed boost switched off for this pilot) a steady boost every time
+      const factor = timed ? speedFactor(elapsedMs, pace) : UNTIMED_SPEED_FACTOR;
       const baseIncrement = 100 / level.streakToLaunch;
       gainPercent = baseIncrement * factor;
       const result = addFuel({ ...progress, currentStreak }, nextMastery, gainPercent);
@@ -244,6 +247,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted,
       mastery: nextMastery,
       stage,
+      pace: isCorrect && timed ? nextPace(progress.pace, elapsedMs) : progress.pace,
     };
 
     localProgressStore.save(nextProgress);
@@ -253,7 +257,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       {
         type: 'answer',
         correct: isCorrect,
-        fast: isCorrect && speedZone(elapsedMs) === 'fast',
+        fast: isCorrect && speedZone(elapsedMs, pace) === 'fast',
         comeback: isCorrect && struggling(progress.mastery) && !struggling(nextMastery),
       },
       nextProgress,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, usePause } from '../game/gameClock';
 import type { Question } from '../game/useGameStore';
-import { FAST_MS, SLOW_MS, speedZone } from '../game/scoring';
+import { DEFAULT_PACE_MS, speedZone } from '../game/scoring';
 import { MultiplicationGrid } from './MultiplicationGrid';
 import { AdditionExplainer } from './AdditionExplainer';
 import { missionOfKey, OP_SYMBOL } from '../game/mission';
@@ -28,6 +28,8 @@ interface Props {
   touch: boolean;
   /** the clock and its boost gauge (off for a pilot who plays without the speed boost) */
   timed?: boolean;
+  /** this pilot's pace: the big boost's window (the gauge runs out at twice it) */
+  paceMs?: number;
 }
 
 const MAX_DIGITS = 3; // the biggest answer is 100
@@ -48,9 +50,10 @@ function fireLevel(streak: number): number {
 }
 
 // Where the fast/mid cutoff sits on the drained-from-top gauge: the fill's
-// height equals this value at the instant elapsed time crosses FAST_MS, so
-// the marker line lands exactly where the mercury will be at that moment.
-const FAST_MARKER_PERCENT = 100 - (FAST_MS / SLOW_MS) * 100;
+// height equals this value at the instant elapsed time crosses the pilot's
+// pace, so the marker line lands exactly where the mercury will be at that
+// moment. (The gauge runs out at twice the pace, so it's always halfway.)
+const FAST_MARKER_PERCENT = 50;
 
 function shuffled<T>(items: T[]): T[] {
   const a = [...items];
@@ -61,7 +64,7 @@ function shuffled<T>(items: T[]): T[] {
   return a;
 }
 
-export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, typedCheck, touch, timed = true }: Props) {
+export function QuestionForm({ question, feedback, disabled, onAnswer, onContinue, streak, mode, typedCheck, touch, timed = true, paceMs = DEFAULT_PACE_MS }: Props) {
   const t = useT();
   // The typed digits are stored *with the question they were typed for*.
   // Clearing them in an effect when a new question arrives isn't enough:
@@ -91,6 +94,9 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
     [question.askedAt],
   );
   const [elapsedMs, setElapsedMs] = useState(0);
+  // the pace this question is raced at (a right answer moves the pilot's pace, but not this question's clock)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pace = useMemo(() => paceMs, [question.askedAt]);
   const inputRef = useRef<HTMLInputElement>(null);
   const continueButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -209,8 +215,8 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
     if (value !== '') submit(Number(value));
   };
 
-  const zone = speedZone(elapsedMs);
-  const barPercent = Math.max(0, 100 - (Math.min(elapsedMs, SLOW_MS) / SLOW_MS) * 100);
+  const zone = speedZone(elapsedMs, pace);
+  const barPercent = Math.max(0, 100 - (Math.min(elapsedMs, 2 * pace) / (2 * pace)) * 100);
   const onFire = streak >= ON_FIRE_STREAK;
   const heat = onFire ? fireLevel(streak) : 0;
   // Bigger streak = bigger word. Picked by askedAt so it's stable per
