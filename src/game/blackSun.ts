@@ -2,6 +2,7 @@ import type { FactStat } from './types';
 import { masterySummary } from './masteryStats';
 import { pairKey, parsePair, pickOp, type PilotMission } from './mission';
 import { additionTrackKey, pickAdditionFact } from './addition';
+import { dayNumber, pickWeight } from './memory';
 
 // The Black Sun: the final boss, for a pilot who has mastered every fact of
 // their mission (see docs/plans/2026-10-19-black-sun.md). The monster sun
@@ -145,12 +146,13 @@ export function nextBossQuestion(fight: BossFight, mission: PilotMission, master
   }
 
   const [lo, hi] = fight.run >= RUN_TO_WIN - CHECKPOINT_EVERY ? [3, 9] : [2, 10];
+  const day = dayNumber();
   const pool: Array<{ a: number; b: number; key: string; weight: number }> = [];
   for (let a = lo; a <= hi; a++) {
     for (let b = a; b <= hi; b++) {
       const key = pairKey('mul', a, b);
       if (fight.recent.includes(key)) continue;
-      pool.push({ a, b, key, weight: Math.max(0.3, mastery[key]?.dueScore ?? 1) * toughness(a, b) });
+      pool.push({ a, b, key, weight: Math.max(0.3, pickWeight(mastery[key], day)) * toughness(a, b) });
     }
   }
   const total = pool.reduce((sum, f) => sum + f.weight, 0);
@@ -159,10 +161,10 @@ export function nextBossQuestion(fight: BossFight, mission: PilotMission, master
   return shown(pick.key, pick.a, pick.b, pick.a * pick.b, pick.key, false);
 }
 
-/** how close a pilot is to facing it: their mission's facts mastered (4 right out of 5), out of all of them */
+/** how close a pilot is to facing it: their mission's facts mastered (4 of the last 5 right, and not fading), out of all of them */
 export function bossProgress(mastery: Record<string, FactStat>, mission: PilotMission): { have: number; need: number } {
-  const { mastered, practice, untried } = masterySummary(mastery, mission);
-  return { have: mastered, need: mastered + practice + untried };
+  const { mastered, fading, practice, untried } = masterySummary(mastery, mission);
+  return { have: mastered, need: mastered + fading + practice + untried };
 }
 
 export function bossReady(mastery: Record<string, FactStat>, mission: PilotMission): boolean {

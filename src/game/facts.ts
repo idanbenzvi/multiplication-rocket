@@ -1,4 +1,5 @@
 import type { Fact, FactStat } from './types';
+import { dayNumber, pickWeight, review, upgradeMastery } from './memory';
 
 // Canonical pool: a <= b so "3x7" and "7x3" are the same tracked fact.
 // randomizeOrder() below still shows either order to the player.
@@ -19,7 +20,8 @@ const CORRECT_DECAY = 0.6;
 
 // A fact's dueScore is its weight in the random question picker. Wrong answers
 // push it up sharply so the fact resurfaces soon; correct answers decay it back
-// down, but never below a floor so every fact still gets occasional review.
+// down, but never below a floor so every fact still gets occasional review
+// (and a mastered fact whose spaced review is due comes up more, memory.ts).
 export function nextDueScore(previous: number | undefined, wasCorrect: boolean): number {
   const base = previous ?? 1;
   const updated = wasCorrect ? base * CORRECT_DECAY : base + WRONG_PENALTY;
@@ -27,13 +29,16 @@ export function nextDueScore(previous: number | undefined, wasCorrect: boolean):
 }
 
 /** one more answer to a fact, folded into a pilot's mastery map (returns a new map) */
-export function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean): Record<string, FactStat> {
-  const prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
+export function recordAttempt(mastery: Record<string, FactStat>, key: string, isCorrect: boolean, day = dayNumber()): Record<string, FactStat> {
+  let prev: FactStat = mastery[key] ?? { attempts: 0, correct: 0, wrong: 0, dueScore: 1 };
+  // saved before spaced review and somehow not upgraded on load: it keeps its old verdict
+  if (prev.box === undefined && prev.attempts > 0) prev = upgradeMastery({ [key]: prev }, [], day)[key];
   const next: FactStat = {
     attempts: prev.attempts + 1,
     correct: prev.correct + (isCorrect ? 1 : 0),
     wrong: prev.wrong + (isCorrect ? 0 : 1),
     dueScore: nextDueScore(prev.dueScore, isCorrect),
+    ...review(prev, isCorrect, day),
   };
   return { ...mastery, [key]: next };
 }
@@ -44,7 +49,8 @@ export function pickNextFact(
   avoidKey?: string,
 ): Fact {
   const candidates = pool.length > 1 ? pool.filter((f) => f.key !== avoidKey) : pool;
-  const weights = candidates.map((f) => mastery[f.key]?.dueScore ?? 1);
+  const day = dayNumber();
+  const weights = candidates.map((f) => pickWeight(mastery[f.key], day));
   const total = weights.reduce((sum, w) => sum + w, 0);
   let roll = Math.random() * total;
   for (let i = 0; i < candidates.length; i++) {
@@ -70,10 +76,8 @@ export function getStrugglingFactKeys(mastery: Record<string, FactStat>): string
     .map(([key]) => key);
 }
 
-/** right at least 4 times out of 5 (the practice map's green) */
-export function isMastered(stat: FactStat | undefined): boolean {
-  return !!stat && stat.attempts > 0 && stat.correct / stat.attempts >= 0.8;
-}
+// mastered: right at least 4 times in the last 5, and not fading (memory.ts)
+export { isMastered } from './memory';
 
 /** "3x7" → "3 × 7", "3+4" → "3 + 4"; an addition kind needs factLabel() (it's translated) */
 export function formatFactKey(key: string): string {

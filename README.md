@@ -49,7 +49,11 @@ in) or **when you tap the screen** (or press ✓). On a computer, typed answers 
 **Enter**, so a typo can be fixed first. On Android, right answers give a revving buzz and
 mistakes a thump; this can be switched off in Settings. iPhone and iPad browsers don't support
 vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
-**⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon.
+**⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon. On an iPad or
+iPhone this also keeps the progress safe: Safari clears a website's saved data when it isn't opened
+for 7 days, but not a Home Screen app's. The Home Screen game starts with its own, empty storage,
+though, so first save a backup in the parent dashboard and restore it there (see
+[Backups](#backups-)).
 
 A phone works on its side too: the rocket flies on the left with the question beside it, and the
 top bar tucks away into a drawer off the right edge. Swipe in from the right edge, shake the
@@ -62,7 +66,8 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 - **No skipping facts you still miss.** Even with a full tank, the rocket won't launch while a recently missed fact is still unresolved. The game keeps asking it until it's fixed.
 - **Wrong answers teach.** A miss shows the fact as a grid (*x rows of y*) before moving on.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
-- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings). With a mouse, just hover over *Stop & Review* for a quick read-only peek at the map, with a mastered / to-practice / not-tried-yet count, without pausing the game.
+- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green, deeper the longer it's been remembered), what's fading (amber, with a dashed outline: time for a check) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings). With a mouse, just hover over *Stop & Review* for a quick read-only peek at the map, with a mastered / fading / to-practice / not-tried-yet count, without pausing the game.
+- **Spaced review: what's learned stays learned.** A fact is mastered when 4 of its last 5 answers are right. From then on it comes back now and then for a quick check: after a day, then 3 days, a week, 2 weeks, a month, 2 months and 4 months, each time it's remembered (a Leitner box system). A right answer before its check is due doesn't count, since practice on the same day isn't spacing. A miss starts its checks over: from the next day if it was a slip, from scratch if not. A fact left well past its check (twice its wait, and at least a week) is *fading*. It turns amber, doesn't count as mastered (for badges still to earn, the addition stages or the Black Sun's progress; ones already earned stay), and comes up often until it's answered right again. The question picker asks the facts that are due for a check as often as new ones, and fading ones more. Progress saved before spaced review was replayed from the answer history, so each fact starts in the box its past answers earned.
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
 - **Bonus rounds.** Every 6th question becomes a bonus round: eight kinds, shuffled, so each one comes up once before any comes again (and the order is new every time the game opens):
   - **Wormhole 🌀.** A target number and five floating drills. Pick the three that equal the target (tap them, or press 1–5) to open a wormhole, fly through it, and get a **double boost** of fuel. Two wrong picks and the wormhole closes, with no penalty. The correct drills always include at least two different factor pairs, and sometimes a swapped order (3 × 4 and 4 × 3), so it also teaches that order doesn't matter.
@@ -410,10 +415,27 @@ before it.
 - **Rushing**: wrong answers given in under 2 seconds, a sign of guessing
   instead of thinking.
 - **Consistency**: how much daily accuracy swings from day to day.
-- **Facts mastered**, the **hardest facts right now**, and the **most improved** facts.
+- **Facts mastered**, the **hardest facts right now**, the facts **fading** (well past their spaced
+  check, longest unchecked first), and the **most improved** facts.
 
 Every chart has a table view. History is kept on the device only, per pilot,
 and starts from v1.6. Answers from before that version weren't recorded.
+
+### Backups 💾
+
+Everything is saved in the browser on one device, and a browser can clear it (Safari does, for a
+website that isn't opened for 7 days). So the game asks the browser to keep its storage (Chrome and
+Edge decide by themselves; Firefox asks once), and the parent dashboard has a **Backup** card:
+
+- **Save a backup** saves every pilot's progress in each mission, along with their answer history,
+  badges, Black Sun record and crews, to `multiplication-rocket-backup-<date>.json`. On a phone or
+  tablet it opens the share sheet (Save to Files, AirDrop, Mail); on a computer it downloads.
+- **Restore from a backup** reads a backup file and lists its pilots, each with a tick box. Each
+  ticked pilot replaces the same pilot on this device, or joins the pilots here. Other pilots on
+  the device are left as they are. The game then reloads with them.
+- On a new device, the welcome screen has a link to restore a backup before creating a pilot.
+- The card also shows when the last backup was saved and whether the browser has promised to keep
+  the game's storage. On an iPad or iPhone in Safari, it gives a tip about the Home Screen.
 
 ## Hebrew
 

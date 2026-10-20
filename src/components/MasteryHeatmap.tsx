@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FactStat } from '../game/types';
 import { masteryCellStyle as cellStyle } from '../game/masteryStats';
+import { dayNumber, factStatus } from '../game/memory';
 import { applyOp, OP_SYMBOL, pairKey, type Mission, type PilotMission } from '../game/mission';
 import { ADD_KINDS, type AddKind } from '../game/addition';
 import { useT } from '../i18n/useLang';
@@ -34,6 +35,7 @@ export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, aut
   const [tab, setTab] = useState<Mission>('mul');
   const mission: Mission = pilotMission === 'mix' ? tab : pilotMission;
   const sym = OP_SYMBOL[mission];
+  const day = dayNumber();
   return (
     <div className="heatmap-overlay">
       <div className="heatmap-card">
@@ -70,10 +72,15 @@ export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, aut
                   <th>{x}</th>
                   {NUMBERS.map((y) => {
                     const stat = mastery[pairKey(mission, x, y)];
-                    const style = cellStyle(stat);
+                    const status = factStatus(stat, day);
                     const value = applyOp(mission, x, y);
                     return (
-                      <td key={y} style={style} title={`${x} ${sym} ${y} = ${value}`}>
+                      <td
+                        key={y}
+                        className={`is-${status}`}
+                        style={cellStyle(stat, day)}
+                        title={`${x} ${sym} ${y} = ${value}${status === 'fading' ? ` · ${t.heatmapFading}` : ''}`}
+                      >
                         {value}
                       </td>
                     );
@@ -88,7 +95,12 @@ export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, aut
             <div className="heatmap-kinds-title">{t.heatmapKinds}</div>
             <div className="heatmap-kinds-row">
               {ADD_KINDS.map((k) => (
-                <div key={k} className="heatmap-kind" style={cellStyle(mastery[k])} title={t.addKinds[k]}>
+                <div
+                  key={k}
+                  className={`heatmap-kind is-${factStatus(mastery[k], day)}`}
+                  style={cellStyle(mastery[k], day)}
+                  title={factStatus(mastery[k], day) === 'fading' ? `${t.addKinds[k]} · ${t.heatmapFading}` : t.addKinds[k]}
+                >
                   <bdi dir="ltr" className="heatmap-kind-example">
                     {KIND_EXAMPLES[k]}
                   </bdi>

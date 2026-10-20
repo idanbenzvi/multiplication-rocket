@@ -2,6 +2,7 @@ import type { FactStat } from '../game/types';
 import type { LoggedAnswer } from './answerLog';
 import { masterySummary } from '../game/masteryStats';
 import type { PilotMission } from '../game/mission';
+import { dayNumber, factStatus } from '../game/memory';
 
 // Parent-dashboard metrics, computed from a pilot's answer log (and their
 // all-time mastery totals for "hardest facts"). Pure functions — no React.
@@ -43,8 +44,12 @@ export interface Dashboard {
   current: PeriodStats;
   previous: PeriodStats | null; // the same-length period just before (null for 'all' with little history)
   mastered: number;
+  /** mastered once, now well past their spaced review (memory.ts) */
+  fading: number;
   practice: number;
   untried: number;
+  /** the fading facts, longest unchecked first, with the days since their last check */
+  fadingFacts: Array<{ fact: string; days: number }>;
   hardest: Array<{ fact: string; accuracy: number; attempts: number }>;
   improved: Array<{ fact: string; before: number; after: number }>;
   totalLogged: number;
@@ -173,14 +178,22 @@ export function computeDashboard(
   }
   improved.sort((a, b) => b.after - b.before - (a.after - a.before));
 
-  const summary = masterySummary(mastery, mission);
+  const day = dayNumber(now);
+  const summary = masterySummary(mastery, mission, day);
+  const fadingFacts = Object.entries(mastery)
+    .filter(([, s]) => factStatus(s, day) === 'fading')
+    .map(([fact, s]) => ({ fact, days: day - (s.since ?? day) }))
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 6);
   return {
     days,
     current: periodStats(inRange, days),
     previous,
     mastered: summary.mastered,
+    fading: summary.fading,
     practice: summary.practice,
     untried: summary.untried,
+    fadingFacts,
     hardest,
     improved: improved.slice(0, 3),
     totalLogged: log.length,

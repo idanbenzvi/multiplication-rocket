@@ -1,5 +1,6 @@
 import type { FactStat, Progress } from './types';
 import { masterySummary } from './masteryStats';
+import { isMastered } from './memory';
 import { BONUS_ROTATION, type BonusKind } from './bonusRounds';
 import { DESTINATION_COUNT } from './levels';
 
@@ -51,11 +52,9 @@ export interface BadgeDef {
   goal: (ctx: Ctx) => { have: number; need: number };
 }
 
-// "Mastered" means the same as on the practice map (masteryStats.ts).
-function isMastered(stat: FactStat | undefined): boolean {
-  return !!stat && stat.attempts > 0 && stat.correct / stat.attempts >= 0.8;
-}
 
+// "Mastered" means the same as on the practice map (memory.ts): a fact that's
+// fading doesn't count towards a badge still to earn (earned ones stay).
 function factKey(a: number, b: number): string {
   return `${Math.min(a, b)}x${Math.max(a, b)}`;
 }

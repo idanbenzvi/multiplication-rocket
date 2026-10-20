@@ -14,6 +14,12 @@ export interface FactStat {
   correct: number;
   wrong: number;
   dueScore: number;
+  /** its last few answers, oldest first: '1' right, '0' wrong (memory.ts) */
+  last?: string;
+  /** its box in the spaced review: 0 not mastered yet, 1-7 mastered, each a longer wait before its next check (memory.ts) */
+  box?: number;
+  /** the day (memory.ts's dayNumber) it reached its box, or was last checked on time */
+  since?: number;
 }
 
 export interface Progress {

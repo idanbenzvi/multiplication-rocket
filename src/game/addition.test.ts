@@ -107,7 +107,7 @@ describe('addition stages', () => {
   });
 
   it('counts the addition map: the table and the kinds', () => {
-    expect(masterySummary({}, 'add')).toEqual({ mastered: 0, practice: 0, untried: 60 });
+    expect(masterySummary({}, 'add')).toEqual({ mastered: 0, fading: 0, practice: 0, untried: 60 });
     expect(masterySummary(masterAll(['3+4', '2d+1d']), 'add').mastered).toBe(2);
     expect(masterySummary(masterAll(['3+4']), 'mul').mastered).toBe(0);
   });

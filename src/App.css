@@ -910,6 +910,13 @@ button:focus-visible {
   border: none;
 }
 
+/* fading: mastered once, now time for a check (game/memory.ts) */
+.heatmap-grid td.is-fading,
+.heatmap-kind.is-fading {
+  outline: 2px dashed rgba(255, 205, 110, 0.85);
+  outline-offset: -4px;
+}
+
 /* the addition map's kinds of two-digit sum */
 .heatmap-kinds {
   margin: 0.8rem 0 0.2rem;
@@ -2355,6 +2362,15 @@ button:focus-visible {
   font-size: 0.85rem;
   text-decoration: underline;
 }
+.profile-restore-link {
+  align-self: center;
+  margin-top: 0.2rem;
+  border: none;
+  background: none;
+  color: #c9a4de;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
 .profile-confirm {
   display: flex;
   flex-direction: column;
@@ -3110,6 +3126,10 @@ button:focus-visible {
 }
 .review-peek-maps.is-two .review-peek-cell {
   font-size: 0.42rem;
+}
+.review-peek-cell.is-fading {
+  outline: 1px dashed rgba(255, 205, 110, 0.9);
+  outline-offset: -2px;
 }
 .review-peek-op {
   margin-bottom: 0.15rem;
@@ -4159,6 +4179,116 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+
+/* ---- backups (parents/Backup.tsx) ---- */
+.pd-backup {
+  margin-top: 0.8rem;
+}
+.pd-backup-intro {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--pd-text-2);
+  line-height: 1.45;
+}
+.pd-backup-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pd-button {
+  min-height: 42px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid #4a4a45;
+  background: #2c2c2a;
+  color: var(--pd-text);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.pd-button.is-primary {
+  border-color: transparent;
+  background: var(--pd-series-1);
+}
+.pd-backup-tip {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(57, 135, 229, 0.12);
+  border: 1px solid rgba(57, 135, 229, 0.35);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--pd-text-2);
+}
+.backup-backdrop {
+  z-index: 40; /* over the parent dashboard */
+}
+.backup-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  user-select: auto;
+}
+.backup-sheet .settings-title {
+  margin-bottom: 0.2rem;
+}
+.backup-from {
+  margin: 0;
+  color: #e2d5ef;
+  font-size: 0.9rem;
+}
+.backup-pilots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.backup-pilot {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+.backup-pilot.is-on {
+  border-color: rgba(255, 157, 118, 0.6);
+  background: rgba(255, 157, 118, 0.1);
+}
+.backup-pilot input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: #ff9d76;
+}
+.backup-pilot-avatar {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.backup-pilot-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.backup-pilot-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fdf3e7;
+}
+.backup-pilot-stats {
+  font-size: 0.82rem;
+  color: #e2d5ef;
+}
+.backup-pilot-note {
+  font-size: 0.75rem;
+  color: #a898bf;
+}
+.backup-pilot-note.is-replace {
+  color: #ffd77a;
 }
 
 /* ---- About page ---- */

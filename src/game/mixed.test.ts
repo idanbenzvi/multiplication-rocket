@@ -34,7 +34,7 @@ describe('the mixed mission', () => {
   });
 
   it('keeps one map with both kinds of fact in it', () => {
-    expect(masterySummary({}, 'mix')).toEqual({ mastered: 0, practice: 0, untried: 115 });
+    expect(masterySummary({}, 'mix')).toEqual({ mastered: 0, fading: 0, practice: 0, untried: 115 });
     expect(masterySummary({}, 'mul').untried).toBe(55);
     expect(masterySummary({}, 'add').untried).toBe(60);
   });

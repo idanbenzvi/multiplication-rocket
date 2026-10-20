@@ -1,6 +1,8 @@
 import type { Progress } from '../game/types';
 import type { PilotMission } from '../game/mission';
 import { activeMission, missionOf, progressKeyFor, useProfiles } from '../profiles/useProfiles';
+import { needsUpgrade, upgradeMastery } from '../game/memory';
+import { readLog } from '../stats/answerLog';
 
 // Progress is saved per pilot profile and mission (the active pilot's
 // current one). Before a profile exists (the very first launch, while the
@@ -8,6 +10,11 @@ import { activeMission, missionOf, progressKeyFor, useProfiles } from '../profil
 function storageKey(): string {
   const { activeId } = useProfiles.getState();
   return activeId ? progressKeyFor(activeId, activeMission()) : 'multiplication-rocket:progress:v1:unassigned';
+}
+
+function activeOwner(): { profileId: string; mission: PilotMission } | undefined {
+  const { activeId } = useProfiles.getState();
+  return activeId ? { profileId: activeId, mission: activeMission() } : undefined;
 }
 
 export function defaultProgress(): Progress {
@@ -34,13 +41,21 @@ export interface ProgressStore {
   reset(): void;
 }
 
-function loadFrom(key: string): Progress {
+function loadFrom(key: string, owner?: { profileId: string; mission: PilotMission }): Progress {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return defaultProgress();
     const parsed = JSON.parse(raw) as Partial<Progress>;
     if (parsed.version !== 1) return defaultProgress();
-    return { ...defaultProgress(), ...parsed };
+    const progress = { ...defaultProgress(), ...parsed };
+    // saved before spaced review: replay each fact's answers from the log
+    // into its review box, once (game/memory.ts)
+    if (owner && needsUpgrade(progress.mastery)) {
+      const history = readLog(owner.profileId).filter((e) => e.mission === owner.mission);
+      progress.mastery = upgradeMastery(progress.mastery, history);
+      saveTo(key, progress);
+    }
+    return progress;
   } catch {
     return defaultProgress();
   }
@@ -58,7 +73,7 @@ function saveTo(key: string, progress: Progress) {
 // writes a given pilot's progress rather than the active one's (in their
 // current mission, unless a fact from the other one is being recorded).
 export function loadProgressFor(profileId: string, mission: PilotMission = missionOf(profileId)): Progress {
-  return loadFrom(progressKeyFor(profileId, mission));
+  return loadFrom(progressKeyFor(profileId, mission), { profileId, mission });
 }
 
 export function saveProgressFor(profileId: string, progress: Progress, mission: PilotMission = missionOf(profileId)) {
@@ -67,7 +82,7 @@ export function saveProgressFor(profileId: string, progress: Progress, mission: 
 
 export const localProgressStore: ProgressStore = {
   load() {
-    return loadFrom(storageKey());
+    return loadFrom(storageKey(), activeOwner());
   },
   save(progress) {
     saveTo(storageKey(), progress);

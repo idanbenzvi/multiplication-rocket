@@ -7,6 +7,7 @@ import { useGameStore } from '../game/useGameStore';
 import { useT } from '../i18n/useLang';
 import { missionHint, missionName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
+import { RestoreDialog } from './parents/Backup';
 
 // After switching or creating a pilot, reload the game with their progress.
 function startGameForActive() {
@@ -20,9 +21,11 @@ interface EditorProps {
   title: string;
   onDone: () => void;
   onCancel?: () => void;
+  /** the welcome screen, on a device with no pilots yet: bring them over from a backup instead */
+  onRestore?: () => void;
 }
 
-function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
+function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorProps) {
   const t = useT();
   const create = useProfiles((s) => s.create);
   const update = useProfiles((s) => s.update);
@@ -137,6 +140,11 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
             {t.deletePilot}
           </button>
         ))}
+      {onRestore && (
+        <button type="button" className="profile-restore-link" onClick={onRestore}>
+          {t.backup.link}
+        </button>
+      )}
     </div>
   );
 }
@@ -207,11 +215,17 @@ export function ProfileGate() {
   const activeId = useProfiles((s) => s.activeId);
   const chosen = useProfiles((s) => s.chosen);
   const [view, setView] = useState<GateView>({ kind: 'pick' });
+  const [restoring, setRestoring] = useState(false);
   const active = profiles.find((p) => p.id === activeId);
 
   let content: React.ReactNode = null;
   if (profiles.length === 0) {
-    content = <ProfileEditor title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} />;
+    content = (
+      <>
+        <ProfileEditor title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} onRestore={() => setRestoring(true)} />
+        {restoring && <RestoreDialog onClose={() => setRestoring(false)} />}
+      </>
+    );
   } else if (active && !active.name) {
     content = <ProfileEditor profile={active} title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} />;
   } else if (!chosen) {

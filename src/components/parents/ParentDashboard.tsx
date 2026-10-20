@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../../i18n/useLang';
 import { factLabel, missionName, type Strings } from '../../i18n/strings';
-import { missionOf, pilotName, progressKeyFor, useProfiles } from '../../profiles/useProfiles';
+import { missionOf, pilotName, useProfiles } from '../../profiles/useProfiles';
+import { loadProgressFor } from '../../storage/progressStore';
 import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../../game/mission';
 import { readLog } from '../../stats/answerLog';
 import { computeDashboard, type Day, type PeriodStats, type Range } from '../../stats/metrics';
-import type { Progress } from '../../game/types';
 import { LineChart, StackedBars } from './charts';
+import { BackupCard } from './Backup';
 
 type P = Strings['parents'];
 
@@ -62,15 +63,6 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
 
 const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
 const secs = (ms: number | null) => (ms === null ? '–' : (ms / 1000).toFixed(1));
-
-function readProgress(id: string, mission: PilotMission): Progress | null {
-  try {
-    const raw = localStorage.getItem(progressKeyFor(id, mission));
-    return raw ? (JSON.parse(raw) as Progress) : null;
-  } catch {
-    return null;
-  }
-}
 
 type Direction = 'up' | 'down';
 /** change vs the previous period, judged good or bad by which way is better */
@@ -169,9 +161,9 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
   };
 
   const dash = useMemo(() => {
-    const progress = readProgress(pilotId, mission);
+    const { mastery } = loadProgressFor(pilotId, mission);
     const log = readLog(pilotId).filter((e) => e.mission === mission);
-    return computeDashboard(log, progress?.mastery ?? {}, range, Date.now(), mission);
+    return computeDashboard(log, mastery, range, Date.now(), mission);
   }, [pilotId, range, mission]);
   const cur: PeriodStats = dash.current;
   const prev = dash.previous;
@@ -243,7 +235,11 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                 hint={`${t.consistencyHint(cur.daysPracticed)}${cur.consistencySd !== null ? ` · ±${Math.round(cur.consistencySd)}${t.unitPts}` : ''}`}
                 delta={<Delta now={cur.consistencySd} before={prev?.consistencySd} better="down" format={(d) => `${Math.round(d)}${t.unitPts}`} t={t} />}
               />
-              <StatTile label={t.mastered} value={`${dash.mastered} / ${dash.mastered + dash.practice + dash.untried}`} hint={t.masteredHint(dash.practice, dash.untried)} />
+              <StatTile
+                label={t.mastered}
+                value={`${dash.mastered} / ${dash.mastered + dash.fading + dash.practice + dash.untried}`}
+                hint={t.masteredHint(dash.fading, dash.practice, dash.untried)}
+              />
             </div>
 
             <div className="pd-grid">
@@ -321,6 +317,21 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                 )}
               </section>
               <section className="pd-card">
+                <h3 className="pd-card-title">{t.fading}</h3>
+                {dash.fadingFacts.length === 0 ? (
+                  <p className="pd-muted">{t.fadingNone}</p>
+                ) : (
+                  <ul className="pd-facts">
+                    {dash.fadingFacts.map((f) => (
+                      <li key={f.fact}>
+                        <bdi dir="auto" className="pd-fact">{fmtFact(f.fact)}</bdi>
+                        <span className="pd-fact-num">{t.fadingDays(f.days)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section className="pd-card">
                 <h3 className="pd-card-title">{t.improved}</h3>
                 {dash.improved.length === 0 ? (
                   <p className="pd-muted">{t.improvedNone}</p>
@@ -346,11 +357,13 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
                 <li><b>{t.speed}:</b> {t.reading.speed}</li>
                 <li><b>{t.rushing}:</b> {t.reading.rushing}</li>
                 <li><b>{t.consistency}:</b> {t.reading.consistency}</li>
+                <li><b>{t.mastered}:</b> {t.reading.review}</li>
               </ul>
               <p className="pd-muted">{t.note}</p>
             </section>
           </>
         )}
+        <BackupCard />
       </div>
     </div>,
     document.body,

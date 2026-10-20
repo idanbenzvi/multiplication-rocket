@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FactStat } from '../game/types';
 import { masteryCellStyle, masterySummary } from '../game/masteryStats';
+import { dayNumber, factStatus } from '../game/memory';
 import { applyOp, OP_SYMBOL, opsOf, pairKey, type PilotMission } from '../game/mission';
 import { useT } from '../i18n/useLang';
 
@@ -19,7 +20,8 @@ const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 export function ReviewButton({ mastery, mission, onClick }: Props) {
   const t = useT();
   const [peek, setPeek] = useState(false);
-  const summary = peek ? masterySummary(mastery, mission) : null;
+  const day = dayNumber();
+  const summary = peek ? masterySummary(mastery, mission, day) : null;
 
   return (
     <div
@@ -52,9 +54,9 @@ export function ReviewButton({ mastery, mission, onClick }: Props) {
                 <div className="review-peek-grid" dir="ltr">
                   {NUMBERS.map((x) =>
                     NUMBERS.map((y) => {
-                      const style = masteryCellStyle(mastery[pairKey(op, x, y)]);
+                      const stat = mastery[pairKey(op, x, y)];
                       return (
-                        <span key={`${x}-${y}`} className="review-peek-cell" style={style}>
+                        <span key={`${x}-${y}`} className={`review-peek-cell is-${factStatus(stat, day)}`} style={masteryCellStyle(stat, day)}>
                           {applyOp(op, x, y)}
                         </span>
                       );
@@ -64,7 +66,7 @@ export function ReviewButton({ mastery, mission, onClick }: Props) {
               </div>
             ))}
           </div>
-          <div className="review-peek-stats">{t.reviewPeekStats(summary.mastered, summary.practice, summary.untried)}</div>
+          <div className="review-peek-stats">{t.reviewPeekStats(summary.mastered, summary.fading, summary.practice, summary.untried)}</div>
           <div className="review-peek-hint">{t.reviewPeekHint}</div>
         </div>
       )}
