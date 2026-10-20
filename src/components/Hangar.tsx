@@ -15,10 +15,11 @@ import { SHIPS, type ShipId } from './scene/ships';
 import { ShipPicture } from './ShipPicture';
 
 // The hangar: where a pilot picks the ship they fly (ships.ts): the classic
-// rocket, the Explorer or Nova. It opens by itself when the game starts for a
-// pilot who hasn't picked one yet (a new pilot, or one from before there was
-// a choice) or who hasn't seen the newest ship yet (marked new), and from a
-// pilot's ✏️ to change ships.
+// rocket, the Explorer or Nova. It opens by itself once, when the game starts
+// for a pilot who has never picked one (a new pilot, or one from before there
+// was a choice); after that their choice is kept, and the hangar opens only
+// from their ✏️, to change ships (where a ship they haven't seen yet is marked
+// new).
 
 export function Hangar() {
   const gateOpen = useProfileGateOpen();
@@ -27,9 +28,8 @@ export function Hangar() {
   const profiles = useProfiles((s) => s.profiles);
   const crew = useCrewStore((s) => s.active);
   const pilot = profiles.find((p) => p.id === (asked ?? activeId));
-  // when the game starts, for a pilot who hasn't chosen yet, or hasn't seen the newest ship
-  // (one who chose before there were more saw two)
-  const first = !asked && !!pilot && (!pilot.ship || (pilot.shipsSeen ?? 2) < SHIPS.length) && !gateOpen && !crew;
+  // when the game starts, only for a pilot who has never chosen
+  const first = !asked && !!pilot && !pilot.ship && !gateOpen && !crew;
   if (!pilot || !(asked || first)) return null;
   return <HangarView key={pilot.id} pilot={pilot} first={first} />;
 }

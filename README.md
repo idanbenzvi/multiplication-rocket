@@ -117,8 +117,8 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 ## Three ships: the classic rocket, the Explorer or Nova 🛸
 
 Each pilot picks the ship they fly in the **hangar**, which opens when the game starts for a pilot
-who hasn't chosen yet, and once more when a new ship lands (it's marked *New!*). Later, ✏️ next to
-their name has a **Change ship** button.
+who has never chosen, just once: the choice is kept after that. To switch, ✏️ next to their name has
+a **Change ship** button (a ship they haven't seen yet is marked *New!* there).
 
 - **Classic Rocket:** the original, its nose and band in each level's colour.
 - **Explorer:** a ship from a concept art. It has an egg of a hull with a navy nose and cyan light
