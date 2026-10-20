@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { activeMission } from '../../profiles/useProfiles';
+import { pickOp, type PilotMission } from '../../game/mission';
 import type { MonsterFx } from './MonsterCanvas';
 
 // Numbers drifting through space behind the fight, slowly turning. When the
@@ -41,9 +42,9 @@ const PULL_S = 1.4;
 
 const rand = (n: number) => Math.floor(Math.random() * n);
 
-function numberText(mission: 'mul' | 'add'): string {
+function numberText(mission: PilotMission): string {
   if (Math.random() < 0.25) return String(rand(10));
-  return mission === 'add' ? String(2 + rand(19)) : String((1 + rand(10)) * (1 + rand(10)));
+  return pickOp(mission) === 'add' ? String(2 + rand(19)) : String((1 + rand(10)) * (1 + rand(10)));
 }
 
 export function NumberField({ fx, field }: { fx: React.RefObject<MonsterFx | null>; field: React.RefObject<NumberFieldFx | null> }) {

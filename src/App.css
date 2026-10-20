@@ -859,6 +859,27 @@ button:focus-visible {
   margin: 0 0 1rem;
   font-size: 0.9rem;
 }
+/* a mixed mission's map: a tab for × and one for + */
+.heatmap-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0.6rem;
+}
+.heatmap-tab {
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2d5ef;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.heatmap-tab.is-on {
+  border-color: #ffd77a;
+  background: rgba(255, 215, 122, 0.16);
+  color: #fff3d6;
+}
 
 .heatmap-grid-wrap {
   overflow-x: auto;
@@ -2235,10 +2256,10 @@ button:focus-visible {
   background: rgba(255, 215, 122, 0.15);
   transform: scale(1.08);
 }
-/* the mission: × or +, side by side */
+/* the mission: ×, + or both mixed, side by side */
 .mission-options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 .mission-option {
@@ -2290,6 +2311,17 @@ button:focus-visible {
 }
 .pilot-card-mission.is-add {
   color: #8fe6ff;
+}
+.mission-option.is-mix.is-on {
+  border-color: #ff9de2;
+  background: rgba(255, 157, 226, 0.14);
+}
+.mission-option.is-mix .mission-option-symbol,
+.pilot-card-mission.is-mix {
+  background: linear-gradient(90deg, #ffd77a, #8fe6ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .profile-primary {
   min-height: 54px;
@@ -3069,6 +3101,22 @@ button:focus-visible {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   gap: 2px;
+}
+/* a mixed mission's two maps, side by side */
+.review-peek-maps.is-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.review-peek-maps.is-two .review-peek-cell {
+  font-size: 0.42rem;
+}
+.review-peek-op {
+  margin-bottom: 0.15rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffd77a;
 }
 .review-peek-cell {
   aspect-ratio: 1;

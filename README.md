@@ -157,12 +157,21 @@ practice (a picture, then symbols only, with "Show me").
    **a new ten**: in `37 + 25` the 12 ones are bundled into a rod (carrying); jumping to the next
    ten (`48 + 2 + 5`).
 
-## Two missions: × or + (SpaceSum)
+## Three missions: ×, + (SpaceSum) or both mixed
 
-Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10)
-or **➕ Addition**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM*, *טיל הכפל* /
-*טיל החיבור*), and each mission keeps its own progress, so a pilot can switch in their profile
-(✏️) and come back to where they were in the other one.
+Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10),
+**➕ Addition**, or **×+ Mixed**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM* /
+*MIX-ROCKET*, *טיל הכפל* / *טיל החיבור* / *טיל המספרים*), and each mission keeps its own progress,
+so a pilot can switch in their profile (✏️) and come back to where they were in the other one.
+
+**Mixed** is a journey of its own: each question is × or + at random (about half each), the sums
+climbing the same three addition stages as the addition mission, and each bonus round picks one of
+the two for the whole round (a wormhole of drills or of sums, a meteor shower of either). Its
+practice map has both grids, a tab each (and the hover peek shows both); the parent dashboard has a
+third pill for it; the Deep Space Academy behind the porthole is the one for the kind of question
+showing. In Crew Flight and Monster Sun a mixed pilot drills both (and can help a teammate with
+either), Split Sky gives a mixed host's game either kind, and the Black Sun opens once all 115
+facts (55 × and 60 +) are mastered, crowning them *Master of Universal Multiples and Sums*.
 
 Addition climbs three stages, shown under the destination:
 

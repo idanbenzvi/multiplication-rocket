@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout, usePause } from '../../game/gameClock';
-import { useGameStore } from '../../game/useGameStore';
+import { roundOp, useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
 import { buildStardust, tablePattern, type StardustRun as Run } from '../../game/bonusRounds';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
 import type { Strings } from '../../i18n/strings';
-import { activeMission, useProfiles } from '../../profiles/useProfiles';
+import { useProfiles } from '../../profiles/useProfiles';
 import { useWarpCanvas } from '../useWarpCanvas';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
@@ -139,7 +139,7 @@ export function GliderShip({ size, avatar }: { size: number; avatar?: string }) 
 export function StardustRun({ onDone, onBurst }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const run = useMemo(() => buildStardust(useGameStore.getState().progress, activeMission()), []);
+  const run = useMemo(() => buildStardust(useGameStore.getState().progress, roundOp()), []);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
   const { jump: table, startM, steps, values } = run;
   const adding = run.mission === 'add';

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { pickOp } from './mission';
 import { buildSkyAddRounds, buildSkyRounds, expectedAnswer, type Side, type SkyPlayer, type SkyStage } from './splitSky';
 import { additionTrackKey } from './addition';
 import { buildEclipseRounds } from './eclipse';
@@ -196,9 +197,9 @@ export const useSkyStore = create<SkyStore>((set, get) => {
       const id = useProfiles.getState().activeId;
       const progress = id ? loadProgressFor(id) : null;
       const mastery = progress?.mastery ?? {};
-      // Split Sky follows the host pilot's mission; Eclipse Hunters is multiplication
+      // Split Sky follows the host pilot's mission (a mixed one's is either, each game); Eclipse Hunters is multiplication
       if (get().state.game === 'split') {
-        const rounds = activeMission() === 'add' ? buildSkyAddRounds(mastery, progress?.stage ?? 1) : buildSkyRounds(mastery);
+        const rounds = pickOp(activeMission()) === 'add' ? buildSkyAddRounds(mastery, progress?.stage ?? 1) : buildSkyRounds(mastery);
         dispatch({ type: 'start', rounds });
       } else dispatch({ type: 'start', rounds: buildEclipseRounds(mastery) });
     },

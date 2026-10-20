@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import type { FactStat } from '../game/types';
 import { masteryCellStyle as cellStyle } from '../game/masteryStats';
-import { applyOp, OP_SYMBOL, pairKey, type Mission } from '../game/mission';
+import { applyOp, OP_SYMBOL, pairKey, type Mission, type PilotMission } from '../game/mission';
 import { ADD_KINDS, type AddKind } from '../game/addition';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
@@ -8,7 +9,7 @@ import StarBorder from './reactbits/StarBorder';
 
 interface Props {
   mastery: Record<string, FactStat>;
-  mission: Mission;
+  mission: PilotMission;
   onContinue: () => void;
   /** opened by itself after a run of mistakes: say so */
   auto?: boolean;
@@ -26,18 +27,30 @@ const KIND_EXAMPLES: Record<AddKind, string> = {
 };
 
 // The addition map is the same 10 × 10 grid (sums instead of products),
-// plus a row for the kinds of two-digit sum.
-export function MasteryHeatmap({ mastery, mission, onContinue, auto = false }: Props) {
+// plus a row for the kinds of two-digit sum. A mixed mission has both, a tab
+// each.
+export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, auto = false }: Props) {
   const t = useT();
+  const [tab, setTab] = useState<Mission>('mul');
+  const mission: Mission = pilotMission === 'mix' ? tab : pilotMission;
   const sym = OP_SYMBOL[mission];
   return (
     <div className="heatmap-overlay">
       <div className="heatmap-card">
         <h2>
           <GradientText colors={['#7ec4b0', '#ffd77a', '#ff9d76', '#7ec4b0']} animationSpeed={5}>
-            {mission === 'add' ? t.heatmapTitleAdd : t.heatmapTitle}
+            {pilotMission === 'mix' ? t.heatmapTitleMix : mission === 'add' ? t.heatmapTitleAdd : t.heatmapTitle}
           </GradientText>
         </h2>
+        {pilotMission === 'mix' && (
+          <div className="heatmap-tabs" role="tablist">
+            {(['mul', 'add'] as Mission[]).map((op) => (
+              <button key={op} type="button" role="tab" aria-selected={tab === op} className={`heatmap-tab ${tab === op ? 'is-on' : ''}`} onClick={() => setTab(op)}>
+                {OP_SYMBOL[op]} {op === 'add' ? t.missionAdd : t.missionMul}
+              </button>
+            ))}
+          </div>
+        )}
         {auto && <p className="heatmap-why">{t.heatmapWhy}</p>}
         <p className="heatmap-subtitle">{t.heatmapSubtitle}</p>
 

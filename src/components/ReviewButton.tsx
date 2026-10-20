@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import type { FactStat } from '../game/types';
 import { masteryCellStyle, masterySummary } from '../game/masteryStats';
-import { applyOp, pairKey, type Mission } from '../game/mission';
+import { applyOp, OP_SYMBOL, opsOf, pairKey, type PilotMission } from '../game/mission';
 import { useT } from '../i18n/useLang';
 
 interface Props {
   mastery: Record<string, FactStat>;
-  mission: Mission;
+  mission: PilotMission;
   onClick: () => void;
 }
 
@@ -15,7 +15,7 @@ const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 // "Stop & Review" with a hover peek: resting the mouse on it shows a compact
 // read-only practice map (and keyboard focus does too) without pausing the
 // game; clicking still opens the full review. Touch has no hover, so a tap
-// just opens the full review as before.
+// just opens the full review as before. A mixed mission's peek has both maps.
 export function ReviewButton({ mastery, mission, onClick }: Props) {
   const t = useT();
   const [peek, setPeek] = useState(false);
@@ -44,18 +44,25 @@ export function ReviewButton({ mastery, mission, onClick }: Props) {
       </button>
       {peek && summary && (
         <div className="review-peek" id="review-peek" role="tooltip">
-          <div className="review-peek-title">{mission === 'add' ? t.reviewPeekTitleAdd : t.reviewPeekTitle}</div>
-          <div className="review-peek-grid" dir="ltr">
-            {NUMBERS.map((x) =>
-              NUMBERS.map((y) => {
-                const style = masteryCellStyle(mastery[pairKey(mission, x, y)]);
-                return (
-                  <span key={`${x}-${y}`} className="review-peek-cell" style={style}>
-                    {applyOp(mission, x, y)}
-                  </span>
-                );
-              }),
-            )}
+          <div className="review-peek-title">{mission === 'add' ? t.reviewPeekTitleAdd : mission === 'mix' ? t.reviewPeekTitleMix : t.reviewPeekTitle}</div>
+          <div className={`review-peek-maps ${mission === 'mix' ? 'is-two' : ''}`}>
+            {opsOf(mission).map((op) => (
+              <div key={op} className="review-peek-map">
+                {mission === 'mix' && <div className="review-peek-op">{OP_SYMBOL[op]}</div>}
+                <div className="review-peek-grid" dir="ltr">
+                  {NUMBERS.map((x) =>
+                    NUMBERS.map((y) => {
+                      const style = masteryCellStyle(mastery[pairKey(op, x, y)]);
+                      return (
+                        <span key={`${x}-${y}`} className="review-peek-cell" style={style}>
+                          {applyOp(op, x, y)}
+                        </span>
+                      );
+                    }),
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="review-peek-stats">{t.reviewPeekStats(summary.mastered, summary.practice, summary.untried)}</div>
           <div className="review-peek-hint">{t.reviewPeekHint}</div>

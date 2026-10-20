@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout } from '../game/gameClock';
-import { useGameStore } from '../game/useGameStore';
+import { roundOp, useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildBattle, MAX_BATTLE_TRIES } from '../game/bonusRounds';
 import { kick } from '../game/flight';
@@ -8,7 +8,7 @@ import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
 import { useSettings, isTouchDevice } from '../settings/useSettings';
-import { activeMission, useProfiles } from '../profiles/useProfiles';
+import { useProfiles } from '../profiles/useProfiles';
 import { NumPad } from './NumPad';
 import { DEV_COLLECT_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { CannonPickup, RearShip, Saucer } from './spaceArt';
@@ -64,7 +64,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const battle = useMemo(() => buildBattle(useGameStore.getState().progress, activeMission()), []);
+  const battle = useMemo(() => buildBattle(useGameStore.getState().progress, roundOp()), []);
   const adding = battle.mission === 'add';
   // the beam's charge with n ships: n × cannons each, or (adding) ours plus one per ship
   const shotsWith = (n: number) => (adding ? battle.cannons + n : n * battle.cannons);

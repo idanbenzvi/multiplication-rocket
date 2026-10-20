@@ -1,6 +1,5 @@
 import type { FactStat } from './types';
-import type { Mission } from './mission';
-import { pairKey } from './mission';
+import { opsOf, pairKey, type PilotMission } from './mission';
 import { ADD_KINDS } from './addition';
 import { isMastered } from './facts';
 
@@ -22,17 +21,19 @@ export function masteryCellStyle(stat: FactStat | undefined): { background: stri
 /**
  * Counts over the mission's facts: the 55 distinct facts of the 1-10 times
  * table (3×4 and 4×3 are one fact), or the 55 of the 1-10 addition table
- * plus the 5 kinds of two-digit sum.
+ * plus the 5 kinds of two-digit sum, or (mixed) both.
  */
-export function masterySummary(mastery: Record<string, FactStat>, mission: Mission = 'mul') {
+export function masterySummary(mastery: Record<string, FactStat>, mission: PilotMission = 'mul') {
   let mastered = 0;
   let practice = 0;
   let untried = 0;
   const keys: string[] = [];
-  for (let a = 1; a <= 10; a++) {
-    for (let b = a; b <= 10; b++) keys.push(pairKey(mission, a, b));
+  for (const op of opsOf(mission)) {
+    for (let a = 1; a <= 10; a++) {
+      for (let b = a; b <= 10; b++) keys.push(pairKey(op, a, b));
+    }
+    if (op === 'add') keys.push(...ADD_KINDS);
   }
-  if (mission === 'add') keys.push(...ADD_KINDS);
   for (const key of keys) {
     const s = mastery[key];
     if (!s || s.attempts === 0) untried++;

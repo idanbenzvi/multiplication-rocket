@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout } from '../game/gameClock';
-import { useGameStore } from '../game/useGameStore';
+import { roundOp, useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildMeteorDrills, METEOR_DRILLS, type MeteorDrill } from '../game/bonusRounds';
 import { missionOfKey, OP_SYMBOL } from '../game/mission';
-import { activeMission } from '../profiles/useProfiles';
 import { bump, kick } from '../game/flight';
 import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
@@ -68,7 +67,7 @@ function rockPath(seed: number): string {
 
 export function MeteorShower({ onDone, onBurst }: Props) {
   const t = useT();
-  const drills = useMemo(() => buildMeteorDrills(useGameStore.getState().progress, activeMission()), []);
+  const drills = useMemo(() => buildMeteorDrills(useGameStore.getState().progress, roundOp()), []);
   const fuelPerHit = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
 
   const [phase, setPhase] = useState<Phase>('intro');

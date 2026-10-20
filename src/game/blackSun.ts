@@ -1,6 +1,6 @@
 import type { FactStat } from './types';
 import { masterySummary } from './masteryStats';
-import { pairKey, parsePair, type Mission } from './mission';
+import { pairKey, parsePair, pickOp, type PilotMission } from './mission';
 import { additionTrackKey, pickAdditionFact } from './addition';
 
 // The Black Sun: the final boss, for a pilot who has mastered every fact of
@@ -116,9 +116,10 @@ function toughness(a: number, b: number): number {
  * The next question: a missed problem that's due again first; otherwise, on
  * ×, a fact from 2 to 10 (the hardest the pilot finds come up most, and in
  * the last stretch of the run only from 3 to 9), not one asked lately; on +,
- * a sum from the whole mission, up to two-digit sums.
+ * a sum from the whole mission, up to two-digit sums; on a mixed mission,
+ * either, at random.
  */
-export function nextBossQuestion(fight: BossFight, mission: Mission, mastery: Record<string, FactStat>, rand: () => number = Math.random): BossQuestion {
+export function nextBossQuestion(fight: BossFight, mission: PilotMission, mastery: Record<string, FactStat>, rand: () => number = Math.random): BossQuestion {
   const flip = rand() < 0.5;
   const shown = (key: string, a: number, b: number, answer: number, track: string, retry: boolean): BossQuestion => ({
     key,
@@ -136,7 +137,7 @@ export function nextBossQuestion(fight: BossFight, mission: Mission, mastery: Re
     return shown(due.key, pair.a, pair.b, add ? pair.a + pair.b : pair.a * pair.b, add ? additionTrackKey(pair.a, pair.b) : due.key, true);
   }
 
-  if (mission === 'add') {
+  if (pickOp(mission, rand) === 'add') {
     // (tries a few times for one not asked lately)
     let fact = pickAdditionFact(3, mastery, fight.recent[fight.recent.length - 1], rand);
     for (let i = 0; i < 6 && fight.recent.includes(pairKey('add', fact.a, fact.b)); i++) fact = pickAdditionFact(3, mastery, undefined, rand);
@@ -159,12 +160,12 @@ export function nextBossQuestion(fight: BossFight, mission: Mission, mastery: Re
 }
 
 /** how close a pilot is to facing it: their mission's facts mastered (4 right out of 5), out of all of them */
-export function bossProgress(mastery: Record<string, FactStat>, mission: Mission): { have: number; need: number } {
+export function bossProgress(mastery: Record<string, FactStat>, mission: PilotMission): { have: number; need: number } {
   const { mastered, practice, untried } = masterySummary(mastery, mission);
   return { have: mastered, need: mastered + practice + untried };
 }
 
-export function bossReady(mastery: Record<string, FactStat>, mission: Mission): boolean {
+export function bossReady(mastery: Record<string, FactStat>, mission: PilotMission): boolean {
   const { have, need } = bossProgress(mastery, mission);
   return have >= need;
 }

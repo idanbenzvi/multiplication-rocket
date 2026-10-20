@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout } from '../game/gameClock';
-import { useGameStore } from '../game/useGameStore';
+import { roundOp, useGameStore } from '../game/useGameStore';
 import { getLevelConfig } from '../game/levels';
 import { buildStranded, MAX_STRANDED_GUESSES, STRANDED_SHIPS, strandedMultiplier } from '../game/bonusRounds';
 import { kick } from '../game/flight';
@@ -17,7 +17,6 @@ import GradientText from './reactbits/GradientText';
 import { SpaceRipple } from './SpaceRipple';
 import { DEV_SOLVE_EVENT } from '../dev/devMode';
 import { applyOp, OP_SYMBOL } from '../game/mission';
-import { activeMission } from '../profiles/useProfiles';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -78,7 +77,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
   const t = useT();
   const answerMode = useSettings((s) => s.answerMode);
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const round = useMemo(() => buildStranded(useGameStore.getState().progress, activeMission()), []);
+  const round = useMemo(() => buildStranded(useGameStore.getState().progress, roundOp()), []);
   const sym = OP_SYMBOL[round.mission];
   const op = (a: number, b: number) => applyOp(round.mission, a, b);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);

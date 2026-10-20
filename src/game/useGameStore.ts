@@ -11,6 +11,7 @@ import { clampStage, stageReady } from './addition';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 import { activeMission, activeTimedBoost, useProfiles } from '../profiles/useProfiles';
+import { pickOp, type Mission } from './mission';
 import { appendToLog, clearLog, type AnswerSource } from '../stats/answerLog';
 import { resetBossRecord } from '../storage/bossRecord';
 import { useAchievements } from './useAchievements';
@@ -54,6 +55,8 @@ interface GameState {
   bonusRound: Exclude<BonusKind, 'wormhole'> | null;
   /** the rocket is flying off for this round, which starts once it's gone (flyAway) */
   departing: Exclude<BonusKind, 'wormhole'> | null;
+  /** the operation the bonus round (or wormhole) in progress is about: a mixed mission's is picked for each round */
+  bonusOp: Mission;
   /** the bonus kinds still to come, in a random order (see nextBonusRound) */
   bonusQueue: BonusKind[];
   /** bumped on every new bonus round; used as its React key so each one starts fresh */
@@ -98,11 +101,12 @@ function launchFrom(progress: Progress) {
   };
 }
 
-// An addition pilot moves up a stage on a launch, once enough of the stage
-// is mastered (see addition.ts): advancing through the levels, on success.
-// The stage only changes when a new one opens (a new pilot has none saved yet).
+// An addition pilot (or a mixed one: its sums) moves up a stage on a launch,
+// once enough of the stage is mastered (see addition.ts): advancing through
+// the levels, on success. The stage only changes when a new one opens (a new
+// pilot has none saved yet).
 function nextStage(progress: Progress, mastery: Record<string, FactStat>): number | undefined {
-  if (activeMission() !== 'add' || !stageReady(clampStage(progress.stage), mastery)) return progress.stage;
+  if (activeMission() === 'mul' || !stageReady(clampStage(progress.stage), mastery)) return progress.stage;
   return clampStage(progress.stage) + 1;
 }
 
@@ -132,8 +136,14 @@ function newQuestion(progress: Progress, avoidKey?: string): Question {
   return { fact, x, y, askedAt: gameNow() };
 }
 
+/** what the bonus round in progress is about (× or +): the rounds build themselves for it */
+export function roundOp(): Mission {
+  return useGameStore.getState().bonusOp;
+}
+
 /** a bonus round begins: straight away, or (one the rocket leaves the game for) once it has flown off */
 function startBonus(kind: Exclude<BonusKind, 'wormhole'>) {
+  useGameStore.setState({ bonusOp: pickOp(activeMission()) });
   const begin = () => useGameStore.setState((s) => ({ bonusRound: kind, departing: null, bonusNonce: s.bonusNonce + 1 }));
   if (!FLIES_OFF.has(kind) || !flyAway()) {
     begin();
@@ -162,6 +172,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   questionsSinceChallenge: 0,
   bonusRound: null,
   departing: null,
+  bonusOp: 'mul',
   bonusQueue: [],
   bonusNonce: 0,
   academyOpen: false,
@@ -296,11 +307,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
-      const mission = activeMission();
       const { kind, queue } = nextBonusRound(get().bonusQueue);
       const next = { questionsSinceChallenge: 0, bonusQueue: queue, feedback: null, flare: 0 };
-      if (kind === 'wormhole') set({ ...next, challenge: buildChallenge(progress.level, mission, clampStage(progress.stage)) });
-      else {
+      if (kind === 'wormhole') {
+        const op = pickOp(activeMission());
+        set({ ...next, bonusOp: op, challenge: buildChallenge(progress.level, op, clampStage(progress.stage)) });
+      } else {
         set(next);
         startBonus(kind);
       }
@@ -405,8 +417,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   devStartBonus: (kind) => {
     const { progress } = get();
     const clear = { justLaunched: false, showHeatmap: false, inWormhole: false, feedback: null, flare: 0 };
-    if (kind === 'wormhole') set({ ...clear, bonusRound: null, challenge: buildChallenge(progress.level, activeMission(), clampStage(progress.stage)) });
-    else {
+    if (kind === 'wormhole') {
+      const op = pickOp(activeMission());
+      set({ ...clear, bonusRound: null, bonusOp: op, challenge: buildChallenge(progress.level, op, clampStage(progress.stage)) });
+    } else {
       set({ ...clear, challenge: null });
       startBonus(kind);
     }

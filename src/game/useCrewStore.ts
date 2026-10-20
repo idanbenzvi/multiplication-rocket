@@ -17,7 +17,7 @@ import {
   type DockResult,
   type Seat,
 } from './crew';
-import { missionOfKey, pairKey } from './mission';
+import { covers, pairKey, pickOp } from './mission';
 import { pickFact } from './questions';
 import { clampStage } from './addition';
 import { missionOf, timedBoostOf } from '../profiles/useProfiles';
@@ -151,19 +151,21 @@ function questionFor(members: [CrewMember, CrewMember], member: 0 | 1): CrewQues
   const mission = missionOf(profileId);
   const progress = loadProgressFor(profileId);
   const { mastery } = progress;
+  // (a mixed pilot's are either, at random)
+  const op = pickOp(mission);
   const fact =
     seat === 'pilot'
-      ? pickFact(mission, progress)
-      : pickNextFact(mission === 'add' ? navigatorAddPool(mastery) : poolFor(seat, mastery), mastery);
+      ? pickFact(op, progress)
+      : pickNextFact(op === 'add' ? navigatorAddPool(mastery) : poolFor(seat, mastery), mastery);
   const { x, y } = randomizeOrder(fact);
-  return { kind: 'question', member, fact, x, y, askedAt: gameNow(), choices: seat === 'navigator' ? navigatorChoices(x, y, mission) : [] };
+  return { kind: 'question', member, fact, x, y, askedAt: gameNow(), choices: seat === 'navigator' ? navigatorChoices(x, y, op) : [] };
 }
 
-// Into the pilot's progress for the fact's mission: only facts of their own
-// mission are recorded (a docking round in the other one plays along).
+// Into the pilot's progress for their mission: only facts it practises are
+// recorded (a docking round in the other one plays along).
 function record(profileId: string, factKey: string, correct: boolean, ms: number | null) {
-  const mission = missionOfKey(factKey);
-  if (mission !== missionOf(profileId)) return;
+  const mission = missionOf(profileId);
+  if (!covers(mission, factKey)) return;
   const progress = loadProgressFor(profileId, mission);
   saveProgressFor(
     profileId,
@@ -179,15 +181,16 @@ function record(profileId: string, factKey: string, correct: boolean, ms: number
   appendToLog(profileId, [{ fact: factKey, correct, ms, source: 'crew' }]);
 }
 
-// Docking is played together, so in a mixed crew it's an addition round
-// (at the stage of the pilot who is further back): the one both can play.
+// Docking is played together, so in a crew with an addition pilot it's an
+// addition round (at the stage of whoever doing sums, a mixed pilot too, is
+// further back): the one both can play.
 function dockingFor(members: [CrewMember, CrewMember]): Docking {
   const withNavigator = members.some((m) => m.seat === 'navigator');
   const adders = members.filter((m) => missionOf(m.profileId) === 'add');
   if (adders.length > 0) {
-    const stages = adders.map((m) => clampStage(loadProgressFor(m.profileId, 'add').stage));
+    const stages = members.filter((m) => missionOf(m.profileId) !== 'mul').map((m) => clampStage(loadProgressFor(m.profileId).stage));
     const lead = adders.find((m) => m.seat === 'pilot') ?? adders[0];
-    return buildDocking(loadProgressFor(lead.profileId, 'add').mastery, withNavigator, 'add', Math.min(...stages));
+    return buildDocking(loadProgressFor(lead.profileId).mastery, withNavigator, 'add', Math.min(...stages));
   }
   // targets come through the pilot's (or first member's) hard facts
   const lead = members.find((m) => m.seat === 'pilot') ?? members[0];

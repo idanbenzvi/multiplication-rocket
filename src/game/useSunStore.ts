@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { factAnswer, hungerDelay, initialSunState, nextLineup, sunFactorMax, sunReducer, type SunAction, type SunCard, type SunPlayerInfo, type SunState } from './sun';
 import { buildFactPool, pickNextFact } from './facts';
 import { recordOwn } from './ownAnswers';
-import { pairKey, parsePair } from './mission';
+import { pairKey, parsePair, pickOp } from './mission';
 import { additionTrackKey, pickAdditionFact } from './addition';
 import { hostGroup, joinLink, type Group, type Link, type LinkError, type LinkStatus } from '../net/peerLink';
 import { activeMission, activeProfile, pilotName, useProfiles } from '../profiles/useProfiles';
@@ -102,7 +102,7 @@ function isPlayerInfo(p: unknown): p is SunPlayerInfo {
     typeof x.id === 'string' &&
     typeof x.name === 'string' &&
     typeof x.avatar === 'string' &&
-    (x.mission === undefined || x.mission === 'mul' || x.mission === 'add')
+    (x.mission === undefined || x.mission === 'mul' || x.mission === 'add' || x.mission === 'mix')
   );
 }
 
@@ -124,12 +124,14 @@ export function nextQuestion(avoid?: string): SunQuestion {
   const id = useProfiles.getState().activeId;
   const progress = id ? loadProgressFor(id) : null;
   const mastery = progress?.mastery ?? {};
+  // (a mixed pilot's are either, at random)
+  const op = pickOp(activeMission());
   const fact =
-    activeMission() === 'add'
+    op === 'add'
       ? pickAdditionFact(progress?.stage ?? 1, mastery, avoid)
       : pickNextFact(buildFactPool(2, sunFactorMax(state.monster)), mastery, avoid);
   // what's sent is the problem itself (a stage-3 sum is tracked by its kind)
-  const key = activeMission() === 'add' ? pairKey('add', fact.a, fact.b) : fact.key;
+  const key = op === 'add' ? pairKey('add', fact.a, fact.b) : fact.key;
   return { fact: key, x: flip ? fact.b : fact.a, y: flip ? fact.a : fact.b };
 }
 

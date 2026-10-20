@@ -84,7 +84,7 @@ function SetupSheet() {
         chosen.map((id, i) => {
           const p = profiles.find((x) => x.id === id);
           const seat = seats[id] ?? 'pilot';
-          const adding = p?.mission === 'add';
+          const mission = p?.mission ?? 'mul';
           return (
             <div key={id} className="settings-section crew-seat-row" style={{ '--seat': SEAT_COLORS[i] } as React.CSSProperties}>
               <div className="settings-label">
@@ -102,12 +102,16 @@ function SetupSheet() {
                     <span className="settings-option-name">{s === 'pilot' ? t.crew.seatPilot : t.crew.seatNavigator}</span>
                     <span className="settings-option-hint">
                       {s === 'pilot'
-                        ? adding
+                        ? mission === 'add'
                           ? t.crew.seatPilotHintAdd
-                          : t.crew.seatPilotHint
-                        : adding
+                          : mission === 'mix'
+                            ? t.crew.seatPilotHintMix
+                            : t.crew.seatPilotHint
+                        : mission === 'add'
                           ? t.crew.seatNavigatorHintAdd
-                          : t.crew.seatNavigatorHint}
+                          : mission === 'mix'
+                            ? t.crew.seatNavigatorHintMix
+                            : t.crew.seatNavigatorHint}
                     </span>
                   </button>
                 ))}

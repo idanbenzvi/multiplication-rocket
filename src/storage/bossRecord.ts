@@ -1,4 +1,4 @@
-import type { Mission } from '../game/mission';
+import type { PilotMission } from '../game/mission';
 
 // What a pilot has done against the Black Sun (game/blackSun.ts), in each
 // mission, saved next to their progress: whether it has opened for them (it
@@ -21,7 +21,7 @@ export function bossKeyFor(profileId: string): string {
 
 const blank = (): BossRecord => ({ unlocked: false, seen: false, wins: 0, bestRun: 0 });
 
-function readAll(profileId: string): Partial<Record<Mission, Partial<BossRecord>>> {
+function readAll(profileId: string): Partial<Record<PilotMission, Partial<BossRecord>>> {
   try {
     const raw = localStorage.getItem(bossKeyFor(profileId));
     const parsed = raw ? JSON.parse(raw) : null;
@@ -31,12 +31,12 @@ function readAll(profileId: string): Partial<Record<Mission, Partial<BossRecord>
   }
 }
 
-export function loadBossRecord(profileId: string | null, mission: Mission): BossRecord {
+export function loadBossRecord(profileId: string | null, mission: PilotMission): BossRecord {
   if (!profileId) return blank();
   return { ...blank(), ...readAll(profileId)[mission] };
 }
 
-export function saveBossRecord(profileId: string | null, mission: Mission, patch: Partial<BossRecord>): BossRecord {
+export function saveBossRecord(profileId: string | null, mission: PilotMission, patch: Partial<BossRecord>): BossRecord {
   const next = { ...loadBossRecord(profileId, mission), ...patch };
   if (!profileId) return next;
   try {
@@ -48,7 +48,7 @@ export function saveBossRecord(profileId: string | null, mission: Mission, patch
 }
 
 /** a progress reset is a fresh start: the Black Sun waits for this mission to be mastered again */
-export function resetBossRecord(profileId: string | null, mission: Mission) {
+export function resetBossRecord(profileId: string | null, mission: PilotMission) {
   if (!profileId) return;
   const all = readAll(profileId);
   delete all[mission];

@@ -1,6 +1,6 @@
 import { isAddKind } from '../game/addition';
 import { formatFactKey } from '../game/facts';
-import type { Mission } from '../game/mission';
+import type { PilotMission } from '../game/mission';
 
 export type Lang = 'en' | 'he';
 
@@ -14,11 +14,14 @@ const cannonsTooMany = (n: number) => (n === 1 ? '1 cannon too many' : `${n} can
 const en = {
   logo: 'MULT-ROCKET',
   logoAdd: 'SPACESUM',
+  logoMix: 'MIX-ROCKET',
   pickMission: 'Pick your mission',
   missionMul: 'Multiplication',
   missionMulHint: 'The times tables, 1 to 10',
   missionAdd: 'Addition',
   missionAddHint: 'Sums to 10, then to 20 and 100',
+  missionMix: 'Mixed',
+  missionMixHint: 'Times tables and sums, all mixed up',
   stageName: (n: number) => `Sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   stageUpTitle: 'New mission level! 🎉',
   stageUp: (n: number) => `From now on: sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
@@ -229,6 +232,7 @@ const en = {
 
   reviewPeekTitle: 'Your multiplication map',
   reviewPeekTitleAdd: 'Your addition map',
+  reviewPeekTitleMix: 'Your maps: × and +',
   reviewPeekStats: (m: number, p: number, n: number) => `${m} mastered · ${p} to practice · ${n} not tried yet`,
   reviewPeekHint: 'Click for the full review',
 
@@ -491,11 +495,13 @@ const en = {
       academyGraduate: { name: 'Academy Graduate', desc: 'Finish the Deep Space Academy' },
       spaceAdmiral: { name: 'Master of Universal Multiples', desc: 'Cure the Black Sun, the final boss' },
       spaceAdmiralAdd: { name: 'Master of Universal Sums', desc: 'Cure the Black Sun, the final boss' },
+      spaceAdmiralMix: { name: 'Master of Universal Multiples and Sums', desc: 'Cure the Black Sun, the final boss' },
     },
   },
 
   heatmapTitle: 'Your Multiplication Map',
   heatmapTitleAdd: 'Your Addition Map',
+  heatmapTitleMix: 'Your Mixed Maps',
   heatmapKinds: 'Two-digit sums',
   addKinds: {
     'tens+tens': 'tens + tens',
@@ -542,9 +548,11 @@ const en = {
     seatPilot: '🚀 Pilot',
     seatPilotHint: 'Times tables, against the clock',
     seatPilotHintAdd: 'Sums, against the clock',
+    seatPilotHintMix: 'Times tables and sums, against the clock',
     seatNavigator: '🧭 Navigator',
     seatNavigatorHint: 'Count groups of stars',
     seatNavigatorHintAdd: 'Count two groups of stars',
+    seatNavigatorHintMix: 'Count stars: in groups, or two groups together',
     launchTogether: 'Launch together! 🚀',
     turnOf: (name: string) => `${name}'s turn`,
     crewLevel: (n: number) => `Crew level ${n}`,
@@ -791,6 +799,7 @@ const en = {
     admiralTitle: 'Space Admiral level achieved!',
     admiralSub: 'You are now master of universal multiples',
     admiralSubAdd: 'You are now master of universal sums',
+    admiralSubMix: 'You are now master of universal multiples and sums',
     admiralName: (name: string) => `Admiral ${name}`,
     statRun: (n: number) => `🔥 ${n} in a row`,
     statDodged: (n: number) => (n === 1 ? '😎 1 fireball dodged' : `😎 ${n} fireballs dodged`),
@@ -808,11 +817,14 @@ export type Strings = typeof en;
 const he: Strings = {
   logo: 'טיל הכפל',
   logoAdd: 'טיל החיבור',
+  logoMix: 'טיל המספרים',
   pickMission: 'בחרו משימה',
   missionMul: 'כפל',
   missionMulHint: 'לוח הכפל, 1 עד 10',
   missionAdd: 'חיבור',
   missionAddHint: 'חיבור עד 10, ואז עד 20 ועד 100',
+  missionMix: 'משולב',
+  missionMixHint: 'לוח הכפל וחיבור, מעורבבים',
   stageName: (n) => `חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   stageUpTitle: 'שלב חדש במשימה! 🎉',
   stageUp: (n) => `מעכשיו: חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
@@ -1021,6 +1033,7 @@ const he: Strings = {
 
   reviewPeekTitle: 'מפת הכפל שלך',
   reviewPeekTitleAdd: 'מפת החיבור שלך',
+  reviewPeekTitleMix: 'המפות שלך: × ו־+',
   reviewPeekStats: (m, p, n) => `${m} שולטים · ${p} לתרגול · ${n} עוד לא נוסו`,
   reviewPeekHint: 'לחצו לחזרה המלאה',
 
@@ -1283,11 +1296,13 @@ const he: Strings = {
       academyGraduate: { name: 'בוגר האקדמיה', desc: 'סיימו את אקדמיית החלל העמוק' },
       spaceAdmiral: { name: 'מאסטר הכפל של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
       spaceAdmiralAdd: { name: 'מאסטר החיבור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
+      spaceAdmiralMix: { name: 'מאסטר הכפל והחיבור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
     },
   },
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapTitleAdd: 'מפת החיבור שלך',
+  heatmapTitleMix: 'המפות המשולבות שלך',
   heatmapKinds: 'חיבור דו־ספרתי',
   addKinds: {
     'tens+tens': 'עשרות + עשרות',
@@ -1334,9 +1349,11 @@ const he: Strings = {
     seatPilot: '🚀 טייס',
     seatPilotHint: 'לוח הכפל, נגד השעון',
     seatPilotHintAdd: 'חיבור, נגד השעון',
+    seatPilotHintMix: 'לוח הכפל וחיבור, נגד השעון',
     seatNavigator: '🧭 נווט',
     seatNavigatorHint: 'סופרים קבוצות של כוכבים',
     seatNavigatorHintAdd: 'סופרים שתי קבוצות של כוכבים',
+    seatNavigatorHintMix: 'סופרים כוכבים: בקבוצות, או שתי קבוצות ביחד',
     launchTogether: 'משגרים יחד! 🚀',
     turnOf: (name) => `התור של ${name}`,
     crewLevel: (n) => `שלב צוות ${n}`,
@@ -1580,6 +1597,7 @@ const he: Strings = {
     admiralTitle: 'הושגה דרגת אדמירל חלל!',
     admiralSub: 'מעכשיו: מאסטר הכפל של היקום',
     admiralSubAdd: 'מעכשיו: מאסטר החיבור של היקום',
+    admiralSubMix: 'מעכשיו: מאסטר הכפל והחיבור של היקום',
     admiralName: (name) => `האדמירל ${name}`,
     statRun: (n) => `🔥 ${n} ברצף`,
     statDodged: (n) => (n === 1 ? '😎 כדור אש אחד נחמק' : `😎 ${n} כדורי אש נחמקו`),
@@ -1607,8 +1625,18 @@ export function destinationName(
   return config.destinationSector === 1 ? base : `${base} (${t.sector(config.destinationSector)})`;
 }
 
-/** a badge's translated name and description, by badge id (game/achievements.ts); some say it differently on the addition mission */
-export function badgeText(t: Strings, id: string, mission: Mission = 'mul'): { name: string; desc: string } {
+/** a badge's translated name and description, by badge id (game/achievements.ts); some say it differently on the addition or mixed mission */
+export function badgeText(t: Strings, id: string, mission: PilotMission = 'mul'): { name: string; desc: string } {
   const list = t.badges.list as Record<string, { name: string; desc: string }>;
-  return (mission === 'add' ? list[`${id}Add`] : undefined) ?? list[id] ?? { name: id, desc: '' };
+  const own = mission === 'add' ? list[`${id}Add`] : mission === 'mix' ? list[`${id}Mix`] : undefined;
+  return own ?? list[id] ?? { name: id, desc: '' };
+}
+
+/** a mission's name, and what it's about */
+export function missionName(t: Strings, mission: PilotMission): string {
+  return mission === 'add' ? t.missionAdd : mission === 'mix' ? t.missionMix : t.missionMul;
+}
+
+export function missionHint(t: Strings, mission: PilotMission): string {
+  return mission === 'add' ? t.missionAddHint : mission === 'mix' ? t.missionMixHint : t.missionMulHint;
 }

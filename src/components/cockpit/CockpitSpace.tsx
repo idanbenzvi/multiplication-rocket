@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { activeMission } from '../../profiles/useProfiles';
+import { pickOp, type PilotMission } from '../../game/mission';
 
 // Through the cockpit's windscreen: space drifting gently by, and numbers
 // floating past among the stars (the pilot's own times tables, or sums).
@@ -33,9 +34,9 @@ const NEAR = 0.12;
 
 const rand = (n: number) => Math.floor(Math.random() * n);
 
-function glyphText(mission: 'mul' | 'add'): string {
+function glyphText(mission: PilotMission): string {
   const r = Math.random();
-  if (mission === 'add') {
+  if (pickOp(mission) === 'add') {
     const a = 1 + rand(19);
     const b = 1 + rand(19);
     return r < 0.45 ? `${a}+${b}` : r < 0.8 ? String(a + b) : String(rand(10));
@@ -45,7 +46,7 @@ function glyphText(mission: 'mul' | 'add'): string {
   return r < 0.45 ? `${a}×${b}` : r < 0.8 ? String(a * b) : String(rand(10));
 }
 
-function newGlyph(mission: 'mul' | 'add', z: number): Glyph {
+function newGlyph(mission: PilotMission, z: number): Glyph {
   // out from the middle, so they part around the way ahead rather than fly at your nose
   const angle = Math.random() * Math.PI * 2;
   const dist = 0.3 + Math.random() * 0.9;

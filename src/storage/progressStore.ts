@@ -1,5 +1,5 @@
 import type { Progress } from '../game/types';
-import type { Mission } from '../game/mission';
+import type { PilotMission } from '../game/mission';
 import { activeMission, missionOf, progressKeyFor, useProfiles } from '../profiles/useProfiles';
 
 // Progress is saved per pilot profile and mission (the active pilot's
@@ -57,11 +57,11 @@ function saveTo(key: string, progress: Progress) {
 // A crew flight records answers for two pilots at once, so it reads and
 // writes a given pilot's progress rather than the active one's (in their
 // current mission, unless a fact from the other one is being recorded).
-export function loadProgressFor(profileId: string, mission: Mission = missionOf(profileId)): Progress {
+export function loadProgressFor(profileId: string, mission: PilotMission = missionOf(profileId)): Progress {
   return loadFrom(progressKeyFor(profileId, mission));
 }
 
-export function saveProgressFor(profileId: string, progress: Progress, mission: Mission = missionOf(profileId)) {
+export function saveProgressFor(profileId: string, progress: Progress, mission: PilotMission = missionOf(profileId)) {
   saveTo(progressKeyFor(profileId, mission), progress);
 }
 

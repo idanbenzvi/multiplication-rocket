@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout, usePause } from '../../game/gameClock';
-import { useGameStore } from '../../game/useGameStore';
+import { roundOp, useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
 import { buildRoad, ROAD_JUMPS } from '../../game/bonusRounds';
 import { kick } from '../../game/flight';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
-import { activeMission, useProfiles } from '../../profiles/useProfiles';
+import { useProfiles } from '../../profiles/useProfiles';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { SpaceRipple } from '../SpaceRipple';
 import GradientText from '../reactbits/GradientText';
@@ -151,7 +151,7 @@ const jumpLift = (k: number) => 0.7 + JUMP_UNIT * 2 ** k * 0.11;
 export function AccelerationRoad({ onDone, onBurst }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const run = useMemo(() => buildRoad(useGameStore.getState().progress, activeMission()), []);
+  const run = useMemo(() => buildRoad(useGameStore.getState().progress, roundOp()), []);
   const road = useMemo(makeRoad, []);
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
   const adding = run.mission === 'add';

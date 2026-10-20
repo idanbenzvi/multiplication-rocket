@@ -4,9 +4,11 @@
 // rounds have no comparable timer), and where it came from.
 //
 // Stored on the device only, compactly, capped at the most recent entries.
-// Both missions share one log: a fact's key says which one it belongs to.
+// The missions share one log: each answer says which one it was answered in
+// (answers from before mixed missions don't, and go by their fact's key).
 
-import { missionOfKey, type Mission } from '../game/mission';
+import { missionOfKey, PILOT_MISSIONS, type PilotMission } from '../game/mission';
+import { missionOf } from '../profiles/useProfiles';
 
 export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun' | 'road' | 'traffic' | 'boss';
 
@@ -19,6 +21,8 @@ export interface LoggedAnswer {
   /** response time in ms (paused time excluded); null when not timed */
   ms: number | null;
   source: AnswerSource;
+  /** the mission it was answered in */
+  mission: PilotMission;
 }
 
 const PREFIX = 'multiplication-rocket:log:v1';
@@ -26,8 +30,13 @@ const MAX_ENTRIES = 6000;
 // append only: the index is what's stored
 const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse', 'sun', 'road', 'traffic', 'boss'];
 
-// compact row: [at, fact, correct 0/1, ms | -1, source index]
-type Row = [number, string, 0 | 1, number, number];
+// compact row: [at, fact, correct 0/1, ms | -1, source index, mission index (missing on older rows)]
+type Row = [number, string, 0 | 1, number, number, number?];
+
+/** the mission an answer was given in (an older row's, by its fact) */
+function missionOfRow(row: Row): PilotMission {
+  return PILOT_MISSIONS[row[5] ?? -1] ?? missionOfKey(row[1]);
+}
 
 export function logKeyFor(profileId: string): string {
   return `${PREFIX}:${profileId}`;
@@ -45,19 +54,22 @@ function readRows(profileId: string): Row[] {
 }
 
 export function readLog(profileId: string): LoggedAnswer[] {
-  return readRows(profileId).map(([at, fact, c, ms, src]) => ({
-    at,
-    fact,
-    correct: c === 1,
-    ms: ms >= 0 ? ms : null,
-    source: SOURCES[src] ?? 'question',
+  return readRows(profileId).map((row) => ({
+    at: row[0],
+    fact: row[1],
+    correct: row[2] === 1,
+    ms: row[3] >= 0 ? row[3] : null,
+    source: SOURCES[row[4]] ?? 'question',
+    mission: missionOfRow(row),
   }));
 }
 
-export function appendToLog(profileId: string | null, entries: Array<Omit<LoggedAnswer, 'at'> & { at?: number }>) {
+/** a pilot's answers, in the mission they're on now */
+export function appendToLog(profileId: string | null, entries: Array<Omit<LoggedAnswer, 'at' | 'mission'> & { at?: number }>) {
   if (!profileId || entries.length === 0) return;
   try {
     const rows = readRows(profileId);
+    const mission = PILOT_MISSIONS.indexOf(missionOf(profileId));
     for (const e of entries) {
       rows.push([
         e.at ?? Date.now(),
@@ -65,6 +77,7 @@ export function appendToLog(profileId: string | null, entries: Array<Omit<Logged
         e.correct ? 1 : 0,
         e.ms === null ? -1 : Math.round(e.ms),
         Math.max(0, SOURCES.indexOf(e.source)),
+        mission,
       ]);
     }
     const trimmed = rows.length > MAX_ENTRIES ? rows.slice(rows.length - MAX_ENTRIES) : rows;
@@ -75,13 +88,13 @@ export function appendToLog(profileId: string | null, entries: Array<Omit<Logged
 }
 
 /** forget a pilot's history: all of it, or just one mission's */
-export function clearLog(profileId: string, mission?: Mission) {
+export function clearLog(profileId: string, mission?: PilotMission) {
   try {
     if (!mission) {
       localStorage.removeItem(logKeyFor(profileId));
       return;
     }
-    const rows = readRows(profileId).filter(([, fact]) => missionOfKey(fact) !== mission);
+    const rows = readRows(profileId).filter((row) => missionOfRow(row) !== mission);
     localStorage.setItem(logKeyFor(profileId), JSON.stringify(rows));
   } catch {
     // ignore

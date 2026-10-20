@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Profile } from '../profiles/useProfiles';
-import { MISSIONS, OP_SYMBOL, type Mission } from '../game/mission';
+import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
 import { useT } from '../i18n/useLang';
+import { missionHint, missionName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
 
 // After switching or creating a pilot, reload the game with their progress.
@@ -32,7 +33,7 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
   const taken = new Set(profiles.filter((p) => p.id !== profile?.id).map((p) => p.avatar));
   const [avatar, setAvatar] = useState(profile?.avatar ?? AVATARS.find((a) => !taken.has(a)) ?? AVATARS[0]);
   // a new pilot chooses; an existing one (even from before missions) has one
-  const [mission, setMission] = useState<Mission | null>(profile ? (profile.mission ?? 'mul') : null);
+  const [mission, setMission] = useState<PilotMission | null>(profile ? (profile.mission ?? 'mul') : null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const canSave = name.trim().length > 0 && mission !== null;
 
@@ -80,7 +81,7 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
       />
       <div className="profile-label">{t.pickMission}</div>
       <div className="mission-options" role="radiogroup" aria-label={t.pickMission}>
-        {MISSIONS.map((m) => (
+        {PILOT_MISSIONS.map((m) => (
           <button
             key={m}
             type="button"
@@ -89,9 +90,9 @@ function ProfileEditor({ profile, title, onDone, onCancel }: EditorProps) {
             className={`mission-option is-${m} ${mission === m ? 'is-on' : ''}`}
             onClick={() => setMission(m)}
           >
-            <span className="mission-option-symbol">{OP_SYMBOL[m]}</span>
-            <span className="mission-option-name">{m === 'add' ? t.missionAdd : t.missionMul}</span>
-            <span className="mission-option-hint">{m === 'add' ? t.missionAddHint : t.missionMulHint}</span>
+            <span className="mission-option-symbol">{MISSION_SYMBOL[m]}</span>
+            <span className="mission-option-name">{missionName(t, m)}</span>
+            <span className="mission-option-hint">{missionHint(t, m)}</span>
           </button>
         ))}
       </div>
@@ -174,7 +175,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
                   {pilotName(p, t.defaultPilotName)}
                 </span>
                 <span className="pilot-card-stats">
-                  <span className={`pilot-card-mission is-${p.mission ?? 'mul'}`}>{OP_SYMBOL[p.mission ?? 'mul']}</span> {t.level(stats.level)} · ✓{' '}
+                  <span className={`pilot-card-mission is-${p.mission ?? 'mul'}`}>{MISSION_SYMBOL[p.mission ?? 'mul']}</span> {t.level(stats.level)} · ✓{' '}
                   {stats.correct}
                 </span>
               </button>

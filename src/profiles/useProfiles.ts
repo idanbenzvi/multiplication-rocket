@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MISSIONS, type Mission } from '../game/mission';
+import { PILOT_MISSIONS, type PilotMission } from '../game/mission';
 
 // Pilot profiles: each child on the device gets a name, an animal avatar and
 // their own saved progress (see storage/progressStore.ts, which keys
@@ -13,7 +13,7 @@ export interface Profile {
   /** has opened the Deep Space Academy (the porthole stops shimmering) */
   academySeen?: boolean;
   /** what they practise; profiles from before missions existed are multiplication */
-  mission?: Mission;
+  mission?: PilotMission;
   /** addition Academy courses finished ('add1'-'add3') */
   academyDone?: string[];
   /** false: no clock on their questions, and every right answer fills the same (the cockpit's "Speed boost") */
@@ -30,8 +30,8 @@ const LEGACY_PROGRESS_KEY = PROGRESS_PREFIX;
 
 // Each mission keeps its own progress. Multiplication stays under the key it
 // always had, so nobody's levels move when missions arrive.
-export function progressKeyFor(profileId: string, mission: Mission): string {
-  return mission === 'add' ? `${PROGRESS_PREFIX}:${profileId}:add` : `${PROGRESS_PREFIX}:${profileId}`;
+export function progressKeyFor(profileId: string, mission: PilotMission): string {
+  return mission === 'mul' ? `${PROGRESS_PREFIX}:${profileId}` : `${PROGRESS_PREFIX}:${profileId}:${mission}`;
 }
 
 interface Saved {
@@ -80,7 +80,7 @@ function load(): Saved {
 interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
-  create: (name: string, avatar: string, mission: Mission) => string;
+  create: (name: string, avatar: string, mission: PilotMission) => string;
   update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
@@ -110,7 +110,7 @@ export const useProfiles = create<ProfilesState>((set, get) => {
     },
     remove: (id) => {
       try {
-        for (const m of MISSIONS) localStorage.removeItem(progressKeyFor(id, m));
+        for (const m of PILOT_MISSIONS) localStorage.removeItem(progressKeyFor(id, m));
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
         localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
         localStorage.removeItem(`multiplication-rocket:boss:v1:${id}`); // their Black Sun
@@ -141,15 +141,15 @@ export function activeProfile(): Profile | null {
 }
 
 /** a pilot's mission (multiplication unless they picked addition) */
-export function missionOf(profileId: string | null | undefined): Mission {
+export function missionOf(profileId: string | null | undefined): PilotMission {
   return useProfiles.getState().profiles.find((p) => p.id === profileId)?.mission ?? 'mul';
 }
 
-export function activeMission(): Mission {
+export function activeMission(): PilotMission {
   return missionOf(useProfiles.getState().activeId);
 }
 
-export function useMission(): Mission {
+export function useMission(): PilotMission {
   return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.mission ?? 'mul');
 }
 

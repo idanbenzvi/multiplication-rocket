@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gameNow, gameTimeout, usePause } from '../../game/gameClock';
-import { useGameStore } from '../../game/useGameStore';
+import { roundOp, useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
 import { buildTraffic, TRAFFIC_DIRS, TRAFFIC_PASSES, type TrafficDir } from '../../game/bonusRounds';
 import { clampStage, STAGE_MAX_SUM } from '../../game/addition';
@@ -10,7 +10,7 @@ import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
 import { isTouchDevice } from '../../settings/useSettings';
-import { activeMission, useProfiles } from '../../profiles/useProfiles';
+import { useProfiles } from '../../profiles/useProfiles';
 import { colorForLevel } from '../scene/palette';
 import GradientText from '../reactbits/GradientText';
 import { DEV_SOLVE_EVENT } from '../../dev/devMode';
@@ -69,7 +69,7 @@ function trafficNumbers(mission: Mission, stage: 1 | 2 | 3): number[] {
 export function SpaceTraffic({ onDone, onBurst }: Props) {
   const t = useT();
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
-  const run = useMemo(() => buildTraffic(useGameStore.getState().progress, activeMission()), []);
+  const run = useMemo(() => buildTraffic(useGameStore.getState().progress, roundOp()), []);
   const adding = run.mission === 'add';
   const sym = OP_SYMBOL[run.mission];
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);

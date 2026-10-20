@@ -1,5 +1,6 @@
 import { EclipseScene, GOLD, hex, mix, PINK, type Point, type RGB } from '../arrival/eclipse';
 import { glow, PILOT_CANOPY, PILOT_ENGINES, rearShipSvg, rgba, sprite } from '../traffic/trafficArt';
+import { pickOp, type PilotMission } from '../../game/mission';
 
 // The Black Sun's sky, on one canvas (after Monster Sun's arrival,
 // arrival/eclipse.ts, which it extends: the same eclipse, the same ship
@@ -248,7 +249,7 @@ export class BlackSunScene extends EclipseScene {
   t = 0;
   private jobs: Array<{ at: number; fn: () => void }> = [];
   private stage: Stage = 'arrive';
-  private readonly mission: 'mul' | 'add';
+  private readonly mission: PilotMission;
   private readonly shipSvg = rearShipSvg();
   private readonly canopy?: { emoji: string; x: number; y: number; radius: number };
 
@@ -309,7 +310,7 @@ export class BlackSunScene extends EclipseScene {
   private flash = 0;
   private burstNumbers: Array<{ text: string; color: string; a: number; v: number; spin: number; size: number }> = [];
 
-  constructor(calm: boolean, mission: 'mul' | 'add', avatar?: string) {
+  constructor(calm: boolean, mission: PilotMission, avatar?: string) {
     super(calm);
     this.mission = mission;
     this.canopy = avatar ? { emoji: avatar, ...PILOT_CANOPY } : undefined;
@@ -1815,10 +1816,10 @@ function newParticle(rho: number, turn: number) {
   return { rho, theta, span: 0.1 + Math.random() * 0.25, width: 0.5 + Math.random() * 1.6, phase: Math.random() * TAU };
 }
 
-function numberText(mission: 'mul' | 'add'): string {
+function numberText(mission: PilotMission): string {
   const r = (n: number) => Math.floor(Math.random() * n);
   if (Math.random() < 0.2) return String(r(10));
-  return mission === 'add' ? String(2 + r(60)) : String((1 + r(10)) * (1 + r(10)));
+  return pickOp(mission) === 'add' ? String(2 + r(60)) : String((1 + r(10)) * (1 + r(10)));
 }
 
 function blast(x: number, y: number, born: number, life: number, size: number, color: string, sparks: number): Blast {

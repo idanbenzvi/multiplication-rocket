@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useBossStore } from '../../game/useBossStore';
 import { CHECKPOINT_EVERY, fireballFlightMs, RUN_TO_WIN, type BossQuestion } from '../../game/blackSun';
 import { distractors } from '../../game/distractors';
-import { missionOfKey, OP_SYMBOL } from '../../game/mission';
+import { missionOfKey, OP_SYMBOL, type PilotMission } from '../../game/mission';
 import { activeProfile, pilotName, useMission, useProfiles } from '../../profiles/useProfiles';
 import { isTouchDevice } from '../../settings/useSettings';
 import { usePause } from '../../game/gameClock';
@@ -642,7 +642,7 @@ function Intro({ card, onFight }: { card: ArrivalCard; onFight: () => void }) {
 
 // ---------- the finale's card ----------
 
-function Admiral({ name, avatar, mission, onAgain }: { name: string; avatar?: string; mission: 'mul' | 'add'; onAgain: () => void }) {
+function Admiral({ name, avatar, mission, onAgain }: { name: string; avatar?: string; mission: PilotMission; onAgain: () => void }) {
   const t = useT();
   const fight = useBossStore((s) => s.fight);
   return (
@@ -666,7 +666,7 @@ function Admiral({ name, avatar, mission, onAgain }: { name: string; avatar?: st
           </GradientText>
         </motion.h2>
         <motion.div className="boss-admiral-sub" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.6 }}>
-          <ShinyText text={mission === 'add' ? t.boss.admiralSubAdd : t.boss.admiralSub} color="#ffe6a0" shineColor="#ffffff" speed={2.4} />
+          <ShinyText text={mission === 'add' ? t.boss.admiralSubAdd : mission === 'mix' ? t.boss.admiralSubMix : t.boss.admiralSub} color="#ffe6a0" shineColor="#ffffff" speed={2.4} />
         </motion.div>
         <motion.div className="boss-admiral-name" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}>
           <span className="boss-admiral-avatar">{avatar}</span>

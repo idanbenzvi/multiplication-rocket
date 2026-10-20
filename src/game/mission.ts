@@ -1,14 +1,39 @@
-// A pilot's mission: multiplication (the times tables) or addition (sums to
-// 10, then 20, then 100). Each pilot picks one, and each mission keeps its
-// own progress (see storage/progressStore.ts). A fact key says which mission
-// it belongs to: "3x7" is multiplication, "3+4" and the addition kinds
-// ("2d+1d:c", see addition.ts) are addition. See docs/plans/2026-10-13-addition.md.
+// A pilot's mission: multiplication (the times tables), addition (sums to
+// 10, then 20, then 100), or both mixed. Each pilot picks one, and each
+// mission keeps its own progress (see storage/progressStore.ts). A fact key
+// says which operation it belongs to: "3x7" is multiplication, "3+4" and the
+// addition kinds ("2d+1d:c", see addition.ts) are addition. See
+// docs/plans/2026-10-13-addition.md and docs/plans/2026-10-20-mixed.md.
 
+/** an operation: what a fact, a question or a bonus round is (and the missions that are just one) */
 export type Mission = 'mul' | 'add';
 
 export const MISSIONS: Mission[] = ['mul', 'add'];
 
+/** what a pilot practises: one operation, or both mixed (each question either one, at random) */
+export type PilotMission = Mission | 'mix';
+
+export const PILOT_MISSIONS: PilotMission[] = ['mul', 'add', 'mix'];
+
 export const OP_SYMBOL: Record<Mission, string> = { mul: '×', add: '+' };
+
+/** a pilot's mission at a glance */
+export const MISSION_SYMBOL: Record<PilotMission, string> = { mul: '×', add: '+', mix: '×+' };
+
+/** the operations a pilot's mission practises */
+export function opsOf(mission: PilotMission): Mission[] {
+  return mission === 'mix' ? ['mul', 'add'] : [mission];
+}
+
+/** whether a fact (by its key) is one this mission practises */
+export function covers(mission: PilotMission, key: string): boolean {
+  return opsOf(mission).includes(missionOfKey(key));
+}
+
+/** the operation for one question or one bonus round: a mixed mission's is picked at random */
+export function pickOp(mission: PilotMission, rand: () => number = Math.random): Mission {
+  return mission === 'mix' ? (rand() < 0.5 ? 'mul' : 'add') : mission;
+}
 
 export function missionOfKey(key: string): Mission {
   return key.includes('+') ? 'add' : 'mul';

@@ -276,10 +276,10 @@ function App() {
         }}
       >
         <div className="hud-logo">
-          🚀 <ShinyText text={mission === 'add' ? t.logoAdd : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
+          🚀 <ShinyText text={mission === 'add' ? t.logoAdd : mission === 'mix' ? t.logoMix : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
-        {!crewActive && <LevelBanner level={displayLevel} stage={mission === 'add' ? clampStage(progress.stage) : undefined} />}
+        {!crewActive && <LevelBanner level={displayLevel} stage={mission !== 'mul' ? clampStage(progress.stage) : undefined} />}
         <div className="hud-topbar-right">
           {/* solo pilot's own things: the crew bar shows both pilots instead */}
           {!crewActive && <PilotButton />}
@@ -316,7 +316,12 @@ function App() {
       <StudioSplash />
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
-        (mission === 'add' ? <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} /> : <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />)}
+        // (on a mixed mission, the Academy for the kind of question showing)
+        ((mission === 'mix' ? missionOfKey(question?.fact.key ?? '') : mission) === 'add' ? (
+          <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} />
+        ) : (
+          <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />
+        ))}
       <PauseController />
       {DEV_MODE && <DevPanel />}
 

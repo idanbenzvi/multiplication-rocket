@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../../i18n/useLang';
-import { factLabel, type Strings } from '../../i18n/strings';
+import { factLabel, missionName, type Strings } from '../../i18n/strings';
 import { missionOf, pilotName, progressKeyFor, useProfiles } from '../../profiles/useProfiles';
-import { MISSIONS, missionOfKey, OP_SYMBOL, type Mission } from '../../game/mission';
+import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../../game/mission';
 import { readLog } from '../../stats/answerLog';
 import { computeDashboard, type Day, type PeriodStats, type Range } from '../../stats/metrics';
 import type { Progress } from '../../game/types';
@@ -63,7 +63,7 @@ export function ParentGate({ onPass, onCancel }: { onPass: () => void; onCancel:
 const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
 const secs = (ms: number | null) => (ms === null ? '–' : (ms / 1000).toFixed(1));
 
-function readProgress(id: string, mission: Mission): Progress | null {
+function readProgress(id: string, mission: PilotMission): Progress | null {
   try {
     const raw = localStorage.getItem(progressKeyFor(id, mission));
     return raw ? (JSON.parse(raw) as Progress) : null;
@@ -162,7 +162,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
   const [pilotId, setPilotId] = useState(activeId ?? profiles[0]?.id ?? '');
   const [range, setRange] = useState<Range>(7);
   // each mission has its own progress: the pilot's current one to start with
-  const [mission, setMission] = useState<Mission>(() => missionOf(pilotId));
+  const [mission, setMission] = useState<PilotMission>(() => missionOf(pilotId));
   const pickPilot = (id: string) => {
     setPilotId(id);
     setMission(missionOf(id));
@@ -170,7 +170,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
 
   const dash = useMemo(() => {
     const progress = readProgress(pilotId, mission);
-    const log = readLog(pilotId).filter((e) => missionOfKey(e.fact) === mission);
+    const log = readLog(pilotId).filter((e) => e.mission === mission);
     return computeDashboard(log, progress?.mastery ?? {}, range, Date.now(), mission);
   }, [pilotId, range, mission]);
   const cur: PeriodStats = dash.current;
@@ -206,9 +206,9 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <div className="pd-pills" role="radiogroup" aria-label="mission">
-            {MISSIONS.map((m) => (
+            {PILOT_MISSIONS.map((m) => (
               <button key={m} type="button" role="radio" aria-checked={mission === m} className={`pd-pill ${mission === m ? 'is-on' : ''}`} onClick={() => setMission(m)}>
-                {OP_SYMBOL[m]} {m === 'add' ? all.missionAdd : all.missionMul}
+                {MISSION_SYMBOL[m]} {missionName(all, m)}
               </button>
             ))}
           </div>
