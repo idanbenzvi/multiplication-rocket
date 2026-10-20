@@ -951,6 +951,11 @@ class App {
       antialias: false,
       alpha: true
     });
+    // Local change: no use going on without a working context (EffectComposer reads its attributes): see createApp
+    if (!this.usable()) {
+      this.renderer.dispose();
+      throw new Error('Hyperspeed: no WebGL context');
+    }
     this.renderer.setSize(initW, initH, false);
     // Local change: cap at 1.5x so retina tablets/phones don't render 4-9x the pixels.
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -1016,6 +1021,16 @@ class App {
       this.sizeDirty = true;
     });
     this.resizeObserver.observe(container);
+  }
+
+  /**
+   * Local change: whether the renderer has a working WebGL context. A device
+   * that's run out of them (iPads keep only so many at once) or one that has
+   * lost it has none, and the composer can't be built or used on it.
+   */
+  usable(): boolean {
+    const gl = this.renderer.getContext();
+    return !gl.isContextLost() && gl.getContextAttributes() !== null;
   }
 
   /** Local change: the container's new size, read once after it changes */
@@ -1096,6 +1111,8 @@ class App {
 
   /** Local change: everything but running (built ahead of time off the page by prepareHyperspeed, started when shown) */
   build() {
+    // (the context can be lost between being made and being used)
+    if (!this.usable()) throw new Error('Hyperspeed: the WebGL context was lost');
     this.initPasses();
     const options = this.options;
     this.road.init();
@@ -1270,7 +1287,8 @@ class App {
     // reallocated all its buffers.)
     if (this.sizeDirty) this.applySize();
 
-    if (this.hasValidSize) {
+    // Local change: nothing to draw on while the context is lost (it may come back)
+    if (this.hasValidSize && !this.renderer.getContext().isContextLost()) {
       this.timer.update();
       const delta = this.timer.getDelta();
       this.render(delta);
@@ -1295,22 +1313,54 @@ function resolveOptions(effectOptions: Partial<HyperspeedOptions>): HyperspeedOp
   return options;
 }
 
+/**
+ * Local change: a Hyperspeed, or null when the device can't give it a WebGL
+ * context (it's run out of them, or lost the one it had). It's only a
+ * backdrop: without it, whatever it was behind (the launch screen's card)
+ * just shows over the dimmed game.
+ */
+function createApp(container: HTMLElement, options: HyperspeedOptions): App | null {
+  try {
+    return new App(container, options);
+  } catch {
+    return null;
+  }
+}
+
+/** Local change: builds and starts it once its assets are in, or gives it up if that fails (the context gone by then) */
+function launch(app: App) {
+  app
+    .loadAssets()
+    .then(() => {
+      if (!app.disposed) app.init();
+    })
+    .catch(() => app.dispose());
+}
+
 // Local change: one Hyperspeed can be built ahead of time, off the page, with
 // its shaders compiled in the background, so it opens without a stall (the
 // launch screen's: see launchWarp.ts). The next Hyperspeed with the same
-// options takes it over, moving its container in and starting it.
+// options takes it over, moving its container in and starting it. If building
+// it fails, it's given up, and the next one is built when it's shown.
 let warm: { effectOptions: Partial<HyperspeedOptions>; app: App; container: HTMLDivElement; ready: Promise<void> } | null = null;
 
 export function prepareHyperspeed(effectOptions: Partial<HyperspeedOptions>) {
   if (warm) return;
   const container = document.createElement('div');
   container.style.cssText = 'width: 100%; height: 100%;';
-  const app = new App(container, resolveOptions(effectOptions));
-  const ready = app.loadAssets().then(() => {
-    if (app.disposed) return;
-    app.build();
-    return app.compileAhead();
-  });
+  const app = createApp(container, resolveOptions(effectOptions));
+  if (!app) return;
+  const ready = app
+    .loadAssets()
+    .then(() => {
+      if (app.disposed) return;
+      app.build();
+      return app.compileAhead();
+    })
+    .catch(() => {
+      app.dispose();
+      if (warm?.app === app) warm = null;
+    });
   warm = { effectOptions, app, container, ready };
 }
 
@@ -1334,7 +1384,7 @@ const Hyperspeed: FC<HyperspeedProps> = ({ effectOptions = DEFAULT_EFFECT_OPTION
     if (!container) return;
 
     // built ahead of time: move it in and start it (once its shaders are in)
-    if (warm && warm.effectOptions === effectOptions) {
+    if (warm && warm.effectOptions === effectOptions && !warm.app.disposed) {
       const ready = warm;
       warm = null;
       container.appendChild(ready.container);
@@ -1343,9 +1393,9 @@ const Hyperspeed: FC<HyperspeedProps> = ({ effectOptions = DEFAULT_EFFECT_OPTION
         if (!ready.app.disposed) ready.app.start();
       });
     } else {
-      const myApp = new App(container, resolveOptions(effectOptions));
+      const myApp = createApp(container, resolveOptions(effectOptions));
       appRef.current = myApp;
-      myApp.loadAssets().then(myApp.init);
+      if (myApp) launch(myApp);
     }
 
     return () => {
