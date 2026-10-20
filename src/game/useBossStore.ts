@@ -66,8 +66,8 @@ export const useBossStore = create<BossStore>((set, get) => ({
 
   openBoss: () => {
     pauseGame('boss');
-    // the monster sun's soundtrack, from the tap (browsers only start music from one)
-    playTrack('sun');
+    // its own soundtrack, from the tap (browsers only start music from one)
+    playTrack('boss');
     const record = saveBossRecord(useProfiles.getState().activeId, activeMission(), { seen: true });
     set({ open: true, phase: 'intro', fight: newFight(), question: null, record });
   },
@@ -86,7 +86,7 @@ export const useBossStore = create<BossStore>((set, get) => ({
   },
 
   again: () => {
-    playTrack('sun');
+    playTrack('boss');
     set({ phase: 'fight', fight: newFight(), question: null });
   },
 

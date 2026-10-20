@@ -409,8 +409,8 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 ## Sound
 
 The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
-(and the Black Sun's fight) has its own soundtrack, *The Final Lap*; a crew flight (and the Space
-Admiral's finale) plays *The View From Higher Ground*; and the
+has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; the
+Black Sun, the final boss, plays *The View from the Last Lap*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to
 whatever was playing when it closes. Click 🔊 in the top bar (or use the throttles in the cockpit)
 for separate **music** and **sound-effect** volume (all the way down = off). The

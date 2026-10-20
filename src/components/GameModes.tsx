@@ -99,8 +99,8 @@ export function GameModesButton() {
       disabled: !boss.unlocked,
       start: (card: Element) => {
         setLeave('warp');
-        // the monster sun's soundtrack starts with the warp, from the tap
-        playTrack('sun');
+        // its own soundtrack starts with the warp, from the tap
+        playTrack('boss');
         flyOffTo(() => useBossStore.getState().openBoss(), card);
       },
     },

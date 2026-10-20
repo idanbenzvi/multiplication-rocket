@@ -47,7 +47,7 @@ export function DevPanel() {
       key: 'X',
       label: 'The Black Sun (final boss)',
       run: () => {
-        playTrack('sun');
+        playTrack('boss');
         flyOffTo(() => useBossStore.getState().openBoss());
       },
     },

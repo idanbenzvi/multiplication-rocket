@@ -7,19 +7,22 @@ const DEFAULT_MUSIC = 0.35;
 const DEFAULT_EFFECTS = 0.7;
 
 // The soundtracks: the theme; Monster Sun's own while that mode is open; The
-// View From Higher Ground on a crew flight; and Velvet Horizon while the About
-// page is open. One plays at a time, at the music volume. Paths are relative to the page, so they resolve both on a web
+// View From Higher Ground on a crew flight; The View from the Last Lap against
+// the Black Sun, the final boss; and Velvet Horizon while the About page is
+// open. One plays at a time, at the music volume. Paths are relative to the page, so they resolve both on a web
 // server and from the Electron app's file:// URL.
-export type Track = 'theme' | 'sun' | 'crew' | 'about';
+export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
   crew: new Audio('./audio/view-from-higher-ground.mp3'),
+  boss: new Audio('./audio/view-from-the-last-lap.mp3'),
   about: new Audio('./audio/velvet-horizon.mp3'),
 };
-// only fetched when someone opens Monster Sun, a crew flight or the About page
+// only fetched when someone opens Monster Sun, a crew flight, the Black Sun or the About page
 tracks.sun.preload = 'none';
 tracks.crew.preload = 'none';
+tracks.boss.preload = 'none';
 tracks.about.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
 let current: Track = 'theme';

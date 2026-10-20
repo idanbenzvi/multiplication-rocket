@@ -285,8 +285,6 @@ function BossOverlay() {
     scene.cure(() => {
       setAdmiral(true);
       sfx.admiral();
-      // the finale's music (a crew flight's): uplifting
-      playTrack('crew');
     });
     scene.after(0.45, () => sfx.shatter());
     scene.after(1.5, () => sfx.sunrise());
