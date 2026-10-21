@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { progressKeyFor, useProfiles, type Profile } from '../profiles/useProfiles';
 
 // Keeping progress safe (docs/plans/2026-10-20-spaced-review.md). Everything
@@ -127,15 +128,31 @@ function dateStamp(at: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** the Android app: the file written to the app's cache and handed to Android's share sheet (Drive, Files, Mail…) */
+async function shareFromApp(name: string, json: string): Promise<boolean> {
+  const [{ Directory, Encoding, Filesystem }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')]);
+  const { uri } = await Filesystem.writeFile({ path: name, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
+  try {
+    await Share.share({ title: name, files: [uri] });
+    return true;
+  } catch {
+    // the share sheet was closed without sending it anywhere
+    return false;
+  }
+}
+
+/** the Android app, where the game's storage is the app's own (it stays until the app is uninstalled) */
+export const IN_APP = Capacitor.isNativePlatform();
+
 /**
- * Saves a backup file: on a phone or tablet through the share sheet (Save to
- * Files, AirDrop, Mail…), elsewhere as a download. False if it was cancelled.
- * Call it straight from a tap: sharing needs one.
+ * Saves a backup file: in the Android app and on a phone or tablet through
+ * the share sheet (Save to Files, Drive, AirDrop, Mail…), elsewhere as a
+ * download. False if it was cancelled. Call it straight from a tap: sharing
+ * needs one.
  */
 export async function saveBackupFile(): Promise<boolean> {
   const backup = makeBackup();
   const name = `${GAME}-backup-${dateStamp(backup.savedAt)}.json`;
-  const file = new File([JSON.stringify(backup)], name, { type: 'application/json' });
   const saved = () => {
     try {
       localStorage.setItem(SAVED_AT_KEY, String(backup.savedAt));
@@ -144,6 +161,8 @@ export async function saveBackupFile(): Promise<boolean> {
     }
     return true;
   };
+  if (IN_APP) return (await shareFromApp(name, JSON.stringify(backup))) && saved();
+  const file = new File([JSON.stringify(backup)], name, { type: 'application/json' });
   if (window.matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });

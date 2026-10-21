@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "io.github.idanbenzvi.multiplicationrocket"
+    namespace = "com.falcondeergames.multiplicationrocket"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "io.github.idanbenzvi.multiplicationrocket"
+        applicationId "com.falcondeergames.multiplicationrocket"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -4409,6 +4409,17 @@ button:focus-visible {
     padding: 1.6rem 1.25rem 1.4rem;
   }
 }
+.about-contact {
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+  color: #c9c3e0;
+}
+.about-email {
+  font-weight: 700;
+  color: #ffd77a;
+  user-select: text;
+  -webkit-user-select: text;
+}
 .about-inline-link {
   color: #ffb37a;
   font-weight: 700;

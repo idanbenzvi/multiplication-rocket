@@ -6,6 +6,7 @@ import { MISSION_SYMBOL } from '../../game/mission';
 import {
   backupPilots,
   backupPilotStats,
+  IN_APP,
   inIosBrowser,
   lastBackupAt,
   parseBackup,
@@ -44,7 +45,7 @@ export function BackupCard() {
   return (
     <section className="pd-card pd-backup">
       <h3 className="pd-card-title">{t.title}</h3>
-      <p className="pd-backup-intro">{t.intro}</p>
+      <p className="pd-backup-intro">{IN_APP ? t.introApp : t.intro}</p>
       <div className="pd-backup-buttons">
         <button type="button" className="pd-button is-primary" onClick={save}>
           {t.save}
@@ -54,7 +55,7 @@ export function BackupCard() {
         </button>
       </div>
       <p className="pd-muted">{justSaved ? t.saved : last ? t.lastSaved(dateOf(last)) : t.never}</p>
-      {kept !== null && <p className="pd-muted">{kept ? t.kept : t.notKept}</p>}
+      {kept !== null && !IN_APP && <p className="pd-muted">{kept ? t.kept : t.notKept}</p>}
       {inIosBrowser() && <p className="pd-backup-tip">{t.iosTip}</p>}
       {restoring && <RestoreDialog onClose={() => setRestoring(false)} />}
     </section>

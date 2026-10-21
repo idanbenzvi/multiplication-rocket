@@ -387,6 +387,7 @@ const en = {
     game2: "Behind the fun, the game keeps track of which facts are still tricky and brings them back more often, so practice goes where it's needed. It's free, has no ads, and everything stays on your device.",
     closing: 'I hope you enjoy this game, and always enjoy your curiosity (or at least try to 😉).',
     thanks: 'Thanks to my two wonderful personal multipliers for the inspiration and the spirit. 💛',
+    contact: 'Questions, ideas or a kind word? Write to us:',
     studioAlt: 'Our game studio logo: a winged deer leaping into the sky',
     close: 'Close',
   },
@@ -477,6 +478,7 @@ const en = {
   backup: {
     title: '💾 Backup',
     intro: 'Progress is saved in this browser only. Save a backup file now and then, to restore it here or on another device.',
+    introApp: 'Progress is saved in this app, on this device only (uninstalling the app deletes it). Save a backup file now and then, to Drive, Files or Mail, to restore it here or on another device.',
     save: '💾 Save a backup',
     restore: '📂 Restore from a backup',
     lastSaved: (date: string) => `Last backup: ${date}`,
@@ -1233,6 +1235,7 @@ const he: Strings = {
     game2: 'מאחורי הכיף, המשחק עוקב אחרי התרגילים שעדיין קשים ומחזיר אותם לעיתים קרובות יותר, כך שהתרגול מגיע לאן שצריך. המשחק חינמי, בלי פרסומות, והכול נשמר רק במכשיר שלכם.',
     closing: 'אני מקווה שתיהנו מהמשחק, ושתמיד תיהנו מהסקרנות שלכם (או לפחות תנסו 😉).',
     thanks: 'תודה לשני המכפילים האישיים והנפלאים שלי על ההשראה ועל הרוח. 💛',
+    contact: 'שאלות, רעיונות או מילה טובה? כתבו לנו:',
     studioAlt: 'הלוגו של סטודיו המשחקים שלנו: אייל מכונף שמזנק לשמיים',
     close: 'סגירה',
   },
@@ -1323,6 +1326,7 @@ const he: Strings = {
   backup: {
     title: '💾 גיבוי',
     intro: 'ההתקדמות נשמרת רק בדפדפן הזה. כדאי לשמור קובץ גיבוי מדי פעם, כדי לשחזר אותו כאן או במכשיר אחר.',
+    introApp: 'ההתקדמות נשמרת באפליקציה, במכשיר הזה בלבד (הסרת האפליקציה מוחקת אותה). כדאי לשמור קובץ גיבוי מדי פעם, ב־Drive, בקבצים או במייל, כדי לשחזר אותו כאן או במכשיר אחר.',
     save: '💾 שמירת גיבוי',
     restore: '📂 שחזור מגיבוי',
     lastSaved: (date) => `גיבוי אחרון: ${date}`,

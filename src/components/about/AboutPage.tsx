@@ -4,6 +4,9 @@ import { motion } from 'motion/react';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { useLang, useT } from '../../i18n/useLang';
 import { CycleScene } from './CycleScene';
+import { IN_APP } from '../../storage/backup';
+
+const CONTACT_EMAIL = 'falcondeergames@gmail.com';
 import { useBack } from '../../native/back';
 
 // About the maker and the game, over a colour-cycling pixel-art canyon
@@ -61,6 +64,17 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
           <p>{t.closing}</p>
           <p>{t.thanks}</p>
         </div>
+        {/* (in the Android app it's plain text, to copy: a child's tap doesn't leave the game for the mail app) */}
+        <p className="about-contact">
+          {t.contact}{' '}
+          {IN_APP ? (
+            <bdi dir="ltr" className="about-email">{CONTACT_EMAIL}</bdi>
+          ) : (
+            <a className="about-inline-link about-email" href={`mailto:${CONTACT_EMAIL}`} dir="ltr">
+              {CONTACT_EMAIL}
+            </a>
+          )}
+        </p>
       </motion.div>
     </motion.div>,
     document.body,
