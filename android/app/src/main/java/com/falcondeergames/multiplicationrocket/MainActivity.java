@@ -9,11 +9,14 @@ import com.getcapacitor.BridgeActivity;
 // The game, fullscreen: the status and navigation bars stay hidden (a swipe
 // from the edge shows them for a moment), and are hidden again whenever the
 // game comes back to the front, after the keyboard, a dialog or another app.
+// Its text is the size the game lays it out at, whatever the device's font
+// size setting (the game's own sizes already follow the screen).
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getBridge().getWebView().getSettings().setTextZoom(100);
         hideSystemBars();
     }
 

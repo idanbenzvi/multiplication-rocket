@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- the app's name on a Hebrew device: the game's Hebrew name -->
+<resources>
+    <string name="app_name">טיל הכפל</string>
+    <string name="title_activity_main">טיל הכפל</string>
+</resources>

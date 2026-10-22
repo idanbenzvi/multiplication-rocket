@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// the game's version, from its package.json
+def gameVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+
 android {
     namespace = "com.falcondeergames.multiplicationrocket"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +10,9 @@ android {
         applicationId "com.falcondeergames.multiplicationrocket"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // the game's version (package.json), as Play wants it: 1.7.1 → code 10701
+        versionCode gameVersion.split('\\.').collect { it as int }.inject(0) { code, part -> code * 100 + part }
+        versionName gameVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

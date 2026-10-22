@@ -11,8 +11,10 @@ import { useT } from '../i18n/useLang';
 // where it left off.
 export function PauseController() {
   const t = useT();
-  // only leaving the game shows this screen (the Academy pauses silently)
+  // only leaving the game shows this screen (the Academy pauses silently), and
+  // not over a screen of its own (the cockpit, the parents' dashboard, a mode)
   const paused = usePause((s) => s.away);
+  const held = usePause((s) => s.held);
 
   useEffect(() => {
     const pause = () => {
@@ -33,23 +35,38 @@ export function PauseController() {
 
   useEffect(() => {
     if (!paused) return;
-    const resume = (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
+    const carryOn = () => {
       resumeGame('away');
       resumeSfx();
       resumeMusic();
     };
+    const resume = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      carryOn();
+    };
+    // Back from a moment away while a screen of its own was open (a parent
+    // sharing a backup or picking one from the dashboard, a peek at another
+    // app from the cockpit): no card to tap through, it simply carries on.
+    const returned = () => {
+      if (document.visibilityState !== 'hidden' && usePause.getState().held) carryOn();
+    };
     // capture phase, so the resuming tap/key doesn't also answer a question
     window.addEventListener('pointerdown', resume, true);
     window.addEventListener('keydown', resume, true);
+    document.addEventListener('visibilitychange', returned);
+    window.addEventListener('focus', returned);
+    window.addEventListener('pageshow', returned);
     return () => {
       window.removeEventListener('pointerdown', resume, true);
       window.removeEventListener('keydown', resume, true);
+      document.removeEventListener('visibilitychange', returned);
+      window.removeEventListener('focus', returned);
+      window.removeEventListener('pageshow', returned);
     };
   }, [paused]);
 
-  if (!paused) return null;
+  if (!paused || held) return null;
   return (
     <div className="pause-overlay" role="dialog" aria-label={t.pausedTitle}>
       <div className="pause-card">

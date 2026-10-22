@@ -52,14 +52,19 @@ export function AboutPage({ onClose }: { onClose: () => void }) {
         <p>{t.me}</p>
         <p>
           {t.loomBefore}
-          <a className="about-inline-link" href={t.loomUrl} target="_blank" rel="noreferrer" dir="ltr">
-            Loom
-          </a>
+          {/* (no link out of the Android app: a child's tap stays in the game) */}
+          {IN_APP ? (
+            <bdi dir="ltr">Loom</bdi>
+          ) : (
+            <a className="about-inline-link" href={t.loomUrl} target="_blank" rel="noreferrer" dir="ltr">
+              Loom
+            </a>
+          )}
           {t.loomAfter}
         </p>
         <h3>{t.gameTitle}</h3>
         <p>{t.game1}</p>
-        <p>{t.game2}</p>
+        <p>{IN_APP ? t.game2App : t.game2}</p>
         <div className="about-closing">
           <p>{t.closing}</p>
           <p>{t.thanks}</p>

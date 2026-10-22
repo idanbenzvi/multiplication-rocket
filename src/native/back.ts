@@ -37,10 +37,19 @@ export function goBack(): boolean {
   return true;
 }
 
-/** in the Android app, the Back button closes what's open, or sends the app to the background */
+/**
+ * In the Android app: the Back button closes what's open, or sends the app
+ * to the background; and the app going to the background (Back, Home, a
+ * call, the screen locking) pauses the game, as leaving a browser tab does,
+ * and coming back is told too (PauseController listens for pagehide and
+ * pageshow; a WebView doesn't always say it's hidden or shown).
+ */
 export function listenForBack() {
   if (!Capacitor.isNativePlatform()) return;
   void App.addListener('backButton', () => {
     if (!goBack()) void App.minimizeApp();
+  });
+  void App.addListener('appStateChange', ({ isActive }) => {
+    window.dispatchEvent(new Event(isActive ? 'pageshow' : 'pagehide'));
   });
 }
