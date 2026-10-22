@@ -45,6 +45,82 @@ function volume(): number {
   return useAudio.getState().effectsVolume;
 }
 
+// ---------- the engine's hum, heard through the rocket's window ----------
+// A steady drone (where everything else here is a one-off): low detuned
+// saws beating against each other, an octave above and a sub below, through
+// a lowpass, throbbing gently. engineHum() eases it to a level; the closer
+// it gets (the louder), the higher, brighter and more open it sounds.
+
+interface Hum {
+  out: GainNode;
+  tone: BiquadFilterNode;
+  oscs: OscillatorNode[];
+}
+let hum: Hum | null = null;
+
+function startHum(c: AudioContext): Hum {
+  const out = c.createGain();
+  out.gain.value = 0.0001;
+  const tone = c.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.frequency.value = 240;
+  tone.Q.value = 0.8;
+  // the throb: its loudness wobbling a little, four times a second
+  const throb = c.createGain();
+  const lfo = c.createOscillator();
+  lfo.frequency.value = 4.2;
+  const depth = c.createGain();
+  depth.gain.value = 0.2;
+  lfo.connect(depth).connect(throb.gain);
+  const voices: Array<[number, OscillatorType, number]> = [
+    [55, 'sawtooth', 0.5],
+    [55.8, 'sawtooth', 0.5],
+    [110, 'triangle', 0.3],
+    [27.5, 'sine', 0.9],
+  ];
+  const oscs = voices.map(([freq, type, level]) => {
+    const osc = c.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const g = c.createGain();
+    g.gain.value = level;
+    osc.connect(g).connect(tone);
+    return osc;
+  });
+  tone.connect(throb).connect(out).connect(c.destination);
+  const t = c.currentTime;
+  for (const osc of [...oscs, lfo]) osc.start(t);
+  return { out, tone, oscs: [...oscs, lfo] };
+}
+
+/**
+ * The engine's hum at `level` (0 off … 1 its loudest), easing there over
+ * `seconds`; at 0 it fades out and stops.
+ */
+export function engineHum(level: number, seconds = 0.35) {
+  const c = audio();
+  if (!c) return;
+  const t = c.currentTime;
+  const ramp = (p: AudioParam, v: number) => {
+    p.cancelScheduledValues(t);
+    p.setValueAtTime(p.value, t);
+    p.linearRampToValueAtTime(v, t + seconds);
+  };
+  if (level <= 0) {
+    if (!hum) return;
+    ramp(hum.out.gain, 0.0001);
+    for (const osc of hum.oscs) osc.stop(t + seconds + 0.05);
+    hum = null;
+    return;
+  }
+  if (volume() === 0) return;
+  hum ??= startHum(c);
+  ramp(hum.out.gain, 0.12 * level ** 1.4 * volume());
+  ramp(hum.tone.frequency, 240 + 760 * level);
+  // (the sub and the throb's own oscillator rise with the rest: a fifth higher at its loudest)
+  for (const osc of hum.oscs) ramp(osc.detune, 1200 * Math.log2(1 + 0.25 * level));
+}
+
 // Major pentatonic, in semitones above C5 — every combination sounds happy.
 const PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
 const C5 = 523.25;
