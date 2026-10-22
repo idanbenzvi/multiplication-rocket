@@ -1,0 +1,294 @@
+/* ==================== THE SHIP'S COMPUTER (ShipComputer.tsx) ==================== */
+
+/* the orb beside the rocket (moved by transform each frame, to keep to it) */
+.ship-computer-orb {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  animation: computerArrive 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes computerArrive {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+.ship-computer-orb-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  /* breathing, to say "tap me" */
+  animation: computerBreathe 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(106, 215, 255, 0.45));
+}
+.ship-computer-orb.is-open .ship-computer-orb-button {
+  animation: none;
+  filter: drop-shadow(0 0 22px rgba(156, 67, 254, 0.75));
+}
+@keyframes computerBreathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.08;
+  }
+}
+.ship-computer-orb-button .orb-container {
+  border-radius: 50%;
+}
+.ship-computer-orb-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.7rem;
+  color: #f3eaff;
+  text-shadow: 0 0 10px rgba(156, 67, 254, 0.9);
+  pointer-events: none;
+}
+.ship-computer-orb.is-open .ship-computer-orb-face {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* "Stuck? I can help!", under the orb */
+.ship-computer-bubble {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: 150px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(156, 196, 255, 0.45);
+  border-radius: 14px;
+  background: rgba(22, 18, 52, 0.92);
+  color: #eaf6ff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.ship-computer-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  translate: -50% 0;
+  border: 7px solid transparent;
+  border-bottom-color: rgba(156, 196, 255, 0.45);
+}
+
+/* the floating window: a soft blob of glass, gently bobbing */
+.ship-computer-window {
+  position: fixed;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: min(330px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  border-radius: 30px 30px 30px 12px;
+  border: 1px solid rgba(156, 196, 255, 0.35);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(156, 67, 254, 0.28), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(76, 194, 233, 0.22), transparent 60%),
+    rgba(14, 12, 40, 0.9);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(106, 215, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #eaf2ff;
+  transform-origin: 70% 100%;
+}
+.ship-computer-window.is-right {
+  border-radius: 12px 30px 30px 30px;
+  transform-origin: 0% 50%;
+}
+.ship-computer-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.6rem 0.2rem 0.85rem;
+}
+.ship-computer-glyph {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #4cc2e9 40%, #9c43fe 80%);
+  box-shadow: 0 0 10px rgba(156, 67, 254, 0.8);
+  animation: computerBreathe 2.4s ease-in-out infinite;
+}
+.ship-computer-name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9fd4ff;
+}
+.ship-computer-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cfe4ff;
+  font-size: 0.9rem;
+}
+.ship-computer-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.1rem 0.95rem 0.5rem;
+}
+.ship-computer-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.ship-computer-step-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fff3d6;
+}
+.ship-computer-visual {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.ship-computer-visual svg {
+  max-width: 100%;
+  height: auto;
+}
+.ship-computer-text {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+.ship-computer-math {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(106, 215, 255, 0.1);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: #bff0ff;
+  text-align: center;
+  white-space: pre-wrap;
+}
+.ship-computer-try {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #ffd77a;
+  text-align: center;
+}
+.ship-computer-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem 0.65rem;
+}
+.ship-computer-nav,
+.ship-computer-read {
+  min-width: 42px;
+  height: 42px;
+  border: 1px solid rgba(156, 196, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eaf2ff;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.ship-computer-nav:disabled {
+  opacity: 0.3;
+}
+.ship-computer-read {
+  margin-inline-start: auto;
+  font-size: 1.05rem;
+}
+.ship-computer-dots {
+  display: flex;
+  gap: 5px;
+  margin: 0 0.2rem;
+}
+.ship-computer-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.2s, scale 0.2s;
+}
+.ship-computer-dots i.is-on {
+  background: #6ad7ff;
+  scale: 1.3;
+}
+
+/* ---- the pictures (ThinkVisual.tsx) ---- */
+.think-plus {
+  fill: #eaf2ff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+}
+.think-hops {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.think-hop {
+  position: relative;
+  min-width: 2.3rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(106, 215, 255, 0.16);
+  border: 1px solid rgba(106, 215, 255, 0.4);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  color: #dff6ff;
+  animation: thinkHop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.think-hop.is-todo {
+  background: rgba(255, 215, 122, 0.18);
+  border-color: rgba(255, 215, 122, 0.7);
+  color: #ffd77a;
+  box-shadow: 0 0 12px rgba(255, 215, 122, 0.35);
+}
+@keyframes thinkHop {
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+    scale: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ship-computer-orb,
+  .ship-computer-orb-button,
+  .ship-computer-glyph,
+  .think-hop {
+    animation: none;
+  }
+}

@@ -55,6 +55,13 @@ interface GameState {
   bonusRound: Exclude<BonusKind, 'wormhole'> | null;
   /** the rocket is flying off for this round, which starts once it's gone (flyAway) */
   departing: Exclude<BonusKind, 'wormhole'> | null;
+  /**
+   * the question (its askedAt) the pilot asked the ship's computer for help with
+   * (ShipComputer): its answer gets the steady boost, not the clock's, and
+   * doesn't count towards their pace or the parents' speed chart
+   */
+  helpedAt: number | null;
+  markHelped: () => void;
   /** the operation the bonus round (or wormhole) in progress is about: a mixed mission's is picked for each round */
   bonusOp: Mission;
   /** the bonus kinds still to come, in a random order (see nextBonusRound) */
@@ -172,6 +179,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   questionsSinceChallenge: 0,
   bonusRound: null,
   departing: null,
+  helpedAt: null,
+  markHelped: () => set((s) => ({ helpedAt: s.question?.askedAt ?? null })),
   bonusOp: 'mul',
   bonusQueue: [],
   bonusNonce: 0,
@@ -204,8 +213,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const level = getLevelConfig(progress.level);
 
     const nextMastery = recordAttempt(progress.mastery, question.fact.key, isCorrect);
+    // worked out with the ship's computer: not a race against the clock (no time in the log either)
+    const helped = get().helpedAt === question.askedAt;
     appendToLog(useProfiles.getState().activeId, [
-      { fact: question.fact.key, correct: isCorrect, ms: elapsedMs, source: 'question' },
+      { fact: question.fact.key, correct: isCorrect, ms: helped ? null : elapsedMs, source: 'question' },
     ]);
 
     let currentStreak = progress.currentStreak;
@@ -218,7 +229,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let launched = false;
     let stageUp = false;
     let gainPercent = 0;
-    const timed = activeTimedBoost();
+    const timed = activeTimedBoost() && !helped;
     // the clock they raced is the pace they had (this answer moves it for the next one)
     const pace = paceMs(progress.pace);
 
@@ -268,7 +279,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       {
         type: 'answer',
         correct: isCorrect,
-        fast: isCorrect && speedZone(elapsedMs, pace) === 'fast',
+        fast: isCorrect && !helped && speedZone(elapsedMs, pace) === 'fast',
         comeback: isCorrect && struggling(progress.mastery) && !struggling(nextMastery),
       },
       nextProgress,

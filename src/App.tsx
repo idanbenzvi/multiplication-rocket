@@ -5,6 +5,8 @@ import { QuestionForm } from './components/QuestionForm';
 import { FuelGauge } from './components/FuelGauge';
 import { LevelBanner } from './components/LevelBanner';
 import { StrategyHint } from './components/StrategyHint';
+import { ShipComputer } from './components/computer/ShipComputer';
+import { getStrugglingFactKeys } from './game/facts';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useT } from './i18n/useLang';
@@ -173,7 +175,10 @@ function App() {
   const handleAnswer = (value: number, elapsedMs: number) => {
     setLocked(true);
     // the pace the question was raced at (the answer moves it)
-    const pace = paceMs(useGameStore.getState().progress.pace);
+    const before = useGameStore.getState();
+    const pace = paceMs(before.progress.pace);
+    // (worked out with the ship's computer: the full celebration, not the clock's)
+    const helped = before.helpedAt === before.question?.askedAt;
     const correct = submitAnswer(value, elapsedMs);
     if (!correct) {
       sfx.wrong();
@@ -183,7 +188,7 @@ function App() {
       const { progress: after, justLaunched: launching } = useGameStore.getState();
       const streak = after.currentStreak;
       // without the clock, every right answer gets the full celebration
-      const zone = timed ? speedZone(elapsedMs, pace) : 'fast';
+      const zone = timed && !helped ? speedZone(elapsedMs, pace) : 'fast';
       const tier = streakTier(streak);
       // A launch resets the streak and plays its own sound (see the
       // justLaunched effect), so only celebrate the answer itself otherwise.
@@ -387,6 +392,15 @@ function App() {
                 paceMs={paceMs(progress.pace)}
               />
             </div>
+          )}
+          {/* stuck on it a while: the ship's computer offers to think it through */}
+          {question && !challenge && !bonusRound && !departing && !justLaunched && !showHeatmap && feedback === null && !academyOpen && (
+            <ShipComputer
+              key={question.askedAt}
+              question={question}
+              paceMs={paceMs(progress.pace)}
+              struggling={getStrugglingFactKeys(progress.mastery).includes(question.fact.key)}
+            />
           )}
 
           {justLaunched && (

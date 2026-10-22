@@ -9,6 +9,8 @@ export type Lang = 'en' | 'he';
 // arrows) are deliberately NOT in this table — they're language-neutral and
 // always rendered left-to-right, even inside the Hebrew RTL layout, which is
 // how Israeli school workbooks print them too.
+/** math kept left-to-right inside a sentence (it reads the same in the Hebrew one) */
+const ltr = (math: string) => `\u2066${math}\u2069`;
 const enemiesLeft = (n: number) => (n === 1 ? '1 enemy left' : `${n} enemies left`);
 const cannonsTooMany = (n: number) => (n === 1 ? '1 cannon too many' : `${n} cannons too many`);
 
@@ -460,6 +462,30 @@ const en = {
     close: 'Close',
   },
 
+  // the ship's computer, helping a pilot who's stuck (components/computer/ShipComputer.tsx);
+  // math in the texts is kept left-to-right with ltr()
+  computer: {
+    name: "Ship's computer",
+    stuck: 'Stuck? I can help!',
+    open: "Ask the ship's computer for help",
+    close: 'Close',
+    prev: 'Back',
+    next: 'Next',
+    read: 'Read it to me',
+    tryIt: 'Now you try! 🚀',
+    meaningMul: { title: 'What does it mean?', text: (x: number, y: number) => `${ltr(`${x} × ${y}`)} means ${x} groups of ${y}: ${x} rows, with ${y} in each.` },
+    skip: { title: 'Count in jumps', text: (by: number, jumps: number) => `Count by ${by}s: ${jumps} jumps, each one ${by} more.` },
+    trick: { title: 'A shortcut', text: 'Try it this way:' },
+    known: {
+      title: 'Start from one you know',
+      text: (p: number, q: number, known: number, add: number) => `You know ${ltr(`${p} × ${q} = ${known}`)}. Now add one more group of ${add}!`,
+    },
+    swap: { title: 'Turn it around', text: (x: number, y: number) => `${ltr(`${x} × ${y}`)} is the same as ${ltr(`${y} × ${x}`)}: ${y} rows of ${x}. If one is easier for you, use it!` },
+    meaningAdd: { title: 'Put them together', text: (x: number, y: number) => `${x} dots, and ${y} more. How many are there all together?` },
+    meaningTens: { title: 'Tens and ones', text: 'Each long bar is ten, each dot is one. Add the tens, then the ones.' },
+    countOn: { title: 'Count on', text: (big: number, small: number) => `Start at ${big}, and count ${small} more.` },
+    swapAdd: { title: 'Start with the bigger one', text: (x: number, y: number) => `${ltr(`${x} + ${y}`)} is the same as ${ltr(`${y} + ${x}`)}. Starting from ${y} is quicker!` },
+  },
   hangar: {
     title: 'Choose your ship',
     newShip: 'A new ship has landed in the hangar! 🛬',
@@ -1309,6 +1335,28 @@ const he: Strings = {
     close: 'סגירה',
   },
 
+  computer: {
+    name: 'מחשב החללית',
+    stuck: 'נתקעתם? אני יכול לעזור!',
+    open: 'לבקש עזרה ממחשב החללית',
+    close: 'סגירה',
+    prev: 'הקודם',
+    next: 'הבא',
+    read: 'הקראה',
+    tryIt: 'עכשיו תורכם! 🚀',
+    meaningMul: { title: 'מה זה אומר?', text: (x, y) => `${ltr(`${x} × ${y}`)} זה ${x} קבוצות של ${y}: ${x} שורות, ובכל אחת ${y}.` },
+    skip: { title: 'סופרים בקפיצות', text: (by, jumps) => `סופרים ב־${by}: ${jumps} קפיצות, כל אחת עוד ${by}.` },
+    trick: { title: 'קיצור דרך', text: 'נסו כך:' },
+    known: {
+      title: 'מתחילים ממה שכבר יודעים',
+      text: (p, q, known, add) => `אתם יודעים ש־${ltr(`${p} × ${q} = ${known}`)}. עכשיו מוסיפים עוד קבוצה אחת של ${add}!`,
+    },
+    swap: { title: 'הופכים את הסדר', text: (x, y) => `${ltr(`${x} × ${y}`)} זה כמו ${ltr(`${y} × ${x}`)}: ${y} שורות של ${x}. אם אחד מהם קל לכם יותר, השתמשו בו!` },
+    meaningAdd: { title: 'מחברים יחד', text: (x, y) => `${x} נקודות, ועוד ${y}. כמה יש בסך הכול?` },
+    meaningTens: { title: 'עשרות ואחדות', text: 'כל מקל ארוך הוא עשר, כל נקודה היא אחת. מחברים את העשרות, ואז את האחדות.' },
+    countOn: { title: 'ממשיכים לספור', text: (big, small) => `מתחילים מ־${big}, וסופרים עוד ${small}.` },
+    swapAdd: { title: 'מתחילים מהגדול', text: (x, y) => `${ltr(`${x} + ${y}`)} זה כמו ${ltr(`${y} + ${x}`)}. להתחיל מ־${y} יותר מהר!` },
+  },
   hangar: {
     title: 'בחרו חללית',
     newShip: 'חללית חדשה נחתה בהאנגר! 🛬',

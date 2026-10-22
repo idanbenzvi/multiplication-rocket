@@ -108,6 +108,11 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
     behind the slow one, shows what that drill makes ("6 × 8 = 48, not 42") and lights up the
     right one. After the fifth the lane is clear and the ship races off to the vanishing point.
     Each pass made with the first pick adds fuel, and first picks count toward the mastery map.
+- **The ship's computer helps when you're stuck.** A while without an answer (a little past the pilot's own pace, or sooner on a fact they keep missing), a glowing orb (React Bits' Orb) lights up beside the rocket: "Stuck? I can help!" Tapped, it opens a small floating window that thinks the question through, one way at a time, each with a picture:
+  - multiplication: what it means (rows of dots), counting in jumps, the shortcut, starting from a fact the child already knows, and turning it around;
+  - addition: putting them together (dots, or tens and ones), counting on, the shortcut, and starting with the bigger number.
+
+  Every step stops one short of the answer for the child to finish, and each can be read aloud. An answer worked out with its help gets the steady boost, off the clock.
 - **Celebrations that grow.** The praise word, spark bursts and chime all escalate with the streak (the chime climbs higher with every answer in a row). Every 5 in a row sets off fireworks and a banner.
 
 | Hebrew + streak | Launch | Mastery map |
