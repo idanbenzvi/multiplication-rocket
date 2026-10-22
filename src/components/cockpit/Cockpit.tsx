@@ -17,6 +17,7 @@ import { destinationName, STRINGS } from '../../i18n/strings';
 import { GuardedButton, HyperdriveLever, Module, PushButton, Selector, Throttle, Toggle } from './controls';
 import { Droid } from './Droid';
 import { emote } from './droidBus';
+import { useTurbulence } from './turbulence';
 import './cockpit.css';
 import { useBack } from '../../native/back';
 
@@ -293,6 +294,9 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
   // (Back too; a dialog over the cockpit takes it first)
   useBack(!covered && !leaving && onClose);
+
+  // a little flight jitter now and then, once inside (not under a dialog, or flying back out)
+  useTurbulence(rootRef, scrollRef, !calm && !moving && !leaving && !covered);
 
   useEffect(() => {
     if (covered || leaving) return;

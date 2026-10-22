@@ -697,6 +697,15 @@ export const sfx = {
     noiseBurst(c, t + 0.5, 0.45, 400, 6000, 0.12);
   },
 
+  /** a bump in the flight, felt in the cockpit: a faint low rumble (`strength` 0..1) */
+  rumble(strength: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.7, 260, 70, 0.07 * strength);
+    tone(c, 52, t, 0.5, { type: 'sine', gain: 0.05 * strength, glideTo: 38 });
+  },
+
   /** a dashboard droid beeping: up and happy, or down and sleepy */
   droid(happy: boolean) {
     const c = audio();

@@ -186,7 +186,8 @@ html[lang='he'] .ck-choice {
   top: -20%; /* SPACE_OVER */
   height: 120%;
   display: block;
-  translate: 0 var(--space-shift);
+  /* (and jolting against the frame in the flight's jitter, turbulence.ts) */
+  translate: var(--bump-x, 0px) calc(var(--space-shift) + var(--bump-y, 0px));
 }
 .ck-canopy {
   position: absolute;
@@ -343,6 +344,35 @@ html[lang='he'] .ck-choice {
   translate: -50% 0;
   filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.6));
   animation: ckBobble 2.6s ease-in-out infinite;
+}
+/* a bump in the flight: it wobbles harder for a moment */
+.ck-bobble.is-jiggling {
+  animation:
+    ckJiggle 0.9s ease-out,
+    ckBobble 2.6s ease-in-out 0.9s infinite;
+}
+@keyframes ckJiggle {
+  0% {
+    rotate: 0deg;
+  }
+  12% {
+    rotate: -16deg;
+  }
+  28% {
+    rotate: 13deg;
+  }
+  46% {
+    rotate: -9deg;
+  }
+  64% {
+    rotate: 5deg;
+  }
+  82% {
+    rotate: -2deg;
+  }
+  100% {
+    rotate: -7deg;
+  }
 }
 @keyframes ckBobble {
   0%,
