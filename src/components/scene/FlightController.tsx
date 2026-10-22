@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
+import { usePause } from '../../game/gameClock';
+import { engineHum } from '../../audio/sfx';
 import { sidewaysQuery } from '../useMenuDrawer';
 import { getLevelConfig } from '../../game/levels';
 import {
@@ -55,10 +57,32 @@ const JOLT_DECAY = 3.0;
 const TURN_RATE = 3.2;
 let courseSet = false;
 
+// The engine heard through the rocket's window (sfx.engineHum): as loud as
+// the camera is close to it, for as long as it's close. Tapping the window
+// brings it up a step at a time and the dive into it to its fullest, and it
+// fades out as the camera pulls back; the Academy or the cockpit opening (the
+// game pausing) silences it.
+let humLevel = 0;
+function humFor(closeness: number) {
+  // (a frame can still run just after the game pauses: it mustn't start the hum again)
+  const level = closeness < 0.03 || usePause.getState().paused ? 0 : closeness ** 1.6;
+  if (level === 0 ? humLevel === 0 : Math.abs(level - humLevel) < 0.02) return;
+  humLevel = level;
+  engineHum(level, level === 0 ? 0.4 : 0.15);
+}
+
 // Owns the flight state (game/flight.ts) and the camera. Everything else in
 // the scene only reads `flight`.
 export function FlightController() {
   const { camera } = useThree();
+
+  // (the scene stops drawing while paused: the hum stops with it, and picks up again after)
+  const paused = usePause((s) => s.paused);
+  useEffect(() => {
+    if (!paused) return;
+    humLevel = 0;
+    engineHum(0, 0.3);
+  }, [paused]);
 
   useEffect(() => {
     flight.motionScale = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0.25 : 1;
@@ -145,6 +169,7 @@ export function FlightController() {
       zoomValue = Math.max(0, 1 - (d - NEAREST) / (far - NEAREST));
     }
     const calm = 1 - zoomValue; // no rumble with your nose against the glass
+    humFor(zoomValue);
 
     baseEye.set(
       CAMERA_POS.x + ((Math.sin(t * 47) + Math.sin(t * 31)) * rumble + Math.sin(t * 25) * knock) * calm,

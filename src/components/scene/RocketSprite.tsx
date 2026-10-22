@@ -4,7 +4,6 @@ import { useGameStore } from '../../game/useGameStore';
 import { useCrewStore } from '../../game/useCrewStore';
 import { PortholeShimmer } from './PortholeShimmer';
 import { DIVE_MS, porthole, portholeZoom, ZOOM_RESET_MS } from '../../game/flight';
-import { engineHum } from '../../audio/sfx';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import { Billboard } from '@react-three/drei';
@@ -20,9 +19,6 @@ interface Props {
 
 const WIDTH = 1.1;
 const HEIGHT = 2.3;
-
-/** the engine's hum as the camera nears the window, by tap (engineHum): a whisper, then louder; the dive takes it to the top */
-const HUM_BY_TAP = [0, 0.25, 0.5];
 
 // The rocket itself: a hand-drawn illustration rasterized to a texture and
 // rendered as a billboarded flat sprite (locked upright, only turning to
@@ -64,7 +60,7 @@ export function RocketSprite({ level }: Props) {
 
   // Secret door: three quick taps on the porthole open the Deep Space Academy.
   // Each tap pulls the camera a step closer to the window (FlightController
-  // follows portholeZoom), the engine's hum rising as it comes; the third
+  // follows portholeZoom, and the engine's hum rises as it comes); the third
   // dives into it, then the Academy opens.
   const diving = useRef(false);
   const onTap = (e: ThreeEvent<MouseEvent>) => {
@@ -90,10 +86,7 @@ export function RocketSprite({ level }: Props) {
     if (z.level >= 3) {
       diving.current = true;
       z.diveAt = now;
-      // the engine swells all the way in, and goes quiet as the Academy opens
-      engineHum(1, DIVE_MS / 1000);
       window.setTimeout(() => {
-        engineHum(0, 0.3);
         useGameStore.getState().openAcademy();
         // back to normal: the camera eases out again once the scene resumes
         z.level = 0;
@@ -101,14 +94,7 @@ export function RocketSprite({ level }: Props) {
         z.lastTap = 0;
         diving.current = false;
       }, DIVE_MS);
-      return;
     }
-    // the engine heard through the window, louder the closer the camera comes; it fades
-    // away again if the taps stop and the camera eases back out
-    engineHum(HUM_BY_TAP[z.level], z.level === 1 ? 0.6 : 0.35);
-    window.setTimeout(() => {
-      if (z.lastTap === now && !z.diveAt) engineHum(0, 0.8);
-    }, ZOOM_RESET_MS);
   };
 
   if (!texture) return null;
