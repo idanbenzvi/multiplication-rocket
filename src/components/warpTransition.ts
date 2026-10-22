@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Variants } from 'motion/react';
 import { sfx } from '../audio/sfx';
-import { flyAway } from '../game/flight';
+import { CHARGE_MS, flyAway } from '../game/flight';
 
 // Going from the game into a game mode (and back) is one continuous flight,
 // not a cut: the rocket blasts off (flyOffTo) as the menu dissolves, then a
@@ -44,8 +44,8 @@ export function originOf(el: Element | null | undefined): Point {
   return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 }
 
-/** the rocket is well on its way when the warp follows it (flyOffTo) */
-const LIFTOFF_MS = 450;
+/** the rocket is well on its way when the warp follows it (flyOffTo): just after its ignition */
+const LIFTOFF_MS = CHARGE_MS + 300;
 
 /** warp from what's on screen to what `action` opens (or back), after `delayMs`; one at a time */
 export function warpTo(action: () => void, from?: Element | null, delayMs = 0) {
@@ -69,8 +69,8 @@ export function warpTo(action: () => void, from?: Element | null, delayMs = 0) {
 export function flyOffTo(action: () => void, from?: Element | null) {
   const { run, due } = useModeWarp.getState();
   if (run || due) return;
+  // (the rocket sounds its own build-up and blast: FlyingRocket)
   const flying = flyAway();
-  if (flying) sfx.blastOff();
   warpTo(action, from, flying ? LIFTOFF_MS : 0);
 }
 

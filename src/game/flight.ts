@@ -38,6 +38,10 @@ export const flight = {
   jolt: 0,
   /** speed + boost: what the visuals should use */
   effective: CRUISE,
+  /** 0..1 the build-up of a blast-off: the engine swelling and the ship shaking before it fires (FlyingRocket) */
+  charge: 0,
+  /** 1 at a blast-off's ignition, fading: the flash, the shockwave, the jolt (FlyingRocket) */
+  ignition: 0,
   /** 0..1 how close we are to the destination (fuel / 100, or 1 while launching) */
   approach: 0,
   /** reduced-motion users get much less shake and blur */
@@ -70,8 +74,12 @@ export function bump() {
 
 // ---- flying off and flying home: leaving the game for a bonus round or a game mode, and back ----
 
+/** a blast-off's build-up (ms): the rocket crouches and shakes, its engine swells and glows, sparks pour into it */
+export const CHARGE_MS = 900;
+/** then the blast (ms): ignition, and away faster and faster till it's gone */
+export const BLAST_MS = 700;
 /** how long the rocket takes to fly off (ms) */
-export const AWAY_MS = 750;
+export const AWAY_MS = CHARGE_MS + BLAST_MS;
 /** it stays gone this long after (by then a round or a mode covers the screen, and flyHome brings it back) */
 export const AWAY_HOLD_MS = 2500;
 /** how long the rocket takes to fly home (ms) */
@@ -81,16 +89,24 @@ export const departure = { at: -Infinity };
 export const homecoming = { at: -Infinity };
 
 /**
- * Off to a bonus round that it flies off in, or a game mode: the rocket pulls
- * back for a beat, engines flaring, then blasts away up its course into the
- * distance. False with reduced motion (it doesn't go anywhere: start at once).
+ * Off to a bonus round that it flies off in, or a game mode: the rocket
+ * builds up to it (it crouches and shakes, its engine swells and glows,
+ * sparks pour in), then ignites and blasts away up its course into the
+ * distance (FlyingRocket). False with reduced motion (it doesn't go anywhere:
+ * start at once).
  */
 export function flyAway(): boolean {
   if (flight.motionScale < 1) return false;
   departure.at = gameNow();
   homecoming.at = -Infinity;
-  kick(1.1);
   return true;
+}
+
+/** where a blast-off is, `now` in game time: its build-up and its blast (each 0..1), or null when there isn't one */
+export function departurePhase(now: number): { charge: number; blast: number } | null {
+  const ms = now - departure.at;
+  if (!(ms >= 0 && ms < AWAY_MS + AWAY_HOLD_MS)) return null;
+  return { charge: Math.min(1, ms / CHARGE_MS), blast: Math.max(0, Math.min(1, (ms - CHARGE_MS) / BLAST_MS)) };
 }
 
 /**

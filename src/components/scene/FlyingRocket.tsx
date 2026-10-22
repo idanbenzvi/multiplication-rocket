@@ -1,10 +1,12 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AWAY_HOLD_MS, AWAY_MS, departure, flight, HOME_MS, homecoming, porthole, PORTHOLE_Y, rocketWorld } from '../../game/flight';
+import { CHARGE_MS, departure, departurePhase, flight, HOME_MS, homecoming, kick, porthole, PORTHOLE_Y, rocketWorld } from '../../game/flight';
 import { gameNow } from '../../game/gameClock';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
+import { EngineGlow } from './EngineGlow';
+import { sfx } from '../../audio/sfx';
 import { shipArt } from './ships';
 import { useShip } from '../../profiles/useProfiles';
 import { useCrewStore } from '../../game/useCrewStore';
@@ -22,7 +24,7 @@ const nozzleY = (frameY: number) => 2.25 - (frameY / 400) * 2.3 + 0.0245;
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 /** eases out past the end and back */
 const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
-const HOME = { x: 0, y: 0, z: 0, bank: 0 };
+const HOME = { x: 0, y: 0, z: 0, bank: 0, stretch: 1 };
 
 /**
  * Flying home (flyHome), `now` in game time: how far the rocket still is from
@@ -35,28 +37,36 @@ function homeOffset(now: number) {
   const k = (now - homecoming.at) / HOME_MS;
   if (!(k >= 0 && k < 1)) return HOME;
   const e = easeOut(k);
-  return { x: 0, y: -3.4 * (1 - easeOutBack(k)), z: 2.6 * (1 - e), bank: 0.35 * (1 - e) };
+  return { x: 0, y: -3.4 * (1 - easeOutBack(k)), z: 2.6 * (1 - e), bank: 0.35 * (1 - e), stretch: 1 };
 }
 
-/** the share of flying off spent pulling back, before the blast */
-const WIND_UP = 0.18;
-
 /**
- * Flying off (flyAway), `now` in game time: it pulls back a little, then
- * blasts away up its course and into the distance, faster and faster, till
- * it's gone off the top of the screen; it stays gone a while (a round or a
- * mode is over the screen by then), and is back in its place after that.
+ * Flying off (flyAway), `now` in game time. First the build-up: the rocket
+ * crouches (sinking a little and back, squashed like a spring) and shakes
+ * harder and harder as its engine swells. Then ignition, and it blasts away
+ * up its course into the distance, faster and faster and stretched by its
+ * speed, till it's gone off the top of the screen. It stays gone a while (a
+ * round or a mode is over the screen by then), and is back in its place
+ * after that. `stretch`: its length (its width the other way).
  */
-function awayOffset(now: number) {
-  const ms = now - departure.at;
-  if (!(ms >= 0 && ms < AWAY_MS + AWAY_HOLD_MS)) return HOME;
-  const k = Math.min(1, ms / AWAY_MS);
-  if (k < WIND_UP) {
-    const back = Math.sin((k / WIND_UP) * (Math.PI / 2));
-    return { x: 0, y: -0.3 * back, z: 0.15 * back, bank: 0 };
-  }
-  const p = (k - WIND_UP) / (1 - WIND_UP);
-  return { x: 0, y: -0.3 + 9.3 * p ** 2.2, z: -7 * p * p, bank: -0.12 * Math.sin(Math.PI * p) };
+function awayOffset(now: number, t: number) {
+  const phase = departurePhase(now);
+  if (!phase) return HOME;
+  const { charge, blast } = phase;
+  const crouch = easeOut(charge);
+  // the shake grows through the build-up, and is shaken off as it gets away
+  const shake = charge * charge * 0.04 * (1 - blast);
+  const jx = (Math.sin(t * 71) + Math.sin(t * 43)) * shake * 0.5;
+  const jy = (Math.cos(t * 83) + Math.cos(t * 37)) * shake * 0.5;
+  if (blast <= 0) return { x: jx, y: -0.26 * crouch + jy, z: 0.12 * crouch, bank: 0, stretch: 1 - 0.07 * crouch };
+  return {
+    x: jx,
+    y: -0.26 + 11 * blast ** 2.4 + jy,
+    z: 0.12 - 8 * blast * blast,
+    bank: -0.1 * Math.sin(Math.PI * blast),
+    // released from its crouch, it springs long
+    stretch: 1 + 0.32 * Math.min(1, blast * 4),
+  };
 }
 
 // The rocket in flight. The world streams past it (SpeedStreaks, the star
@@ -68,7 +78,9 @@ function awayOffset(now: number) {
 // its porthole (the ship's window, wherever it is), so it keeps its place on screen (and the porthole stays
 // under a tapping finger), and its bob and surges follow its nose. Off to a
 // bonus round or a game mode it flies away (awayOffset), and back from one it
-// flies home to its place (homeOffset).
+// flies home to its place (homeOffset). Its blast-off builds up first: the
+// engine swells and glows (EngineExhaust, EngineGlow) and the camera tenses
+// (FlightController) before it fires.
 export function FlyingRocket({ level }: Props) {
   const ship = useShip();
   const crew = useCrewStore((s) => !!s.members);
@@ -76,8 +88,11 @@ export function FlyingRocket({ level }: Props) {
   const nozzle = shipArt(ship, '#000', crew).nozzle;
   const courseRef = useRef<THREE.Group>(null);
   const groupRef = useRef<THREE.Group>(null);
+  // the blast-off this frame belongs to: its build-up and its ignition sound once each
+  const charged = useRef(-Infinity);
+  const ignited = useRef(-Infinity);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, rawDelta) => {
     const course = courseRef.current;
     const group = groupRef.current;
     if (!course || !group) return;
@@ -96,8 +111,25 @@ export function FlyingRocket({ level }: Props) {
     // (the pivot is the ship's window, which can be off the centre line)
     course.position.x = porthole.x;
     const now = gameNow();
-    const home = departure.at > homecoming.at ? awayOffset(now) : homeOffset(now);
+    const away = departure.at > homecoming.at;
+    const home = away ? awayOffset(now, t) : homeOffset(now);
     group.position.set(x + home.x - porthole.x, y - PORTHOLE_Y + home.y, home.z);
+    group.scale.set(1 / Math.sqrt(home.stretch), home.stretch, 1);
+
+    // the blast-off's build-up and ignition, for the engine, its glow and the camera
+    const phase = away ? departurePhase(now) : null;
+    flight.charge = phase && phase.blast === 0 ? phase.charge : 0;
+    flight.ignition *= Math.exp(-3.2 * Math.min(rawDelta, 0.1));
+    if (phase && charged.current !== departure.at) {
+      charged.current = departure.at;
+      sfx.chargeUp(CHARGE_MS / 1000);
+    }
+    if (phase && phase.blast > 0 && ignited.current !== departure.at) {
+      ignited.current = departure.at;
+      flight.ignition = 1;
+      kick(1.1);
+      sfx.blastOff();
+    }
     // the porthole in world space: the pivot, plus this frame's float turned onto the course
     const c = Math.cos(flight.heading);
     const sn = Math.sin(flight.heading);
@@ -109,6 +141,7 @@ export function FlyingRocket({ level }: Props) {
   return (
     <group ref={courseRef} position={[0, PORTHOLE_Y, 0]}>
       <group ref={groupRef} position={[0, -PORTHOLE_Y, 0]}>
+        <EngineGlow nozzleY={nozzleY(nozzle)} />
         <EngineExhaust nozzleY={nozzleY(nozzle)} />
         <RocketSprite level={level} />
       </group>

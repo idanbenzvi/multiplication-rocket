@@ -23,6 +23,8 @@ const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
 const LOOK_AT = new Vector3(0, 0.5, 0);
 const BASE_FOV = 50;
 const MAX_FOV_KICK = 16;
+/** how much the view tightens through a blast-off's build-up (degrees) */
+const CHARGE_FOV = 5;
 // A phone on its side: the question sits on the right, so the picture slides
 // over (by this share of its width) and the rocket flies on the left.
 const SIDEWAYS_SHIFT = 0.22;
@@ -117,8 +119,9 @@ export function FlightController() {
     const s = Math.min(flight.effective, 1.3);
     const m = flight.motionScale;
     const t = clock.elapsedTime;
-    const rumble = s * s * 0.025 * m;
-    const knock = flight.jolt * 0.12 * m;
+    // (a blast-off's build-up rumbles harder and harder, and its ignition knocks)
+    const rumble = (s * s * 0.025 + flight.charge * flight.charge * 0.03) * m;
+    const knock = (flight.jolt * 0.12 + flight.ignition * 0.1) * m;
     // porthole zoom: ease toward the tap stage (or through the glass on the dive)
     const z = portholeZoom;
     const nowMs = performance.now();
@@ -165,7 +168,8 @@ export function FlightController() {
     }
     if (camera instanceof PerspectiveCamera) {
       const speedFov = BASE_FOV + Math.min(s, 1.1) * MAX_FOV_KICK * (0.5 + 0.5 * m);
-      const fov = speedFov;
+      // the view tightens a little as a blast-off builds up (it widens with the speed once it fires)
+      const fov = speedFov - CHARGE_FOV * flight.charge * m;
       // the picture slides, not the camera: the rocket keeps its look, just further left
       sideShift += ((sidewaysQuery?.matches ? SIDEWAYS_SHIFT : 0) - sideShift) * (1 - Math.exp(-5 * dt));
       const film = sideShift * camera.getFilmWidth() * camera.aspect * 2 * Math.tan(MathUtils.degToRad(fov) / 2);

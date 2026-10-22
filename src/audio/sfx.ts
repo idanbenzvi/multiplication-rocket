@@ -204,11 +204,42 @@ export const sfx = {
     [4, 7, 9].forEach((n, i) => tone(c, noteFreq(n), t + 0.75 + i * 0.05, 0.6, { gain: 0.07 }));
   },
 
-  /** The rocket blasting off for a bonus round or a game mode: a short engine roar, rising away. */
+  /**
+   * The rocket building up to a blast-off (its engine swelling, `seconds`
+   * long): a rumble that swells and climbs under a whine rising with it, two
+   * tones a little apart so they beat faster as they go up.
+   */
+  chargeUp(seconds: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    const end = t + seconds;
+    const buffer = c.createBuffer(1, Math.ceil(c.sampleRate * seconds), c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 0.9;
+    filter.frequency.setValueAtTime(90, t);
+    filter.frequency.exponentialRampToValueAtTime(1100, end);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(Math.max(0.16 * volume(), 0.0002), end - 0.04);
+    out.gain.linearRampToValueAtTime(0.0001, end);
+    src.connect(filter).connect(out).connect(c.destination);
+    src.start(t);
+    tone(c, 150, t, seconds, { type: 'sine', gain: 0.05, glideTo: 820, attack: seconds * 0.9 });
+    tone(c, 156, t, seconds, { type: 'triangle', gain: 0.04, glideTo: 846, attack: seconds * 0.9 });
+  },
+
+  /** The rocket blasting off for a bonus round or a game mode: a thump of ignition and an engine roar, rising away. */
   blastOff() {
     const c = audio();
     if (!c || volume() === 0) return;
     const t = c.currentTime + 0.01;
+    tone(c, 62, t, 0.5, { type: 'sine', gain: 0.16, glideTo: 30 });
     noiseBurst(c, t, 0.75, 180, 2600, 0.14);
     tone(c, 70, t + 0.08, 0.7, { type: 'sawtooth', gain: 0.05, glideTo: 520, attack: 0.12 });
   },
