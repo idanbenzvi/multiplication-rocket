@@ -8,24 +8,38 @@ const DEFAULT_EFFECTS = 0.7;
 
 // The soundtracks: the theme; Monster Sun's own while that mode is open; The
 // View From Higher Ground on a crew flight; The View from the Last Lap against
-// the Black Sun, the final boss; and Velvet Horizon while the About page is
-// open. One plays at a time, at the music volume. Paths are relative to the page, so they resolve both on a web
-// server and from the Electron app's file:// URL.
-export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about';
+// the Black Sun, the final boss; Velvet Horizon while the About page is open;
+// and Starboard View in the cockpit, while the settings are open. One plays at
+// a time, at the music volume, and never cuts to another: the one playing
+// fades out, then the next fades in. Paths are relative to the page, so they
+// resolve both on a web server and from the Electron app's file:// URL.
+export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
   crew: new Audio('./audio/view-from-higher-ground.mp3'),
   boss: new Audio('./audio/view-from-the-last-lap.mp3'),
   about: new Audio('./audio/velvet-horizon.mp3'),
+  cockpit: new Audio('./audio/starboard-view.mp3'),
 };
-// only fetched when someone opens Monster Sun, a crew flight, the Black Sun or the About page
+// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page or the cockpit
 tracks.sun.preload = 'none';
 tracks.crew.preload = 'none';
 tracks.boss.preload = 'none';
 tracks.about.preload = 'none';
+tracks.cockpit.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
+
+/** changing soundtracks, the one playing fades out over this long, then the next fades in over this long (and the music fades in starting, or back from a pause) */
+const FADE_MS = 500;
+/** the soundtrack asked for */
 let current: Track = 'theme';
+/** the one heard now: the one before, until it has faded out */
+let sounding: Track = 'theme';
+/** how far in `sounding` has faded (a share of the music volume) */
+let level = 0;
+let fader = 0;
+let lastTick = 0;
 
 interface Saved {
   musicVolume: number;
@@ -63,11 +77,66 @@ function save(state: Saved) {
   }
 }
 
+const musicVolume = () => useAudio.getState().musicVolume;
+
+/** the next soundtrack takes over, silent for now (it fades in): the theme where it left off, the others from the top */
+function takeOver() {
+  tracks[sounding].pause();
+  sounding = current;
+  const t = tracks[sounding];
+  if (sounding !== 'theme') t.currentTime = 0;
+  t.volume = 0;
+  t.muted = false;
+  level = 0;
+}
+
+function fade() {
+  const now = performance.now();
+  // (the page busy for a moment, opening something heavy, it carries on fading from there rather than cutting)
+  const step = Math.min(now - lastTick, 50) / FADE_MS;
+  lastTick = now;
+  if (sounding !== current) {
+    level = Math.max(0, level - step);
+    if (level === 0) {
+      takeOver();
+      void tracks[sounding].play().catch(() => {});
+    }
+  } else if (tracks[sounding].paused) {
+    // (not playing after all: the browser is waiting for a tap; it fades in from there once it plays)
+    stopFading();
+    return;
+  } else if (tracks[sounding].readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    // (once it's actually sounding: a track still coming over the network fades in when it arrives)
+    level = Math.min(1, level + step);
+  }
+  tracks[sounding].volume = musicVolume() * level;
+  if (sounding === current && level === 1) stopFading();
+}
+
+function startFading() {
+  if (fader) return;
+  lastTick = performance.now();
+  fader = window.setInterval(fade, 20);
+}
+
+function stopFading() {
+  window.clearInterval(fader);
+  fader = 0;
+}
+
 // Volume 0 means "off": pause rather than play silently.
-function applyMusic(volume: number) {
-  for (const t of Object.values(tracks)) t.volume = volume;
-  if (volume > 0) void tracks[current].play().catch(() => {});
-  else tracks[current].pause();
+function applyMusic() {
+  if (musicVolume() === 0) {
+    stopFading();
+    if (sounding !== current) takeOver();
+    tracks[sounding].pause();
+    // (turned back up, it fades in)
+    level = 0;
+    return;
+  }
+  tracks[sounding].volume = musicVolume() * level;
+  void tracks[sounding].play().catch(() => {});
+  if (sounding !== current || level < 1) startFading();
 }
 
 interface AudioState extends Saved {
@@ -81,7 +150,7 @@ export const useAudio = create<AudioState>((set, get) => ({
     const musicVolume = clamp01(v);
     set({ musicVolume });
     save({ musicVolume, effectsVolume: get().effectsVolume });
-    applyMusic(musicVolume);
+    applyMusic();
   },
   setEffectsVolume: (v) => {
     const effectsVolume = clamp01(v);
@@ -90,24 +159,36 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 }));
 
-for (const t of Object.values(tracks)) t.volume = useAudio.getState().musicVolume;
+for (const t of Object.values(tracks)) t.volume = 0;
 
-/** game paused (player left the tab/app): stop the music */
+/** game paused (player left the tab/app): stop the music (a change under way is done by the time they're back) */
 export function pauseMusic() {
-  tracks[current].pause();
+  stopFading();
+  if (sounding !== current) takeOver();
+  tracks[sounding].pause();
+  level = 0;
 }
 
 /**
- * Switch soundtracks: the modes' and the About page's start from the top
- * each time they open, the theme carries on where it left off. Call it from a
- * tap, so a browser that only plays sound after a gesture lets it start.
+ * Switch soundtracks: the one playing fades out, then the next fades in, the
+ * modes', the About page's and the cockpit's from the top each time they
+ * open, the theme where it left off. Call it from a tap, so a browser that
+ * only plays sound after a gesture lets it start: the next one starts right
+ * away, muted until its turn.
  */
 export function playTrack(track: Track) {
   if (track === current) return;
-  tracks[current].pause();
+  // (one asked for a moment ago, never heard: it's not wanted now)
+  if (current !== sounding) {
+    tracks[current].pause();
+    tracks[current].muted = false;
+  }
   current = track;
-  if (track !== 'theme') tracks[track].currentTime = 0;
-  applyMusic(useAudio.getState().musicVolume);
+  if (track !== sounding && musicVolume() > 0) {
+    tracks[track].muted = true;
+    void tracks[track].play().catch(() => {});
+  }
+  applyMusic();
 }
 
 /** the soundtrack playing now (to go back to it afterwards) */
@@ -115,15 +196,15 @@ export function currentTrack(): Track {
   return current;
 }
 
-/** game resumed: music back on, if it isn't turned all the way down */
+/** game resumed: music back on (fading in), if it isn't turned all the way down */
 export function resumeMusic() {
-  applyMusic(useAudio.getState().musicVolume);
+  applyMusic();
 }
 
 // Browsers block autoplay until the player interacts with the page, so the
 // music starts on the first click/keypress rather than on load.
 function startOnFirstGesture() {
-  applyMusic(useAudio.getState().musicVolume);
+  applyMusic();
   for (const type of GESTURES) window.removeEventListener(type, startOnFirstGesture);
 }
 // iOS Safari only unlocks media inside touchend/click, not pointerdown.
@@ -133,4 +214,4 @@ for (const type of GESTURES) window.addEventListener(type, startOnFirstGesture);
 // In the Electron app autoplay is allowed, so this starts the music right
 // away; in a browser it's rejected silently and the gesture listener above
 // takes over.
-if (useAudio.getState().musicVolume > 0) void tracks.theme.play().catch(() => {});
+applyMusic();
