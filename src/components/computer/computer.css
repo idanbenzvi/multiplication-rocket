@@ -98,6 +98,9 @@
   display: flex;
   flex-direction: column;
   width: min(330px, calc(100vw - 16px));
+  /* one size for every step, so ‹ › stay right where the finger (or the mouse) is while paging;
+     shorter only where the screen is (its max-height, from where it's placed), the step scrolling then */
+  height: 380px;
   max-height: calc(100vh - 16px);
   border-radius: 30px 30px 30px 12px;
   border: 1px solid rgba(156, 196, 255, 0.35);
@@ -116,6 +119,10 @@
 .ship-computer-window.is-right {
   border-radius: 12px 30px 30px 30px;
   transform-origin: 0% 50%;
+}
+.ship-computer-window.is-left {
+  border-radius: 30px 12px 30px 30px;
+  transform-origin: 100% 50%;
 }
 .ship-computer-head {
   display: flex;
@@ -151,6 +158,7 @@
   font-size: 0.9rem;
 }
 .ship-computer-body {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 0.1rem 0.95rem 0.5rem;

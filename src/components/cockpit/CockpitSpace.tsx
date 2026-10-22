@@ -1,10 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { activeMission } from '../../profiles/useProfiles';
 import { pickOp, type PilotMission } from '../../game/mission';
+import { LOOKS } from '../scene/planetLooks';
+import { drawPlanet } from './drawPlanet';
 
 // Through the cockpit's windscreen: space drifting gently by, and numbers
 // floating past among the stars (the pilot's own times tables, or sums).
 // Things come from far ahead, grow as they near, and slip past the edges.
+// Dead ahead, the level's destination: as big as the fuel says it's near,
+// and growing a little as you watch, as if flying towards it.
+
+export interface Destination {
+  /** which destination (planetLooks.ts order) */
+  index: number;
+  /** its name, under it */
+  name: string;
+  /** how near it is: the fuel tank, 0 to 1 */
+  approach: number;
+}
 
 interface Star {
   x: number;
@@ -61,8 +74,13 @@ function newGlyph(mission: PilotMission, z: number): Glyph {
   };
 }
 
-export function CockpitSpace({ calm }: { calm: boolean }) {
+export function CockpitSpace({ calm, destination }: { calm: boolean; destination?: Destination }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // (read by the drawing loop, which doesn't restart for it)
+  const ahead = useRef(destination);
+  useEffect(() => {
+    ahead.current = destination;
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -94,13 +112,15 @@ export function CockpitSpace({ calm }: { calm: boolean }) {
 
     let raf = 0;
     let last = performance.now();
+    const opened = last;
     const draw = (now: number) => {
       raf = requestAnimationFrame(draw);
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       if (!w || !h) return;
+      // the way ahead (where everything comes from, and the destination is): mid-glass, below its title
       const cx = w / 2;
-      const cy = h * 0.46;
+      const cy = h * 0.55;
       const f = Math.max(w, h * 1.6) * 0.42;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -127,6 +147,25 @@ export function CockpitSpace({ calm }: { calm: boolean }) {
         ctx.beginPath();
         ctx.arc(x, y, 0.5 + near * 1.6, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // the destination, dead ahead: as near as the fuel says, and nearing as you watch
+      const dest = ahead.current;
+      if (dest) {
+        const a = Math.max(0, Math.min(1, dest.approach));
+        const eased = a * a * (3 - 2 * a);
+        const nearing = 1 + Math.min(1, (now - opened) / 40000) * 0.14 * (calm ? 0.3 : 1);
+        // (never so big its rings reach the glass's title above, or its name the dashboard below)
+        const look = LOOKS[dest.index % LOOKS.length];
+        const r = Math.min(Math.min(w, h) * (0.06 + 0.12 * eased) * nearing, h * (look.ring ? 0.16 : 0.19));
+        ctx.globalAlpha = 1;
+        drawPlanet(ctx, cx, cy, r, look, dest.index, (now - opened) / 1000);
+        ctx.globalAlpha = 0.75;
+        ctx.font = `600 ${Math.max(11, Math.min(15, h * 0.045)).toFixed(0)}px Fredoka, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#e9dff7';
+        ctx.fillText(dest.name, cx, cy + r * (look.ring ? 1.25 : 1.12) + 6);
       }
 
       // the numbers, farthest first

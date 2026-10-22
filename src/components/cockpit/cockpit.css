@@ -761,3 +761,72 @@
     transition-duration: 0.01s;
   }
 }
+
+/* Orbie beside its switch: a little glowing orb, floating, dimmed while it's off */
+.ck-orbie-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.ck-orbie {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 52%, rgba(156, 67, 254, 0.9) 60%, rgba(76, 194, 233, 0.85) 68%, transparent 74%),
+    radial-gradient(circle, rgba(16, 20, 153, 0.35) 0%, transparent 70%);
+  box-shadow: 0 0 14px rgba(156, 67, 254, 0.55), inset 0 0 10px rgba(76, 194, 233, 0.4);
+  opacity: 0.3;
+  filter: saturate(0.3);
+  transition: opacity 0.35s, filter 0.35s;
+}
+.ck-orbie::before {
+  /* the light running round the ring */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(255, 255, 255, 0.9) 82%, transparent 92%);
+  mask: radial-gradient(circle, transparent 55%, #000 58%, #000 70%, transparent 73%);
+  -webkit-mask: radial-gradient(circle, transparent 55%, #000 58%, #000 70%, transparent 73%);
+  animation: orbieSpin 2.6s linear infinite;
+}
+.ck-orbie-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #f3eaff;
+  text-shadow: 0 0 8px rgba(156, 67, 254, 0.9);
+}
+.ck-orbie.is-on {
+  opacity: 1;
+  filter: none;
+  animation: orbieFloat 2.8s ease-in-out infinite;
+}
+@keyframes orbieFloat {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+@keyframes orbieSpin {
+  to {
+    rotate: 1turn;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-orbie.is-on,
+  .ck-orbie::before {
+    animation: none;
+  }
+}

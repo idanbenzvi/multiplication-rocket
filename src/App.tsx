@@ -78,6 +78,8 @@ function App() {
   const answerMode = useSettings((s) => s.answerMode);
   const paused = usePause((s) => s.away);
   const academyOpen = useGameStore((s) => s.academyOpen);
+  // Orbie, the ship's computer, can be switched off in the cockpit
+  const orbie = useSettings((s) => s.orbie);
   // a crew flight replaces the solo game (its questions, tank and overlays)
   const crewActive = useCrewStore((s) => s.active);
   const closeAcademy = useGameStore((s) => s.closeAcademy);
@@ -394,7 +396,7 @@ function App() {
             </div>
           )}
           {/* stuck on it a while: the ship's computer offers to think it through */}
-          {question && !challenge && !bonusRound && !departing && !justLaunched && !showHeatmap && feedback === null && !academyOpen && (
+          {orbie && question && !challenge && !bonusRound && !departing && !justLaunched && !showHeatmap && feedback === null && !academyOpen && (
             <ShipComputer
               key={question.askedAt}
               question={question}

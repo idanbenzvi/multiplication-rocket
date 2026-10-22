@@ -12,6 +12,8 @@ import { useLang, useT } from '../../i18n/useLang';
 import { pilotName, useProfiles } from '../../profiles/useProfiles';
 import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../../settings/useSettings';
 import { CockpitSpace } from './CockpitSpace';
+import { getLevelConfig } from '../../game/levels';
+import { destinationName } from '../../i18n/strings';
 import { GuardedButton, Module, PushButton, Selector, Throttle, Toggle } from './controls';
 import './cockpit.css';
 import { useBack } from '../../native/back';
@@ -93,6 +95,14 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const setTypedCheck = useSettings((s) => s.setTypedCheck);
   const mistakeReview = useSettings((s) => s.mistakeReview);
   const setMistakeReview = useSettings((s) => s.setMistakeReview);
+  const orbie = useSettings((s) => s.orbie);
+  // the level's destination, dead ahead through the windscreen (the one still being reached while its launch shows)
+  const level = useGameStore((s) => (s.justLaunched ? s.progress.level - 1 : s.progress.level));
+  const nearness = useGameStore((s) => (s.justLaunched ? 1 : s.progress.fuel / 100));
+  const crewing = useCrewStore((s) => s.active);
+  const dest = getLevelConfig(level);
+  const destination = crewing ? undefined : { index: dest.destinationIndex, name: destinationName(t, dest), approach: nearness };
+  const setOrbie = useSettings((s) => s.setOrbie);
   const vibration = useSettings((s) => s.vibration);
   const setVibration = useSettings((s) => s.setVibration);
   const musicVolume = useAudio((s) => s.musicVolume);
@@ -250,7 +260,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     >
       <div ref={innerRef} className="ck-inner">
         <div ref={windowRef} className="ck-window">
-          <CockpitSpace calm={calm} />
+          <CockpitSpace calm={calm} destination={destination} />
           <svg className="ck-canopy" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden>
             <defs>
               <linearGradient id="ck-frame" x1="0" y1="0" x2="0" y2="1">
@@ -369,6 +379,16 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
             <Module label={t.mistakeReviewLabel} screen={t.mistakeReviewHint}>
               <Toggle name={t.mistakeReviewLabel} on={mistakeReview} onChange={setMistakeReview} onWord={t.on} offWord={t.off} />
+            </Module>
+
+            {/* Orbie, the ship's computer, floating beside its switch (lit while it's on) */}
+            <Module label={t.orbieLabel} screen={orbie ? t.orbieOnHint : t.orbieOffHint}>
+              <div className="ck-orbie-row">
+                <span className={`ck-orbie ${orbie ? 'is-on' : ''}`} aria-hidden>
+                  <span className="ck-orbie-face">?</span>
+                </span>
+                <Toggle name={t.orbieLabel} on={orbie} onChange={setOrbie} onWord={t.on} offWord={t.off} />
+              </div>
             </Module>
 
             {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}

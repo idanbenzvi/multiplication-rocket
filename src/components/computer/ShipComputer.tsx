@@ -5,7 +5,8 @@ import { ThinkVisual } from './ThinkVisual';
 import { stuckAfterMs, thinkSteps, type ThinkStep } from '../../game/thinkThrough';
 import { strategyFor } from '../../game/strategy';
 import { missionOfKey } from '../../game/mission';
-import { porthole, portholeScreen } from '../../game/flight';
+import { rocketScreen } from '../../game/flight';
+import { placeOrb, type Point, type Rect } from './orbPlace';
 import { gameTimeout } from '../../game/gameClock';
 import { useGameStore, type Question } from '../../game/useGameStore';
 import { useLang, useT } from '../../i18n/useLang';
@@ -31,8 +32,11 @@ interface Props {
   struggling: boolean;
 }
 
-/** how big the orb is (px), and how long its "Stuck?" bubble stays */
-const ORB_PX = 92;
+/** how big the orb is (px): smaller on a phone, where the rocket fills most of the width */
+const orbSize = () => (window.innerWidth < 520 ? 70 : 92);
+/** how far it keeps from the rocket (px) */
+const ORB_MARGIN = 22;
+/** how long its "Stuck?" bubble stays */
 const BUBBLE_MS = 5000;
 
 type Phase = 'waiting' | 'orb' | 'open';
@@ -63,17 +67,37 @@ function stepText(step: ThinkStep, c: Strings['computer'], t: Strings, question:
   }
 }
 
-/** where the orb floats: beside the rocket's hull, on screen */
-function orbSpot() {
-  const { x, y, r } = portholeScreen;
-  if (r <= 0) return null;
-  // the rocket's middle (the window can be off it), and its half-width, from the window's size on screen
-  const perUnit = r / porthole.radius;
-  const middle = x - porthole.x * perUnit;
-  const ox = middle + 0.55 * perUnit + ORB_PX * 0.45;
-  const oy = y + r * 1.6;
-  const pad = 10 + ORB_PX / 2;
-  return { x: Math.min(window.innerWidth - pad, Math.max(pad, ox)), y: Math.min(window.innerHeight - pad, Math.max(pad, oy)) };
+/** the screen's own furniture the orb keeps off, and the room it has (re-read every half second, not every frame) */
+function readScreen(): { area: Rect; avoid: Rect[] } {
+  const rect = (sel: string) => document.querySelector(sel)?.getBoundingClientRect();
+  const bar = rect('.hud-topbar');
+  const question = rect('.hud-question-zone');
+  const gauge = rect('.fuel-gauge');
+  return {
+    area: {
+      left: 8,
+      top: Math.max(8, (bar?.bottom ?? 0) + 6),
+      right: window.innerWidth - 8,
+      bottom: Math.min(window.innerHeight - 8, (question?.top ?? window.innerHeight) - 6),
+    },
+    avoid: gauge && gauge.width > 0 ? [gauge] : [],
+  };
+}
+
+/**
+ * Where the orb floats, beside the rocket and clear of it (orbPlace.ts),
+ * keeping to the side it last chose while that's clear; if there's no room
+ * anywhere at its full margin, a smaller one; and else where it was.
+ */
+function orbSpot(size: number, screen: { area: Rect; avoid: Rect[] }, last: { angle?: number; at?: Point }) {
+  const quad = rocketScreen.quad;
+  const r = size / 2;
+  const spot = placeOrb(quad, r, ORB_MARGIN, screen.area, screen.avoid, last.angle) ?? placeOrb(quad, r, ORB_MARGIN / 2, screen.area, screen.avoid, last.angle);
+  if (spot) {
+    last.angle = spot.angle;
+    last.at = spot.at;
+  }
+  return last.at ?? null;
 }
 
 export function ShipComputer({ question, paceMs, struggling }: Props) {
@@ -86,7 +110,10 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
   const [bubble, setBubble] = useState(false);
   const [index, setIndex] = useState(0);
   const orbRef = useRef<HTMLDivElement>(null);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [size] = useState(orbSize);
+  // where it is, and on which side of the rocket (kept while clear)
+  const last = useRef<{ angle?: number; at?: Point }>({});
 
   // the ways to think it through, for what this pilot already knows (worked out once per question)
   const [steps] = useState(() => thinkSteps(question.x, question.y, missionOfKey(question.fact.key), mastery));
@@ -110,18 +137,24 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
   useLayoutEffect(() => {
     if (phase === 'waiting') return;
     let raf = 0;
+    let screen = readScreen();
+    const reread = window.setInterval(() => (screen = readScreen()), 500);
     const follow = () => {
-      const spot = orbSpot();
+      const spot = orbSpot(size, screen, last.current);
       const el = orbRef.current;
-      if (spot && el) el.style.transform = `translate(${spot.x - ORB_PX / 2}px, ${spot.y - ORB_PX / 2}px)`;
+      if (spot && el) el.style.transform = `translate(${spot.x - size / 2}px, ${spot.y - size / 2}px)`;
       raf = requestAnimationFrame(follow);
     };
     follow();
-    return () => cancelAnimationFrame(raf);
-  }, [phase]);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearInterval(reread);
+    };
+  }, [phase, size]);
 
   const open = () => {
-    setAnchor(orbSpot());
+    const { at, angle = 0 } = last.current;
+    setAnchor(at ? { ...at, outward: Math.cos((angle * Math.PI) / 180) >= 0 ? 1 : -1 } : null);
     setPhase('open');
     setBubble(false);
     markHelped();
@@ -141,7 +174,7 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
   if (phase === 'waiting') return null;
   return (
     <>
-      <div ref={orbRef} className={`ship-computer-orb ${phase === 'open' ? 'is-open' : ''}`} style={{ width: ORB_PX, height: ORB_PX }}>
+      <div ref={orbRef} className={`ship-computer-orb ${phase === 'open' ? 'is-open' : ''}`} style={{ width: size, height: size }}>
         <button type="button" className="ship-computer-orb-button" onClick={phase === 'open' ? close : open} aria-label={c.open} aria-expanded={phase === 'open'}>
           <Orb hue={0} hoverIntensity={0.6} rotateOnHover forceHoverState={phase === 'open'} backgroundColor="#000000" />
           <span className="ship-computer-orb-face" aria-hidden>
@@ -169,6 +202,7 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
           <ComputerWindow
             key="window"
             anchor={anchor}
+            orbSize={size}
             title={c.name}
             closeLabel={c.close}
             onClose={close}
@@ -224,6 +258,9 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
   );
 }
 
+/** where the window opens from: the orb, and which way is away from the rocket (1 right, -1 left) */
+type Anchor = { x: number; y: number; outward: 1 | -1 };
+
 /**
  * Where the floating window goes, clear of the question and its answers (a
  * child reads it and answers): beside the orb if there's room (a computer, a
@@ -231,11 +268,13 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
  * it's held by its bottom edge, so a taller step grows up into the free sky
  * rather than down over the question; it scrolls if even that's not enough.
  */
-function placeWindow(anchor: { x: number; y: number }, w: number, h: number, vw: number, vh: number, floor: number) {
-  const gap = ORB_PX / 2 + 10;
-  if (anchor.x + gap + w + 8 <= vw) {
+function placeWindow(anchor: Anchor, orbSize: number, w: number, h: number, vw: number, vh: number, floor: number) {
+  const gap = orbSize / 2 + 10;
+  // beside the orb, on its side away from the rocket
+  const left = anchor.outward > 0 ? anchor.x + gap : anchor.x - gap - w;
+  if (left >= 8 && left + w <= vw - 8) {
     const top = Math.max(8, Math.min(floor - 8 - h, anchor.y - h / 2));
-    return { side: 'right' as const, style: { left: anchor.x + gap, top, maxHeight: floor - 8 - top } };
+    return { side: anchor.outward > 0 ? ('right' as const) : ('left' as const), style: { left, top, maxHeight: floor - 8 - top } };
   }
   const bottomEdge = Math.min(floor - 8, anchor.y - gap >= h + 8 ? anchor.y - gap : floor - 8);
   return { side: 'above' as const, style: { left: Math.min(vw - w - 8, Math.max(8, anchor.x - w * 0.6)), bottom: vh - bottomEdge, maxHeight: bottomEdge - 8 } };
@@ -243,6 +282,7 @@ function placeWindow(anchor: { x: number; y: number }, w: number, h: number, vw:
 
 function ComputerWindow({
   anchor,
+  orbSize,
   title,
   closeLabel,
   onClose,
@@ -250,7 +290,8 @@ function ComputerWindow({
   footer,
   children,
 }: {
-  anchor: { x: number; y: number };
+  anchor: Anchor;
+  orbSize: number;
   title: string;
   closeLabel: string;
   onClose: () => void;
@@ -265,8 +306,8 @@ function ComputerWindow({
     if (!el) return;
     // (the question's top, with its hint chip: the window stays above it)
     const floor = document.querySelector('.hud-question-zone')?.getBoundingClientRect().top ?? window.innerHeight;
-    setPlace(placeWindow(anchor, el.offsetWidth, el.scrollHeight, window.innerWidth, window.innerHeight, Math.min(floor, window.innerHeight)));
-  }, [anchor]);
+    setPlace(placeWindow(anchor, orbSize, el.offsetWidth, el.offsetHeight, window.innerWidth, window.innerHeight, Math.min(floor, window.innerHeight)));
+  }, [anchor, orbSize]);
   return (
     <motion.div
       ref={ref}

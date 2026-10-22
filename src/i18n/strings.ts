@@ -65,6 +65,9 @@ const en = {
   vibrationHint: 'Buzz on right answers, thump on mistakes',
   mistakeReviewLabel: 'Practice map',
   mistakeReviewHint: 'Open it by itself after 5 mistakes',
+  orbieLabel: 'Help from Orbie',
+  orbieOnHint: 'Stuck on a question? Orbie floats over to help you think it through',
+  orbieOffHint: 'Orbie stays away: no help orb',
   timedBoostLabel: 'Speed boost',
   timedBoostOnHint: (s: string) => `Faster answers fill more fuel. The big boost: under ${s} s, and it follows your own pace`,
   timedBoostOffHint: 'No clock: every right answer fills the same. Take your time!',
@@ -465,9 +468,9 @@ const en = {
   // the ship's computer, helping a pilot who's stuck (components/computer/ShipComputer.tsx);
   // math in the texts is kept left-to-right with ltr()
   computer: {
-    name: "Ship's computer",
-    stuck: 'Stuck? I can help!',
-    open: "Ask the ship's computer for help",
+    name: "Orbie · the ship's computer",
+    stuck: 'Stuck? Orbie can help!',
+    open: 'Ask Orbie for help',
     close: 'Close',
     prev: 'Back',
     next: 'Next',
@@ -940,6 +943,9 @@ const he: Strings = {
   vibrationHint: 'זמזום בתשובה נכונה, דפיקה בטעות',
   mistakeReviewLabel: 'מפת התרגול',
   mistakeReviewHint: 'לפתוח אותה לבד אחרי 5 טעויות',
+  orbieLabel: 'עזרה מאורבי',
+  orbieOnHint: 'נתקעתם בשאלה? אורבי מרחף אליכם לעזור לחשוב עליה',
+  orbieOffHint: 'אורבי לא מגיע: בלי כדור עזרה',
   timedBoostLabel: 'בוסט מהירות',
   timedBoostOnHint: (s) => `תשובה מהירה ממלאת יותר דלק. בוסט ענק: מתחת ל־${s} שניות, והוא מתאים את עצמו לקצב שלך`,
   timedBoostOffHint: 'בלי שעון: כל תשובה נכונה ממלאת אותו דבר. אפשר לחשוב בנחת!',
@@ -1336,9 +1342,9 @@ const he: Strings = {
   },
 
   computer: {
-    name: 'מחשב החללית',
-    stuck: 'נתקעתם? אני יכול לעזור!',
-    open: 'לבקש עזרה ממחשב החללית',
+    name: 'אורבי · מחשב החללית',
+    stuck: 'נתקעתם? אורבי יעזור!',
+    open: 'לבקש עזרה מאורבי',
     close: 'סגירה',
     prev: 'הקודם',
     next: 'הבא',

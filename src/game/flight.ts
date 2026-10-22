@@ -145,6 +145,13 @@ export const DIVE_MS = 950;
 
 // ---- the cockpit: settings open by flying the camera in through the porthole ----
 
+/**
+ * The rocket's outline on screen (CSS px) as of the last frame drawn: the
+ * four corners of its art, turned with it (FlyingRocket writes them), for
+ * what has to keep clear of it (the ship's computer's orb). Empty until drawn.
+ */
+export const rocketScreen: { quad: Array<{ x: number; y: number }> } = { quad: [] };
+
 /** where the porthole is on screen (CSS px) as of the last frame drawn, and its glass's radius */
 export const portholeScreen = { x: 0, y: 0, r: 0 };
 

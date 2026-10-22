@@ -1,4 +1,4 @@
-# The ship's computer: help for a pilot who's stuck
+# Orbie, the ship's computer: help for a pilot who's stuck
 
 ## Goal
 
@@ -15,9 +15,24 @@ for the child to finish.
 - **Only on the main question,** not during a bonus round, a launch, the practice map, the Academy
   or the answer's feedback. A new question starts over.
 
+## Orbie
+
+The ship's computer has a name, **Orbie** (אורבי), and a switch of its own in the cockpit, "Help
+from Orbie", on by default. Beside the switch, a little glowing orb floats while Orbie is on and dims
+while it's off. Switched off, no orb comes.
+
 ## The orb and its window
 
-- **The orb:** React Bits' Orb (MIT + Commons Clause, which allows a paid app; the notice is kept in
+- **Where the orb floats:** beside the rocket, never over it (`orbPlace.ts`).
+  - The rocket's outline on screen is worked out every frame, the four corners of its art turned
+    with it as it leans with the level's course (`flight.rocketScreen`, written by FlyingRocket).
+  - The orb tries a ring of directions around it, the most natural first (right, a little up or
+    down, left…), and sits as close as it can along the first one that's clear. It keeps 22 px
+    from the rocket (11 px if a phone has no room for more), stays inside the screen, and keeps off
+    the top bar, the fuel gauge and the question.
+  - It keeps to the side it chose while that's clear, so it doesn't hop about. It's smaller on a
+    phone (70 px).
+- **The orb itself:** React Bits' Orb (MIT + Commons Clause, which allows a paid app; the notice is kept in
   `reactbits/Orb.tsx`) lights up beside the rocket's hull and follows it as it floats. It breathes
   gently with a "?" in it, and a bubble says "Stuck? I can help!" for its first five seconds. One
   change to the Orb: each mount makes a canvas of its own (on remounting the same canvas, as
@@ -26,8 +41,11 @@ for the child to finish.
   It shows one step at a time with a picture, ‹ › to page through them, dots for where you are,
   and 🔊 to read the step aloud. "Now you try! 🚀" closes the last step. ✕, the orb again, or
   Android's Back closes it.
+- **One size:** the window is the same size for every step (380 px tall, or less where the
+  screen is shorter), so ‹ › stay right where the finger or the mouse is while paging. A step too
+  tall for it scrolls inside.
 - **Placement:** clear of the question and its answers, since the child reads it and answers.
-  - On a computer or a tablet it goes beside the orb.
+  - On a computer or a tablet it goes beside the orb, on the side away from the rocket.
   - On a phone it fills the space above the question, held by its bottom edge so a taller step
     grows up over the rocket instead of down over the answers. It scrolls if even that isn't
     enough.

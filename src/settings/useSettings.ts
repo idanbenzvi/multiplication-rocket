@@ -16,6 +16,8 @@ interface Saved {
   mistakeReview: boolean;
   /** phone/tablet vibration feedback (where the device supports it) */
   vibration: boolean;
+  /** Orbie, the ship's computer, offers to help on a question the pilot is stuck on */
+  orbie: boolean;
 }
 
 function defaults(): Saved {
@@ -28,6 +30,7 @@ function defaults(): Saved {
     typedCheck: isTouchDevice ? 'auto' : 'confirm',
     mistakeReview: false,
     vibration: true,
+    orbie: true,
   };
 }
 
@@ -48,6 +51,7 @@ function load(): Saved {
           : base.typedCheck,
       mistakeReview: typeof parsed.mistakeReview === 'boolean' ? parsed.mistakeReview : base.mistakeReview,
       vibration: typeof parsed.vibration === 'boolean' ? parsed.vibration : base.vibration,
+      orbie: typeof parsed.orbie === 'boolean' ? parsed.orbie : base.orbie,
     };
   } catch {
     return base; // storage blocked
@@ -59,14 +63,15 @@ interface SettingsState extends Saved {
   setTypedCheck: (check: TypedCheck) => void;
   setMistakeReview: (on: boolean) => void;
   setVibration: (on: boolean) => void;
+  setOrbie: (on: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>((set, get) => {
   const update = (patch: Partial<Saved>) => {
     set(patch);
-    const { answerMode, typedCheck, mistakeReview, vibration } = get();
+    const { answerMode, typedCheck, mistakeReview, vibration, orbie } = get();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ answerMode, typedCheck, mistakeReview, vibration }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ answerMode, typedCheck, mistakeReview, vibration, orbie }));
     } catch {
       // non-persistent is fine
     }
@@ -77,5 +82,6 @@ export const useSettings = create<SettingsState>((set, get) => {
     setTypedCheck: (typedCheck) => update({ typedCheck: isTouchDevice ? typedCheck : 'confirm' }),
     setMistakeReview: (mistakeReview) => update({ mistakeReview }),
     setVibration: (vibration) => update({ vibration }),
+    setOrbie: (orbie) => update({ orbie }),
   };
 });

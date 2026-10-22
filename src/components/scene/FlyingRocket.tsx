@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CHARGE_MS, departure, departurePhase, flight, HOME_MS, homecoming, kick, porthole, PORTHOLE_Y, rocketWorld } from '../../game/flight';
+import { CHARGE_MS, departure, departurePhase, flight, HOME_MS, homecoming, kick, porthole, PORTHOLE_Y, rocketScreen, rocketWorld } from '../../game/flight';
 import { gameNow } from '../../game/gameClock';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
@@ -84,15 +84,17 @@ function awayOffset(now: number, t: number) {
 export function FlyingRocket({ level }: Props) {
   const ship = useShip();
   const crew = useCrewStore((s) => !!s.members);
-  // (the colour doesn't move the nozzle)
-  const nozzle = shipArt(ship, '#000', crew).nozzle;
+  // (the colour doesn't move the nozzle, nor the ship's outline)
+  const { nozzle, bounds } = shipArt(ship, '#000', crew);
   const courseRef = useRef<THREE.Group>(null);
   const groupRef = useRef<THREE.Group>(null);
   // the blast-off this frame belongs to: its build-up and its ignition sound once each
   const charged = useRef(-Infinity);
   const ignited = useRef(-Infinity);
 
-  useFrame(({ clock }, rawDelta) => {
+  const corner = useRef(new THREE.Vector3());
+
+  useFrame(({ clock, camera, size }, rawDelta) => {
     const course = courseRef.current;
     const group = groupRef.current;
     if (!course || !group) return;
@@ -136,6 +138,20 @@ export function FlyingRocket({ level }: Props) {
     rocketWorld.x = porthole.x + x * c - y * sn;
     rocketWorld.y = x * sn + y * c;
     group.rotation.z = Math.sin(t * 0.9) * 0.03 - s * 0.04 + Math.sin(t * 19) * flight.jolt * 0.06 * m + home.bank;
+
+    // the outline of the ship's art on screen (RocketSprite: a 1.1 × 2.3 plane centred 1.1 up, over a 200 × 400 frame)
+    group.updateMatrixWorld();
+    const [bx, by, bw, bh] = bounds;
+    rocketScreen.quad = [
+      [bx, by],
+      [bx + bw, by],
+      [bx + bw, by + bh],
+      [bx, by + bh],
+    ].map(([fx, fy]) => {
+      const p = corner.current.set((fx / 200 - 0.5) * 1.1, 1.1 + (0.5 - fy / 400) * 2.3, 0);
+      group.localToWorld(p).project(camera);
+      return { x: size.left + ((p.x + 1) / 2) * size.width, y: size.top + ((1 - p.y) / 2) * size.height };
+    });
   });
 
   return (
