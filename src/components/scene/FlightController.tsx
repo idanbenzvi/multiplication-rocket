@@ -10,13 +10,13 @@ import {
   cockpitDolly,
   cockpitDollyAt,
   courseRotation,
+  cockpitView,
   DIVE_MS,
   flight,
-  PORTHOLE_Y,
   porthole,
   portholeScreen,
+  portholeWorld,
   portholeZoom,
-  rocketWorld,
   targetSpeed,
   ZOOM_RESET_MS,
 } from '../../game/flight';
@@ -32,9 +32,8 @@ const CHARGE_FOV = 5;
 const SIDEWAYS_SHIFT = 0.22;
 let sideShift = 0;
 
-// Porthole zoom: how far toward the window each tap stage takes the camera
-// (0 = normal view, 1 = through the glass), which sits PORTHOLE_Y above
-// rocketWorld.
+// Porthole zoom: how far toward the window (portholeWorld) each tap stage
+// takes the camera (0 = normal view, 1 = through the glass).
 const ZOOM_STAGES = [0, 0.38, 0.64, 0.8];
 /** fully zoomed, the camera is this far from the window (inside the near plane) */
 const NEAREST = 0.04;
@@ -45,6 +44,11 @@ const baseEye = new Vector3();
 const portholeEdge = new Vector3();
 const cameraRight = new Vector3();
 let zoomValue = 0;
+/** the window's size on screen, last frame, as a log of how much it has grown (for flight.rush) */
+let grownBefore = 0;
+/** the dive goes through the pilot at the window: they blur away between these zooms (and come back pulling out) */
+const PILOT_GONE_FROM = 0.82;
+const PILOT_GONE_AT = 0.97;
 
 // Easing rates (per second). Braking is deliberately quicker than speeding
 // up, so a wrong answer is felt immediately instead of a slow coast-down.
@@ -158,7 +162,7 @@ export function FlightController() {
     }
     const zoomRate = z.diveAt ? 14 : zoomGoal > zoomValue ? 7 : 2.5;
     zoomValue += (zoomGoal - zoomValue) * (1 - Math.exp(-zoomRate * dt));
-    zoomTarget.set(rocketWorld.x, rocketWorld.y + PORTHOLE_Y, 0);
+    zoomTarget.set(portholeWorld.x, portholeWorld.y, portholeWorld.z);
     // Opening the settings flies in through the window to the cockpit (and
     // back out): ever closer by the same factor each moment, so the window
     // grows on screen at a steady rate. It overrides the taps' zoom.
@@ -170,6 +174,14 @@ export function FlightController() {
     }
     const calm = 1 - zoomValue; // no rumble with your nose against the glass
     humFor(zoomValue);
+
+    // how fast the window grows on screen (the camera's distance to it shrinking), for the radial blur
+    const span = CAMERA_POS.distanceTo(zoomTarget);
+    const grown = Math.log((span + NEAREST) / (span * (1 - zoomValue) + NEAREST));
+    if (dt > 0) flight.rush += ((grown - grownBefore) / dt - flight.rush) * (1 - Math.exp(-15 * dt));
+    grownBefore = grown;
+    // the pilot at the window gives way to the cockpit's view as it shows, or to the dive rushing through
+    flight.pilot = Math.min(1 - cockpitView.shown, 1 - MathUtils.smoothstep(zoomValue, PILOT_GONE_FROM, PILOT_GONE_AT));
 
     baseEye.set(
       CAMERA_POS.x + ((Math.sin(t * 47) + Math.sin(t * 31)) * rumble + Math.sin(t * 25) * knock) * calm,

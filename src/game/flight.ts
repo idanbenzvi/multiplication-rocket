@@ -54,6 +54,18 @@ export const flight = {
   heading: 0,
   /** how fast the heading is turning (radians / second), for the eased turn */
   headingVel: 0,
+  /**
+   * How fast the camera is rushing at the ship's window (negative: pulling
+   * back from it), as the window's growth on screen: its log-size per second.
+   * The scene smears out radially from the window with it (SpeedBlur).
+   */
+  rush: 0,
+  /**
+   * 1..0 how much of the pilot shows at the window as the camera goes in
+   * through it: 1 sharp, 0 blurred away and faded out, the cockpit's view
+   * (or the Academy beyond) in their place (PilotFade).
+   */
+  pilot: 1,
 };
 
 /** a level's heading (degrees from straight up, positive = right) as flight.heading */
@@ -126,8 +138,12 @@ export function flyHome() {
 /** the porthole's height above the rocket group's origin (RocketSprite: plane centre 1.1 + porthole offset) */
 export const PORTHOLE_Y = 1.17;
 
-/** the porthole is PORTHOLE_Y above this point this frame, in world space (FlyingRocket writes it) */
-export const rocketWorld = { x: 0, y: 0 };
+/**
+ * Where the ship's window is in world space, as of the last frame drawn
+ * (FlyingRocket writes it, with the ship's float, lean and wobble): the
+ * camera flies in through it.
+ */
+export const portholeWorld = { x: 0, y: PORTHOLE_Y, z: 0 };
 
 /**
  * The ship's window, in the rocket group's units (RocketSprite writes it for
@@ -162,6 +178,9 @@ export const portholeScreen = { x: 0, y: 0, r: 0 };
  * window grows on screen at a steady rate (FlightController).
  */
 export const cockpitDolly = { from: 0, to: 0, startedAt: 0, ms: 1 };
+
+/** how much the cockpit's view shows in the window as the camera flies in to it, or back out (Cockpit.tsx writes it) */
+export const cockpitView = { shown: 0 };
 
 export function cockpitDollyAt(now: number): number {
   const d = cockpitDolly;

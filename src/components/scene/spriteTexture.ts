@@ -160,8 +160,9 @@ export function useSvgTexture(
   portholes?: Porthole | readonly Porthole[],
   picture?: SpritePicture,
 ): THREE.CanvasTexture | null {
-  const emoji = portholeList(portholes).map((p) => p.emoji);
-  const key = `${picture?.url ?? ''}|${svg}|${emoji.join('|')}|${width}`;
+  // (a window with nobody in it isn't the same as no window drawn at all)
+  const emoji = portholeList(portholes).map((p) => `[${p.emoji}]`);
+  const key = `${picture?.url ?? ''}|${svg}|${emoji.join('')}|${width}`;
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(cache.get(key) ?? null);
 
   useEffect(() => {

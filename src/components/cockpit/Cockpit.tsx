@@ -4,7 +4,7 @@ import { sfx } from '../../audio/sfx';
 import { canVibrate, haptics } from '../../audio/haptics';
 import { useAudio } from '../../audio/useAudio';
 import { pauseGame, resumeGame, usePause } from '../../game/gameClock';
-import { cockpitDolly, cockpitDollyAt, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
+import { cockpitDolly, cockpitDollyAt, cockpitView, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
 import { useGameStore } from '../../game/useGameStore';
 import { paceMs } from '../../game/scoring';
 import { useCrewStore } from '../../game/useCrewStore';
@@ -31,9 +31,16 @@ import { useBack } from '../../native/back';
 const OPEN_MS = 1500;
 /** the flight back out, from wherever the cockpit filled the screen to the usual view */
 const CLOSE_MS = 1000;
-/** the cockpit, nearly porthole-sized, fades away into the window over the end of that and a little after */
-const FADE_FROM_MS = 650;
-const FADE_MS = 150;
+/**
+ * The cockpit's view comes through the window as it grows, the pilot at the
+ * window blurring away in its place (PilotFade): all there once the window
+ * has grown this share of the way to filling the screen. Flying back out, it
+ * goes the same way, the pilot coming back into focus.
+ */
+const VIEW_BY = 0.35;
+/** on the way back out, the HUD returns from here, and the cockpit is gone a little after the camera is back */
+const HUD_BACK_MS = 650;
+const LINGER_MS = 150;
 const IRIS_OPEN_MS = 650;
 const IRIS_CLOSE_MS = 520;
 const CALM_MS = 250;
@@ -193,24 +200,25 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
         const big = cover(x, y);
         const p = clamp01(Math.log(Math.max(r, 1) / r0) / Math.log(big / r0));
         show(x, y, Math.max(r, 0), p);
+        const seen = clamp01(p / VIEW_BY);
+        root.style.opacity = String(seen);
+        cockpitView.shown = seen;
         if (!leaving) {
-          // (the pilot at the window fades into the cockpit's view)
-          root.style.opacity = String(clamp01(el / 200));
           if (r < big && el < OPEN_MS + 300) return;
           // inside: the camera waits here, through the glass, until the way back out
           const a = cockpitDollyAt(now);
           Object.assign(cockpitDolly, { from: a, to: a, startedAt: now, ms: 1 });
           pauseGame('cockpit');
         } else {
-          // nearly back at the window, the cockpit fades to show the pilot again, and the HUD returns
-          root.style.opacity = String(clamp01(1 - (el - FADE_FROM_MS) / (CLOSE_MS + FADE_MS - FADE_FROM_MS)));
-          if (el >= FADE_FROM_MS) hudBack();
-          if (el < CLOSE_MS + FADE_MS) return;
+          // nearly back at the window, the HUD returns
+          if (el >= HUD_BACK_MS) hudBack();
+          if (el < CLOSE_MS + LINGER_MS) return;
         }
       }
       cancelAnimationFrame(raf);
       if (leaving) {
         hudBack();
+        cockpitView.shown = 0;
         onGone();
       } else arrived();
     };
@@ -224,6 +232,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   useEffect(
     () => () => {
       hudBack();
+      cockpitView.shown = 0;
       resumeGame('cockpit');
       if (cockpitDolly.to > 0) moveCockpitDolly(0, CLOSE_MS);
     },

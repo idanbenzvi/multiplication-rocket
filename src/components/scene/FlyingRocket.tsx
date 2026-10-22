@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CHARGE_MS, departure, departurePhase, flight, HOME_MS, homecoming, kick, porthole, PORTHOLE_Y, rocketScreen, rocketWorld } from '../../game/flight';
+import { CHARGE_MS, departure, departurePhase, flight, HOME_MS, homecoming, kick, porthole, PORTHOLE_Y, portholeWorld, rocketScreen } from '../../game/flight';
 import { gameNow } from '../../game/gameClock';
 import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
@@ -132,15 +132,14 @@ export function FlyingRocket({ level }: Props) {
       kick(1.1);
       sfx.blastOff();
     }
-    // the porthole in world space: the pivot, plus this frame's float turned onto the course
-    const c = Math.cos(flight.heading);
-    const sn = Math.sin(flight.heading);
-    rocketWorld.x = porthole.x + x * c - y * sn;
-    rocketWorld.y = x * sn + y * c;
     group.rotation.z = Math.sin(t * 0.9) * 0.03 - s * 0.04 + Math.sin(t * 19) * flight.jolt * 0.06 * m + home.bank;
+    group.updateMatrixWorld();
+
+    // the window in world space, as it floats, leans and wobbles (its lean is about the ship's foot, well below it)
+    const { x: wx, y: wy, z: wz } = group.localToWorld(corner.current.set(porthole.x, PORTHOLE_Y, 0));
+    Object.assign(portholeWorld, { x: wx, y: wy, z: wz });
 
     // the outline of the ship's art on screen (RocketSprite: a 1.1 × 2.3 plane centred 1.1 up, over a 200 × 400 frame)
-    group.updateMatrixWorld();
     const [bx, by, bw, bh] = bounds;
     rocketScreen.quad = [
       [bx, by],

@@ -3,6 +3,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useGameStore } from '../../game/useGameStore';
 import { useCrewStore } from '../../game/useCrewStore';
 import { PortholeShimmer } from './PortholeShimmer';
+import { PilotFade } from './PilotFade';
 import { DIVE_MS, porthole, portholeZoom, ZOOM_RESET_MS } from '../../game/flight';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
@@ -105,6 +106,17 @@ export function RocketSprite({ level }: Props) {
         <planeGeometry args={[WIDTH, HEIGHT]} />
         <meshBasicMaterial map={texture} transparent alphaTest={0.05} toneMapped={false} />
       </mesh>
+      {avatar && !crew && (
+        <PilotFade
+          texture={texture}
+          svg={art.svg}
+          picture={art.picture}
+          texSize={[texW, texH]}
+          window={window0}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      )}
       {!academySeen && !crew && (
         <PortholeShimmer
           x={(window0.x - 0.5) * WIDTH}
