@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { useContext, useEffect, useState } from 'react';
 import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Profile } from '../profiles/useProfiles';
 import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
@@ -10,6 +8,10 @@ import GradientText from './reactbits/GradientText';
 import { RestoreDialog } from './parents/Backup';
 import { useHangar } from '../profiles/useHangar';
 import { useBack } from '../native/back';
+import { useAdmiral } from '../game/useAchievements';
+import { colorForLevel } from './scene/palette';
+import { BayScreen } from './bay/BayScreen';
+import { BayShip } from './bay/useBay';
 
 // After switching or creating a pilot, reload the game with their progress.
 function startGameForActive() {
@@ -43,6 +45,14 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
   // (changed in the hangar, over this editor)
   const ship = useProfiles((s) => s.profiles.find((p) => p.id === profile?.id)?.ship);
   const canSave = name.trim().length > 0 && mission !== null;
+  // in the launch bay, the pilot's ship stands on the pad with them at its window (a new pilot's, the classic rocket)
+  const padShip = useContext(BayShip);
+  const [level] = useState(() => (profile ? profileStats(profile.id).level : 1));
+  const admiral = useAdmiral() && !!profile && profile.id === activeId;
+  useEffect(() => {
+    padShip?.({ ship: ship ?? 'classic', accent: colorForLevel(level), admiral, avatar });
+  }, [padShip, ship, level, admiral, avatar]);
+  useEffect(() => () => padShip?.(undefined), [padShip]);
 
   const save = () => {
     if (!canSave) return;
@@ -233,7 +243,9 @@ export function ProfileGate() {
   useBack(profiles.length > 0 && !!active?.name && !chosen && view.kind !== 'pick' && (() => setView({ kind: 'pick' })));
 
   let content: React.ReactNode = null;
+  let sign = t.bay.whosFlying;
   if (profiles.length === 0) {
+    sign = t.bay.welcome;
     content = (
       <>
         <ProfileEditor title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} onRestore={() => setRestoring(true)} />
@@ -241,8 +253,10 @@ export function ProfileGate() {
       </>
     );
   } else if (active && !active.name) {
+    sign = t.bay.welcome;
     content = <ProfileEditor profile={active} title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} />;
   } else if (!chosen) {
+    sign = view.kind === 'new' ? t.bay.newPilot : view.kind === 'edit' ? t.bay.editPilot : t.bay.whosFlying;
     content =
       view.kind === 'new' ? (
         <ProfileEditor title={t.newPilot} onDone={() => setView({ kind: 'pick' })} onCancel={() => setView({ kind: 'pick' })} />
@@ -253,7 +267,11 @@ export function ProfileGate() {
       );
   }
   if (!content) return null;
-  return <div className="profile-gate">{content}</div>;
+  return (
+    <BayScreen sign={sign} card label={sign}>
+      {content}
+    </BayScreen>
+  );
 }
 
 // ---------- top-bar chip ----------
@@ -276,44 +294,21 @@ export function PilotButton() {
           {pilotName(active, t.defaultPilotName)}
         </span>
       </button>
-      {createPortal(
-        <AnimatePresence>
-          {view && (
-            <motion.div
-              className="settings-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={close}
-            >
-              <motion.div
-                className="settings-sheet profile-sheet"
-                role="dialog"
-                aria-modal="true"
-                aria-label={t.switchPilot}
-                initial={{ y: 40, opacity: 0, scale: 0.96 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 40, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {view.kind === 'pick' && (
-                  <PilotPicker onPicked={close} onNew={() => setView({ kind: 'new' })} onEdit={(p) => setView({ kind: 'edit', profile: p })} />
-                )}
-                {view.kind === 'new' && <ProfileEditor title={t.newPilot} onDone={close} onCancel={() => setView({ kind: 'pick' })} />}
-                {view.kind === 'edit' && (
-                  <ProfileEditor profile={view.profile} title={t.editPilot} onDone={close} onCancel={() => setView({ kind: 'pick' })} />
-                )}
-                {view.kind === 'pick' && (
-                  <button type="button" className="settings-close" onClick={close}>
-                    {t.close}
-                  </button>
-                )}
-              </motion.div>
-            </motion.div>
+      {view && (
+        <BayScreen sign={view.kind === 'new' ? t.bay.newPilot : view.kind === 'edit' ? t.bay.editPilot : t.bay.whosFlying} card label={t.switchPilot}>
+          {view.kind === 'pick' && (
+            <PilotPicker onPicked={close} onNew={() => setView({ kind: 'new' })} onEdit={(p) => setView({ kind: 'edit', profile: p })} />
           )}
-        </AnimatePresence>,
-        document.body,
+          {view.kind === 'new' && <ProfileEditor title={t.newPilot} onDone={close} onCancel={() => setView({ kind: 'pick' })} />}
+          {view.kind === 'edit' && (
+            <ProfileEditor profile={view.profile} title={t.editPilot} onDone={close} onCancel={() => setView({ kind: 'pick' })} />
+          )}
+          {view.kind === 'pick' && (
+            <button type="button" className="settings-close" onClick={close}>
+              {t.close}
+            </button>
+          )}
+        </BayScreen>
       )}
     </>
   );

@@ -13,7 +13,7 @@ const DEFAULT_EFFECTS = 0.7;
 // a time, at the music volume, and never cuts to another: the one playing
 // fades out, then the next fades in. Paths are relative to the page, so they
 // resolve both on a web server and from the Electron app's file:// URL.
-export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit';
+export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit' | 'bay';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
@@ -21,13 +21,15 @@ const tracks: Record<Track, HTMLAudioElement> = {
   boss: new Audio('./audio/view-from-the-last-lap.mp3'),
   about: new Audio('./audio/velvet-horizon.mp3'),
   cockpit: new Audio('./audio/starboard-view.mp3'),
+  bay: new Audio('./audio/apex-ascent.mp3'),
 };
-// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page or the cockpit
+// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page, the cockpit or the launch bay
 tracks.sun.preload = 'none';
 tracks.crew.preload = 'none';
 tracks.boss.preload = 'none';
 tracks.about.preload = 'none';
 tracks.cockpit.preload = 'none';
+tracks.bay.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
 
 /** changing soundtracks, the one playing fades out over this long, then the next fades in over this long (and the music fades in starting, or back from a pause) */
@@ -189,6 +191,28 @@ export function playTrack(track: Track) {
     void tracks[track].play().catch(() => {});
   }
   applyMusic();
+}
+
+/**
+ * From a tap, for a soundtrack that will start later without one (at the end
+ * of an animation): a browser that only plays sound after a tap lets it then.
+ * It plays a moment, muted, and stops again.
+ */
+export function unlockTrack(track: Track) {
+  const t = tracks[track];
+  if (!t.paused || track === sounding || track === current) return;
+  t.muted = true;
+  void t
+    .play()
+    .then(() => {
+      // (unless it's been asked for meanwhile: then it's starting, muted till its turn)
+      if (track === sounding || track === current) return;
+      t.pause();
+      t.muted = false;
+    })
+    .catch(() => {
+      if (track !== current) t.muted = false;
+    });
 }
 
 /** the soundtrack playing now (to go back to it afterwards) */

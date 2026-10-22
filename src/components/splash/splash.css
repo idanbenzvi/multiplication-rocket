@@ -77,6 +77,45 @@
   from { filter: brightness(1.05) blur(0) drop-shadow(0 0 10px rgba(82, 229, 255, 0.45)); }
   to { filter: brightness(1.25) blur(0) drop-shadow(0 0 18px rgba(82, 229, 255, 0.7)); }
 }
+/* the deer's stars, coming out one by one before the deer (each where its star is, StudioSplash),
+   then twinkling: a white core in a cyan glow, with a long spike across and a shorter one down */
+.splash-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.splash-star {
+  position: absolute;
+  /* (--r: how far its glow reaches, a share of the deer's width) */
+  width: calc(var(--r) * 900%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle closest-side, #fff 0 6%, rgba(175, 250, 255, 0.95) 12%, rgba(40, 228, 255, 0.85) 26%, rgba(20, 190, 255, 0.4) 48%, rgba(20, 150, 255, 0.12) 68%, transparent 86%) center / 62% 62% no-repeat,
+    linear-gradient(90deg, transparent, rgba(40, 210, 255, 0.35) 30%, rgba(200, 252, 255, 0.95) 50%, rgba(40, 210, 255, 0.35) 70%, transparent) center / 100% 3.5% no-repeat,
+    linear-gradient(180deg, transparent, rgba(40, 210, 255, 0.3) 30%, rgba(200, 252, 255, 0.9) 50%, rgba(40, 210, 255, 0.3) 70%, transparent) center / 2.6% 58% no-repeat;
+  animation:
+    splashStarIn 1.3s ease-out var(--at) both,
+    splashStarTwinkle var(--twinkle) ease-in-out calc(var(--at) + 1.3s) infinite alternate;
+}
+@keyframes splashStarIn {
+  0% { opacity: 0; scale: 0.15; filter: brightness(1); }
+  35% { opacity: 0.5; scale: 0.5; }
+  70% { opacity: 1; scale: 1.25; filter: brightness(1.4); }
+  100% { opacity: 1; scale: 1; filter: brightness(1); }
+}
+@keyframes splashStarTwinkle {
+  from { opacity: 1; scale: 1; }
+  to { opacity: 0.72; scale: 0.86; }
+}
+/* the deer drawn among them, they glow on a little quieter */
+.splash.has-deer .splash-stars {
+  opacity: 0.8;
+  transition: opacity 1.6s ease-out;
+}
+
 /* a burst of cyan light behind the deer as it appears */
 .splash-flare {
   position: absolute;
@@ -137,6 +176,10 @@
   }
   .splash-flare {
     display: none;
+  }
+  .splash-star {
+    animation: splashSkyIn 0.8s ease-out both;
+    opacity: 1;
   }
   .splash.is-leaving {
     animation-name: splashOutCalm;

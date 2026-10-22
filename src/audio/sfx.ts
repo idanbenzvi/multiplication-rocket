@@ -682,5 +682,28 @@ export const sfx = {
     [0, 4, 7, 12, 16].forEach((n, i) => tone(c, noteFreq(n + 7), t + 1.8 + i * 0.08, 1.4, { gain: 0.08 }));
     noiseBurst(c, t + 1.8, 1.6, 5000, 12000, 0.05);
   },
+
+  // ---- the launch bay ----
+
+  /** the ship on the pad flares away: a shimmer rising to a bright ping */
+  flareOut() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 280, t, 0.42, { type: 'triangle', gain: 0.06, glideTo: 1900, attack: 0.32 });
+    noiseBurst(c, t + 0.08, 0.4, 2200, 9500, 0.05);
+    tone(c, noteFreq(12), t + 0.36, 0.4, { gain: 0.07 });
+  },
+
+  /** the next one beamed down onto the pad: the beam falling (a falling shimmer), landing (a soft thump) and the ship there (a chime) */
+  beamDown() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 1500, t, 1.0, { type: 'sine', gain: 0.045, glideTo: 240 });
+    noiseBurst(c, t, 1.0, 7000, 700, 0.045);
+    tone(c, 72, t + 1.0, 0.45, { type: 'sine', gain: 0.15, glideTo: 38 });
+    [0, 2, 4].forEach((n, i) => tone(c, noteFreq(n + 5), t + 1.05 + i * 0.06, 0.8, { gain: 0.08 }));
+  },
 };
 

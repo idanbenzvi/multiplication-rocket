@@ -13,7 +13,7 @@ let pausedAt: number | null = null;
 // Why the game is paused. 'away' = the player left the tab/app (shows the
 // paused screen); 'academy' = the Deep Space Academy is open over the game.
 // The clock runs only when there's no reason left.
-export type PauseReason = 'away' | 'academy' | 'about' | 'badges' | 'sky' | 'sun' | 'boss' | 'splash' | 'cockpit' | 'hangar';
+export type PauseReason = 'away' | 'academy' | 'about' | 'badges' | 'sky' | 'sun' | 'boss' | 'splash' | 'cockpit' | 'bay';
 const reasons = new Set<PauseReason>();
 
 /** paused at all; away (the player left the game); held (paused for a screen of its own too: the cockpit, a mode…) */

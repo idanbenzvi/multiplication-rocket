@@ -505,6 +505,17 @@ const en = {
     label: 'Ship',
     change: 'Change ship',
   },
+  // the launch bay: what its sign reads
+  bay: {
+    whosFlying: "WHO'S FLYING?",
+    welcome: 'WELCOME, PILOT!',
+    newPilot: 'NEW PILOT',
+    editPilot: 'PILOT CARD',
+    ships: 'SELECT YOUR VEHICLE!',
+    launching: 'GOOD LUCK!',
+    previous: 'Previous ship',
+    next: 'Next ship',
+  },
   backup: {
     title: '💾 Backup',
     intro: 'Progress is saved in this browser only. Save a backup file now and then, to restore it here or on another device.',
@@ -1378,6 +1389,16 @@ const he: Strings = {
     newBadge: 'חדש!',
     label: 'חללית',
     change: 'החלפת חללית',
+  },
+  bay: {
+    whosFlying: 'מי טס היום?',
+    welcome: 'ברוכים הבאים!',
+    newPilot: 'פרופיל חדש',
+    editPilot: 'עריכת פרופיל',
+    ships: 'בחרו חללית!',
+    launching: 'בהצלחה!',
+    previous: 'החללית הקודמת',
+    next: 'החללית הבאה',
   },
   backup: {
     title: '💾 גיבוי',

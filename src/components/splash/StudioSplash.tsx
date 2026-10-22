@@ -1,17 +1,20 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSplash } from './useSplash';
 import { pauseGame, resumeGame } from '../../game/gameClock';
 import { flyHome } from '../../game/flight';
 import { DEV_MODE } from '../../dev/devMode';
 import ElectricLogo from '../reactbits/ElectricLogo';
 import ParticleText from '../reactbits/ParticleText';
 import { SplashShip } from './SplashShip';
+import { DEER_STARS } from './deerStars';
 import './splash.css';
 
 // The studio's opening, Flying Deer Games: an empty starry sky; the winged
-// deer constellation traced into it by cyan lightning (React Bits'
-// ElectricLogo, running along the deer's silhouette) as the constellation
-// itself glows in; then the studio's name gathering out of drifting
+// deer's stars coming out in it one by one, slowly, and twinkling; then, and
+// only then, the deer itself, traced among them by cyan lightning (React
+// Bits' ElectricLogo, running along the deer's silhouette) as the
+// constellation's lines glow in; then the studio's name gathering out of drifting
 // particles (React Bits' ParticleText); and with a whoosh, the game's rocket
 // loops the loop through the deer and zooms away in a trail of sparkles
 // (SplashShip). The game loads underneath, paused, and a tap or a key skips
@@ -31,25 +34,31 @@ const NAME_FONT = "'Unbounded', 'Fredoka', sans-serif";
 const LIGHTNING_ROOM = 1.7;
 
 /** what's on screen: each step adds to the ones before */
-type Step = 'loading' | 'sky' | 'lightning' | 'deer' | 'name' | 'ship';
-const ORDER: Step[] = ['loading', 'sky', 'lightning', 'deer', 'name', 'ship'];
+type Step = 'loading' | 'sky' | 'stars' | 'lightning' | 'deer' | 'name' | 'ship';
+const ORDER: Step[] = ['loading', 'sky', 'stars', 'lightning', 'deer', 'name', 'ship'];
 
 // when each step starts, and when the splash leaves, in ms after the pictures have loaded
 const TIMELINE: [Step | 'leave', number][] = [
   ['sky', 0],
-  ['lightning', 600],
-  ['deer', 1900],
-  ['name', 2900],
-  ['ship', 5600],
-  ['leave', 8800],
+  ['stars', 500],
+  ['lightning', 3000],
+  ['deer', 3800],
+  ['name', 4800],
+  ['ship', 7500],
+  ['leave', 10700],
 ];
 // with reduced motion: the same steps, sooner, and no lightning or flying rocket
 const CALM_TIMELINE: [Step | 'leave', number][] = [
   ['sky', 0],
-  ['deer', 300],
-  ['name', 700],
-  ['leave', 3200],
+  ['stars', 200],
+  ['deer', 1300],
+  ['name', 1700],
+  ['leave', 4200],
 ];
+/** the deer's stars come out over this long, one after another, each taking STAR_IN_S to come up */
+const STARS_OVER_S = 2.1;
+// (a scattered order, as stars come out at dusk, the same every time)
+const STAR_ORDER = DEER_STARS.map((_, i) => i).sort((a, b) => ((a * 7919) % 23) - ((b * 7919) % 23));
 const LEAVE_MS = 800;
 /** dev mode: ?devmode=1&splash=hold keeps the splash up (a tap still closes it), to look at it */
 const HOLD = DEV_MODE && new URLSearchParams(window.location.search).get('splash') === 'hold';
@@ -115,6 +124,7 @@ export function StudioSplash() {
     if (leaving.current) return;
     leaving.current = true;
     setIsLeaving(true);
+    useSplash.setState({ showing: false });
     window.setTimeout(() => {
       setDone(true);
       resumeGame('splash');
@@ -169,6 +179,25 @@ export function StudioSplash() {
         <div className="splash-deer-box" ref={deerRef}>
           {reached('deer') && <div className="splash-flare" aria-hidden />}
           {reached('deer') && <img className="splash-deer" src={DEER} alt="" draggable={false} />}
+          {reached('stars') && (
+            <div className="splash-stars" aria-hidden>
+              {DEER_STARS.map((star, i) => (
+                <span
+                  key={i}
+                  className="splash-star"
+                  style={
+                    {
+                      left: `${star.x * 100}%`,
+                      top: `${star.y * 100}%`,
+                      '--r': star.r,
+                      '--at': `${calm ? 0 : (STAR_ORDER.indexOf(i) / DEER_STARS.length) * STARS_OVER_S}s`,
+                      '--twinkle': `${1.7 + ((i * 37) % 11) / 10}s`,
+                    } as React.CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          )}
           {!calm && reached('lightning') && (
             <div className="splash-lightning" aria-hidden>
               <ElectricLogo
