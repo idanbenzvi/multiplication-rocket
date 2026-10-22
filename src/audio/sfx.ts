@@ -683,6 +683,30 @@ export const sfx = {
     noiseBurst(c, t + 1.8, 1.6, 5000, 12000, 0.05);
   },
 
+  // ---- the cockpit ----
+
+  /** the hyperdrive lever slammed forward: a heavy clunk, then the drive whining up and kicking in */
+  hyperdrive() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 110, t, 0.18, { type: 'square', gain: 0.09, glideTo: 55 });
+    noiseBurst(c, t, 0.12, 2600, 600, 0.14);
+    tone(c, 180, t + 0.08, 0.55, { type: 'sawtooth', gain: 0.05, glideTo: 1400, attack: 0.4 });
+    tone(c, 186, t + 0.08, 0.55, { type: 'triangle', gain: 0.05, glideTo: 1460, attack: 0.4 });
+    noiseBurst(c, t + 0.5, 0.45, 400, 6000, 0.12);
+  },
+
+  /** a dashboard droid beeping: up and happy, or down and sleepy */
+  droid(happy: boolean) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    const [a, b] = happy ? [880, 1320] : [660, 440];
+    tone(c, a, t, 0.08, { type: 'square', gain: 0.035 });
+    tone(c, b, t + 0.09, 0.1, { type: 'square', gain: 0.035 });
+  },
+
   // ---- the launch bay ----
 
   /** the ship on the pad flares away: a shimmer rising to a bright ping */
