@@ -46,52 +46,132 @@ function volume(): number {
 }
 
 // ---------- the engine's hum, heard through the rocket's window ----------
-// A steady drone (where everything else here is a one-off): low detuned
-// saws beating against each other, an octave above and a sub below, through
-// a lowpass, throbbing gently. engineHum() eases it to a level; the closer
-// it gets (the louder), the higher, brighter and more open it sounds.
+// A steady sound (where everything else here is a one-off), like a plane's
+// cabin or a car's at speed, heard from inside: mostly air, a deep rumble of
+// brown noise and a whoosh of wind whose pitch wanders and gusts, over the
+// engine's low drone and a faint turbine whine. engineHum() eases it to a
+// level; the closer it gets (the louder), the more the rumble opens up, the
+// higher the wind and the engine.
 
 interface Hum {
   out: GainNode;
-  tone: BiquadFilterNode;
-  oscs: OscillatorNode[];
+  /** what rises with the level: [param, at level 0, at level 1] */
+  rise: Array<[AudioParam, number, number]>;
+  sources: AudioScheduledSourceNode[];
 }
 let hum: Hum | null = null;
+const noiseLoops = new WeakMap<BaseAudioContext, { white: AudioBuffer; brown: AudioBuffer }>();
 
-function startHum(c: AudioContext): Hum {
+/** four seconds of white noise and of brown (its running sum: deep, like rumbling air), to loop */
+function noise(c: BaseAudioContext) {
+  let loops = noiseLoops.get(c);
+  if (!loops) {
+    const n = c.sampleRate * 4;
+    const white = c.createBuffer(1, n, c.sampleRate);
+    const brown = c.createBuffer(1, n, c.sampleRate);
+    const w = white.getChannelData(0);
+    const b = brown.getChannelData(0);
+    let last = 0;
+    let peak = 0;
+    for (let i = 0; i < n; i++) {
+      w[i] = Math.random() * 2 - 1;
+      last = (last + 0.02 * w[i]) / 1.02;
+      b[i] = last;
+      peak = Math.max(peak, Math.abs(last));
+    }
+    for (let i = 0; i < n; i++) b[i] /= peak;
+    loops = { white, brown };
+    noiseLoops.set(c, loops);
+  }
+  return loops;
+}
+
+/** the hum's sound, into `dest`, silent until a level is set (engineHum) */
+export function humGraph(c: BaseAudioContext, dest: AudioNode): Hum {
   const out = c.createGain();
   out.gain.value = 0.0001;
-  const tone = c.createBiquadFilter();
-  tone.type = 'lowpass';
-  tone.frequency.value = 240;
-  tone.Q.value = 0.8;
-  // the throb: its loudness wobbling a little, four times a second
-  const throb = c.createGain();
-  const lfo = c.createOscillator();
-  lfo.frequency.value = 4.2;
-  const depth = c.createGain();
-  depth.gain.value = 0.2;
-  lfo.connect(depth).connect(throb.gain);
-  const voices: Array<[number, OscillatorType, number]> = [
-    [55, 'sawtooth', 0.5],
-    [55.8, 'sawtooth', 0.5],
-    [110, 'triangle', 0.3],
-    [27.5, 'sine', 0.9],
-  ];
-  const oscs = voices.map(([freq, type, level]) => {
+  out.connect(dest);
+  const sources: AudioScheduledSourceNode[] = [];
+  const rise: Hum['rise'] = [];
+  const loop = (buffer: AudioBuffer) => {
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    sources.push(src);
+    return src;
+  };
+  const lfo = (hz: number, depth: number, param: AudioParam) => {
+    const osc = c.createOscillator();
+    osc.frequency.value = hz;
+    const g = c.createGain();
+    g.gain.value = depth;
+    osc.connect(g).connect(param);
+    sources.push(osc);
+  };
+  const { white, brown } = noise(c);
+
+  // the rumble: brown noise, its lowpass opening as it comes closer
+  const rumbleLp = c.createBiquadFilter();
+  rumbleLp.type = 'lowpass';
+  rumbleLp.Q.value = 0.5;
+  const rumble = c.createGain();
+  rumble.gain.value = 1;
+  loop(brown).connect(rumbleLp).connect(rumble).connect(out);
+  rise.push([rumbleLp.frequency, 170, 620]);
+
+  // the wind: noise through a soft band, its pitch wandering, its loudness gusting
+  const windBp = c.createBiquadFilter();
+  windBp.type = 'bandpass';
+  windBp.Q.value = 0.9;
+  const wind = c.createGain();
+  wind.gain.value = 0.32;
+  loop(white).connect(windBp).connect(wind).connect(out);
+  rise.push([windBp.frequency, 480, 1350]);
+  lfo(0.17, 110, windBp.frequency);
+  lfo(0.11, 0.1, wind.gain);
+
+  // the engine: two deep tones a hair apart (a slow beat), and its octave, softly
+  const engineLp = c.createBiquadFilter();
+  engineLp.type = 'lowpass';
+  engineLp.frequency.value = 260;
+  const engine = c.createGain();
+  engine.gain.value = 0.22;
+  engineLp.connect(engine).connect(out);
+  for (const [freq, type, level] of [
+    [64, 'sine', 1],
+    [64.7, 'sine', 0.8],
+    [128, 'triangle', 0.25],
+  ] as Array<[number, OscillatorType, number]>) {
     const osc = c.createOscillator();
     osc.type = type;
     osc.frequency.value = freq;
     const g = c.createGain();
     g.gain.value = level;
-    osc.connect(g).connect(tone);
-    return osc;
-  });
-  tone.connect(throb).connect(out).connect(c.destination);
+    osc.connect(g).connect(engineLp);
+    sources.push(osc);
+    rise.push([osc.detune, 0, 500]);
+  }
+
+  // the turbine: a faint high whine, far off
+  const whine = c.createOscillator();
+  whine.frequency.value = 1400;
+  const whineG = c.createGain();
+  whineG.gain.value = 0.012;
+  whine.connect(whineG).connect(out);
+  sources.push(whine);
+  rise.push([whine.detune, 0, 700]);
+
+  // (the loops each start somewhere else in their four seconds, so the layers never line up)
   const t = c.currentTime;
-  for (const osc of [...oscs, lfo]) osc.start(t);
-  return { out, tone, oscs: [...oscs, lfo] };
+  for (const src of sources) {
+    if (src instanceof AudioBufferSourceNode) src.start(t, Math.random() * 3);
+    else src.start(t);
+  }
+  return { out, rise, sources };
 }
+
+/** how loud the hum is at a level, before the effects volume (it's mostly noise: its loudness is in its spread) */
+export const humGain = (level: number) => 0.24 * level ** 1.3;
 
 /**
  * The engine's hum at `level` (0 off … 1 its loudest), easing there over
@@ -109,16 +189,14 @@ export function engineHum(level: number, seconds = 0.35) {
   if (level <= 0) {
     if (!hum) return;
     ramp(hum.out.gain, 0.0001);
-    for (const osc of hum.oscs) osc.stop(t + seconds + 0.05);
+    for (const src of hum.sources) src.stop(t + seconds + 0.05);
     hum = null;
     return;
   }
   if (volume() === 0) return;
-  hum ??= startHum(c);
-  ramp(hum.out.gain, 0.12 * level ** 1.4 * volume());
-  ramp(hum.tone.frequency, 240 + 760 * level);
-  // (the sub and the throb's own oscillator rise with the rest: a fifth higher at its loudest)
-  for (const osc of hum.oscs) ramp(osc.detune, 1200 * Math.log2(1 + 0.25 * level));
+  hum ??= humGraph(c, c.destination);
+  ramp(hum.out.gain, humGain(level) * volume());
+  for (const [param, from, to] of hum.rise) ramp(param, from + (to - from) * level);
 }
 
 // Major pentatonic, in semitones above C5 — every combination sounds happy.
