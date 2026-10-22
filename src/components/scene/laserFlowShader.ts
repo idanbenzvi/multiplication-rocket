@@ -1,9 +1,11 @@
 // Fragment shader ported from React Bits' LaserFlow
 // (https://reactbits.dev/animations/laser-flow), adapted to run on a mesh
 // inside the r3f scene as the rocket's engine plume. Changes from upstream:
-// plane UVs instead of gl_FragCoord, beam flipped to point down, edge fade,
-// and the WebGL1 derivatives-extension guard removed (three uses GLSL 3).
-// Everything else — beam shape, flowing wisps, volumetric fog — is upstream.
+// plane UVs instead of gl_FragCoord, beam flipped to point down, edge fade
+// (with room above the nozzle for its glow to fade away in), the flare lit
+// above its origin as well as below, and the WebGL1 derivatives-extension
+// guard removed (three uses GLSL 3). Everything else — beam shape, flowing
+// wisps, volumetric fog — is upstream.
 
 export const LASER_FLOW_VERT = `
 varying vec2 vUv;
@@ -33,6 +35,7 @@ uniform float uWSpeed;
 uniform float uWIntensity;
 uniform float uFlowStrength;
 uniform float uDecay;
+uniform float uTopExtra;
 uniform float uFalloffStart;
 uniform float uFogFallSpeed;
 uniform vec3 uColor;
@@ -168,7 +171,11 @@ void mainImage(out vec4 fc,in vec2 frag){
         vec2 p=vec2((R_H*uHLenFactor)*cos(tu),0.0);
         a+=wt*bs(uvc,p,env*spd);
     }
-    float yPix=uvc.y,cy=clamp(-yPix/(R_V*uVLenFactor),-1.0,1.0),tV=clamp(TWO_PI-acos(cy),tauMin,tauMax);
+    // (a point above the beam's origin takes its light from the flare at the origin, the
+    // nearest the beam comes to it, so the glow round the nozzle dies away above it too;
+    // the original sampled only beam points above it there, all masked, and the glow
+    // stopped dead in a straight line across the nozzle)
+    float yPix=uvc.y,cy=clamp(-yPix/(R_V*uVLenFactor),-1.0,0.0),tV=clamp(TWO_PI-acos(cy),tauMin,tauMax);
     for(int k=-TAP_RADIUS;k<=TAP_RADIUS;++k){
         float tu=tV+float(k)*DT_LOCAL,wt=tauWf(tu,tauMin,tauMax); if(wt<=0.0) continue;
         float yb=(-R_V)*cos(tu),s=clamp(yb/R_V,0.0,1.0),spd=max(abs(sin(tu)),0.02);
@@ -229,12 +236,17 @@ void mainImage(out vec4 fc,in vec2 frag){
 void main(){
   // Plane-space instead of screen-space: the "pixel" coordinate comes from the
   // mesh UV, flipped so the beam (which grows toward +y in the original)
-  // points down, away from the nozzle at the top of the plane.
-  vec2 frag = vec2(vUv.x, 1.0 - vUv.y) * iResolution.xy;
+  // points down, away from the nozzle near the top of the plane. The plane can
+  // reach up past its usual top (uTopExtra, a share of its height) without
+  // moving or stretching what's drawn, so the glow round the nozzle has room
+  // to die away above it instead of stopping at a straight edge.
+  float vy = vUv.y * (1.0 + uTopExtra);
+  vec2 frag = vec2(vUv.x, 1.0 - vy) * iResolution.xy;
   vec4 fc;
   mainImage(fc, frag);
-  // Soft-fade the plane's bottom and sides so its rectangle never shows.
-  float edge = smoothstep(0.0, 0.35, vUv.y) * smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);
+  // Soft-fade the plane's edges so its rectangle never shows: the bottom, the
+  // sides, and the top, from just above the nozzle up.
+  float edge = smoothstep(0.0, 0.35, vy) * smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x) * smoothstep(1.0 + uTopExtra, 0.92, vy);
   gl_FragColor = vec4(fc.rgb * edge, 1.0);
 }
 `;

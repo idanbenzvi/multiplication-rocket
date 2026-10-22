@@ -11,6 +11,17 @@ import { LASER_FLOW_FRAG, LASER_FLOW_VERT } from './laserFlowShader';
 // rest of the plane is room for the plume to flow into). Must match
 // uBeamYFrac below: frac = BEAM_TOP_FRACTION - 0.5.
 export const BEAM_TOP_FRACTION = 0.1;
+/**
+ * Draw order around the rocket (three.js renderOrder): the plume and the
+ * glow behind the hull go before it (the rocket covers them), the light in
+ * front of it after it, whatever the depth test would say. The rocket is a
+ * billboard turning to face the camera, so its plane crosses the plume's.
+ */
+export const BEHIND_ROCKET = -1;
+export const OVER_ROCKET = 1;
+
+/** room above that (a share of the plume's height) for the glow round the nozzle to fade away in, in the main scene */
+export const PLUME_HEADROOM = 0.25;
 
 // Plume color by speed: cool ion-blue at cruise → violet → hot pink at
 // full burn/overdrive.
@@ -29,8 +40,12 @@ const color = new THREE.Color();
 const OPAQUE_OUT = 'gl_FragColor = vec4(fc.rgb * edge, 1.0);';
 const LIGHT_OUT = 'vec3 light = min(fc.rgb * edge, 1.0); gl_FragColor = vec4(light, max(light.r, max(light.g, light.b)));';
 
-/** `lightAsAlpha`: for drawing onto a transparent canvas rather than adding into a WebGL scene */
-export function plumeMaterial(lightAsAlpha = false): THREE.ShaderMaterial {
+/**
+ * `lightAsAlpha`: for drawing onto a transparent canvas rather than adding
+ * into a WebGL scene; `headroom`: how far the plane reaches above its usual
+ * top (a share of its height; see PLUME_HEADROOM).
+ */
+export function plumeMaterial(lightAsAlpha = false, headroom = 0): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexShader: LASER_FLOW_VERT,
     fragmentShader: lightAsAlpha ? LASER_FLOW_FRAG.replace(OPAQUE_OUT, LIGHT_OUT) : LASER_FLOW_FRAG,
@@ -57,6 +72,7 @@ export function plumeMaterial(lightAsAlpha = false): THREE.ShaderMaterial {
       uWIntensity: { value: 5 },
       uFlowStrength: { value: 0.3 },
       uDecay: { value: 1.1 },
+      uTopExtra: { value: headroom },
       uFalloffStart: { value: 1.2 },
       uFogFallSpeed: { value: 0.6 },
       uColor: { value: new THREE.Vector3(1, 1, 1) },

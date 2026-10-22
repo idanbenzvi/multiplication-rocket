@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type * as THREE from 'three';
 import { flight } from '../../game/flight';
-import { BEAM_TOP_FRACTION, plumeMaterial, plumeSize, stepPlume } from './plume';
+import { BEAM_TOP_FRACTION, BEHIND_ROCKET, PLUME_HEADROOM, plumeMaterial, plumeSize, stepPlume } from './plume';
 import { useAdmiral } from '../../game/useAchievements';
 import { useCrewStore } from '../../game/useCrewStore';
 
@@ -18,7 +18,7 @@ interface Props {
 // crew's rocket is everyone's).
 export function EngineExhaust({ nozzleY }: Props) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const material = useMemo(() => plumeMaterial(), []);
+  const material = useMemo(() => plumeMaterial(false, PLUME_HEADROOM), []);
   const admiral = useAdmiral();
   const crew = useCrewStore((s) => s.active);
   const gold = admiral && !crew;
@@ -33,13 +33,17 @@ export function EngineExhaust({ nozzleY }: Props) {
     const sputter = flight.jolt * (0.4 + 0.6 * Math.abs(Math.sin(clock.elapsedTime * 38)));
     stepPlume(material, Math.min(rawDelta, 0.1), s, sputter, gold);
 
+    // the plume, and the room above its nozzle for the glow to fade away in
     const { width, height } = plumeSize(s);
-    mesh.scale.set(width, height, 1);
-    mesh.position.y = nozzleY + BEAM_TOP_FRACTION * height - height / 2;
+    const full = height * (1 + PLUME_HEADROOM);
+    mesh.scale.set(width, full, 1);
+    mesh.position.y = nozzleY + (BEAM_TOP_FRACTION + PLUME_HEADROOM) * height - full / 2;
   });
 
   return (
-    <mesh ref={meshRef} material={material} position={[0, nozzleY, -0.02]} frustumCulled={false}>
+    // drawn before the rocket, which covers it: the rocket's billboard turns to face the camera, and
+    // left to the depth test, the half of it turned behind the plume's plane would be lit over
+    <mesh ref={meshRef} material={material} position={[0, nozzleY, -0.02]} frustumCulled={false} renderOrder={BEHIND_ROCKET}>
       <planeGeometry args={[1, 1]} />
     </mesh>
   );

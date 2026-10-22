@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { flight } from '../../game/flight';
 import { useAdmiral } from '../../game/useAchievements';
 import { useCrewStore } from '../../game/useCrewStore';
+import { BEHIND_ROCKET, OVER_ROCKET } from './plume';
 
 // A blast-off's light (FlyingRocket). Through the build-up a glow swells at
 // the nozzle and an aura around the hull, pulsing faster and faster, and
@@ -63,14 +64,15 @@ export function EngineGlow({ nozzleY }: { nozzleY: number }) {
   const parts = useMemo(() => {
     const glow = radialTexture(false);
     const ring = radialTexture(true);
-    const light = (map: THREE.Texture) =>
-      new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false });
+    // (in front of the rocket whatever the depth test says: OVER_ROCKET)
+    const light = (map: THREE.Texture, over = true) =>
+      new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, depthTest: !over, blending: THREE.AdditiveBlending, toneMapped: false, fog: false });
     const sparkGeometry = new THREE.BufferGeometry();
     sparkGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPARKS * 3), 3));
     sparkGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(SPARKS * 3), 3));
     return {
       textures: [glow, ring],
-      halo: light(glow),
+      halo: light(glow, false),
       nozzle: light(glow),
       flash: light(glow),
       ring: light(ring),
@@ -81,6 +83,7 @@ export function EngineGlow({ nozzleY }: { nozzleY: number }) {
         vertexColors: true,
         transparent: true,
         depthWrite: false,
+        depthTest: false,
         blending: THREE.AdditiveBlending,
         toneMapped: false,
         fog: false,
@@ -167,19 +170,19 @@ export function EngineGlow({ nozzleY }: { nozzleY: number }) {
   return (
     <group ref={root} visible={false}>
       {/* the aura, behind the hull (so it shows round its outline) */}
-      <mesh ref={halo} position={[0, 1.1, -0.06]} material={parts.halo}>
+      <mesh ref={halo} position={[0, 1.1, -0.06]} material={parts.halo} renderOrder={BEHIND_ROCKET}>
         <planeGeometry args={[1, 1]} />
       </mesh>
-      <mesh ref={nozzle} position={[0, nozzleY + 0.04, 0.03]} material={parts.nozzle}>
+      <mesh ref={nozzle} position={[0, nozzleY + 0.04, 0.03]} material={parts.nozzle} renderOrder={OVER_ROCKET}>
         <planeGeometry args={[1, 1]} />
       </mesh>
-      <mesh ref={ring} position={[0, nozzleY, 0.04]} material={parts.ring}>
+      <mesh ref={ring} position={[0, nozzleY, 0.04]} material={parts.ring} renderOrder={OVER_ROCKET}>
         <planeGeometry args={[1, 1]} />
       </mesh>
-      <mesh ref={flash} position={[0, nozzleY, 0.06]} material={parts.flash}>
+      <mesh ref={flash} position={[0, nozzleY, 0.06]} material={parts.flash} renderOrder={OVER_ROCKET}>
         <planeGeometry args={[1, 1]} />
       </mesh>
-      <points geometry={parts.sparkGeometry} material={parts.sparks} frustumCulled={false} />
+      <points geometry={parts.sparkGeometry} material={parts.sparks} frustumCulled={false} renderOrder={OVER_ROCKET} />
     </group>
   );
 }
