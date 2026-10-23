@@ -30,10 +30,16 @@ export function targetSpeed(fuel: number, streak: number, launching: boolean): n
 // zustand state) because it changes 60 times a second and must never cause
 // a re-render.
 export const flight = {
-  /** smoothed speed, eased toward targetSpeed() */
+  /** smoothed speed, eased toward targetSpeed() (FlightController: gently away, faster, then settling) */
   speed: CRUISE,
-  /** short-lived extra speed from a correct answer ("nitro" kick) */
+  /** how fast `speed` is changing (per second) */
+  speedVel: 0,
+  /** short-lived extra speed from a correct answer ("nitro" kick), eased toward boostGoal */
   boost: 0,
+  /** the extra speed asked for: a kick adds to it, and once `boost` has built up to it, it dies away */
+  boostGoal: 0,
+  /** how fast `boost` is changing (per second) */
+  boostVel: 0,
   /** 1 right after a wrong answer, decays to 0 — drives the braking jolt */
   jolt: 0,
   /** speed + boost: what the visuals should use */
@@ -73,15 +79,15 @@ export function courseRotation(headingDeg: number): number {
   return (-headingDeg * Math.PI) / 180;
 }
 
-/** a one-off surge (a meteor blasted, a constellation completed, …) */
+/** a one-off surge (a meteor blasted, a constellation completed, …), building up rather than all at once */
 export function kick(amount: number) {
-  flight.boost = Math.min(1.1, flight.boost + amount);
+  flight.boostGoal = Math.min(1.1, flight.boostGoal + amount);
 }
 
-/** a knock: shake the camera/rocket and kill any boost */
+/** a knock: shake the camera/rocket and drop any boost (quickly, not all at once) */
 export function bump() {
   flight.jolt = 1;
-  flight.boost = 0;
+  flight.boostGoal = 0;
 }
 
 // ---- flying off and flying home: leaving the game for a bonus round or a game mode, and back ----

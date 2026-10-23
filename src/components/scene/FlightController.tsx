@@ -50,12 +50,31 @@ let grownBefore = 0;
 const PILOT_GONE_FROM = 0.82;
 const PILOT_GONE_AT = 0.97;
 
-// Easing rates (per second). Braking is deliberately quicker than speeding
-// up, so a wrong answer is felt immediately instead of a slow coast-down.
-const ACCEL_RATE = 1.4;
-const BRAKE_RATE = 3.2;
+// The speed follows where it's headed like something with weight: a
+// critically damped spring, so a change sets off gently, speeds up, and
+// settles without overshooting, rather than jumping (an answer, right or
+// wrong, never changes how fast the stars stream all at once). Its rates
+// (per second): braking is quicker than speeding up, so a wrong answer is
+// still felt soon (half the way down in half a second) rather than a slow
+// coast-down; speeding up, half the way in about two thirds of a second.
+const ACCEL_RATE = 2.6;
+const BRAKE_RATE = 3.4;
+// A boost (a right answer's "nitro", a kick) builds up the same way, quickly
+// (about half a second), and only once it has does it die away; dropped (a
+// wrong answer, a bump), it eases off as quickly.
+const BOOST_RATE = 7;
 const BOOST_DECAY = 2.2;
+/** built up this far toward its goal, a boost starts dying away */
+const BOOST_BUILT = 0.85;
 const JOLT_DECAY = 3.0;
+/** the springs are stepped this finely (s), however long the frame */
+const SPRING_STEP = 1 / 120;
+
+/** one step of a critically damped spring: `x` moving at `v`, pulled toward `goal` at `rate` */
+function spring(x: number, v: number, goal: number, rate: number, dt: number): [number, number] {
+  const nv = v + (rate * rate * (goal - x) - 2 * rate * v) * dt;
+  return [x + nv * dt, nv];
+}
 // A new level's course: the world turns to it like a ship banking, easing in
 // and settling without overshoot (a critically damped spring; ~1.5 s).
 const TURN_RATE = 3.2;
@@ -100,14 +119,15 @@ export function FlightController() {
     () =>
       useGameStore.subscribe((state, prev) => {
         // Diving into a wormhole: a huge surge that carries out the other side.
-        if (state.inWormhole && !prev.inWormhole) flight.boost = 1.1;
+        if (state.inWormhole && !prev.inWormhole) flight.boostGoal = 1.1;
         if (state.feedback === prev.feedback || state.feedback === null) return;
         if (state.feedback === 'correct') {
           // Faster answers flare bigger (store's flare is 0..1), so they kick harder.
-          flight.boost = Math.min(0.6, flight.boost + 0.18 + state.flare * 0.3);
+          flight.boostGoal = Math.min(0.6, flight.boostGoal + 0.18 + state.flare * 0.3);
         } else {
+          // (the knock is at once; the stars slow down from where they are)
           flight.jolt = 1;
-          flight.boost = 0;
+          flight.boostGoal = 0;
         }
       }),
     [],
@@ -119,8 +139,14 @@ export function FlightController() {
 
     const target = targetSpeed(progress.fuel, progress.currentStreak, justLaunched);
     const rate = target > flight.speed ? ACCEL_RATE : BRAKE_RATE;
-    flight.speed += (target - flight.speed) * (1 - Math.exp(-rate * dt));
-    flight.boost *= Math.exp(-BOOST_DECAY * dt);
+    for (let left = dt; left > 1e-6; left -= SPRING_STEP) {
+      const step = Math.min(SPRING_STEP, left);
+      [flight.speed, flight.speedVel] = spring(flight.speed, flight.speedVel, target, rate, step);
+      [flight.boost, flight.boostVel] = spring(flight.boost, flight.boostVel, flight.boostGoal, BOOST_RATE, step);
+      if (flight.boost >= flight.boostGoal * BOOST_BUILT) flight.boostGoal *= Math.exp(-BOOST_DECAY * step);
+    }
+    // (eased out of a boost, nothing's left below zero)
+    if (flight.boost < 0) [flight.boost, flight.boostVel] = [0, 0];
     flight.jolt *= Math.exp(-JOLT_DECAY * dt);
     flight.effective = flight.speed + flight.boost;
     flight.approach = justLaunched ? 1 : progress.fuel / 100;
