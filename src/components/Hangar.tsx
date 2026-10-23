@@ -15,6 +15,7 @@ import { useBack } from '../native/back';
 import { BayScreen } from './bay/BayScreen';
 import { launchShip, primeBayExit, useBay } from './bay/useBay';
 import { SHIP_HEIGHT } from './bay/layout';
+import BorderGlow from './reactbits/BorderGlow';
 
 // The hangar: where a pilot picks the ship they fly (ships.ts): the classic
 // rocket, the Explorer or Nova. It opens by itself once, when the game starts
@@ -44,6 +45,9 @@ export function Hangar() {
 const SWIPE = 40;
 /** the panel's least margin from the screen's top and bottom (px, and clear of the notch and the home bar) */
 const MARGIN = 12;
+/** the buttons' border glow (React Bits' BorderGlow): the bay's cyan, its edge in the game's colours */
+const GLOW = { glowColor: '190 100 78', colors: ['#8fe6ff', '#c9a4de', '#ff9de2'] };
+const LAUNCH_GLOW = { glowColor: '190 100 80', colors: ['#ffd77a', '#ff9de2', '#8fe6ff'] };
 const stayPut = () => {};
 
 function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
@@ -77,13 +81,21 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
     watching.current.observe(el);
   }, []);
 
+  // (each choice lights the chosen ship's button round its edge, and each tap on an arrow that arrow)
+  const [choices, setChoices] = useState(0);
+  const [taps, setTaps] = useState({ left: 0, right: 0 });
   const choose = (next: ShipId) => {
     if (launching || next === picked) return;
     setPicked(next);
+    setChoices((n) => n + 1);
     haptics.tick();
   };
   // ‹ goes back along the ships, › on (the other way round in Hebrew), round and round
   const turn = (dir: 1 | -1) => choose(SHIPS[(SHIPS.indexOf(picked) + dir + SHIPS.length) % SHIPS.length]);
+  const tapArrow = (side: 'left' | 'right') => {
+    setTaps((t) => ({ ...t, [side]: t[side] + 1 }));
+    turn((side === 'right') !== rtl ? 1 : -1);
+  };
   const fly = () => {
     if (launching) return;
     setLaunching(true);
@@ -101,14 +113,14 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   };
 
   // ← → change ships too
-  const turnRef = useRef(turn);
+  const tapRef = useRef(tapArrow);
   useEffect(() => {
-    turnRef.current = turn;
+    tapRef.current = tapArrow;
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') turnRef.current(rtl ? 1 : -1);
-      else if (e.key === 'ArrowRight') turnRef.current(rtl ? -1 : 1);
+      if (e.key === 'ArrowLeft') tapRef.current('left');
+      else if (e.key === 'ArrowRight') tapRef.current('right');
       else return;
       e.preventDefault();
     };
@@ -186,12 +198,16 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
               </button>
             )}
             {/* (on the left and the right of the pad whatever the language: in Hebrew, ‹ and › would otherwise be mirrored, pointing in) */}
-            <button type="button" dir="ltr" className="bay-arrow" style={arrow(-1)} onClick={() => turn(rtl ? 1 : -1)} aria-label={rtl ? t.bay.next : t.bay.previous}>
-              ‹
-            </button>
-            <button type="button" dir="ltr" className="bay-arrow" style={arrow(1)} onClick={() => turn(rtl ? -1 : 1)} aria-label={rtl ? t.bay.previous : t.bay.next}>
-              ›
-            </button>
+            <BorderGlow className="bay-arrow-glow" style={arrow(-1)} borderRadius={29} glowRadius={28} sweep={taps.left || null} sweepMs={900} {...GLOW}>
+              <button type="button" dir="ltr" className="bay-arrow" onClick={() => tapArrow('left')} aria-label={rtl ? t.bay.next : t.bay.previous}>
+                ‹
+              </button>
+            </BorderGlow>
+            <BorderGlow className="bay-arrow-glow" style={arrow(1)} borderRadius={29} glowRadius={28} sweep={taps.right || null} sweepMs={900} {...GLOW}>
+              <button type="button" dir="ltr" className="bay-arrow" onClick={() => tapArrow('right')} aria-label={rtl ? t.bay.previous : t.bay.next}>
+                ›
+              </button>
+            </BorderGlow>
             {nameTop && (
               <div className="bay-ship-top" style={nameTop}>
                 {name}
@@ -201,22 +217,26 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
               {side && name}
               <div className="bay-ship-pills" role="radiogroup" aria-label={h.title}>
                 {SHIPS.map((s, i) => (
-                  <button
-                    key={s}
-                    type="button"
-                    role="radio"
-                    aria-checked={picked === s}
-                    className={`bay-ship-pill ${picked === s ? 'is-on' : ''}`}
-                    onClick={() => choose(s)}
-                  >
-                    {i >= seen && <span className="hangar-new">{h.newBadge}</span>}
-                    {shipName(t, s)}
-                  </button>
+                  <BorderGlow key={s} borderRadius={999} glowRadius={24} sweep={picked === s ? choices : null} sweepMs={1100} {...GLOW}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={picked === s}
+                      className={`bay-ship-pill ${picked === s ? 'is-on' : ''}`}
+                      onClick={() => choose(s)}
+                    >
+                      {i >= seen && <span className="hangar-new">{h.newBadge}</span>}
+                      {shipName(t, s)}
+                    </button>
+                  </BorderGlow>
                 ))}
               </div>
-              <button type="button" className="profile-primary bay-launch" onClick={fly}>
-                {h.go}
-              </button>
+              {/* (its light going round all the time: this is the one to press) */}
+              <BorderGlow className="bay-launch-glow" borderRadius={999} glowRadius={36} orbit={3600} glowIntensity={1.2} {...LAUNCH_GLOW}>
+                <button type="button" className="profile-primary bay-launch" onClick={fly}>
+                  {h.go}
+                </button>
+              </BorderGlow>
               <p className="hangar-note bay-note">{h.hint}</p>
             </div>
           </motion.div>

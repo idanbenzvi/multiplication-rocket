@@ -600,14 +600,16 @@
   top: calc(12px + env(safe-area-inset-top));
   inset-inline-end: calc(12px + env(safe-area-inset-right));
 }
-.bay-arrow {
+.bay-arrow-glow {
   position: absolute;
+  translate: -50% -50%;
+}
+.bay-arrow {
   display: grid;
   place-items: center;
   width: 58px;
   height: 58px;
   padding: 0 0 6px;
-  translate: -50% -50%;
   border-radius: 50%;
   border: 2px solid rgba(143, 230, 255, 0.6);
   background: radial-gradient(circle at 35% 30%, rgba(90, 160, 255, 0.5), rgba(18, 14, 42, 0.88) 70%);
@@ -673,9 +675,6 @@
   text-align: center;
 }
 .bay-panel.is-side {
-  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding: 1.2rem 1.1rem 1rem;
   border-radius: 22px;
   background: rgba(26, 19, 50, 0.8);
@@ -712,8 +711,13 @@
   color: #fff;
   box-shadow: 0 0 16px rgba(110, 210, 255, 0.55);
 }
-.bay-launch {
+.bay-launch-glow {
   width: min(340px, 100%);
+}
+.bay-launch-glow > .bay-launch {
+  width: 100%;
+  /* (its glow round it exactly: the panel spaces it) */
+  margin-top: 0;
 }
 .bay-note {
   color: #cdbfe6;
