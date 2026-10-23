@@ -2091,6 +2091,74 @@ button:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.8rem;
 }
+/* more pilots than fit: pages of them (Profiles.tsx), turned with the arrows and dots under them, or a swipe */
+.pilot-pages {
+  position: relative;
+  touch-action: pan-y;
+}
+.pilot-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  height: 44px;
+  margin-top: 8px;
+}
+.pilot-page-turn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 4px;
+  border-radius: 50%;
+  border: 2px solid rgba(143, 230, 255, 0.55);
+  background: radial-gradient(circle at 35% 30%, rgba(90, 160, 255, 0.4), rgba(18, 14, 42, 0.88) 70%);
+  color: #e4f9ff;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
+  transition:
+    opacity 0.2s,
+    transform 0.12s;
+}
+.pilot-page-turn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.pilot-page-turn:disabled {
+  opacity: 0.25;
+  box-shadow: none;
+  cursor: default;
+}
+.pilot-page-dots {
+  display: flex;
+  align-items: center;
+}
+.pilot-page-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+.pilot-page-dot::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  transition:
+    width 0.2s,
+    background 0.2s;
+}
+.pilot-page-dot.is-on::before {
+  width: 22px;
+  background: #8fe6ff;
+  box-shadow: 0 0 10px rgba(143, 230, 255, 0.65);
+}
 .pilot-card {
   position: relative;
   min-height: 150px;

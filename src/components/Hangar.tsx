@@ -185,10 +185,11 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
                 ✕
               </button>
             )}
-            <button type="button" className="bay-arrow" style={arrow(-1)} onClick={() => turn(rtl ? 1 : -1)} aria-label={rtl ? t.bay.next : t.bay.previous}>
+            {/* (on the left and the right of the pad whatever the language: in Hebrew, ‹ and › would otherwise be mirrored, pointing in) */}
+            <button type="button" dir="ltr" className="bay-arrow" style={arrow(-1)} onClick={() => turn(rtl ? 1 : -1)} aria-label={rtl ? t.bay.next : t.bay.previous}>
               ‹
             </button>
-            <button type="button" className="bay-arrow" style={arrow(1)} onClick={() => turn(rtl ? -1 : 1)} aria-label={rtl ? t.bay.previous : t.bay.next}>
+            <button type="button" dir="ltr" className="bay-arrow" style={arrow(1)} onClick={() => turn(rtl ? -1 : 1)} aria-label={rtl ? t.bay.previous : t.bay.next}>
               ›
             </button>
             {nameTop && (

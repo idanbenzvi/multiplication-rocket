@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { BayShip, holdBay, releaseBay, topHolder, updateHold, useBay, type PadShipSpec } from './useBay';
+import { useT } from '../../i18n/useLang';
 
 interface Props {
   /** what the sign over the pad reads */
@@ -38,16 +39,19 @@ export function BayScreen({ sign, ship: own = null, card = false, label, childre
   const slot = useBay((s) => s.slot);
   const onTop = useBay((s) => topHolder(s)?.id === id);
   const layout = useBay((s) => s.layout);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const more = useMoreBelow(host);
+  const t = useT();
   if (!slot || !id) return null;
   const side = layout?.cardSide ?? false;
   // beside the pad, or over the bay below its sign (across it, on a phone on its side)
   const wide = !side && (layout?.wide ?? false);
-  const host = side ? { left: (layout?.sideX ?? 0) + 8 } : { paddingTop: Math.min(64 * (layout?.u ?? 1), window.innerHeight * 0.22) + 8 };
+  const place = side ? { left: (layout?.sideX ?? 0) + 8 } : { paddingTop: Math.min(64 * (layout?.u ?? 1), window.innerHeight * 0.22) + 8 };
   return createPortal(
     <BayShip.Provider value={setGiven}>
       <div className={`bay-screen ${onTop ? '' : 'is-under'}`} aria-hidden={!onTop || undefined}>
         {card ? (
-          <div className={`bay-card-host ${side ? 'is-side' : 'is-over'} ${wide ? 'is-wide' : ''}`} style={host}>
+          <div ref={setHost} className={`bay-card-host ${side ? 'is-side' : 'is-over'} ${wide ? 'is-wide' : ''}`} style={place}>
             <motion.div
               className="bay-card"
               role="dialog"
@@ -63,8 +67,41 @@ export function BayScreen({ sign, ship: own = null, card = false, label, childre
         ) : (
           children
         )}
+        {card && more && (
+          <div className="bay-more" style={{ left: side ? place.left : 0 }}>
+            <button
+              type="button"
+              className="bay-more-button"
+              onClick={() => host?.scrollBy({ top: host.clientHeight * 0.6, behavior: 'smooth' })}
+              aria-label={t.bay.more}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </BayShip.Provider>,
     slot,
   );
+}
+
+/** there's more of the card below what's on the screen (scrolled to the bottom, or all of it showing, there isn't) */
+function useMoreBelow(host: HTMLElement | null): boolean {
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (!host) return;
+    const check = () => setMore(host.scrollHeight - host.clientHeight - host.scrollTop > 12);
+    check();
+    host.addEventListener('scroll', check, { passive: true });
+    const watch = new ResizeObserver(check);
+    watch.observe(host);
+    for (const el of host.children) watch.observe(el);
+    return () => {
+      host.removeEventListener('scroll', check);
+      watch.disconnect();
+    };
+  }, [host]);
+  return more;
 }
