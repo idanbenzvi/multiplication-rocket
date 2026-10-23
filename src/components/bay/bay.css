@@ -383,13 +383,15 @@
   display: none;
 }
 
-/* a card beside the pad, or over the bay below its sign */
+/* a card beside the pad, or over the bay below its sign; scrolled where it's taller than the screen (by a finger
+   on an iPhone too, which won't scroll a box that lets touches through, so this one takes them) */
 .bay-card-host {
   position: absolute;
   display: flex;
   overflow-y: auto;
   overscroll-behavior: contain;
-  pointer-events: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .bay-card-host.is-side {
   top: 0;
@@ -399,7 +401,7 @@
 }
 .bay-card-host.is-over {
   inset: 0;
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 0 max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: linear-gradient(to bottom, transparent, rgba(10, 8, 24, 0.5) 35%);
 }
 .bay-card {
@@ -423,6 +425,98 @@
   box-shadow: none;
   background: none;
 }
+/* the animals in two rows (the one chosen shows at the ship's window too) */
+.bay-card .avatar-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+.bay-card .avatar-option {
+  min-width: 0;
+  padding: 0;
+  border-radius: 12px;
+  font-size: clamp(1.3rem, 5.4vw, 2.1rem);
+}
+/* a phone: the card fits its screen, smaller, and without the big animal or (shorter still) the missions' notes */
+@media (max-height: 760px) {
+  .bay-card {
+    padding: 1rem;
+  }
+  .bay-card .profile-editor,
+  .bay-card .profile-part {
+    gap: 0.45rem;
+  }
+  .bay-card .profile-avatar-big {
+    font-size: 2.8rem;
+  }
+  .bay-card .profile-name-input {
+    min-height: 46px;
+  }
+  .bay-card .profile-primary {
+    min-height: 50px;
+    margin-top: 0.2rem;
+  }
+  .bay-card .pilot-card,
+  .bay-card .pilot-card-main,
+  .bay-card .pilot-card-new {
+    min-height: 112px;
+  }
+  .bay-card .pilot-card-avatar {
+    font-size: 2.6rem;
+  }
+}
+@media (max-height: 700px) {
+  .bay-card .profile-preview {
+    display: none;
+  }
+}
+@media (max-height: 620px) {
+  .bay-card .mission-option {
+    padding: 0.45rem 0.3rem;
+  }
+  .bay-card .mission-option-symbol {
+    font-size: 1.6rem;
+  }
+  .bay-card .mission-option-hint {
+    display: none;
+  }
+}
+/* a phone on its side: across the bay, the pilot's name and mission on one side, their animal and the buttons on the other */
+.bay-card-host.is-wide .bay-card {
+  width: min(780px, 100%);
+  padding: 0.8rem 1rem;
+}
+.bay-card-host.is-wide .profile-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0.5rem 1.1rem;
+}
+.bay-card-host.is-wide .avatar-option {
+  font-size: clamp(1.1rem, 3.6vw, 2rem);
+}
+.bay-card-host.is-wide .profile-part.is-who {
+  grid-row: 1 / span 2;
+}
+.bay-card-host.is-wide .profile-part.is-look,
+.bay-card-host.is-wide .profile-part.is-go {
+  grid-column: 2;
+}
+.bay-card-host.is-wide .profile-part.is-go {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.bay-card-host.is-wide .is-go > * {
+  flex: 1 1 100%;
+}
+.bay-card-host.is-wide .is-go > .profile-primary {
+  flex: 2 1 0;
+  margin-top: 0;
+}
+.bay-card-host.is-wide .is-go > .profile-secondary {
+  flex: 1 1 0;
+  min-height: 50px;
+}
+
 /* (the sign says it) */
 .bay-card .profile-hero,
 .bay-card .profile-title {
@@ -526,7 +620,9 @@
   text-align: center;
 }
 .bay-panel.is-side {
-  translate: 0 -50%;
+  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.2rem 1.1rem 1rem;
   border-radius: 22px;
   background: rgba(26, 19, 50, 0.8);

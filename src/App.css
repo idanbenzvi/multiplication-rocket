@@ -2172,6 +2172,12 @@ button:focus-visible {
   border: 1px solid rgba(255, 157, 118, 0.35);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
+/* (its parts, one under the other; side by side across a phone on its side, bay.css) */
+.profile-part {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
 .profile-sheet .profile-editor {
   padding: 0;
   border: none;

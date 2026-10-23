@@ -39,14 +39,15 @@ export function BayScreen({ sign, ship: own = null, card = false, label, childre
   const onTop = useBay((s) => topHolder(s)?.id === id);
   const layout = useBay((s) => s.layout);
   if (!slot || !id) return null;
-  const side = layout?.side ?? false;
-  // beside the pad, or over the bay below its sign
+  const side = layout?.cardSide ?? false;
+  // beside the pad, or over the bay below its sign (across it, on a phone on its side)
+  const wide = !side && (layout?.wide ?? false);
   const host = side ? { left: (layout?.sideX ?? 0) + 8 } : { paddingTop: Math.min(64 * (layout?.u ?? 1), window.innerHeight * 0.22) + 8 };
   return createPortal(
     <BayShip.Provider value={setGiven}>
       <div className={`bay-screen ${onTop ? '' : 'is-under'}`} aria-hidden={!onTop || undefined}>
         {card ? (
-          <div className={`bay-card-host ${side ? 'is-side' : 'is-over'}`} style={host}>
+          <div className={`bay-card-host ${side ? 'is-side' : 'is-over'} ${wide ? 'is-wide' : ''}`} style={host}>
             <motion.div
               className="bay-card"
               role="dialog"

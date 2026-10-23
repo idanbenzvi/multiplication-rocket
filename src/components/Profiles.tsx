@@ -82,91 +82,98 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
       <div className="profile-preview">
         <span className="profile-avatar-big">{avatar}</span>
       </div>
-      <label className="profile-label" htmlFor="pilot-name">
-        {t.pilotNameLabel}
-      </label>
-      <input
-        id="pilot-name"
-        className="profile-name-input"
-        dir="auto"
-        value={name}
-        maxLength={MAX_NAME_LENGTH}
-        placeholder={t.pilotNamePlaceholder}
-        autoComplete="off"
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && save()}
-      />
-      <div className="profile-label">{t.pickMission}</div>
-      <div className="mission-options" role="radiogroup" aria-label={t.pickMission}>
-        {PILOT_MISSIONS.map((m) => (
-          <button
-            key={m}
-            type="button"
-            role="radio"
-            aria-checked={mission === m}
-            className={`mission-option is-${m} ${mission === m ? 'is-on' : ''}`}
-            onClick={() => setMission(m)}
-          >
-            <span className="mission-option-symbol">{MISSION_SYMBOL[m]}</span>
-            <span className="mission-option-name">{missionName(t, m)}</span>
-            <span className="mission-option-hint">{missionHint(t, m)}</span>
-          </button>
-        ))}
+      {/* (in parts: across a phone on its side, the pilot on one side, their animal and the buttons on the other) */}
+      <div className="profile-part is-who">
+        <label className="profile-label" htmlFor="pilot-name">
+          {t.pilotNameLabel}
+        </label>
+        <input
+          id="pilot-name"
+          className="profile-name-input"
+          dir="auto"
+          value={name}
+          maxLength={MAX_NAME_LENGTH}
+          placeholder={t.pilotNamePlaceholder}
+          autoComplete="off"
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && save()}
+        />
+        <div className="profile-label">{t.pickMission}</div>
+        <div className="mission-options" role="radiogroup" aria-label={t.pickMission}>
+          {PILOT_MISSIONS.map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={mission === m}
+              className={`mission-option is-${m} ${mission === m ? 'is-on' : ''}`}
+              onClick={() => setMission(m)}
+            >
+              <span className="mission-option-symbol">{MISSION_SYMBOL[m]}</span>
+              <span className="mission-option-name">{missionName(t, m)}</span>
+              <span className="mission-option-hint">{missionHint(t, m)}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="profile-label">{t.pickAnimal}</div>
-      <div className="avatar-grid" role="radiogroup" aria-label={t.pickAnimal}>
-        {AVATARS.map((a) => (
-          <button
-            key={a}
-            type="button"
-            role="radio"
-            aria-checked={avatar === a}
-            className={`avatar-option ${avatar === a ? 'is-on' : ''}`}
-            onClick={() => setAvatar(a)}
-          >
-            {a}
-          </button>
-        ))}
+      <div className="profile-part is-look">
+        <div className="profile-label">{t.pickAnimal}</div>
+        <div className="avatar-grid" role="radiogroup" aria-label={t.pickAnimal}>
+          {AVATARS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              role="radio"
+              aria-checked={avatar === a}
+              className={`avatar-option ${avatar === a ? 'is-on' : ''}`}
+              onClick={() => setAvatar(a)}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+        {profile && (
+          <>
+            <div className="profile-label">{t.hangar.label}</div>
+            <button type="button" className="profile-secondary profile-ship" onClick={() => useHangar.getState().open(profile.id)}>
+              🚀 {shipName(t, ship ?? 'classic')} · {t.hangar.change}
+            </button>
+          </>
+        )}
       </div>
-      {profile && (
-        <>
-          <div className="profile-label">{t.hangar.label}</div>
-          <button type="button" className="profile-secondary profile-ship" onClick={() => useHangar.getState().open(profile.id)}>
-            🚀 {shipName(t, ship ?? 'classic')} · {t.hangar.change}
-          </button>
-        </>
-      )}
-      <button type="button" className="profile-primary" onClick={save} disabled={!canSave}>
-        {profile ? t.save : t.letsFly}
-      </button>
-      {onCancel && (
-        <button type="button" className="profile-secondary" onClick={onCancel}>
-          {t.cancel}
+      <div className="profile-part is-go">
+        <button type="button" className="profile-primary" onClick={save} disabled={!canSave}>
+          {profile ? t.save : t.letsFly}
         </button>
-      )}
-      {profile &&
-        (confirmDelete ? (
-          <div className="profile-confirm">
-            <span>{t.deletePilotConfirm(pilotName(profile, t.defaultPilotName))}</span>
-            <div className="profile-confirm-buttons">
-              <button type="button" className="settings-danger" onClick={doDelete}>
-                {t.delete}
-              </button>
-              <button type="button" className="profile-secondary" onClick={() => setConfirmDelete(false)}>
-                {t.cancel}
-              </button>
+        {onCancel && (
+          <button type="button" className="profile-secondary" onClick={onCancel}>
+            {t.cancel}
+          </button>
+        )}
+        {profile &&
+          (confirmDelete ? (
+            <div className="profile-confirm">
+              <span>{t.deletePilotConfirm(pilotName(profile, t.defaultPilotName))}</span>
+              <div className="profile-confirm-buttons">
+                <button type="button" className="settings-danger" onClick={doDelete}>
+                  {t.delete}
+                </button>
+                <button type="button" className="profile-secondary" onClick={() => setConfirmDelete(false)}>
+                  {t.cancel}
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button type="button" className="profile-delete-link" onClick={() => setConfirmDelete(true)}>
-            {t.deletePilot}
+          ) : (
+            <button type="button" className="profile-delete-link" onClick={() => setConfirmDelete(true)}>
+              {t.deletePilot}
+            </button>
+          ))}
+        {onRestore && (
+          <button type="button" className="profile-restore-link" onClick={onRestore}>
+            {t.backup.link}
           </button>
-        ))}
-      {onRestore && (
-        <button type="button" className="profile-restore-link" onClick={onRestore}>
-          {t.backup.link}
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

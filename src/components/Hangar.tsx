@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useLang, useT } from '../i18n/useLang';
 import { shipHint, shipName } from '../i18n/strings';
@@ -42,6 +42,8 @@ export function Hangar() {
 
 /** how far a swipe across the pad must go to change ships (px) */
 const SWIPE = 40;
+/** the panel's least margin from the screen's top and bottom (px, and clear of the notch and the home bar) */
+const MARGIN = 12;
 const stayPut = () => {};
 
 function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
@@ -64,6 +66,16 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   const ship = useMemo(() => ({ ship: picked, accent, admiral, avatar: pilot.avatar }), [picked, accent, admiral, pilot.avatar]);
   const layout = useBay((s) => s.layout);
   const swipe = useRef<number | null>(null);
+  // the panel's height, to keep it all on the screen
+  const [panelH, setPanelH] = useState(0);
+  const watching = useRef<ResizeObserver | null>(null);
+  const panelRef = useCallback((el: HTMLDivElement | null) => {
+    watching.current?.disconnect();
+    watching.current = null;
+    if (!el) return;
+    watching.current = new ResizeObserver(() => setPanelH(el.offsetHeight));
+    watching.current.observe(el);
+  }, []);
 
   const choose = (next: ShipId) => {
     if (launching || next === picked) return;
@@ -110,9 +122,12 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   const clampY = (y: number) => Math.min(vh - 60, Math.max(60, y));
   const arrow = (dir: -1 | 1): CSSProperties => ({ left: Math.min(vw - 34, Math.max(34, padX + dir * (58 * u + 10))), top: clampY(shipMid) });
   const width = side ? Math.min(440, vw - layout.sideX - 24) : Math.min(520, vw - 24);
+  // beside the ship, level with it, or under the pad; either way all on the screen (a phone on its side, Safari's toolbars taking some)
+  const fit = (y: number) =>
+    `clamp(calc(${MARGIN}px + env(safe-area-inset-top)), ${y}px, calc(100% - ${panelH + MARGIN}px - env(safe-area-inset-bottom)))`;
   const panel: CSSProperties = side
-    ? { left: layout.sideX + 8, top: clampY(shipMid), width }
-    : { left: Math.min(vw - width - 12, Math.max(12, padX - width / 2)), top: padY + 34 * u, width };
+    ? { left: layout.sideX + 8, top: fit(shipMid - panelH / 2), width }
+    : { left: Math.min(vw - width - 12, Math.max(12, padX - width / 2)), top: fit(padY + 34 * u), width };
   const nameTop: CSSProperties | undefined = side ? undefined : { left: panel.left, width: panel.width, top: 62 * u };
 
   const name = (
@@ -181,7 +196,7 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
                 {name}
               </div>
             )}
-            <div className={`bay-panel ${side ? 'is-side' : 'is-under'}`} style={panel}>
+            <div ref={panelRef} className={`bay-panel ${side ? 'is-side' : 'is-under'}`} style={panel}>
               {side && name}
               <div className="bay-ship-pills" role="radiogroup" aria-label={h.title}>
                 {SHIPS.map((s, i) => (
