@@ -1,15 +1,23 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useT } from '../../i18n/useLang';
 import { currentTrack, playTrack, type Track } from '../../audio/useAudio';
 import { AboutPage } from './AboutPage';
 
+// (loaded the first time it's opened)
+const HowItWorks = lazy(() => import('../how/HowItWorks').then((m) => ({ default: m.HowItWorks })));
+
 // The little ⓘ at the end of the top bar. The About page has its own music
-// (Velvet Horizon); closing it goes back to whatever was playing.
+// (Velvet Horizon), playing on through "How does the game work?" from it;
+// closing them goes back to whatever was playing.
 export function AboutButton() {
   const t = useT().about;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<'about' | 'how' | null>(null);
   const before = useRef<Track>('theme');
+  const close = () => {
+    playTrack(before.current);
+    setOpen(null);
+  };
   return (
     <>
       <button
@@ -18,7 +26,7 @@ export function AboutButton() {
           // (from the tap itself, so the browser lets the music start)
           before.current = currentTrack();
           playTrack('about');
-          setOpen(true);
+          setOpen('about');
         }}
         aria-label={t.open}
         title={t.open}
@@ -26,15 +34,11 @@ export function AboutButton() {
         i
       </button>
       <AnimatePresence>
-        {open && (
-          <AboutPage
-            onClose={() => {
-              playTrack(before.current);
-              setOpen(false);
-            }}
-          />
-        )}
+        {open === 'about' && <AboutPage key="about" onClose={close} onHow={() => setOpen('how')} />}
       </AnimatePresence>
+      <Suspense fallback={null}>
+        <AnimatePresence>{open === 'how' && <HowItWorks key="how" onClose={() => setOpen('about')} onDone={close} />}</AnimatePresence>
+      </Suspense>
     </>
   );
 }

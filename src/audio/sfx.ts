@@ -16,6 +16,9 @@ function audio(): AudioContext | null {
   }
 }
 
+/** the effects' audio context (for the "how does it work?" page to listen in on them), null without Web Audio */
+export const sfxContext = audio;
+
 // iOS keeps a Web Audio context silent until it's resumed inside a user
 // gesture (and won't count a sound triggered later from a timer), so resume
 // it — and play one silent sample — on the first touch or key.
@@ -215,18 +218,20 @@ interface ToneOptions {
   attack?: number;
   /** frequency to glide to over the note's duration */
   glideTo?: number;
+  /** where it's heard (the speakers, unless something's listening in) */
+  dest?: AudioNode;
 }
 
 // A bell-ish note: fast attack, exponential decay, plus a quiet octave
 // partial so it rings instead of beeping.
 function tone(c: AudioContext, freq: number, start: number, dur: number, opts: ToneOptions = {}) {
-  const { type = 'sine', gain = 0.25, attack = 0.006, glideTo } = opts;
+  const { type = 'sine', gain = 0.25, attack = 0.006, glideTo, dest = c.destination } = opts;
   const out = c.createGain();
   const peak = gain * volume();
   out.gain.setValueAtTime(0.0001, start);
   out.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), start + attack);
   out.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-  out.connect(c.destination);
+  out.connect(dest);
 
   for (const [mult, level] of [
     [1, 1],
@@ -288,21 +293,22 @@ function brass(c: AudioContext, freq: number, start: number, dur: number, gain =
 export const sfx = {
   /**
    * Correct answer. `streak` is the streak *including* this answer; `fast`
-   * adds a sparkle on top for answers in the BIG BOOST zone.
+   * adds a sparkle on top for answers in the BIG BOOST zone; `dest`: where
+   * it's heard, if not straight out of the speakers.
    */
-  correct(streak: number, fast: boolean) {
+  correct(streak: number, fast: boolean, dest?: AudioNode) {
     const c = audio();
     if (!c || volume() === 0) return;
     const t = c.currentTime + 0.01;
     const root = Math.min(streak - 1, 10);
     // Two-note "ding-ding" a pentatonic step apart, starting higher each time.
-    tone(c, noteFreq(root), t, 0.35, { gain: 0.22 });
-    tone(c, noteFreq(root + 2), t + 0.08, 0.5, { gain: 0.24 });
+    tone(c, noteFreq(root), t, 0.35, { gain: 0.22, dest });
+    tone(c, noteFreq(root + 2), t + 0.08, 0.5, { gain: 0.24, dest });
     // Longer streaks add a third note, so the reward literally grows.
-    if (streak >= 3) tone(c, noteFreq(root + 4), t + 0.16, 0.6, { gain: 0.2 });
+    if (streak >= 3) tone(c, noteFreq(root + 4), t + 0.16, 0.6, { gain: 0.2, dest });
     if (fast) {
       for (let i = 0; i < 4; i++) {
-        tone(c, noteFreq(root + 6 + i), t + 0.2 + i * 0.045, 0.25, { gain: 0.07, type: 'triangle' });
+        tone(c, noteFreq(root + 6 + i), t + 0.2 + i * 0.045, 0.25, { gain: 0.07, type: 'triangle', dest });
       }
     }
   },

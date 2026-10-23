@@ -2,15 +2,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Orb from '../reactbits/Orb';
 import { ThinkVisual } from './ThinkVisual';
-import { stuckAfterMs, thinkSteps, type ThinkStep } from '../../game/thinkThrough';
-import { strategyFor } from '../../game/strategy';
+import { stepText } from './stepText';
+import { stuckAfterMs, thinkSteps } from '../../game/thinkThrough';
 import { missionOfKey } from '../../game/mission';
 import { rocketScreen } from '../../game/flight';
 import { placeOrb, type Point, type Rect } from './orbPlace';
 import { gameTimeout } from '../../game/gameClock';
 import { useGameStore, type Question } from '../../game/useGameStore';
 import { useLang, useT } from '../../i18n/useLang';
-import type { Strings } from '../../i18n/strings';
 import { speak } from '../../audio/speech';
 import { sfx } from '../../audio/sfx';
 import { useBack } from '../../native/back';
@@ -40,32 +39,6 @@ const ORB_MARGIN = 22;
 const BUBBLE_MS = 5000;
 
 type Phase = 'waiting' | 'orb' | 'open';
-
-/** a step's title, words and math, in the pilot's language */
-function stepText(step: ThinkStep, c: Strings['computer'], t: Strings, question: Question) {
-  switch (step.id) {
-    case 'meaningMul':
-      return { title: c.meaningMul.title, text: c.meaningMul.text(step.x, step.y) };
-    case 'skip':
-      return { title: c.skip.title, text: c.skip.text(step.by, step.jumps) };
-    case 'trick': {
-      const s = strategyFor(question.x, question.y, t, missionOfKey(question.fact.key));
-      return { title: c.trick.title, text: s.text ?? c.trick.text, math: s.math };
-    }
-    case 'known':
-      return { title: c.known.title, text: c.known.text(step.p, step.q, step.known, step.add), math: step.math };
-    case 'swap':
-      return { title: c.swap.title, text: c.swap.text(step.x, step.y) };
-    case 'meaningAdd':
-      return { title: c.meaningAdd.title, text: c.meaningAdd.text(step.x, step.y) };
-    case 'meaningTens':
-      return { title: c.meaningTens.title, text: c.meaningTens.text };
-    case 'countOn':
-      return { title: c.countOn.title, text: c.countOn.text(step.big, step.small) };
-    case 'swapAdd':
-      return { title: c.swapAdd.title, text: c.swapAdd.text(step.x, step.y), math: step.math };
-  }
-}
 
 /** the screen's own furniture the orb keeps off, and the room it has (re-read every half second, not every frame) */
 function readScreen(): { area: Rect; avoid: Rect[] } {
@@ -168,7 +141,7 @@ export function ShipComputer({ question, paceMs, struggling }: Props) {
     sfx.blip(5 + d);
   };
   const step = steps[index];
-  const words = useMemo(() => stepText(step, c, all, question), [step, c, all, question]);
+  const words = useMemo(() => stepText(step, c, all, { x: question.x, y: question.y, mission: missionOfKey(question.fact.key) }), [step, c, all, question]);
   const read = () => speak([words.title, words.text, words.math?.replace(/→/g, ',')].filter(Boolean).join('. '), lang, all.academy.speakWords);
 
   if (phase === 'waiting') return null;

@@ -19,8 +19,9 @@ const PALETTE = ['#ffe1a8', '#c9a4de', '#7ec4b0', '#f2a6c0', '#bfe6f5', '#ffffff
 // and the faster the rocket goes the longer each one stretches into a streak
 // — the "stars turn into lines" motion-blur look of a jump to light speed.
 // The field is turned onto the level's course (flight.heading), so the dust
-// always streams past from where the nose points.
-export function SpeedStreaks() {
+// always streams past from where the nose points. The "how does it work?"
+// page flies it at a speed of its own (`source`, rather than the game's flight).
+export function SpeedStreaks({ source = flight }: { source?: { effective: number; heading: number } }) {
   const courseRef = useRef<THREE.Group>(null);
   const { geometry, positions, colors, particles } = useMemo(() => {
     const positions = new Float32Array(COUNT * 2 * 3); // 2 verts per streak: head + tail
@@ -51,9 +52,9 @@ export function SpeedStreaks() {
   );
 
   useFrame((_, rawDelta) => {
-    if (courseRef.current) courseRef.current.rotation.z = flight.heading;
+    if (courseRef.current) courseRef.current.rotation.z = source.heading;
     const dt = Math.min(rawDelta, 0.1);
-    const s = flight.effective;
+    const s = source.effective;
     const velocity = 0.5 + s * 26; // world units / second
     const length = 0.03 + s * s * 2.4;
     // Faster = brighter streaks (they're the main thing selling the speed).

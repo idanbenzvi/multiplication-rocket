@@ -201,6 +201,41 @@ practice (a picture, then symbols only, with "Show me").
    **a new ten**: in `37 + 25` the 12 ones are bundled into a rod (carrying); jumping to the next
    ten (`48 + 2 + 5`).
 
+
+## How does it work? 🔧 (for curious kids)
+
+The About page (ⓘ) has a **How does the game work?** button. It opens a tour of what's going on
+behind the scenes, seven short pages for 7 to 10 year olds, in English or Hebrew, each read aloud
+by 🔊. It opens with the biggest secret: all of it runs on the math they're practising, since a
+computer only multiplies and adds numbers, millions of times a second (even turning the rocket's
+card to face you is a few multiplications and additions for each corner). Every page runs one of
+the game's own pieces live, with the pilot's own ship, animal and progress, for the child to play
+with:
+
+1. **Your rocket is a sticker.** The ship is a drawing on a flat card. Walk the camera round it:
+   it always faces you, because the computer keeps turning it (a billboard). Switch that off and
+   it's as thin as paper; *Show the card* outlines the card.
+2. **The rocket stays still. Space moves!** The game's own space dust streams past the ship at a
+   speed to slide, the specks stretching into lines and the view widening.
+3. **The fire is a tiny program.** The engine's plume shader at a power to slide, from icy blue to
+   hot pink, a wrong answer making it sputter. *Show where it runs* outlines the rectangle it works
+   out, and a counter says how many dots that is, how many times a second.
+4. **The water isn't moving.** The About page's colour-cycling canyon, with three of its palette's
+   ranges as strips turning beside it. The colours can be stopped, and *Show the dots that change*
+   dims every pixel that never changes.
+5. **The game remembers.** The spaced review's eight boxes, with a fact to answer right or wrong
+   and days to let go by. The game's own rules (`game/memory.ts`) move it up, back, or keep it put,
+   and it fades when it's left too long.
+6. **Orbie thinks with you.** Orbie's clock runs out, its orb lights up, and its window thinks a
+   question through with the same steps it would give this pilot (one starts from a fact they've
+   mastered, if there is one).
+7. **Sounds are made, not recorded.** An oscilloscope listens in while the four wave shapes, the
+   right-answer chime (climbing with the streak) and the engine's hum play, all made by `sfx.ts`.
+
+The game is paused while the tour is open, and its music (the About page's) plays on. It's in
+[`src/components/how/`](src/components/how/), and the plan is
+[`docs/plans/2026-10-22-how-it-works.md`](docs/plans/2026-10-22-how-it-works.md).
+
 ## Three missions: ×, + (SpaceSum) or both mixed
 
 Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10),

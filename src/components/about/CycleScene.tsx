@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { loadScene, MAX_RANGES, type Scene } from './sceneData';
 
 // The About page's canyon, colour cycling the way Mark Ferrari's scenes moved
 // (docs/plans/2026-10-21-canyon-cycle.md, made by scripts/canyon-cycle.py).
@@ -17,55 +18,10 @@ import { useEffect, useRef, useState } from 'react';
 // palette holds gains rather than colours, how much brighter or dimmer (and
 // which way tinted) a moving pixel is at each step of its range; index 0 is
 // a pixel that doesn't move.
-
-interface Range {
-  start: number;
-  length: number;
-  /** palette steps a second */
-  rate: number;
-  blend: boolean;
-}
-
-interface Scene {
-  width: number;
-  height: number;
-  /** 256 × RGB: colours, or with a picture of its own, gains (× 64) */
-  palette: Uint8Array;
-  /** width × height palette indices, row by row from the top */
-  index: Uint8Array;
-  ranges: Range[];
-  /** the picture in its own colours, if it keeps them */
-  base?: HTMLImageElement;
-}
-
-const MAX_RANGES = 24;
-
-const bytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-
-const loading = new Map<string, Promise<Scene>>();
-/** a scene (its JSON, and its picture if it has one), fetched once */
-function loadScene(src: string): Promise<Scene> {
-  let scene = loading.get(src);
-  if (!scene) {
-    scene = fetch(src)
-      .then((r) => {
-        if (!r.ok) throw new Error(`${src}: ${r.status}`);
-        return r.json() as Promise<{ width: number; height: number; palette: string; index: string; ranges: Range[]; base?: string }>;
-      })
-      .then(async (d) => {
-        let base: HTMLImageElement | undefined;
-        if (d.base) {
-          base = new Image();
-          base.src = new URL(d.base, new URL(src, document.baseURI)).href;
-          await base.decode();
-        }
-        return { ...d, palette: bytes(d.palette), index: bytes(d.index), ranges: d.ranges.slice(0, MAX_RANGES), base };
-      });
-    scene.catch(() => loading.delete(src));
-    loading.set(src, scene);
-  }
-  return scene;
-}
+//
+// The "how does it work?" page runs its clock (`clock`): how fast the
+// colours turn (0 stops them), and whether the pixels that never change are
+// dimmed, to show which ones do.
 
 const VERT = /* glsl */ `#version 300 es
 in vec2 a_pos;
@@ -81,6 +37,7 @@ uniform vec4 u_ranges[${MAX_RANGES}]; // start, length, rate, blend
 uniform int u_count;
 uniform float u_time;
 uniform float u_height;
+uniform bool u_mark;         // dim the pixels that never change
 out vec4 outColor;
 
 vec3 pal(int i) { return texelFetch(u_palette, ivec2(i, 0), 0).rgb; }
@@ -90,10 +47,11 @@ void main() {
   ivec2 p = ivec2(int(gl_FragCoord.x), int(u_height) - 1 - int(gl_FragCoord.y));
   int idx = int(texelFetch(u_index, p, 0).r * 255.0 + 0.5);
   if (u_gains && idx == 0) {
-    outColor = vec4(texelFetch(u_base, p, 0).rgb, 1.0);
+    outColor = vec4(texelFetch(u_base, p, 0).rgb * (u_mark ? 0.16 : 1.0), 1.0);
     return;
   }
   vec3 c = pal(idx);
+  bool moving = false;
   for (int r = 0; r < ${MAX_RANGES}; r++) {
     if (r >= u_count) break;
     vec4 R = u_ranges[r];
@@ -105,11 +63,13 @@ void main() {
       int i0 = int(floor(q));
       vec3 a = pal(s + i0);
       c = R.w > 0.5 ? mix(a, pal(s + (i0 + 1) % n), fract(q)) : a;
+      moving = true;
       break;
     }
   }
   // (gains are stored × 64: up to 4× as bright)
   if (u_gains) c = min(texelFetch(u_base, p, 0).rgb * c * (255.0 / 64.0), 1.0);
+  if (u_mark && !moving) c *= 0.16;
   outColor = vec4(c, 1.0);
 }`;
 
@@ -122,8 +82,8 @@ function compile(gl: WebGL2RenderingContext, type: number, source: string): WebG
   return shader;
 }
 
-/** the scene on WebGL 2: draws a frame for a time in seconds; null if it can't */
-function glScene(canvas: HTMLCanvasElement, scene: Scene): ((t: number) => void) | null {
+/** the scene on WebGL 2: draws a frame for a time in seconds (`mark`: the pixels that never change dimmed); null if it can't */
+function glScene(canvas: HTMLCanvasElement, scene: Scene): ((t: number, mark?: boolean) => void) | null {
   const gl = canvas.getContext('webgl2', { antialias: false, depth: false, stencil: false, alpha: false, preserveDrawingBuffer: false });
   if (!gl || gl.isContextLost()) return null;
   try {
@@ -168,11 +128,13 @@ function glScene(canvas: HTMLCanvasElement, scene: Scene): ((t: number) => void)
     gl.uniform1i(gl.getUniformLocation(program, 'u_count'), scene.ranges.length);
     gl.uniform1f(gl.getUniformLocation(program, 'u_height'), scene.height);
     const time = gl.getUniformLocation(program, 'u_time');
+    const marking = gl.getUniformLocation(program, 'u_mark');
     gl.viewport(0, 0, scene.width, scene.height);
 
-    return (t) => {
+    return (t, mark = false) => {
       if (gl.isContextLost()) return;
       gl.uniform1f(time, t);
+      gl.uniform1i(marking, mark ? 1 : 0);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
   } catch {
@@ -197,7 +159,14 @@ function drawStill(canvas: HTMLCanvasElement, scene: Scene) {
   ctx.putImageData(image, 0, 0);
 }
 
-export function CycleScene({ src = './about/canyon.json', className = '' }: { src?: string; className?: string }) {
+/** a scene's time, run from outside: how far it has turned (s), how fast it turns (1 its own speed, 0 stopped), and whether to dim what doesn't move */
+export interface CycleClock {
+  t: number;
+  speed: number;
+  mark: boolean;
+}
+
+export function CycleScene({ src = './about/canyon.json', className = '', clock }: { src?: string; className?: string; clock?: CycleClock }) {
   const holder = useRef<HTMLDivElement>(null);
   const [scene, setScene] = useState<Scene | null>(null);
 
@@ -220,13 +189,21 @@ export function CycleScene({ src = './about/canyon.json', className = '' }: { sr
     canvas.width = scene.width;
     canvas.height = scene.height;
     box.append(canvas);
-    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    // (run from outside, it's turned only when asked, so it's drawn by WebGL even with reduced motion)
+    const calm = !clock && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
     const draw = calm ? null : glScene(canvas, scene);
     let raf = 0;
     if (draw) {
       const t0 = performance.now();
+      let last = t0;
       const frame = (now: number) => {
-        draw((now - t0) / 1000);
+        if (clock) {
+          clock.t += (Math.min(now - last, 100) / 1000) * clock.speed;
+          draw(clock.t, clock.mark);
+        } else {
+          draw((now - t0) / 1000);
+        }
+        last = now;
         raf = requestAnimationFrame(frame);
       };
       raf = requestAnimationFrame(frame);
@@ -243,7 +220,7 @@ export function CycleScene({ src = './about/canyon.json', className = '' }: { sr
       if (draw) canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
       canvas.remove();
     };
-  }, [scene]);
+  }, [scene, clock]);
 
   return <div ref={holder} className={`cycle-holder ${className}`} aria-hidden="true" />;
 }

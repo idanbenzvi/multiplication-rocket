@@ -4443,6 +4443,33 @@ button:focus-visible {
 [dir='rtl'] .about-closing {
   border-radius: 12px 4px 4px 12px;
 }
+/* "How does the game work?" (how/HowItWorks.tsx) */
+.about-how {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 50px;
+  margin: 0.9rem 0 0.3rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 230, 255, 0.55);
+  background: linear-gradient(90deg, rgba(106, 215, 255, 0.2), rgba(177, 140, 255, 0.26));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.about-how:hover,
+.about-how:focus-visible {
+  border-color: #8fe6ff;
+  background: linear-gradient(90deg, rgba(106, 215, 255, 0.32), rgba(177, 140, 255, 0.4));
+}
 .about-close {
   position: absolute;
   top: 14px;
