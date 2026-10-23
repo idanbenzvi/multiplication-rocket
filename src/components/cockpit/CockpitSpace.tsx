@@ -3,6 +3,7 @@ import { activeMission } from '../../profiles/useProfiles';
 import { pickOp, type PilotMission } from '../../game/mission';
 import { LOOKS } from '../scene/planetLooks';
 import { drawPlanet } from './drawPlanet';
+import { passer } from './passingLight';
 
 // Through the cockpit's windscreen: space drifting gently by, and numbers
 // floating past among the stars (the pilot's own times tables, or sums),
@@ -12,9 +13,10 @@ import { drawPlanet } from './drawPlanet';
 // Dead ahead, the level's destination: as big as the fuel says it's near,
 // and growing a little as you watch, as if flying towards it. The canvas can
 // reach above the glass (`over`), for the cockpit to shift it as you look
-// down (the view outside moving less than the frame). It's drawn at half
-// the screen's resolution and shown with crisp pixels, 16-bit, like the rest
-// of the cockpit.
+// down (the view outside moving less than the frame). Now and then a comet
+// streaks by across the top of the glass, lighting the dashboard as it goes
+// (passingLight.ts). It's drawn at half the screen's resolution and shown
+// with crisp pixels, 16-bit, like the rest of the cockpit.
 
 export interface Destination {
   /** which destination (planetLooks.ts order) */
@@ -187,6 +189,62 @@ function drawGlyph(ctx: CanvasRenderingContext2D, g: Glyph, size: number, t: num
   ctx.restore();
 }
 
+const snap = (v: number) => Math.round(v / PIXEL) * PIXEL;
+/** the comet's tail: how many chunky pixels long */
+const TAIL = 38;
+
+/** a pixel disc, centred */
+function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  ctx.arc(snap(x), snap(y), Math.max(PIXEL, snap(r)), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** the comet passing by (passingLight.ts): its tail of chunky pixels streaming behind, its glow in hard bands with a dithered rim, a white-hot head */
+function drawPasser(ctx: CanvasRenderingContext2D, w: number, top: number, vh: number, now: number) {
+  const x = passer.x * w;
+  const y = top + passer.y * vh;
+  const r = Math.max(5, vh * 0.032);
+  const back = -passer.dir;
+  for (let i = TAIL - 1; i >= 0; i--) {
+    const d = (i + 1) * r * 0.62;
+    const wobble = Math.sin(now / 80 + i * 1.7) * r * 0.35 * (i / TAIL);
+    const size = Math.max(PIXEL, snap(r * 1.15 * (1 - i / (TAIL + 6))));
+    ctx.globalAlpha = 0.85 * (1 - i / TAIL);
+    ctx.fillStyle = i % 4 === 0 ? '#ffffff' : passer.color;
+    // (rising a little behind it, as it dips)
+    ctx.fillRect(snap(x + back * d - size / 2), snap(y - d * 0.14 + wobble - size / 2), size, size);
+    // and sparks flicking off it
+    if (i % 5 === 2 && Math.sin(now / 60 + i * 3.1) > 0.3) {
+      ctx.fillRect(snap(x + back * d), snap(y - d * 0.14 + (i % 2 ? 1 : -1) * r * (0.9 + (i % 3) * 0.4)), PIXEL, PIXEL);
+    }
+  }
+  // its glow: the dithered rim, then the bands
+  ctx.fillStyle = passer.color;
+  ctx.globalAlpha = 0.35;
+  const rim0 = r * 4.2;
+  const rim1 = r * 5.4;
+  for (let gy = snap(y - rim1); gy <= y + rim1; gy += PIXEL) {
+    for (let gx = snap(x - rim1); gx <= x + rim1; gx += PIXEL) {
+      if (((gx + gy) / PIXEL) % 2) continue;
+      const dd = Math.hypot(gx - x, gy - y);
+      if (dd >= rim0 && dd < rim1) ctx.fillRect(gx, gy, PIXEL, PIXEL);
+    }
+  }
+  for (const [k, a] of [
+    [4.2, 0.12],
+    [3, 0.2],
+    [2, 0.34],
+    [1.4, 0.6],
+  ]) {
+    ctx.globalAlpha = a;
+    disc(ctx, x, y, r * k);
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ffffff';
+  disc(ctx, x, y, r * 0.9);
+}
+
 export function CockpitSpace({ calm, destination, over = 0 }: { calm: boolean; destination?: Destination; over?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // (read by the drawing loop, which doesn't restart for it)
@@ -312,6 +370,8 @@ export function CockpitSpace({ calm, destination, over = 0 }: { calm: boolean; d
         drawGlyph(ctx, g, size, now / 1000);
         ctx.restore();
       }
+      // something glowing passing by, in front of it all
+      if (passer.on) drawPasser(ctx, w, top, vh, now);
       ctx.globalAlpha = 1;
     };
     raf = requestAnimationFrame(draw);

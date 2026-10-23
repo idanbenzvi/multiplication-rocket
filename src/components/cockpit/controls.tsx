@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
+import { plateTint } from './plates';
 
 // The cockpit's controls. Underneath each one is a real radio group, switch,
 // slider or button (for keyboards and screen readers); on top it's dressed
@@ -12,6 +13,16 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 /** a module's neon: what its plate and lights glow */
 export type Tone = 'cyan' | 'orange' | 'magenta';
 
+/** the light of something passing by outside, on a plate (passingLight.ts): lighting its edge towards it, and the shadow it casts */
+export function PlateLight({ cast = true }: { cast?: boolean }) {
+  return (
+    <>
+      {cast && <span className="ck-cast" aria-hidden />}
+      <span className="ck-shade" aria-hidden />
+    </>
+  );
+}
+
 /**
  * a module of the dashboard: an armour-plated sub-module (a thick steel
  * frame, or hazard stripes round it), its name stencilled on a plate, the
@@ -22,6 +33,7 @@ export function Module({
   screen,
   tone = 'cyan',
   hazard = false,
+  plate = 0,
   className = '',
   children,
 }: {
@@ -29,11 +41,14 @@ export function Module({
   screen?: React.ReactNode;
   tone?: Tone;
   hazard?: boolean;
+  /** which plate it is: its paint (plateTint) */
+  plate?: number;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className={`ck-module is-${tone} ${hazard ? 'is-hazard' : ''} ${className}`}>
+    <section className={`ck-module is-${tone} ${hazard ? 'is-hazard' : ''} ${className}`} style={plateTint(plate)}>
+      <PlateLight />
       <h3 className="ck-label">{label}</h3>
       <div className="ck-body">{children}</div>
       {screen != null && <div className="ck-screen">{screen}</div>}

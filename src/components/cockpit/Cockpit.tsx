@@ -14,10 +14,12 @@ import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '..
 import { CockpitSpace } from './CockpitSpace';
 import { getLevelConfig } from '../../game/levels';
 import { destinationName, STRINGS } from '../../i18n/strings';
-import { GuardedButton, HyperdriveLever, Module, PushButton, Selector, Throttle, Toggle } from './controls';
+import { GuardedButton, HyperdriveLever, Module, PlateLight, PushButton, Selector, Throttle, Toggle } from './controls';
+import { plateTint } from './plates';
 import { Droid } from './Droid';
 import { emote } from './droidBus';
 import { useTurbulence } from './turbulence';
+import { usePassingLight } from './passingLight';
 import './cockpit.css';
 import { useBack } from '../../native/back';
 
@@ -297,6 +299,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
   // a little flight jitter now and then, once inside (not under a dialog, or flying back out)
   useTurbulence(rootRef, scrollRef, !calm && !moving && !leaving && !covered);
+  // and now and then something glowing passing by outside, its light moving over the dashboard
+  usePassingLight(rootRef, !calm && !moving && !leaving && !covered);
 
   useEffect(() => {
     if (covered || leaving) return;
@@ -338,7 +342,10 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
           </div>
 
           <div className="ck-dash">
+            {/* (its light, falling through the glass) */}
+            <span className="ck-passlight" aria-hidden />
             <div className="ck-hood">
+              <PlateLight cast={false} />
               <Droid who="sound" side="left" color="#2ff3ff" />
               <span className="ck-gadgets is-l" aria-hidden>
                 <span className="ck-radar" />
@@ -372,7 +379,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
             <div className="ck-deck">
               <Tower side="left" />
               <div className="ck-panel">
-                <Module label={t.answerBy} screen={answerMode === 'type' ? t.modeTypeHint : t.modeChoiceHint} tone="cyan" className="ck-wide">
+                <Module plate={1} label={t.answerBy} screen={answerMode === 'type' ? t.modeTypeHint : t.modeChoiceHint} tone="cyan" className="ck-wide">
                   <Selector<AnswerMode>
                     kind="lever"
                     label={t.answerBy}
@@ -391,7 +398,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
                 {/* touch devices only: on a computer, typed answers always wait for Enter */}
                 {answerMode === 'type' && isTouchDevice && (
-                  <Module label={t.typedCheckLabel} screen={checkHint(typedCheck)} tone="cyan" className="ck-wide">
+                  <Module plate={2} label={t.typedCheckLabel} screen={checkHint(typedCheck)} tone="cyan" className="ck-wide">
                     <Selector<TypedCheck>
                       kind="knob"
                       label={t.typedCheckLabel}
@@ -409,7 +416,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
                   </Module>
                 )}
 
-                <Module label={t.sound} tone="orange" hazard className="ck-sound">
+                <Module plate={3} label={t.sound} tone="orange" hazard className="ck-sound">
                   <Throttle
                     name={t.music}
                     icon="🎵"
@@ -432,7 +439,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
                   />
                 </Module>
 
-                <Module label={t.language} className="ck-mid">
+                <Module plate={4} label={t.language} className="ck-mid">
                   <Selector
                     kind="knob"
                     label={t.language}
@@ -451,12 +458,12 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
                   />
                 </Module>
 
-                <Module label={t.mistakeReviewLabel} screen={t.mistakeReviewHint} tone="magenta">
+                <Module plate={5} label={t.mistakeReviewLabel} screen={t.mistakeReviewHint} tone="magenta">
                   <Toggle name={t.mistakeReviewLabel} on={mistakeReview} onChange={switched(setMistakeReview)} onWord={t.on} offWord={t.off} />
                 </Module>
 
                 {/* Orbie, the ship's computer, floating beside its switch (lit while it's on) */}
-                <Module label={t.orbieLabel} screen={orbie ? t.orbieOnHint : t.orbieOffHint} tone="magenta">
+                <Module plate={6} label={t.orbieLabel} screen={orbie ? t.orbieOnHint : t.orbieOffHint} tone="magenta">
                   <div className="ck-orbie-row">
                     <span className={`ck-orbie ${orbie ? 'is-on' : ''}`} aria-hidden>
                       <span className="ck-orbie-face">?</span>
@@ -467,7 +474,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
                 {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}
                 {profile && (
-                  <Module label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint(paceSeconds) : t.timedBoostOffHint} tone="orange" hazard>
+                  <Module plate={7} label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint(paceSeconds) : t.timedBoostOffHint} tone="orange" hazard>
                     <Toggle
                       name={t.timedBoostLabel}
                       on={timedBoost}
@@ -480,7 +487,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 
                 {/* only where the device can actually vibrate (not iPhone/iPad) */}
                 {canVibrate && (
-                  <Module label={t.vibrationLabel} screen={t.vibrationHint} tone="magenta">
+                  <Module plate={8} label={t.vibrationLabel} screen={t.vibrationHint} tone="magenta">
                     <Toggle
                       name={t.vibrationLabel}
                       on={vibration}
@@ -495,11 +502,11 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
                   </Module>
                 )}
 
-                <Module label={t.cockpit.parents}>
+                <Module plate={9} label={t.cockpit.parents}>
                   <PushButton icon="👪" name={t.cockpit.parents} onPress={onParents} />
                 </Module>
 
-                <Module label={t.progressSection} tone="orange" hazard>
+                <Module plate={10} label={t.progressSection} tone="orange" hazard>
                   <GuardedButton
                     name={t.reset}
                     liftLabel={t.cockpit.liftCover}
@@ -575,21 +582,21 @@ function Canopy() {
       <svg className="ck-canopy" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden>
         <defs>
           {bands('ck-frame', [
-            [0, '#535b7a'],
-            [0.04, '#3e4560'],
-            [0.18, '#31374b'],
-            [0.5, '#2a2f41'],
-            [0.8, '#1f2331'],
+            [0, '#565c91'],
+            [0.04, '#404673'],
+            [0.18, '#34385b'],
+            [0.5, '#2d3150'],
+            [0.8, '#22253e'],
           ])}
           {bands(
             'ck-strut',
             [
-              [0, '#161925'],
-              [0.18, '#2a2f41'],
-              [0.34, '#5a6282'],
-              [0.48, '#3e4560'],
-              [0.72, '#2a2f41'],
-              [0.88, '#161925'],
+              [0, '#181b30'],
+              [0.18, '#2d3150'],
+              [0.34, '#5d639a'],
+              [0.48, '#404673'],
+              [0.72, '#2d3150'],
+              [0.88, '#181b30'],
             ],
             false,
           )}
@@ -609,11 +616,11 @@ function Canopy() {
           d="M0 0 H1000 V400 H0 Z M42 400 L74 64 Q80 24 124 22 L876 22 Q920 24 926 64 L958 400 Z"
         />
         <path fill="url(#ck-strut)" d="M318 20 L362 20 L306 400 L246 400 Z M638 20 L682 20 L754 400 L694 400 Z" />
-        <g fill="none" stroke="#04050a" strokeWidth="4" vectorEffect="non-scaling-stroke">
+        <g fill="none" stroke="#05060f" strokeWidth="4" vectorEffect="non-scaling-stroke">
           <path d="M42 400 L74 64 Q80 24 124 22 L876 22 Q920 24 926 64 L958 400" />
           <path d="M318 20 L362 20 L306 400 L246 400 Z M638 20 L682 20 L754 400 L694 400 Z" />
         </g>
-        <g fill="none" stroke="#7d86a8" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke">
+        <g fill="none" stroke="#8a90bb" strokeOpacity="0.5" strokeWidth="2" vectorEffect="non-scaling-stroke">
           <path d="M51 400 L82 66 Q88 31 126 29 L874 29" />
           <path d="M327 25 L268 400 M647 25 L709 400" />
         </g>
@@ -633,7 +640,8 @@ function Canopy() {
 function Tower({ side }: { side: 'left' | 'right' }) {
   const seed = side === 'left' ? 3 : 4;
   return (
-    <div className={`ck-tower is-${side}`} aria-hidden>
+    <div className={`ck-tower is-${side}`} style={plateTint(seed + 20)} aria-hidden>
+      <PlateLight />
       <span className="ck-tower-lamps">
         <i />
         <i />

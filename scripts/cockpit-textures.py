@@ -7,7 +7,8 @@ cockpit's banded metal (cockpit.css), each pixel drawn 2 × 2 CSS px with
 crisp edges, so every plate is stippled, scratched and grimy rather than a
 flat colour:
 
-- grit.png: stipple (dark and light specks), short scratches, grime;
+- grit.png: stipple (dark and light specks), short scratches, a little grime
+  (light: the hull's painted, friendly rather than rusty);
 - wear.png: heavier, for the hazard stripes and the lever's housing: chips
   and scuffs as well;
 - rubber.png: the lever's gaiter, fine speckle.
@@ -66,21 +67,21 @@ def save(name, img):
     cv2.imwrite(f'{OUT}/{name}', bgra)
 
 
-DARK = (0.03, 0.03, 0.06)
+DARK = (0.04, 0.04, 0.12)
 LIGHT = (0.85, 0.88, 1.0)
 
 g = layer(64)
-speck(g, 0.13, DARK, (0.22, 0.42))
+speck(g, 0.11, DARK, (0.14, 0.3))
 speck(g, 0.05, LIGHT, (0.08, 0.18))
 scratches(g, 7, LIGHT, 0.2, (3, 9))
-blobs(g, 4, DARK, 0.35, (1, 3))
+blobs(g, 2, DARK, 0.22, (1, 3))
 save('grit.png', g)
 
 w = layer(64)
-speck(w, 0.18, DARK, (0.25, 0.5))
+speck(w, 0.15, DARK, (0.18, 0.38))
 speck(w, 0.06, LIGHT, (0.1, 0.22))
 scratches(w, 12, LIGHT, 0.28, (3, 11))
-blobs(w, 7, DARK, 0.55, (1, 3))
+blobs(w, 4, DARK, 0.38, (1, 3))
 # chips: bare metal showing through
 blobs(w, 5, (0.55, 0.58, 0.68), 0.6, (1, 2))
 save('wear.png', w)

@@ -1,17 +1,30 @@
 /* ==================== THE COCKPIT (settings) ==================== */
 /* 16-bit sci-fi hardware: dark heavy steel, banded and dithered (never a flat plane of colour), gritty
-   with stipple, scratches and grime (tex/, made by scripts/cockpit-textures.py, drawn 2 px a pixel),
-   grimy rivets, and electric cyan, neon orange and magenta glowing on it in dithered pixels.
-   Where it doesn't all fit, the view pitches as you look down at the dashboard and back up. */
+   with stipple, scratches and a little grime (tex/, made by scripts/cockpit-textures.py, drawn 2 px a
+   pixel), rivets, and electric cyan, neon orange and magenta glowing on it in dithered pixels. Its steel
+   is painted a friendly indigo, each plate tinged its own way. Now and then something glowing passes by
+   outside, lighting it up (passingLight.ts). Where it doesn't all fit, the view pitches as you look down
+   at the dashboard and back up. */
 .cockpit {
-  --edge: #04050a;
-  --m0: #0e1018;
-  --m1: #161925;
-  --m2: #1f2331;
-  --m3: #2a2f41;
-  --m4: #363c52;
-  --m5: #474e68;
-  --m6: #646c8a;
+  --edge: #05060f;
+  /* the hull's paint, darkest to lightest: steel, a little friendlier than bare gunmetal (bluer, lighter) */
+  --b0: #111222;
+  --b1: #181b30;
+  --b2: #22253e;
+  --b3: #2d3150;
+  --b4: #393d63;
+  --b5: #4a4f7c;
+  --b6: #6a70a0;
+  --m0: var(--b0);
+  --m1: var(--b1);
+  --m2: var(--b2);
+  --m3: var(--b3);
+  --m4: var(--b4);
+  --m5: var(--b5);
+  --m6: var(--b6);
+  /* the light of something passing by (passingLight.ts): its colour, and how bright (0 between) */
+  --pass-rgb: 255 226 160;
+  --pass-k: 0;
   --cyan: #2ff3ff;
   --orange: #ff8a1e;
   --magenta: #ff3df0;
@@ -85,6 +98,78 @@ html[lang='he'] .ck-choice {
   z-index: 2;
   pointer-events: none;
   box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.6);
+}
+
+/* each plate (a module, a tower) the hull's paint tinged its own way, by a little, with one of the friendly hues (plateTint, controls.tsx):
+   all of a piece, but no two quite the same; what's on a plate takes its paint */
+@supports (color: color-mix(in oklab, red, blue)) {
+  .ck-module,
+  .ck-tower {
+    --m0: color-mix(in oklab, var(--b0), var(--tint, var(--b0)) var(--tint-k, 0%));
+    --m1: color-mix(in oklab, var(--b1), var(--tint, var(--b1)) var(--tint-k, 0%));
+    --m2: color-mix(in oklab, var(--b2), var(--tint, var(--b2)) var(--tint-k, 0%));
+    --m3: color-mix(in oklab, var(--b3), var(--tint, var(--b3)) var(--tint-k, 0%));
+    --m4: color-mix(in oklab, var(--b4), var(--tint, var(--b4)) var(--tint-k, 0%));
+    --m5: color-mix(in oklab, var(--b5), var(--tint, var(--b5)) var(--tint-k, 0%));
+    --m6: color-mix(in oklab, var(--b6), var(--tint, var(--b6)) var(--tint-k, 0%));
+  }
+}
+
+/* ---------- something glowing passing by outside (passingLight.ts) ---------- */
+/* its light falling through the glass onto the dashboard, in hard bands, brightest under the glass */
+.ck-passlight {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: var(--pass-k);
+  background: radial-gradient(
+    ellipse min(52vw, 640px) 460px at var(--pass-x, 50%) -60px,
+    rgb(var(--pass-rgb) / 0.5) 0 20%,
+    rgb(var(--pass-rgb) / 0.32) 20% 40%,
+    rgb(var(--pass-rgb) / 0.16) 40% 62%,
+    transparent 62%
+  );
+  mix-blend-mode: soft-light;
+}
+/* on a plate: its edge towards the light lit, a rim of it on its top, darker away from it; and the hard shadow it casts away from it */
+.ck-shade,
+.ck-cast {
+  position: absolute;
+  inset: -8px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.ck-module > .ck-shade,
+.ck-tower > .ck-shade,
+.ck-hood > .ck-shade {
+  position: absolute;
+  z-index: 3;
+}
+.ck-module > .ck-cast,
+.ck-tower > .ck-cast {
+  position: absolute;
+  z-index: -1;
+}
+.ck-hood > .ck-shade {
+  inset: 0;
+  border-radius: inherit;
+}
+.ck-shade {
+  opacity: var(--lk, 0);
+  background: linear-gradient(
+    calc(180deg + var(--lx, 0) * 45deg),
+    rgb(var(--pass-rgb) / 0.75) 0 10%,
+    rgb(var(--pass-rgb) / 0.4) 10% 28%,
+    transparent 28% 60%,
+    rgb(6 6 26 / 0.35) 60% 80%,
+    rgb(6 6 26 / 0.6) 80%
+  );
+  box-shadow: inset calc(var(--lx, 0) * -4px) 4px 0 rgb(var(--pass-rgb) / 0.9);
+  mix-blend-mode: soft-light;
+}
+.ck-cast {
+  box-shadow: calc(var(--lx, 0) * -18px) 14px 0 rgb(2 2 14 / calc(0.5 * var(--lk, 0)));
 }
 
 /* ---------- looking up and down ---------- */
@@ -210,7 +295,7 @@ html[lang='he'] .ck-choice {
 .ck-rivets {
   position: absolute;
   pointer-events: none;
-  --rivet: radial-gradient(circle at 40% 40%, #a7b0d4 0 1.5px, #5e6688 2px 3px, #23263a 3.5px 4.5px, rgba(0, 0, 0, 0.6) 5px 5.5px, transparent 6px);
+  --rivet: radial-gradient(circle at 40% 40%, #bdc1e5 0 1.5px, #6268a0 2px 3px, #252748 3.5px 4.5px, rgba(0, 0, 0, 0.6) 5px 5.5px, transparent 6px);
 }
 .ck-rivets.is-top {
   top: 0.3%;
@@ -550,7 +635,7 @@ html[lang='he'] .ck-choice {
   stroke-width: 3px;
 }
 .ck-wire-clamps rect {
-  fill: #474e68;
+  fill: #4a4f7c;
   stroke: var(--edge);
   stroke-width: 2px;
   vector-effect: non-scaling-stroke;
@@ -567,6 +652,7 @@ html[lang='he'] .ck-choice {
   padding: 22px 16px 0;
 }
 .ck-tower {
+  position: relative;
   display: none;
   flex: 0 0 120px;
   flex-direction: column;
@@ -629,7 +715,7 @@ html[lang='he'] .ck-choice {
   width: 7px;
   height: 78px;
   background: #020306;
-  box-shadow: inset 0 0 0 1px #2a2f41;
+  box-shadow: inset 0 0 0 1px #2d3150;
 }
 .ck-tower-sliders.is-short i {
   height: 46px;
@@ -723,7 +809,7 @@ html[lang='he'] .ck-choice {
     url('./tex/grit.png') 0 0 / 128px 128px padding-box,
     linear-gradient(180deg, var(--m5) 0 3%, var(--m4) 3% 16%, var(--m3) 16% 52%, var(--m2) 52% 84%, var(--m1) 84%) padding-box,
     url('./tex/wear.png') 0 0 / 128px 128px border-box,
-    repeating-linear-gradient(-45deg, var(--orange) 0 9px, #14151c 9px 18px) border-box;
+    repeating-linear-gradient(-45deg, var(--orange) 0 9px, #181825 9px 18px) border-box;
 }
 /* the plate's banding dithered: checker pixels where its bands meet */
 .ck-module::after {
@@ -745,7 +831,7 @@ html[lang='he'] .ck-choice {
   position: absolute;
   inset: 5px;
   pointer-events: none;
-  --bolt: radial-gradient(circle at 40% 40%, #b8c0e2 0 1.4px, #646c8a 2px 3px, #1b1e2b 3.4px 4.4px, transparent 4.8px);
+  --bolt: radial-gradient(circle at 40% 40%, #c9cdee 0 1.4px, #6a70a0 2px 3px, #1e2037 3.4px 4.4px, transparent 4.8px);
   background:
     var(--bolt) left top / 11px 11px no-repeat,
     var(--bolt) right top / 11px 11px no-repeat,
@@ -1268,7 +1354,7 @@ html[lang='he'] .ck-choice {
   background:
     url('./tex/wear.png') 0 0 / 128px 128px,
     linear-gradient(160deg, rgba(255, 255, 255, 0.22), transparent 40%),
-    repeating-linear-gradient(-45deg, var(--orange) 0 10px, #14151c 10px 20px);
+    repeating-linear-gradient(-45deg, var(--orange) 0 10px, #181825 10px 20px);
   box-shadow: 0 5px 0 #000;
 }
 .ck-guard.is-open .ck-cover {
@@ -1360,7 +1446,7 @@ html[lang='he'] .ck-choice {
     url('./tex/grit.png') 0 0 / 128px 128px padding-box,
     linear-gradient(180deg, var(--m5) 0 4%, var(--m4) 4% 20%, var(--m3) 20% 58%, var(--m2) 58% 86%, var(--m1) 86%) padding-box,
     url('./tex/wear.png') 0 0 / 128px 128px border-box,
-    repeating-linear-gradient(-45deg, var(--orange) 0 11px, #14151c 11px 22px) border-box;
+    repeating-linear-gradient(-45deg, var(--orange) 0 11px, #181825 11px 22px) border-box;
   box-shadow:
     0 0 0 3px var(--edge),
     inset 0 0 0 2px var(--edge),
@@ -1371,7 +1457,7 @@ html[lang='he'] .ck-choice {
   position: absolute;
   inset: 4px;
   pointer-events: none;
-  --bolt: radial-gradient(circle at 40% 40%, #c4cbea 0 1.8px, #6a7290 2.4px 3.6px, #1b1e2b 4px 5.2px, transparent 5.6px);
+  --bolt: radial-gradient(circle at 40% 40%, #c4cbea 0 1.8px, #6a7290 2.4px 3.6px, #1e2037 4px 5.2px, transparent 5.6px);
   background:
     var(--bolt) left top / 13px 13px no-repeat,
     var(--bolt) right top / 13px 13px no-repeat,
@@ -1693,7 +1779,7 @@ html[lang='he'] .ck-choice {
   fill: var(--droid);
 }
 .ck-droid-wheel {
-  fill: #161925;
+  fill: #181b30;
 }
 .ck-droid-face * {
   stroke: none;
@@ -1957,7 +2043,7 @@ html[lang='he'] .ck-choice {
   text-shadow: 0 0 8px var(--orange);
 }
 .ck-droid-bit.is-zed {
-  color: #b8c0e2;
+  color: #c9cdee;
   font-size: 0.95rem;
 }
 @keyframes ckFloat {
