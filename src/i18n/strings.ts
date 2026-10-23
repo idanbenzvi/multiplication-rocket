@@ -524,6 +524,11 @@ const en = {
     launching: 'GOOD LUCK!',
     previous: 'Previous ship',
     next: 'Next ship',
+    // (more pilots than fit: they come in pages)
+    pilotsPrevious: 'Previous pilots',
+    pilotsNext: 'More pilots',
+    pilotsPage: (n: number, of: number) => `Page ${n} of ${of}`,
+    more: 'There’s more below',
   },
   backup: {
     title: '💾 Backup',
@@ -1415,6 +1420,10 @@ const he: Strings = {
     launching: 'בהצלחה!',
     previous: 'החללית הקודמת',
     next: 'החללית הבאה',
+    pilotsPrevious: 'הפרופילים הקודמים',
+    pilotsNext: 'עוד פרופילים',
+    pilotsPage: (n: number, of: number) => `עמוד ${n} מתוך ${of}`,
+    more: 'יש עוד למטה',
   },
   backup: {
     title: '💾 גיבוי',

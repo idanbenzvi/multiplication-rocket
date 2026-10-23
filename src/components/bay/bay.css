@@ -383,13 +383,15 @@
   display: none;
 }
 
-/* a card beside the pad, or over the bay below its sign */
+/* a card beside the pad, or over the bay below its sign; scrolled where it's taller than the screen (by a finger
+   on an iPhone too, which won't scroll a box that lets touches through, so this one takes them) */
 .bay-card-host {
   position: absolute;
   display: flex;
   overflow-y: auto;
   overscroll-behavior: contain;
-  pointer-events: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .bay-card-host.is-side {
   top: 0;
@@ -399,8 +401,48 @@
 }
 .bay-card-host.is-over {
   inset: 0;
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 0 max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: linear-gradient(to bottom, transparent, rgba(10, 8, 24, 0.5) 35%);
+}
+/* there's more of the card below: a nudge at the bottom, a tap on it scrolling on (BayScreen) */
+.bay-more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 calc(4px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, rgba(10, 8, 24, 0.7));
+  pointer-events: none;
+}
+.bay-more-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(143, 230, 255, 0.55);
+  background: rgba(18, 14, 42, 0.92);
+  color: #bff3ff;
+  box-shadow: 0 0 14px rgba(80, 200, 255, 0.45);
+  pointer-events: auto;
+  animation: bay-more-nudge 1.6s ease-in-out infinite;
+}
+.bay-more-button svg {
+  width: 16px;
+  height: 16px;
+}
+@keyframes bay-more-nudge {
+  50% {
+    translate: 0 3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bay-more-button {
+    animation: none;
+  }
 }
 .bay-card {
   width: min(560px, 100%);
@@ -423,6 +465,111 @@
   box-shadow: none;
   background: none;
 }
+/* the animals in two rows (the one chosen shows at the ship's window too) */
+.bay-card .avatar-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+.bay-card .avatar-option {
+  min-width: 0;
+  padding: 0;
+  border-radius: 12px;
+  font-size: clamp(1.3rem, 5.4vw, 2.1rem);
+}
+/* a phone: the card fits its screen, smaller, and without the big animal or (shorter still) the missions' notes */
+@media (max-height: 760px) {
+  .bay-card {
+    padding: 1rem;
+  }
+  .bay-card .profile-editor,
+  .bay-card .profile-part {
+    gap: 0.45rem;
+  }
+  .bay-card .profile-avatar-big {
+    font-size: 2.8rem;
+  }
+  .bay-card .profile-name-input {
+    min-height: 46px;
+  }
+  .bay-card .profile-primary {
+    min-height: 50px;
+    margin-top: 0;
+  }
+  /* (Save and Cancel side by side) */
+  .bay-card .profile-part.is-go {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .bay-card .is-go > * {
+    flex: 1 1 100%;
+  }
+  .bay-card .is-go > .profile-primary {
+    flex: 2 1 0;
+  }
+  .bay-card .is-go > .profile-secondary {
+    flex: 1 1 0;
+    min-height: 50px;
+  }
+  .bay-card .pilot-card,
+  .bay-card .pilot-card-main,
+  .bay-card .pilot-card-new {
+    min-height: 112px;
+  }
+  .bay-card .pilot-card-avatar {
+    font-size: 2.6rem;
+  }
+}
+@media (max-height: 700px) {
+  .bay-card .profile-preview {
+    display: none;
+  }
+}
+@media (max-height: 620px) {
+  .bay-card {
+    padding: 0.85rem;
+  }
+  /* (the button says it's the ship) */
+  .bay-card .is-ship > .profile-label {
+    display: none;
+  }
+  .bay-card .mission-option {
+    padding: 0.45rem 0.3rem;
+  }
+  .bay-card .mission-option-symbol {
+    font-size: 1.6rem;
+  }
+  .bay-card .mission-option-hint {
+    display: none;
+  }
+}
+/* a phone on its side: across the bay, the pilot's name and mission on one side, their animal and the buttons on the other */
+.bay-card-host.is-wide .bay-card {
+  width: min(780px, 100%);
+  padding: 0.8rem 1rem;
+}
+.bay-card-host.is-wide .profile-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0.5rem 1.1rem;
+}
+.bay-card-host.is-wide .avatar-option {
+  font-size: clamp(1.1rem, 3.6vw, 2rem);
+}
+/* (each side as tall as it is: spanning rows, so neither waits on the other's) */
+.bay-card-host.is-wide .profile-part.is-who {
+  grid-area: 1 / 1 / 3 / 2;
+}
+.bay-card-host.is-wide .profile-part.is-ship {
+  grid-area: 3 / 1 / 4 / 2;
+}
+.bay-card-host.is-wide .profile-part.is-look {
+  grid-area: 1 / 2 / 2 / 3;
+}
+.bay-card-host.is-wide .profile-part.is-go {
+  grid-area: 2 / 2 / 4 / 3;
+}
+
 /* (the sign says it) */
 .bay-card .profile-hero,
 .bay-card .profile-title {
@@ -453,14 +600,16 @@
   top: calc(12px + env(safe-area-inset-top));
   inset-inline-end: calc(12px + env(safe-area-inset-right));
 }
-.bay-arrow {
+.bay-arrow-glow {
   position: absolute;
+  translate: -50% -50%;
+}
+.bay-arrow {
   display: grid;
   place-items: center;
   width: 58px;
   height: 58px;
   padding: 0 0 6px;
-  translate: -50% -50%;
   border-radius: 50%;
   border: 2px solid rgba(143, 230, 255, 0.6);
   background: radial-gradient(circle at 35% 30%, rgba(90, 160, 255, 0.5), rgba(18, 14, 42, 0.88) 70%);
@@ -526,7 +675,6 @@
   text-align: center;
 }
 .bay-panel.is-side {
-  translate: 0 -50%;
   padding: 1.2rem 1.1rem 1rem;
   border-radius: 22px;
   background: rgba(26, 19, 50, 0.8);
@@ -563,8 +711,13 @@
   color: #fff;
   box-shadow: 0 0 16px rgba(110, 210, 255, 0.55);
 }
-.bay-launch {
+.bay-launch-glow {
   width: min(340px, 100%);
+}
+.bay-launch-glow > .bay-launch {
+  width: 100%;
+  /* (its glow round it exactly: the panel spaces it) */
+  margin-top: 0;
 }
 .bay-note {
   color: #cdbfe6;

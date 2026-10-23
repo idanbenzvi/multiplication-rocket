@@ -38,4 +38,24 @@ describe('the launch bay on the screen', () => {
     expect(bayLayout(390, 844).side).toBe(false);
     expect(bayLayout(768, 1024).side).toBe(false);
   });
+
+  it("puts the ship chooser's panel beside the pad on a phone on its side, even a small one, as there's no room under it", () => {
+    // (Safari's toolbars taking some of the height)
+    for (const [vw, vh] of [
+      [844, 340],
+      [932, 380],
+      [667, 300],
+      [568, 280],
+    ]) {
+      expect(bayLayout(vw, vh).side).toBe(true);
+    }
+  });
+
+  it("lays a pilot's card across the bay on a phone on its side, and beside the pad where it's tall enough", () => {
+    expect(bayLayout(844, 340)).toMatchObject({ cardSide: false, wide: true });
+    expect(bayLayout(667, 300)).toMatchObject({ cardSide: false, wide: true });
+    expect(bayLayout(1440, 900)).toMatchObject({ cardSide: true, wide: false });
+    expect(bayLayout(1024, 600)).toMatchObject({ cardSide: true, wide: false });
+    expect(bayLayout(390, 664)).toMatchObject({ cardSide: false, wide: false });
+  });
 });

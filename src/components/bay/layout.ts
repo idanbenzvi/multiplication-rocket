@@ -23,6 +23,13 @@ export const PAD_JETS = [
 
 /** the least room beside the pad for a panel there (else it goes under the pad) */
 const SIDE_ROOM = 360;
+/**
+ * a phone on its side: shorter than this, the pad's at the bottom of the
+ * screen, with no room under it, so the ship chooser's panel goes beside it
+ * with less room, and a pilot's card goes over the bay, laid out across it
+ */
+const SHORT = 500;
+const SIDE_ROOM_SHORT = 250;
 
 export interface BayLayout {
   /** the screen */
@@ -39,6 +46,10 @@ export interface BayLayout {
   /** a panel goes beside the pad (on its right, from `sideX`), or under it */
   side: boolean;
   sideX: number;
+  /** a pilot's card goes beside the pad (it needs the height too), or over the bay */
+  cardSide: boolean;
+  /** a short, wide screen (a phone on its side): a card over the bay is laid out across it */
+  wide: boolean;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -55,5 +66,7 @@ export function bayLayout(vw: number, vh: number): BayLayout {
   const padX = left + PAD.x * u;
   const padY = top + PAD.y * u;
   const sideX = padX + (PAD.rx + 8) * u;
-  return { vw, vh, u, left, top, padX, padY, side: vw - sideX >= SIDE_ROOM, sideX };
+  const short = vh < SHORT && vw > vh;
+  const side = vw - sideX >= (short ? SIDE_ROOM_SHORT : SIDE_ROOM);
+  return { vw, vh, u, left, top, padX, padY, side, sideX, cardSide: side && !short, wide: short };
 }
