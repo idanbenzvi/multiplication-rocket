@@ -5,7 +5,7 @@ import type { Porthole } from './spriteTexture';
 // rocket (illustrations.ts), and two from concept art the player brought in:
 // the Explorer, an egg of a ship with a navy nose, a glass visor with the
 // cockpit behind it, cyan light lines, an open engine bay over a copper bell
-// and four swept landing legs tipped orange; and Nova, lilac and rose gold,
+// and four swept landing legs tipped orange; and Venus, lilac and rose gold,
 // with mint-glowing light lines, a cream panel scrolled with filigree round a
 // great round window, a rose-gold engine bay and four curving legs.
 //
@@ -17,6 +17,8 @@ import type { Porthole } from './spriteTexture';
 // the camera's dive and the taps go by each ship's window. Their backs, in the
 // bonus rounds that fly behind the pilot's ship, are drawn here to match.
 
+// ('nova' is Venus, its name before; the id stays, as it's what pilots who
+// chose her have saved)
 export type ShipId = 'classic' | 'explorer' | 'nova';
 /** in the hangar's order: the newest last */
 export const SHIPS: readonly ShipId[] = ['classic', 'explorer', 'nova'];
@@ -57,7 +59,7 @@ export const EXPLORER_VISOR: ShipWindow = {
 };
 
 /**
- * Nova's window: round glass in a rose-gold frame, turned a little towards
+ * Venus's window: round glass in a rose-gold frame, turned a little towards
  * the right, with the seat on its left, facing the cockpit's screens.
  */
 export const NOVA_WINDOW: ShipWindow = {
@@ -178,14 +180,14 @@ export function explorerRearSvg(admiral = false, id = 'xr'): string {
   </svg>`;
 }
 
-// Nova's palette, from its concept art
+// Venus's palette, from its concept art
 const N_INK = '#3b2f52';
 const ROSE = '#e3a28a';
 const MINT = '#5ff2dc';
 const CREAM = '#f7f0e6';
 
 /**
- * Nova from behind (viewBox -50 -50 100 100): its lilac egg of a hull, the
+ * Venus from behind (viewBox -50 -50 100 100): its lilac egg of a hull, the
  * paler nose beyond with a mint ring, a rose-gold collar over a mint line,
  * mint lines down its sides, the window's dome in its rose-gold frame, the
  * rose-gold engine bay glowing at the back, and its four legs curving out,

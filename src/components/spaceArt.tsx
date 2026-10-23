@@ -11,7 +11,7 @@ import { rearSvg } from './scene/ships';
 
 // (Space Traffic and the Black Sun draw the same ship on a canvas: rearShipSvg in traffic/trafficArt.ts)
 // The pilot's own ship (drawn with no colour given) is the one they fly
-// (the Explorer's and Nova's backs are drawn in ships.ts), and wears the admiral's livery
+// (the Explorer's and Venus's backs are drawn in ships.ts), and wears the admiral's livery
 // once they're a Space Admiral: gold wings with a navy star each, and a navy
 // band with a gold star across the hull. Other ships (a fleet, teammates)
 // are always the classic, in their colour.

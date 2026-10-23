@@ -18,7 +18,7 @@ import { SHIP_HEIGHT } from './bay/layout';
 import BorderGlow from './reactbits/BorderGlow';
 
 // The hangar: where a pilot picks the ship they fly (ships.ts): the classic
-// rocket, the Explorer or Nova. It opens by itself once, when the game starts
+// rocket, the Explorer or Venus. It opens by itself once, when the game starts
 // for a pilot who has never picked one (a new pilot, or one from before there
 // was a choice); after that their choice is kept, and the hangar opens only
 // from their ✏️, to change ships (where a ship they haven't seen yet is marked

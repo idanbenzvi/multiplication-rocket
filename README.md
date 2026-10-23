@@ -127,7 +127,7 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 |---|---|---|
 | ![Meteor Shower](docs/meteor-shower.png) | ![Build-a-Constellation](docs/constellation.png) | ![Fleet Battle](docs/fleet-battle.png) |
 
-## Three ships: the classic rocket, the Explorer or Nova 🛸
+## Three ships: the classic rocket, the Explorer or Venus 🛸
 
 Each pilot picks the ship they fly in the **hangar**, which opens when the game starts for a pilot
 who has never chosen, just once: the choice is kept after that. To switch, ✏️ next to their name has
@@ -144,13 +144,13 @@ a **Change ship** button (a ship they haven't seen yet is marked *New!* there).
   - the cockpit opens through it.
 
   In the rounds that fly behind the ship, its back is drawn to match, with one copper engine.
-- **Nova:** lilac and rose gold, from a second concept art. It has mint-glowing light lines, a cream
+- **Venus:** lilac and rose gold, from a second concept art. It has mint-glowing light lines, a cream
   panel scrolled with filigree round a great round window (the pilot sits in the cockpit's seat),
   a rose-gold engine bay with its pipes and a little gear, and four legs curving out like petals,
   striped cream and mint. It's cut out the same way, its window the Explorer's size, and its back
   is drawn to match in the rounds.
 
-A Space Admiral's Explorer or Nova has gold trim and the admiral's medal. A crew flight always takes
+A Space Admiral's Explorer or Venus has gold trim and the admiral's medal. A crew flight always takes
 the classic rocket, with a window for each pilot.
 
 ## Deep Space Academy 🪐 (hidden)

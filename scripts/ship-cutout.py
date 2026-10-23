@@ -11,7 +11,7 @@ rocket's 200 × 400 frame, which ships.ts's numbers come from. Needs OpenCV
 "C" coordinates are the art's at 1195 × 1600, less (100, 80). In the frame,
 the window's middle goes at the classic porthole's height (y 188) and the
 engine bell's bottom middle on the centre line (x 100), at the ship's scale:
-the Explorer's has its bell where the classic's nozzle is (y 326), Nova's has
+the Explorer's has its bell where the classic's nozzle is (y 326), Venus's has
 its window the Explorer's size.
 """
 import sys

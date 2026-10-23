@@ -26,7 +26,7 @@ describe('the ships', () => {
     }
   });
 
-  it('flies Nova from its picture, its window right of the middle, its nozzle lower down (it stands taller)', () => {
+  it('flies Venus from its picture, its window right of the middle, its nozzle lower down (it stands taller)', () => {
     const nova = shipArt('nova', '#fff');
     expect(nova.picture?.url).toBe('./ships/nova.webp');
     expect(nova.windows).toEqual([NOVA_WINDOW]);
