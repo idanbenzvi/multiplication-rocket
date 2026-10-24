@@ -197,7 +197,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const radius = Math.round(size.w * DRUM_K);
+  // (a narrow phone's a little less round, so what's at its sides stays on it)
+  const radius = Math.round(size.w * (size.w < 420 ? DRUM_K_NARROW : DRUM_K));
   const side = rtl ? -1 : 1;
   const heading = useCallback((i: number) => i * SPREAD_DEG * side, [side]);
   const rig = useTransform(pos, (v) => `translateZ(${radius}px) rotateY(${(v * SPREAD_DEG * side).toFixed(3)}deg) translateZ(${-radius}px)`);
@@ -765,6 +766,7 @@ const OVER_IT = '[aria-modal="true"]:not(.cockpit), .heatmap-overlay, .academy';
 const EDGE_MS = 260;
 /** the drum's radius, a share of the screen's width (the camera at its centre: a view about 47° across) */
 const DRUM_K = 1.15;
+const DRUM_K_NARROW = 1.35;
 /** how far round the drum each corner's heading is from the next (deg) */
 const SPREAD_DEG = 52;
 /** the wall: in strips this many degrees wide, a little behind the parts on it, and on past the end corners */

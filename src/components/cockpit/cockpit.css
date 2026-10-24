@@ -706,6 +706,13 @@ html[lang='he'] .ck-dock-key {
   }
 }
 
+/* (the narrowest phones: a little more room at the sides, the drum turning what's there in towards the pilot) */
+@media (max-width: 380px) {
+  .ck-view .ck-deck {
+    padding-inline: 20px;
+  }
+}
+
 /* short screens on their side: the windscreen beside the hood and the lever, and every corner's modules in a row */
 @media (orientation: landscape) and (max-height: 500px) {
   .cockpit {
