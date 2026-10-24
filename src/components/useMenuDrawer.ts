@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBack } from '../native/back';
+import { pauseGame, resumeGame } from '../game/gameClock';
+import { sfx } from '../audio/sfx';
 
 // A phone on its side is too short for the top bar above the rocket and the
 // question below it. There the top bar becomes a drawer tucked off the right
@@ -8,24 +10,35 @@ import { useBack } from '../native/back';
 // it opens something, or with a swipe back to the right. (MenuTab.tsx is its
 // tab, App.css lays the sideways game out, FlightController moves the rocket
 // to the left.)
+//
+// A phone held upright is too narrow for it: there the top bar is a slim
+// strip of the pilot's badge (Station.tsx) and where they're flying to, and
+// the rest waits in the station, which drops down from the badge when it's
+// tapped. The flight waits while it's open, so nothing is lost to a look
+// round it, and it stays until it's put away (no swipes, shakes or timer).
 
 export const SIDEWAYS_QUERY = '(orientation: landscape) and (max-height: 500px) and (pointer: coarse)';
 /** one shared query, so the 3D scene can check it every frame */
 export const sidewaysQuery: MediaQueryList | null =
   typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(SIDEWAYS_QUERY) : null;
 
-export function useSideways(): boolean {
-  const [on, setOn] = useState(() => sidewaysQuery?.matches ?? false);
+export const UPRIGHT_QUERY = '(orientation: portrait) and (max-width: 600px) and (pointer: coarse)';
+const uprightQuery: MediaQueryList | null = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(UPRIGHT_QUERY) : null;
+
+function useQuery(query: MediaQueryList | null): boolean {
+  const [on, setOn] = useState(() => query?.matches ?? false);
   useEffect(() => {
-    const query = sidewaysQuery;
     if (!query) return;
     const update = () => setOn(query.matches);
     update();
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
-  }, []);
+  }, [query]);
   return on;
 }
+
+export const useSideways = () => useQuery(sidewaysQuery);
+export const useUpright = () => useQuery(uprightQuery);
 
 /** a swipe starts this near the right edge, and travels this far */
 const EDGE_PX = 44;
@@ -39,7 +52,10 @@ const SHAKE_WINDOW_MS = 1000;
 
 type MotionAccess = { requestPermission?: () => Promise<string> };
 
-export function useMenuDrawer(enabled: boolean) {
+/** `kind`: the drawer (a phone on its side), the station (upright), or neither (the top bar as it is) */
+export function useMenuDrawer(kind: 'drawer' | 'station' | null) {
+  const enabled = kind !== null;
+  const drawer = kind === 'drawer';
   const [open, setOpen] = useState(false);
   const [touched, setTouched] = useState(0);
   const askedMotion = useRef(false);
@@ -51,20 +67,32 @@ export function useMenuDrawer(enabled: boolean) {
   const show = useCallback(() => {
     setOpen(true);
     const motion = (window as unknown as { DeviceMotionEvent?: MotionAccess }).DeviceMotionEvent;
-    if (askedMotion.current || !motion?.requestPermission) return;
+    if (!drawer || askedMotion.current || !motion?.requestPermission) return;
     askedMotion.current = true;
     motion.requestPermission().catch(() => {});
-  }, []);
+  }, [drawer]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !drawer) return;
     const timer = window.setTimeout(() => setOpen(false), AUTO_HIDE_MS);
     return () => window.clearTimeout(timer);
-  }, [open, touched]);
+  }, [open, touched, drawer]);
+
+  // the station: the flight waits while it's open
+  const station = kind === 'station' && open;
+  useEffect(() => {
+    if (!station) return;
+    pauseGame('menu');
+    sfx.blip(7);
+    return () => {
+      resumeGame('menu');
+      sfx.blip(3);
+    };
+  }, [station]);
 
   // swiping in from the right edge pulls it out; a swipe to the right puts it away
   useEffect(() => {
-    if (!enabled) return;
+    if (!drawer) return;
     let start: { x: number; y: number; id: number; edge: boolean } | null = null;
     const down = (e: TouchEvent) => {
       const t = e.changedTouches[0];
@@ -95,11 +123,11 @@ export function useMenuDrawer(enabled: boolean) {
       window.removeEventListener('touchend', end, opts);
       window.removeEventListener('touchcancel', end, opts);
     };
-  }, [enabled]);
+  }, [drawer]);
 
   // shaking the phone pulls it out too
   useEffect(() => {
-    if (!enabled) return;
+    if (!drawer) return;
     let jolts: number[] = [];
     const motion = (e: DeviceMotionEvent) => {
       const a = e.acceleration;
@@ -120,7 +148,7 @@ export function useMenuDrawer(enabled: boolean) {
     };
     window.addEventListener('devicemotion', motion);
     return () => window.removeEventListener('devicemotion', motion);
-  }, [enabled]);
+  }, [drawer]);
 
   useEffect(() => {
     if (!enabled || !open) return;

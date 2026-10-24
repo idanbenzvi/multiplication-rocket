@@ -143,6 +143,7 @@ export function BadgesButton() {
         title={`${tb.open}: ${tb.ranks[rank]}`}
       >
         <BadgeArt name={`rank-${rank}`} icon={RANK_ICONS[rank]} size={26} />
+        <span className="hud-label">{tb.open}</span>
       </button>
       <AnimatePresence>{open && <BadgesPage onClose={close} />}</AnimatePresence>
     </>

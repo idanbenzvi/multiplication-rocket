@@ -5309,6 +5309,305 @@ button:focus-visible {
   }
 }
 
+/* ==================== A PHONE HELD UPRIGHT ==================== */
+/* Too narrow for the whole top bar (see useMenuDrawer.ts): a slim strip of
+   the pilot's badge (Station.tsx) and where they're flying to, and the top
+   bar's buttons wait in the station, a panel that drops down from the badge,
+   each button a round tile with its name under it: the pilot's things first,
+   then the grown-ups' lock, and the grown-ups' things, dimmed until it's
+   held. (The panel lays itself over the game, so the strip's height is all
+   --hud-top measures.) */
+.hud-label {
+  display: none;
+}
+.app-root.is-upright .hud-topbar {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  padding: calc(0.45rem + env(safe-area-inset-top)) calc(0.75rem + env(safe-area-inset-right)) 0.55rem
+    calc(0.75rem + env(safe-area-inset-left));
+}
+.app-root.is-upright .hud-topbar.is-open {
+  z-index: 24;
+}
+/* (only a preview's badge is left of the logo) */
+.app-root.is-upright .hud-logo {
+  order: 1;
+  margin-inline-start: auto;
+  font-size: 0;
+  filter: none;
+}
+.app-root.is-upright .hud-logo:not(:has(.preview-badge)) {
+  display: none;
+}
+.app-root.is-upright .preview-badge {
+  margin: 0;
+  font-size: 0.6rem;
+}
+.app-root.is-upright .hud-stat-chip,
+.app-root.is-upright .level-banner-collected {
+  display: none;
+}
+.app-root.is-upright .level-banner {
+  min-width: 0;
+  padding: 0.35rem 0.8rem;
+}
+.app-root.is-upright .level-banner-current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+/* the pilot's badge: their avatar, and their right answers under it */
+.station-button {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 106, 213, 0.6);
+  background: radial-gradient(circle at 50% 35%, #4a3684, #1d1535 72%);
+  box-shadow: 0 0 0 3px rgba(106, 215, 255, 0.14), 0 0 16px rgba(255, 106, 213, 0.3);
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.station-button.is-open {
+  border-color: rgba(106, 215, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(255, 106, 213, 0.16), 0 0 18px rgba(106, 215, 255, 0.4);
+}
+.station-button-face {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+.station-button.is-open .station-button-face {
+  font-size: 1.1rem;
+}
+.station-button-count {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #1f3b22;
+  border: 1px solid rgba(143, 191, 106, 0.6);
+  color: #cdeab0;
+  font: 700 0.62rem/1.3 var(--font-display);
+  white-space: nowrap;
+}
+.station-button.has-new::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff5d73;
+  box-shadow: 0 0 0 2px #140f26, 0 0 8px #ff5d73;
+  animation: badge-dot-pulse 1.4s ease-in-out infinite;
+}
+
+/* the station: dropping down from the badge, the tiles deploying one after another
+   (open, the panel and the tiles have no transform, so the sound panel lays out on the panel) */
+.app-root.is-upright .hud-topbar-right {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: calc(0.6rem + env(safe-area-inset-left));
+  right: calc(0.6rem + env(safe-area-inset-right));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.6rem 0;
+  padding: 1.1rem 0.25rem 0.2rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 157, 118, 0.35);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(106, 215, 255, 0.12), transparent 60%),
+    radial-gradient(90% 60% at 50% 100%, rgba(255, 106, 213, 0.12), transparent 65%),
+    rgba(17, 12, 32, 0.96);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform-origin: 1.6rem 0;
+  opacity: 0;
+  scale: 0.9;
+  translate: 0 -8px;
+  visibility: hidden;
+  transition: opacity 0.18s ease, scale 0.18s ease, translate 0.18s ease, visibility 0s linear 0.18s;
+}
+[dir='rtl'] .app-root.is-upright .hud-topbar-right {
+  transform-origin: calc(100% - 1.6rem) 0;
+}
+.app-root.is-upright .hud-topbar.is-open .hud-topbar-right {
+  opacity: 1;
+  scale: none;
+  translate: none;
+  visibility: visible;
+  transition: opacity 0.2s ease, scale 0.4s cubic-bezier(0.2, 1.3, 0.4, 1), translate 0.4s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+/* four tiles to a row, room under each for its name */
+.app-root.is-upright .hud-topbar-right > * {
+  flex: none;
+  width: 54px;
+  margin: 0 calc(12.5% - 27.5px) 2.3rem;
+  opacity: 0;
+  scale: 0.5;
+  transition: opacity 0.15s ease, scale 0.15s ease;
+}
+.app-root.is-upright .hud-topbar.is-open .hud-topbar-right > * {
+  opacity: 1;
+  scale: none;
+  transition: opacity 0.25s ease var(--deploy, 0s), scale 0.45s cubic-bezier(0.3, 1.7, 0.5, 1) var(--deploy, 0s),
+    filter 0.35s ease;
+}
+.app-root.is-upright .hud-topbar-right > :nth-child(2) { --deploy: 40ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(3) { --deploy: 80ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(5) { --deploy: 160ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(6) { --deploy: 200ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(7) { --deploy: 120ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(8) { --deploy: 240ms; }
+.app-root.is-upright .hud-topbar-right > :nth-child(9) { --deploy: 280ms; }
+/* the pilot's things, the lock, then the grown-ups' */
+.app-root.is-upright .review-wrap {
+  order: 1;
+}
+.app-root.is-upright .hud-topbar-right > .station-lock {
+  order: 2;
+}
+.app-root.is-upright .hud-topbar-right > :is(.audio-controls, .settings-button, .about-button) {
+  order: 3;
+}
+.app-root.is-upright .hud-topbar-right :is(.reset-button, .badges-button, .about-button) {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  min-height: 54px;
+  max-width: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 157, 118, 0.4);
+  background: radial-gradient(circle at 50% 35%, rgba(90, 66, 150, 0.85), rgba(34, 25, 60, 0.92) 70%);
+  box-shadow: 0 0 16px rgba(106, 215, 255, 0.14);
+  font-size: 1.45rem;
+}
+.app-root.is-upright .hud-topbar-right .about-button {
+  font-size: 24px;
+}
+.app-root.is-upright .pilot-button-avatar {
+  font-size: 1.65rem;
+}
+.app-root.is-upright .hud-topbar-right :is(.pilot-button-name, .modes-label, .review-label, .hud-label) {
+  display: block;
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  translate: -50% 0;
+  width: 5.6rem;
+  overflow: visible;
+  white-space: normal;
+  text-align: center;
+  font: 600 0.72rem/1.15 var(--font-display);
+  letter-spacing: 0.01em;
+  color: #e9dcf7;
+}
+.app-root.is-upright .hud-topbar-right .pilot-button-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* the sound panel opens under the station, as wide as it */
+.app-root.is-upright .audio-controls {
+  position: static;
+}
+.app-root.is-upright .audio-panel {
+  top: calc(100% + 0.5rem);
+  inset-inline: 0.5rem;
+  min-width: 0;
+}
+
+/* the grown-ups' lock: held, it fills up (as long as Station.tsx's HOLD_MS) */
+.app-root.is-upright .hud-topbar-right > .station-lock {
+  position: relative;
+  overflow: hidden;
+  width: auto;
+  flex: 0 0 calc(100% - 1.5rem);
+  margin: -0.4rem 0.75rem 0.5rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(255, 215, 122, 0.45);
+  background: rgba(255, 215, 122, 0.06);
+  color: #ffe9b8;
+  font: 600 0.82rem/1.2 var(--font-display);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.station-lock > * {
+  position: relative;
+}
+.station-lock > .station-lock-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 215, 122, 0.32), rgba(255, 106, 213, 0.32));
+  transform-origin: left;
+  scale: 0 1;
+  transition: scale 0.2s ease-out;
+}
+[dir='rtl'] .station-lock > .station-lock-fill {
+  transform-origin: right;
+  background: linear-gradient(270deg, rgba(255, 215, 122, 0.32), rgba(255, 106, 213, 0.32));
+}
+.station-lock.is-holding > .station-lock-fill {
+  scale: 1 1;
+  transition: scale 1.2s linear;
+}
+.station-lock.is-open > .station-lock-fill {
+  scale: 1 1;
+  opacity: 0.45;
+}
+.app-root.is-upright .hud-topbar-right > .station-lock.is-open {
+  border-style: solid;
+  border-color: rgba(143, 191, 106, 0.6);
+  color: #d9f5c4;
+}
+.station-lock-hint {
+  opacity: 0.75;
+  font-weight: 500;
+}
+.station-lock-hint::before {
+  content: '·';
+  margin-inline-end: 0.45rem;
+}
+.app-root.is-upright .station-lock:not(.is-open) ~ :is(.audio-controls, .settings-button, .about-button) {
+  filter: grayscale(0.8) brightness(0.5);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-root.is-upright .hud-topbar-right,
+  .app-root.is-upright .hud-topbar-right > * {
+    scale: none;
+    translate: none;
+  }
+  .station-lock > .station-lock-fill {
+    transition: none;
+  }
+}
+
 /* ==================== THE HANGAR (Hangar.tsx; the launch bay's own in bay/bay.css) ==================== */
 .hangar-kicker {
   font-family: var(--font-display);

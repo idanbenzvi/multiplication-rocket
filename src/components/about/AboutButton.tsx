@@ -31,7 +31,7 @@ export function AboutButton() {
         aria-label={t.open}
         title={t.open}
       >
-        i
+        i<span className="hud-label">{t.open}</span>
       </button>
       <AnimatePresence>
         {open === 'about' && <AboutPage key="about" onClose={close} onHow={() => setOpen('how')} />}

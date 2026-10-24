@@ -98,6 +98,13 @@ const en = {
   deleteDigit: 'Delete',
   menu: 'Menu',
   menuHint: 'Menu: swipe in or shake',
+  // a phone held upright: the pilot's badge opens the station (the rest of the top bar)
+  station: {
+    open: 'Menu',
+    close: 'Back to flying',
+    grownUps: 'For grown-ups',
+    hold: 'Hold to open',
+  },
   sound: 'Sound',
   music: 'Music',
   effects: 'Effects',
@@ -1099,6 +1106,12 @@ const he: Strings = {
   deleteDigit: 'מחיקה',
   menu: 'תפריט',
   menuHint: 'תפריט: החליקו פנימה או נערו',
+  station: {
+    open: 'תפריט',
+    close: 'חזרה לטיסה',
+    grownUps: 'להורים',
+    hold: 'החזיקו כדי לפתוח',
+  },
   sound: 'צלילים',
   music: 'מוזיקה',
   effects: 'אפקטים',

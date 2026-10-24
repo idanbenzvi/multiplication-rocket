@@ -58,7 +58,8 @@ import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
 import { paceMs, speedZone } from './game/scoring';
 import { MenuTab } from './components/MenuTab';
-import { useMenuDrawer, useSideways } from './components/useMenuDrawer';
+import { useMenuDrawer, useSideways, useUpright } from './components/useMenuDrawer';
+import { StationButton, StationLock } from './components/Station';
 import './App.css';
 
 const ANSWER_FEEDBACK_DELAY_MS = 900;
@@ -133,9 +134,18 @@ function App() {
     init();
   }, [init]);
 
-  // A phone on its side: the top bar is a drawer off the right edge (see useMenuDrawer.ts)
+  // A phone on its side: the top bar is a drawer off the right edge; upright,
+  // its buttons wait in the station under the pilot's badge (see useMenuDrawer.ts)
   const sideways = useSideways();
-  const menu = useMenuDrawer(sideways);
+  const upright = useUpright();
+  const menu = useMenuDrawer(sideways ? 'drawer' : upright ? 'station' : null);
+  // (the station's grown-ups' lock is locked again each time it opens)
+  const [stationOpens, setStationOpens] = useState(0);
+  const toggleStation = () => {
+    if (menu.open) return menu.hide();
+    setStationOpens((n) => n + 1);
+    menu.show();
+  };
 
   // The top bar's height varies (it wraps to two rows on phones, and the
   // level banner can wrap too), so overlays position themselves below it
@@ -262,7 +272,7 @@ function App() {
 
   return (
     <ClickSpark ref={sparkRef} sparkColor="#ffd77a" sparkSize={12} sparkRadius={22} sparkCount={10}>
-    <div className={`app-root ${paused ? 'is-paused' : ''} ${sideways ? 'is-sideways' : ''}`}>
+    <div className={`app-root ${paused ? 'is-paused' : ''} ${sideways ? 'is-sideways' : ''} ${upright ? 'is-upright' : ''}`}>
       <div className="starfield-layer">
         <RocketScene />
       </div>
@@ -279,11 +289,12 @@ function App() {
         ref={topbarRef}
         onPointerDown={menu.poke}
         onClick={(e) => {
-          // in the drawer: a button that opens something puts the drawer away (the sound panel opens inside it)
+          // in the drawer or the station: a button that opens something puts it away (the sound panel opens inside it)
           const target = e.target as Element;
-          if (menu.open && target.closest('button') && !target.closest('.audio-controls')) menu.hide();
+          if (menu.open && target.closest('button') && !target.closest('.audio-controls, .station-lock, .station-button')) menu.hide();
         }}
       >
+        {upright && <StationButton open={menu.open} crew={crewActive} onToggle={toggleStation} />}
         <div className="hud-logo">
           🚀 <ShinyText text={mission === 'add' ? t.logoAdd : mission === 'mix' ? t.logoMix : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
@@ -299,6 +310,8 @@ function App() {
               ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
             </div>
           )}
+          {/* (the grown-ups' things after it) */}
+          {upright && <StationLock key={stationOpens} />}
           <AudioControls />
           {!crewActive && <ReviewButton mastery={progress.mastery} mission={mission} onClick={requestHeatmap} />}
           <SettingsMenu onReset={handleReset} />
@@ -306,6 +319,7 @@ function App() {
         </div>
       </header>
       {sideways && <MenuTab open={menu.open} onOpen={menu.show} onClose={menu.hide} />}
+      {upright && menu.open && <div className="menu-shade" onClick={menu.hide} aria-hidden />}
 
       {!crewActive && (
         <FuelGauge

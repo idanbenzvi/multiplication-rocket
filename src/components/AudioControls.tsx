@@ -54,6 +54,7 @@ export function AudioControls() {
         aria-expanded={open}
       >
         {speakerIcon(musicVolume)}
+        <span className="hud-label">{t.sound}</span>
       </button>
       {open && (
         <div className="audio-panel" role="group" aria-label={t.sound}>

@@ -47,6 +47,7 @@ export function SettingsMenu({ onReset }: Props) {
         title={t.settings}
       >
         ⚙️
+        <span className="hud-label">{t.settings}</span>
       </button>
       {cockpit !== 'closed' && (
         <Cockpit
