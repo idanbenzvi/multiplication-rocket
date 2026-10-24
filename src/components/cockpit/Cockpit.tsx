@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { animate, motion, useMotionValue, useTransform, type MotionStyle, type MotionValue } from 'motion/react';
+import { animate, motion, useMotionValue, useTransform, type MotionValue } from 'motion/react';
 import { sfx } from '../../audio/sfx';
 import { canVibrate, haptics } from '../../audio/haptics';
 import { useAudio } from '../../audio/useAudio';
@@ -187,6 +187,25 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     },
     [views, pos, calm],
   );
+  // The drum the cockpit's walls are on, the camera at its centre: its radius from the screen's width,
+  // each corner at its heading round it (to the right in English, to the left in Hebrew)
+  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  useLayoutEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const radius = Math.round(size.w * DRUM_K);
+  const side = rtl ? -1 : 1;
+  const heading = useCallback((i: number) => i * SPREAD_DEG * side, [side]);
+  const rig = useTransform(pos, (v) => `translateZ(${radius}px) rotateY(${(v * SPREAD_DEG * side).toFixed(3)}deg) translateZ(${-radius}px)`);
+  // (the tape moves as the wall does, straight ahead)
+  const tapeK = (radius * Math.PI) / 180;
+  const ticks = useTransform(pos, (v) => `${(-v * SPREAD_DEG * tapeK * side).toFixed(1)}px`);
+  // (the stars beyond the canopy, as far off as can be, going round with the head)
+  const stars = useTransform(pos, (v) => `0px, ${(-v * SPREAD_DEG * tapeK * side).toFixed(1)}px`);
   /** one corner over to the screen's right (1) or left (-1): the row runs the other way in Hebrew */
   const toward = (side: 1 | -1) => view + (rtl ? -side : side);
   const hover = useRef(0);
@@ -370,17 +389,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     c === 'auto' ? t.typedCheckAutoHint : isTouchDevice ? t.typedCheckConfirmTouchHint : t.typedCheckConfirmKeysHint;
 
   const here = (id: ViewId) => views[view] === id;
-  /** a corner's own hood: what it is, on a screen, the droids either side of it */
-  const hood = (id: ViewId) => (
-    <div className="ck-hood is-view">
-      <PlateLight cast={false} />
-      <Droid who="sound" side="left" color="#2ff3ff" voiced={here(id)} />
-      <div className="ck-hood-screen">
-        <div className="ck-hud-title">{t.cockpit.views[id]}</div>
-      </div>
-      <Droid who="switch" side="right" color="#ff3df0" voiced={here(id)} />
-    </div>
-  );
   /** a door to another of the game's screens: a big button on its plate */
   const door = (plate: number, tone: 'cyan' | 'orange' | 'magenta', icon: string, name: string, onPress: () => void) => (
     <Module plate={plate} label={name} tone={tone} className="ck-door">
@@ -403,7 +411,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
           <span className="ck-passlight" aria-hidden />
           <div className="ck-hood">
             <PlateLight cast={false} />
-            <Droid who="sound" side="left" color="#2ff3ff" voiced={here('ahead')} />
             <span className="ck-gadgets is-l" aria-hidden>
               <span className="ck-radar" />
               <Bulbs n={14} seed={1} />
@@ -429,7 +436,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
                 <i />
               </span>
             </span>
-            <Droid who="switch" side="right" color="#ff3df0" voiced={here('ahead')} />
           </div>
           <Wires />
           <div className="ck-launch">
@@ -452,7 +458,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // how the questions are answered, and the sound
     controls: (
       <>
-        {hood('controls')}
         <div className="ck-deck">
           <Tower side="left" />
           <div className="ck-panel">
@@ -543,7 +548,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // what helps along the way: the practice map, Orbie, the clock's boost, the buzz
     helpers: (
       <>
-        {hood('helpers')}
         <div className="ck-deck">
           <Tower side="left" />
           <div className="ck-panel">
@@ -599,7 +603,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // the doors to the ways to play, the map of what they know, and the Academy
     missions: (
       <>
-        {hood('missions')}
         <div className="ck-deck">
           <Tower side="left" />
           <div className="ck-panel">
@@ -615,7 +618,6 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // the pilot's own: who's flying, their badges, About; and the grown-ups' dashboard and reset
     pilot: (
       <>
-        {hood('pilot')}
         <div className="ck-deck">
           <Tower side="left" />
           <div className="ck-panel">
@@ -661,20 +663,49 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       }}
     >
       <div ref={innerRef} className="ck-inner">
-        <div
+        <motion.div
           ref={stageRef}
           className="ck-stage"
+          style={{ perspective: `${radius}px`, backgroundPositionX: stars }}
           tabIndex={-1}
           onPointerDown={onDragStart}
           onPointerMove={onDragMove}
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
         >
+          <motion.div className="ck-rig" style={{ transform: rig }}>
+            <Wall radius={radius} width={size.w} from={Math.min(0, heading(views.length - 1)) - WALL_OVER} to={Math.max(0, heading(views.length - 1)) + WALL_OVER} pos={pos} heading={heading} />
+            {views.map((id, i) => (
+              <Corner key={id} id={id} heading={heading(i)} radius={radius} width={size.w} pos={pos} index={i} current={i === view}>
+                {corners[id]}
+              </Corner>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* the visor: the view's edges darkening round it, as from inside a helmet, its HUD's arcs */}
+        <div className="ck-visor" aria-hidden>
+          <svg className="ck-visor-arcs" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M4 22 Q4 6 20 4" />
+            <path d="M96 22 Q96 6 80 4" />
+            <path d="M4 78 Q4 94 20 96" />
+            <path d="M96 78 Q96 94 80 96" />
+          </svg>
+        </div>
+        {/* the HUD's heading tape: where the head's turned, the corners' names sliding past */}
+        <div className="ck-tape" style={{ '--tick': `${(10 * tapeK).toFixed(1)}px` } as React.CSSProperties} aria-hidden>
+          <motion.span className="ck-tape-ticks" style={{ backgroundPositionX: ticks }} />
           {views.map((id, i) => (
-            <Corner key={id} id={id} index={i} pos={pos} rtl={rtl} current={i === view}>
-              {corners[id]}
-            </Corner>
+            <TapeMark key={id} pos={pos} at={(i * SPREAD_DEG * tapeK) * side} spread={SPREAD_DEG * tapeK * side} lit={i === view}>
+              {t.cockpit.views[id]}
+            </TapeMark>
           ))}
+          <span className="ck-tape-caret" />
+        </div>
+        {/* the droids, either side of the pilot, reacting to whatever's changed */}
+        <div className="ck-droids">
+          <Droid who="sound" side="left" color="#2ff3ff" />
+          <Droid who="switch" side="right" color="#ff3df0" />
         </div>
 
         <div className="ck-flash" aria-hidden />
@@ -707,7 +738,14 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
         {/* the dock: a key for each corner, lit for the one in view */}
         <nav className="ck-dock" aria-label={t.cockpit.lookAround}>
           {views.map((id, i) => (
-            <button key={id} type="button" className={`ck-dock-key ${i === view ? 'is-on' : ''}`} aria-current={i === view || undefined} onClick={() => turnTo(i)}>
+            <button
+              key={id}
+              type="button"
+              className={`ck-dock-key ${i === view ? 'is-on' : ''}`}
+              style={{ '--arc': (i - (views.length - 1) / 2) * side } as React.CSSProperties}
+              aria-current={i === view || undefined}
+              onClick={() => turnTo(i)}
+            >
               <span className="ck-dock-lamp" aria-hidden />
               <span className="ck-dock-icon" aria-hidden>
                 {id === 'pilot' && profile?.avatar ? profile.avatar : VIEW_ICONS[id]}
@@ -725,42 +763,108 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
 const OVER_IT = '[aria-modal="true"]:not(.cockpit), .heatmap-overlay, .academy';
 /** how long the mouse waits at the screen's edge before the head turns */
 const EDGE_MS = 260;
-/** how far round each corner is from the next (deg), the walls meeting edge to edge */
-const CORNER_DEG = 50;
+/** the drum's radius, a share of the screen's width (the camera at its centre: a view about 47° across) */
+const DRUM_K = 1.15;
+/** how far round the drum each corner's heading is from the next (deg) */
+const SPREAD_DEG = 52;
+/** the wall: in strips this many degrees wide, a little behind the parts on it, and on past the end corners */
+const WALL_STEP = 3;
+const WALL_BACK = 40;
+const WALL_OVER = 50;
+/** what's on the drum is drawn no further round than this from straight ahead (deg) */
+const SEEN_DEG = 95;
+/** the parts of a corner laid on the drum, each turned to face the pilot */
+const ARC_PARTS = '.ck-module, .ck-tower, .ck-window, .ck-hood, .ck-wires, .ck-launch';
+
+/** `transform` putting something at `angle` round the drum (deg, to the right) `back` behind its face, from `dx` off its middle */
+const onDrum = (radius: number, angle: number, dx = 0, back = 0) =>
+  `translate3d(${(-dx).toFixed(1)}px, 0, ${radius}px) rotateY(${(-angle).toFixed(3)}deg) translate3d(0, 0, ${-(radius + back)}px)`;
 
 /**
- * One of the cockpit's corners, on the walls round the pilot's seat: as the
- * head turns (pos), the one in view swings away to the side and the next
- * comes round, both of them on the same circle, the one going darkening.
+ * One of the cockpit's corners, on the drum round the pilot's seat at its
+ * heading: its parts laid out flat as on a screen, then each one put on the
+ * drum where the flat layout has it (seen from the middle, it's just where
+ * it was) and turned to face the pilot, so the dashboard curves round them,
+ * and turning the head glides along it. (Not drawn when it's round behind.)
  */
-function Corner({ id, index, pos, rtl, current, children }: { id: ViewId; index: number; pos: MotionValue<number>; rtl: boolean; current: boolean; children: React.ReactNode }) {
+function Corner({ id, heading, radius, width, pos, index, current, children }: { id: ViewId; heading: number; radius: number; width: number; pos: MotionValue<number>; index: number; current: boolean; children: React.ReactNode }) {
   const ref = useRef<HTMLElement>(null);
-  const [width, setWidth] = useState(() => window.innerWidth);
   useLayoutEffect(() => {
-    const el = ref.current?.parentElement;
-    if (!el) return;
-    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
-    observer.observe(el);
+    const corner = ref.current;
+    if (!corner) return;
+    const leftIn = (el: HTMLElement) => {
+      let x = 0;
+      for (let e: HTMLElement | null = el; e && e !== corner; e = e.offsetParent as HTMLElement | null) x += e.offsetLeft;
+      return x;
+    };
+    const place = () => {
+      for (const part of corner.querySelectorAll<HTMLElement>(ARC_PARTS)) {
+        // (only the outermost: a part inside another goes with it)
+        if (part.parentElement?.closest(ARC_PARTS)) continue;
+        const dx = leftIn(part) + part.offsetWidth / 2 - width / 2;
+        part.style.transform = onDrum(radius, heading + (Math.atan2(dx, radius) * 180) / Math.PI, dx);
+      }
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(corner);
+    for (const panel of corner.querySelectorAll('.ck-panel, .ck-dash')) observer.observe(panel);
     return () => observer.disconnect();
-  }, []);
-  // the walls meet edge to edge on a circle this far from its centre, seen from a little behind it
-  const radius = width / (2 * Math.tan((CORNER_DEG / 2) * (Math.PI / 180)));
-  const transform = useTransform(pos, (v) => {
-    const a = (index - v) * CORNER_DEG * (rtl ? 1 : -1);
-    return Math.abs(a) < 0.01 ? 'none' : `perspective(${(radius * 1.5).toFixed(0)}px) translateZ(${radius.toFixed(0)}px) rotateY(${a.toFixed(2)}deg) translateZ(${(-radius).toFixed(0)}px)`;
-  });
-  const visibility = useTransform(pos, (v) => (Math.abs(index - v) < 0.995 ? 'visible' : 'hidden'));
-  const away = useTransform(pos, (v) => Math.min(1, Math.abs(index - v)));
+  }, [radius, width, heading]);
+  const visibility = useTransform(pos, (v) => (Math.abs(index - v) * SPREAD_DEG < SEEN_DEG + 30 ? 'visible' : 'hidden'));
   return (
-    <motion.section
-      ref={ref}
-      className={`ck-view is-${id}`}
-      style={{ transform, visibility, '--away': away } as unknown as MotionStyle}
-      aria-hidden={!current || undefined}
-      inert={!current}
-    >
+    <motion.section ref={ref} className={`ck-view is-${id}`} style={{ visibility }} aria-hidden={!current || undefined} inert={!current}>
       {children}
     </motion.section>
+  );
+}
+
+/** the drum's wall, from `from` round to `to` (deg): strips of the hull, its top and bottom edges bowing round the pilot */
+function Wall({ radius, width, from, to, pos, heading }: { radius: number; width: number; from: number; to: number; pos: MotionValue<number>; heading: (i: number) => number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const r = radius + WALL_BACK;
+  const strip = 2 * r * Math.tan(((WALL_STEP / 2) * Math.PI) / 180) + 1;
+  const angles = useMemo(() => Array.from({ length: Math.floor((to - from) / WALL_STEP) + 1 }, (_, k) => from + k * WALL_STEP), [from, to]);
+  // the strips round behind aren't drawn
+  useEffect(() => {
+    const strips = ref.current ? [...ref.current.children] as HTMLElement[] : [];
+    const shown: boolean[] = [];
+    const cull = (v: number) => {
+      const ahead = heading(1) * v;
+      angles.forEach((a, k) => {
+        const on = Math.abs(a - ahead) < SEEN_DEG;
+        if (shown[k] === on) return;
+        shown[k] = on;
+        strips[k].style.visibility = on ? '' : 'hidden';
+      });
+    };
+    cull(pos.get());
+    return pos.on('change', cull);
+  }, [angles, pos, heading]);
+  return (
+    <div ref={ref} className="ck-wall" aria-hidden>
+      {angles.map((a) => (
+        <i
+          key={a}
+          style={{
+            width: `${strip.toFixed(1)}px`,
+            left: `${(width / 2 - strip / 2).toFixed(1)}px`,
+            transform: onDrum(radius, a, 0, WALL_BACK),
+            backgroundPositionX: `${(-(a * Math.PI) / 180 * r).toFixed(1)}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** one of the heading tape's marks, a corner's name at its heading, sliding past as the head turns */
+function TapeMark({ pos, at, spread, lit, children }: { pos: MotionValue<number>; at: number; spread: number; lit: boolean; children: React.ReactNode }) {
+  const x = useTransform(pos, (v) => at - v * spread);
+  return (
+    <motion.span className={`ck-tape-mark ${lit ? 'is-lit' : ''}`} style={{ x }}>
+      {children}
+    </motion.span>
   );
 }
 

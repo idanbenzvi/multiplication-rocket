@@ -173,9 +173,13 @@ html[lang='he'] .ck-choice {
 }
 
 /* ---------- looking up and down ---------- */
-/* ---------- looking round: the corners on the walls round the pilot's seat (Corner, in Cockpit.tsx) ---------- */
+/* ---------- looking round: the drum round the pilot's seat, its corners on it (Corner, Wall, in Cockpit.tsx) ---------- */
+/* The camera's at the drum's centre: the wall's strips and each part on it face the pilot, the wall's top and
+   bottom edges bowing round (an oval), and a turn of the head glides along it. Over it all, the HUD. */
 .cockpit {
   --dock-h: calc(78px + env(safe-area-inset-bottom));
+  /* the HUD's band along the top, over the canopy's glass */
+  --hud-h: calc(62px + env(safe-area-inset-top));
 }
 .ck-stage {
   --space-shift: 0px;
@@ -183,47 +187,65 @@ html[lang='he'] .ck-choice {
   inset: 0 0 var(--dock-h);
   overflow: hidden;
   outline: none;
-  background: var(--m0);
-  /* (a swipe across turns the head; up and down still scrolls a corner that doesn't fit) */
+  perspective-origin: 50% 50%;
+  /* through the canopy above the dashboard: space, the stars going round as the head turns */
+  background-color: #04030b;
+  background-image:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(106, 215, 255, 0.14), transparent 70%),
+    radial-gradient(1.5px 1.5px at 22px 34px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 96px 12px, #bfe9ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 150px 52px, #ffd7f6 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 190px 22px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 60px 70px, #fff 50%, transparent 51%);
+  background-size: 100% 100%, 220px 90px, 220px 90px, 220px 90px, 220px 90px, 220px 90px;
+  background-repeat: no-repeat, repeat, repeat, repeat, repeat, repeat;
+  /* (a swipe across turns the head) */
   touch-action: pan-y;
+}
+.ck-rig,
+.ck-wall {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.cockpit.is-turning .ck-rig {
+  will-change: transform;
+}
+/* the wall: strips of the hull, a lip along its top */
+.ck-wall i {
+  position: absolute;
+  top: var(--hud-h);
+  bottom: -40px;
+  backface-visibility: hidden;
+  border-top: 3px solid var(--edge);
+  background:
+    url('./tex/grit.png') 0 0 / 128px 128px,
+    repeating-linear-gradient(90deg, transparent 0 94px, rgba(0, 0, 0, 0.45) 94px 96px, rgba(255, 255, 255, 0.05) 96px 98px),
+    linear-gradient(180deg, var(--b5) 0 4px, var(--b3) 4px 7%, var(--b2) 7% 30%, var(--b1) 30% 70%, var(--b0) 70%);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.1);
+}
+/* a corner: laid out flat, the screen's size, its parts each on the drum (only the one in view answers) */
+.ck-view,
+.ck-view .ck-deck,
+.ck-view .ck-panel,
+.ck-view .ck-dash {
+  transform-style: preserve-3d;
 }
 .ck-view {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: none;
-  scrollbar-width: none;
-  backface-visibility: hidden;
-  /* (each corner scrolls on its own, if it must: across is the head turning, never the page's history) */
-  touch-action: pan-y;
-  background:
-    url('./tex/grit.png') 0 0 / 128px 128px,
-    repeating-linear-gradient(90deg, transparent 0 94px, rgba(0, 0, 0, 0.45) 94px 96px, rgba(255, 255, 255, 0.05) 96px 98px),
-    linear-gradient(180deg, var(--m3) 0 6%, var(--m2) 6% 30%, var(--m1) 30% 70%, var(--m0) 70%);
+  padding-top: var(--hud-h);
 }
-.ck-view::-webkit-scrollbar {
+.ck-view :is(.ck-module, .ck-tower, .ck-window, .ck-hood, .ck-wires, .ck-launch) {
+  backface-visibility: hidden;
+}
+/* (no towers either side: the wall's the drum's) */
+.ck-view .ck-tower {
   display: none;
 }
-.cockpit.is-turning .ck-view {
-  will-change: transform;
-}
-/* turning away from it, a corner darkens */
-.ck-view::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-  background: #02030a;
-  opacity: calc(var(--away, 0) * 0.7);
-}
-.ck-view.is-ahead {
-  background: var(--m0);
-}
-/* the corner fills the screen, its deck in the middle of what's under its hood */
+/* the corner's deck in the middle of the wall under the HUD */
 .ck-view .ck-deck {
   flex: 1 0 auto;
   align-items: center;
@@ -233,43 +255,137 @@ html[lang='he'] .ck-choice {
 .ck-view .ck-panel {
   align-content: center;
 }
+/* ahead: the windscreen right up under the HUD (its glass the HUD's), the hood and the lever on the wall below it */
+.ck-view.is-ahead {
+  padding-top: 0;
+}
 .ck-view.is-ahead .ck-dash {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
+  margin-top: 0;
+  background: none;
+}
+.ck-view.is-ahead .ck-passlight {
+  display: none;
 }
 .ck-view.is-ahead .ck-launch {
   flex: 1 0 auto;
   align-items: center;
   padding: 18px 16px 16px;
 }
-/* a corner's own hood, along the top: its name on the screen, the droids either side */
-.ck-hood.is-view {
-  flex: none;
-  min-height: 0;
-  padding: calc(12px + env(safe-area-inset-top)) 96px 14px;
-  border-top: none;
-  border-bottom: 3px solid var(--edge);
-  border-radius: 0 0 50% 50% / 0 0 26px 26px;
-  box-shadow:
-    inset 0 -3px 0 rgba(255, 255, 255, 0.08),
-    0 10px 22px rgba(0, 0, 0, 0.55);
+
+/* ---------- the HUD ---------- */
+/* the visor: the view's edges darkening, as from inside a helmet, and the HUD's arcs in its corners */
+.ck-visor {
+  position: absolute;
+  inset: 0 0 var(--dock-h);
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse 76% 70% at 50% 46%, transparent 58%, rgba(2, 3, 10, 0.5) 80%, rgba(2, 3, 10, 0.92) 100%);
 }
-.ck-hood.is-view .ck-droid {
-  bottom: auto;
+.ck-visor-arcs {
+  position: absolute;
+  inset: calc(env(safe-area-inset-top) + 6px) 6px 6px;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px - env(safe-area-inset-top));
+  fill: none;
+  stroke: rgba(47, 243, 255, 0.6);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 4px rgba(47, 243, 255, 0.8));
+}
+.ck-visor-arcs path {
+  vector-effect: non-scaling-stroke;
+}
+/* the heading tape: ticks every 10°, the corners' names at their headings, the caret where the head's turned */
+.ck-tape {
+  position: absolute;
+  z-index: 5;
+  top: calc(env(safe-area-inset-top) + 10px);
+  left: 50%;
+  translate: -50% 0;
+  width: min(44vw, 420px);
+  height: 44px;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 24%, #000 76%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 24%, #000 76%, transparent);
+  color: var(--cyan);
+  font-family: var(--pixel-font);
+  text-shadow: 0 0 6px rgba(47, 243, 255, 0.9);
+}
+.ck-tape-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 9px;
+  border-bottom: 1px solid rgba(47, 243, 255, 0.55);
+  background-image: linear-gradient(90deg, rgba(47, 243, 255, 0.8) 0 2px, transparent 2px);
+  background-size: var(--tick, 60px) 100%;
+  background-repeat: repeat-x;
+}
+.ck-tape-mark {
+  position: absolute;
+  left: 50%;
+  top: 9px;
+  translate: -50% 0;
+  padding: 1px 6px;
+  border: 1px solid rgba(47, 243, 255, 0.35);
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.55;
+}
+html[lang='he'] .ck-tape-mark {
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+}
+.ck-tape-mark.is-lit {
+  opacity: 1;
+  border-color: var(--cyan);
+  background: rgba(47, 243, 255, 0.12);
+  box-shadow: 0 0 10px rgba(47, 243, 255, 0.45);
+}
+.ck-tape-caret {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  translate: -50% 0;
+  border: 6px solid transparent;
+  border-bottom: 8px solid var(--cyan);
+  filter: drop-shadow(0 0 4px var(--cyan));
+}
+/* the droids, either side of the pilot in the HUD's band */
+.ck-droids {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 5;
+  height: var(--hud-h);
+  pointer-events: none;
+}
+.ck-droids .ck-droid {
   top: calc(env(safe-area-inset-top) + 2px);
+  bottom: auto;
   width: 58px;
   height: 68px;
 }
 /* (clear of the ✕) */
-.ck-hood.is-view .ck-droid.is-right {
-  right: clamp(64px, 8vw, 96px);
+.ck-droids .ck-droid.is-left {
+  left: 10px;
 }
-[dir='rtl'] .ck-hood.is-view .ck-droid.is-right {
-  right: clamp(10px, 4vw, 60px);
+.ck-droids .ck-droid.is-right {
+  right: 70px;
 }
-[dir='rtl'] .ck-hood.is-view .ck-droid.is-left {
-  left: clamp(64px, 8vw, 96px);
+[dir='rtl'] .ck-droids .ck-droid.is-left {
+  left: 70px;
+}
+[dir='rtl'] .ck-droids .ck-droid.is-right {
+  right: 10px;
 }
 /* a door: a big button on its plate, to another of the game's screens */
 .ck-door {
@@ -302,7 +418,7 @@ html[lang='he'] .ck-choice {
   }
 }
 
-/* the dock: a key for each corner, lit for the one in view */
+/* the dock: the HUD's keys, one for each corner, along the visor's bottom arc, lit for the one in view */
 .ck-dock {
   position: absolute;
   left: 0;
@@ -314,35 +430,40 @@ html[lang='he'] .ck-choice {
   justify-content: center;
   align-items: center;
   gap: clamp(5px, 1.8vw, 16px);
-  padding: 0 calc(8px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(8px + env(safe-area-inset-left));
-  border-top: 3px solid var(--edge);
-  background:
-    url('./tex/grit.png') 0 0 / 128px 128px,
-    linear-gradient(180deg, var(--b5) 0 5%, var(--b4) 5% 30%, var(--b3) 30% 70%, var(--b2) 70%);
-  box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.12),
-    0 -10px 24px rgba(0, 0, 0, 0.55);
+  padding: 4px calc(8px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(8px + env(safe-area-inset-left));
+  background: linear-gradient(180deg, rgba(3, 4, 12, 0.55), rgba(3, 4, 12, 0.96) 45%);
+}
+/* (the arc over the keys) */
+.ck-dock::before {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: -10px;
+  height: 30px;
+  border-top: 2px solid rgba(47, 243, 255, 0.55);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  filter: drop-shadow(0 0 5px rgba(47, 243, 255, 0.7));
+  pointer-events: none;
 }
 .ck-dock-key {
+  /* (where along the arc: -2 … 2, the ends of it higher, turned in a little) */
+  --arc: 0;
   position: relative;
   flex: 0 1 84px;
   min-width: 0;
-  height: 62px;
+  height: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   padding: 6px 2px 4px;
-  border: 3px solid var(--edge);
-  border-radius: 8px;
-  background:
-    url('./tex/grit.png') 0 0 / 128px 128px,
-    linear-gradient(180deg, var(--b5) 0 18%, var(--b4) 18% 50%, var(--b3) 50% 82%, var(--b2) 82%);
-  box-shadow:
-    inset 0 0 0 2px var(--b1),
-    0 5px 0 var(--edge);
-  color: #b9bde0;
+  border: 1.5px solid rgba(47, 243, 255, 0.4);
+  border-radius: 12px;
+  background: rgba(47, 243, 255, 0.05);
+  box-shadow: inset 0 0 12px rgba(47, 243, 255, 0.1);
+  color: #8fdcef;
   font-family: var(--pixel-font);
   font-weight: 700;
   font-size: 0.56rem;
@@ -350,7 +471,9 @@ html[lang='he'] .ck-choice {
   line-height: 1;
   text-transform: uppercase;
   cursor: pointer;
-  transition: translate 0.12s, box-shadow 0.2s, color 0.2s;
+  translate: 0 calc(var(--arc) * var(--arc) * -3px);
+  rotate: calc(var(--arc) * 3deg);
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s, border-color 0.2s;
 }
 html[lang='he'] .ck-dock-key {
   font-size: 0.68rem;
@@ -359,7 +482,7 @@ html[lang='he'] .ck-dock-key {
 .ck-dock-icon {
   font-size: 1.45rem;
   line-height: 1;
-  filter: saturate(0.55) brightness(0.8);
+  filter: saturate(0.5) brightness(0.75);
   transition: filter 0.2s, scale 0.2s;
 }
 .ck-dock-name {
@@ -368,42 +491,24 @@ html[lang='he'] .ck-dock-key {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* its lamp, in the top corner: lit for the corner in view */
 .ck-dock-lamp {
-  position: absolute;
-  top: 4px;
-  inset-inline-end: 5px;
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: #1b1d33;
-  box-shadow: inset 0 0 0 1px #05060f;
+  display: none;
 }
 .ck-dock-key:active {
-  translate: 0 3px;
-  box-shadow:
-    inset 0 0 0 2px var(--b1),
-    0 2px 0 var(--edge);
+  background: rgba(47, 243, 255, 0.16);
 }
 .ck-dock-key.is-on {
-  translate: 0 3px;
+  border-color: var(--cyan);
+  background: rgba(47, 243, 255, 0.16);
   color: var(--cyan);
-  text-shadow: 0 0 6px rgba(47, 243, 255, 0.7);
+  text-shadow: 0 0 6px rgba(47, 243, 255, 0.8);
   box-shadow:
-    inset 0 0 0 2px var(--b1),
-    0 2px 0 var(--edge),
-    0 0 0 2px rgba(47, 243, 255, 0.8),
-    0 0 18px rgba(47, 243, 255, 0.45);
+    0 0 16px rgba(47, 243, 255, 0.55),
+    inset 0 0 14px rgba(47, 243, 255, 0.3);
 }
 .ck-dock-key.is-on .ck-dock-icon {
-  filter: none;
+  filter: drop-shadow(0 0 6px rgba(47, 243, 255, 0.7));
   scale: 1.12;
-}
-.ck-dock-key.is-on .ck-dock-lamp {
-  background: var(--cyan);
-  box-shadow:
-    inset 0 0 0 1px #05060f,
-    0 0 8px var(--cyan);
 }
 .ck-dock-key:focus-visible {
   outline: 3px solid var(--cyan);
@@ -461,31 +566,30 @@ html[lang='he'] .ck-dock-key {
     translate: -4px 0;
   }
 }
-/* a big screen: the corners' modules bigger, filling more of their walls */
-@media (min-width: 900px) and (min-height: 700px) {
-  .ck-view:not(.is-ahead) .ck-panel {
-    zoom: 1.3;
-  }
-}
-
 /* phones (upright or on their side): every corner a screen, nothing to scroll: the modules closer packed,
    their screens' words smaller, the sound and the language side by side, the pilot's doors three to a row */
 @media (max-width: 600px), (max-height: 500px) {
   .cockpit {
     --dock-h: calc(70px + env(safe-area-inset-bottom));
   }
-  .ck-hood.is-view {
-    padding: calc(8px + env(safe-area-inset-top)) 70px 10px;
+  .cockpit {
+    --hud-h: calc(56px + env(safe-area-inset-top));
   }
-  .ck-hood.is-view .ck-droid {
+  .ck-droids .ck-droid {
     width: 48px;
     height: 56px;
   }
-  .ck-hood.is-view .ck-hud-title {
-    font-size: 1rem;
+  .ck-droids .ck-droid.is-right {
+    right: 62px;
+  }
+  [dir='rtl'] .ck-droids .ck-droid.is-left {
+    left: 62px;
+  }
+  .ck-tape {
+    width: calc(100vw - 260px);
   }
   .ck-view .ck-deck {
-    padding: 12px 8px 14px;
+    padding: 12px 16px 14px;
   }
   .ck-view .ck-panel {
     gap: 12px 10px;
@@ -592,7 +696,7 @@ html[lang='he'] .ck-dock-key {
 /* (and shorter ones, a little closer still) */
 @media (max-width: 600px) and (max-height: 680px) {
   .ck-view .ck-deck {
-    padding: 8px 6px 10px;
+    padding: 8px 14px 10px;
   }
   .ck-view .ck-panel {
     gap: 8px;
@@ -627,6 +731,7 @@ html[lang='he'] .ck-dock-key {
     width: 44%;
     min-width: 0;
     margin-top: 0;
+    padding-top: var(--hud-h);
     justify-content: center;
   }
   .ck-view.is-ahead .ck-gadgets {
@@ -650,9 +755,6 @@ html[lang='he'] .ck-dock-key {
   }
   .ck-view .ck-panel {
     flex-wrap: nowrap;
-  }
-  .ck-hood.is-view {
-    padding-block: calc(4px + env(safe-area-inset-top)) 6px;
   }
 }
 
