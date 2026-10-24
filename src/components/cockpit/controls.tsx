@@ -395,7 +395,8 @@ export function HyperdriveLever({
   const at = useRef(0);
   /** the tooth it's held at */
   const tooth = useRef(0);
-  const drag = useRef<{ y: number; from: number; moved: boolean } | null>(null);
+  // (k: how big it's drawn, smaller on a short screen, so a push goes as far as it looks)
+  const drag = useRef<{ y: number; from: number; moved: boolean; k: number } | null>(null);
   const run = useRef(0);
   // (fired once, however many moves get there before it re-renders)
   const done = useRef(false);
@@ -452,7 +453,8 @@ export function HyperdriveLever({
       onPointerDown={(e) => {
         if (done.current) return;
         cancelAnimationFrame(run.current);
-        drag.current = { y: e.clientY, from: at.current, moved: false };
+        const el = e.currentTarget;
+        drag.current = { y: e.clientY, from: at.current, moved: false, k: el.getBoundingClientRect().height / (el.offsetHeight || 1) || 1 };
         setHeld(true);
         e.currentTarget.setPointerCapture(e.pointerId);
       }}
@@ -460,7 +462,7 @@ export function HyperdriveLever({
         const d = drag.current;
         if (!d || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
         if (Math.abs(d.y - e.clientY) > 6) d.moved = true;
-        if (d.moved) moveTo(d.from + (d.y - e.clientY) / TRAVEL);
+        if (d.moved) moveTo(d.from + (d.y - e.clientY) / (TRAVEL * d.k));
       }}
       onPointerUp={() => {
         const d = drag.current;

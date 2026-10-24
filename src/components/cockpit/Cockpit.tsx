@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { animate, motion, useMotionValue, useTransform, type MotionStyle, type MotionValue } from 'motion/react';
 import { sfx } from '../../audio/sfx';
 import { canVibrate, haptics } from '../../audio/haptics';
 import { useAudio } from '../../audio/useAudio';
 import { pauseGame, resumeGame, usePause } from '../../game/gameClock';
-import { cockpitDolly, cockpitDollyAt, cockpitView, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
+import { cockpitDolly, cockpitDollyAt, cockpitView, moveCockpitDolly, portholeScreen } from '../../game/flight';
 import { useGameStore } from '../../game/useGameStore';
 import { paceMs } from '../../game/scoring';
 import { useCrewStore } from '../../game/useCrewStore';
@@ -22,6 +23,7 @@ import { useTurbulence } from './turbulence';
 import { usePassingLight } from './passingLight';
 import './cockpit.css';
 import { useBack } from '../../native/back';
+import { openPage } from '../pages';
 
 // The settings, as the rocket's cockpit. Opening them flies the camera in
 // through the porthole (the cockpit is seen through the window, growing
@@ -35,10 +37,19 @@ import { useBack } from '../../native/back';
 // It's a toy of a cockpit: a dashboard of chunky plastic modules in toy
 // colours, two little droids on its corners reacting to what's changed
 // (Droid.tsx), and a big hyperdrive lever to slam forward, back to the
-// flight. Where it doesn't all fit, you look down at the dashboard and back
-// up at the windscreen: it scrolls, and as it does the view pitches like a
-// head turning, the windscreen tilting away overhead as the dashboard comes
-// round to face you, space shifting a little behind the glass.
+// flight.
+//
+// And it's where the rest of the game is: you look round it, its corners on
+// the walls round the pilot's seat, each a screen of its own (nothing to
+// scroll), a turn of the head away. Ahead, the windscreen and the hyperdrive
+// lever; to one side the controls (how to answer, the sound, the language)
+// and the helpers (the practice map, Orbie, the speed boost, the buzz); to
+// the other the missions (doors to the game modes, the map of what they
+// know, the Academy) and the pilot's own (switching pilot, their badges,
+// About, the parents' dashboard and the reset). The dock along the bottom
+// has a key for each, lit for the one in view; a key turns the head there,
+// as do a swipe across, the arrow keys, and with a mouse, resting at the
+// screen's edge.
 
 /** the flight in: the cockpit fills the screen about half-way, the camera keeps going behind it */
 const OPEN_MS = 1500;
@@ -59,8 +70,11 @@ const IRIS_CLOSE_MS = 520;
 const CALM_MS = 250;
 /** the space beyond the glass reaches this far above it (a share of its height), for it to shift as you look down */
 const SPACE_OVER = 0.2;
-/** how much it shifts (a share of the scroll), the most being SPACE_OVER of the glass */
-const SPACE_PARALLAX = 0.22;
+
+/** the cockpit's corners, in the row they make round the pilot's seat (the dock's keys) */
+const VIEWS = ['controls', 'helpers', 'ahead', 'missions', 'pilot'] as const;
+type ViewId = (typeof VIEWS)[number];
+const VIEW_ICONS: Record<ViewId, string> = { controls: '🎛️', helpers: '🤖', ahead: '🚀', missions: '🎮', pilot: '🧑‍🚀' };
 
 type Way = 'porthole' | 'iris' | 'calm';
 
@@ -87,7 +101,7 @@ const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
 function canFlyIn(): boolean {
   const s = useGameStore.getState();
   if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound || s.inWormhole) return false;
-  if (useCrewStore.getState().active || usePause.getState().paused || portholeZoom.diveAt) return false;
+  if (useCrewStore.getState().active || usePause.getState().paused) return false;
   const { x, y, r } = portholeScreen;
   return r > 2 && x > 0 && y > 0 && x < window.innerWidth && y < window.innerHeight;
 }
@@ -141,44 +155,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const rootRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // more to see below (the dashboard) or above (the windscreen)
-  const [more, setMore] = useState({ above: false, below: false });
-  const lookFrame = useRef(0);
-  // Looking up or down: how far (0 ahead … 1 down at the dashboard) sets the
-  // pitch (cockpit.css), and the space beyond the glass lags behind the frame.
-  const look = useCallback(() => {
-    lookFrame.current = 0;
-    const el = scrollRef.current;
-    const win = windowRef.current;
-    if (!el) return;
-    const max = el.scrollHeight - el.clientHeight;
-    const fits = max <= 2;
-    const k = fits ? 0 : clamp01(el.scrollTop / max);
-    el.style.setProperty('--look', k.toFixed(4));
-    el.style.setProperty('--space-shift', `${Math.min(el.scrollTop * SPACE_PARALLAX, (win?.offsetHeight ?? 0) * SPACE_OVER).toFixed(1)}px`);
-    el.dataset.fits = fits ? 'yes' : 'no';
-    const above = !fits && el.scrollTop > 6;
-    const below = !fits && el.scrollTop < max - 6;
-    setMore((m) => (m.above === above && m.below === below ? m : { above, below }));
-  }, []);
-  const onScroll = () => {
-    if (!lookFrame.current) lookFrame.current = requestAnimationFrame(look);
-  };
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    look();
-    const observer = new ResizeObserver(() => look());
-    observer.observe(el);
-    if (el.firstElementChild) observer.observe(el.lastElementChild ?? el.firstElementChild);
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(lookFrame.current);
-    };
-  }, [look]);
-  /** the look-up / look-down buttons: most of a screen that way */
-  const turn = (dir: 1 | -1) => scrollRef.current?.scrollBy({ top: dir * scrollRef.current.clientHeight * 0.7, behavior: calm ? 'auto' : 'smooth' });
+  const stageRef = useRef<HTMLDivElement>(null);
   const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   const [way] = useState<Way>(() => (calm ? 'calm' : canFlyIn() ? 'porthole' : 'iris'));
   // the window's size on screen from outside, before flying in
@@ -186,6 +163,78 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const [moving, setMoving] = useState(true);
   // the step under way (and when it began), so a second run of the effect carries on with it
   const step = useRef<{ leaving: boolean; at: number } | null>(null);
+
+  // Looking round: the corners, in a row round the pilot's seat (a crew has no missions or pilots to switch),
+  // the one in view (the dock's lit key) and where the head is turned to (pos: 0 … the last, between while turning)
+  const [views] = useState<readonly ViewId[]>(() => (crewing ? VIEWS.filter((v) => v !== 'missions') : VIEWS));
+  const ahead = views.indexOf('ahead');
+  const [view, setView] = useState(ahead);
+  const pos = useMotionValue(ahead);
+  const [turning, setTurning] = useState(false);
+  const rtl = lang === 'he';
+  const turnTo = useCallback(
+    (i: number) => {
+      const to = Math.max(0, Math.min(views.length - 1, i));
+      setView(to);
+      if (Math.abs(to - pos.get()) < 0.01) return;
+      sfx.turn();
+      if (calm) {
+        pos.set(to);
+        return;
+      }
+      setTurning(true);
+      animate(pos, to, { type: 'spring', stiffness: 150, damping: 22, onComplete: () => setTurning(false) });
+    },
+    [views, pos, calm],
+  );
+  /** one corner over to the screen's right (1) or left (-1): the row runs the other way in Hebrew */
+  const toward = (side: 1 | -1) => view + (rtl ? -side : side);
+  const hover = useRef(0);
+  const unhover = () => window.clearTimeout(hover.current);
+  useEffect(() => unhover, []);
+
+  // swiping across (a finger or a pen, starting off the controls) turns the head with it
+  const drag = useRef<{ id: number; x: number; y: number; from: number; on: boolean } | null>(null);
+  const onDragStart = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' || calm || moving) return;
+    if ((e.target as Element).closest('button, input, [role="slider"], .ck-selector')) return;
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: pos.get(), on: false };
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    if (!d.on) {
+      if (Math.abs(dx) < 10) return;
+      // (scrolling up or down, rather)
+      if (Math.abs(e.clientY - d.y) > Math.abs(dx)) {
+        drag.current = null;
+        return;
+      }
+      d.on = true;
+      pos.stop();
+      setTurning(true);
+      stageRef.current?.setPointerCapture(e.pointerId);
+    }
+    const w = stageRef.current?.clientWidth || window.innerWidth;
+    const last = views.length - 1;
+    let p = d.from - ((rtl ? -1 : 1) * dx) / w;
+    // (a little give past the ends)
+    if (p < 0) p *= 0.3;
+    else if (p > last) p = last + (p - last) * 0.3;
+    pos.set(p);
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    if (!d.on) return;
+    // over to the next one, if it's come a quarter of the way round, or was flicked that way
+    const moved = pos.get() - d.from;
+    const flick = pos.getVelocity();
+    const go = Math.abs(moved) > 0.25 || (Math.abs(flick) > 1.5 && Math.sign(flick) === Math.sign(moved));
+    turnTo(Math.round(d.from) + (go ? Math.sign(moved) : 0));
+  };
 
   useEffect(() => {
     const root = rootRef.current;
@@ -196,7 +245,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     const button = from?.getBoundingClientRect();
     const origin = button ? { x: button.left + button.width / 2, y: button.top + button.height / 2 } : { x: W / 2, y: H / 2 };
     const win = windowRef.current;
-    const view = { x: W / 2, y: win ? win.offsetTop + win.offsetHeight / 2 : H / 4 };
+    const glass = { x: W / 2, y: win ? win.offsetTop + win.offsetHeight / 2 : H / 4 };
     /** a circle this big around (x, y) covers the whole screen */
     const cover = (x: number, y: number) => Math.hypot(Math.max(x, W - x), Math.max(y, H - y)) + 2;
     // The cockpit seen through a round window at (x, y): at first just its
@@ -204,15 +253,15 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     const show = (x: number, y: number, r: number, p: number) => {
       root.style.clipPath = `circle(${r.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px)`;
       const k = 1 - p;
-      inner.style.transformOrigin = `${view.x}px ${view.y}px`;
-      inner.style.transform = `translate(${((x - view.x) * k).toFixed(1)}px, ${((y - view.y) * k).toFixed(1)}px) scale(${(1 + 0.3 * k).toFixed(3)})`;
+      inner.style.transformOrigin = `${glass.x}px ${glass.y}px`;
+      inner.style.transform = `translate(${((x - glass.x) * k).toFixed(1)}px, ${((y - glass.y) * k).toFixed(1)}px) scale(${(1 + 0.3 * k).toFixed(3)})`;
     };
     const arrived = () => {
       root.style.clipPath = 'none';
       root.style.opacity = '1';
       inner.style.transform = '';
       setMoving(false);
-      (scrollRef.current ?? root).focus({ preventScroll: true });
+      (stageRef.current ?? root).focus({ preventScroll: true });
     };
 
     // React may run this more than once for a step (and run the cleanup below
@@ -298,18 +347,18 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   useBack(!covered && !leaving && onClose);
 
   // a little flight jitter now and then, once inside (not under a dialog, or flying back out)
-  useTurbulence(rootRef, scrollRef, !calm && !moving && !leaving && !covered);
+  useTurbulence(rootRef, stageRef, !calm && !moving && !leaving && !covered);
   // and now and then something glowing passing by outside, its light moving over the dashboard
   usePassingLight(rootRef, !calm && !moving && !leaving && !covered);
 
   useEffect(() => {
     if (covered || leaving) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    // (unless it's for a screen opened over it, from one of its doors)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector(OVER_IT) && onClose();
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [covered, leaving, onClose]);
 
-  const rtl = lang === 'he';
   /** a switch's change, and the switch droid's reaction to it: happy at an ON, sleepy at an OFF */
   const switched = (set: (on: boolean) => void) => (on: boolean) => {
     set(on);
@@ -320,245 +369,398 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const checkHint = (c: TypedCheck) =>
     c === 'auto' ? t.typedCheckAutoHint : isTouchDevice ? t.typedCheckConfirmTouchHint : t.typedCheckConfirmKeysHint;
 
+  const here = (id: ViewId) => views[view] === id;
+  /** a corner's own hood: what it is, on a screen, the droids either side of it */
+  const hood = (id: ViewId) => (
+    <div className="ck-hood is-view">
+      <PlateLight cast={false} />
+      <Droid who="sound" side="left" color="#2ff3ff" voiced={here(id)} />
+      <div className="ck-hood-screen">
+        <div className="ck-hud-title">{t.cockpit.views[id]}</div>
+      </div>
+      <Droid who="switch" side="right" color="#ff3df0" voiced={here(id)} />
+    </div>
+  );
+  /** a door to another of the game's screens: a big button on its plate */
+  const door = (plate: number, tone: 'cyan' | 'orange' | 'magenta', icon: string, name: string, onPress: () => void) => (
+    <Module plate={plate} label={name} tone={tone} className="ck-door">
+      <PushButton icon={icon} name={name} onPress={onPress} />
+    </Module>
+  );
+
+  const corners: Record<ViewId, React.ReactNode> = {
+    // ahead: the windscreen, the hood under it, and the hyperdrive lever back to the flight
+    ahead: (
+      <>
+        <div ref={windowRef} className="ck-window">
+          <div className="ck-window-view">
+            <CockpitSpace calm={calm} destination={destination} over={SPACE_OVER} active={here('ahead') || turning} />
+          </div>
+          <Canopy />
+        </div>
+        <div className="ck-dash">
+          {/* (its light, falling through the glass) */}
+          <span className="ck-passlight" aria-hidden />
+          <div className="ck-hood">
+            <PlateLight cast={false} />
+            <Droid who="sound" side="left" color="#2ff3ff" voiced={here('ahead')} />
+            <span className="ck-gadgets is-l" aria-hidden>
+              <span className="ck-radar" />
+              <Bulbs n={14} seed={1} />
+              <span className="ck-dial">
+                <i />
+              </span>
+            </span>
+            <div className="ck-hood-screen">
+              {profile?.avatar && (
+                <span className="ck-bobble" aria-hidden>
+                  {profile.avatar}
+                </span>
+              )}
+              <div className="ck-hud-title">{t.cockpit.views.ahead}</div>
+              <div className="ck-hud-seat">{t.cockpit.seat(pilotName(profile, t.defaultPilotName))}</div>
+            </div>
+            <span className="ck-gadgets is-r" aria-hidden>
+              <span className="ck-dial">
+                <i />
+              </span>
+              <Bulbs n={14} seed={2} />
+              <span className="ck-gauge">
+                <i />
+              </span>
+            </span>
+            <Droid who="switch" side="right" color="#ff3df0" voiced={here('ahead')} />
+          </div>
+          <Wires />
+          <div className="ck-launch">
+            <HyperdriveLever
+              label={t.cockpit.back}
+              name={t.cockpit.hyperdrive}
+              go={t.cockpit.go}
+              push={t.cockpit.push}
+              calm={calm}
+              onLaunch={() => {
+                emote({ who: 'both', mood: 'cheer', word: t.cockpit.cheer });
+                onClose();
+              }}
+            />
+          </div>
+        </div>
+      </>
+    ),
+
+    // how the questions are answered, and the sound
+    controls: (
+      <>
+        {hood('controls')}
+        <div className="ck-deck">
+          <Tower side="left" />
+          <div className="ck-panel">
+            <Module plate={1} label={t.answerBy} screen={answerMode === 'type' ? t.modeTypeHint : t.modeChoiceHint} tone="cyan" className="ck-wide">
+              <Selector<AnswerMode>
+                kind="lever"
+                label={t.answerBy}
+                rtl={rtl}
+                choices={[
+                  { value: 'choice', name: t.modeChoice },
+                  { value: 'type', name: t.modeType },
+                ]}
+                value={answerMode}
+                onChange={(m) => {
+                  setAnswerMode(m);
+                  emote({ who: 'switch', mood: 'happy' });
+                }}
+              />
+            </Module>
+
+            {/* touch devices only: on a computer, typed answers always wait for Enter */}
+            {answerMode === 'type' && isTouchDevice && (
+              <Module plate={2} label={t.typedCheckLabel} screen={checkHint(typedCheck)} tone="cyan" className="ck-wide">
+                <Selector<TypedCheck>
+                  kind="knob"
+                  label={t.typedCheckLabel}
+                  rtl={rtl}
+                  choices={[
+                    { value: 'auto', name: checkName('auto') },
+                    { value: 'confirm', name: checkName('confirm') },
+                  ]}
+                  value={typedCheck}
+                  onChange={(c) => {
+                    setTypedCheck(c);
+                    emote({ who: 'switch', mood: 'happy' });
+                  }}
+                />
+              </Module>
+            )}
+
+            <Module plate={3} label={t.sound} tone="orange" hazard className="ck-sound">
+              <Throttle
+                name={t.music}
+                icon="🎵"
+                value={musicVolume}
+                onChange={(v) => {
+                  setMusicVolume(v);
+                  emote({ who: 'sound', mood: 'music', level: v });
+                }}
+              />
+              <Throttle
+                name={t.effects}
+                icon="✨"
+                value={effectsVolume}
+                onChange={(v) => {
+                  setEffectsVolume(v);
+                  emote({ who: 'sound', mood: 'effects', level: v });
+                }}
+                // at the new volume, on letting go
+                onRelease={() => sfx.correct(3, false)}
+              />
+            </Module>
+
+            <Module plate={4} label={t.language} className="ck-mid">
+              <Selector
+                kind="knob"
+                label={t.language}
+                rtl={rtl}
+                choices={[
+                  { value: 'he', name: 'עברית' },
+                  { value: 'en', name: 'English' },
+                ]}
+                value={lang}
+                onChange={(l) => {
+                  if (l === lang) return;
+                  toggleLang();
+                  // (hello in the new one)
+                  emote({ who: 'switch', mood: 'hello', word: STRINGS[l].cockpit.hello });
+                }}
+              />
+            </Module>
+          </div>
+          <Tower side="right" />
+        </div>
+      </>
+    ),
+
+    // what helps along the way: the practice map, Orbie, the clock's boost, the buzz
+    helpers: (
+      <>
+        {hood('helpers')}
+        <div className="ck-deck">
+          <Tower side="left" />
+          <div className="ck-panel">
+            <Module plate={5} label={t.mistakeReviewLabel} screen={t.mistakeReviewHint} tone="magenta">
+              <Toggle name={t.mistakeReviewLabel} on={mistakeReview} onChange={switched(setMistakeReview)} onWord={t.on} offWord={t.off} />
+            </Module>
+
+            {/* Orbie, the ship's computer, floating beside its switch (lit while it's on) */}
+            <Module plate={6} label={t.orbieLabel} screen={orbie ? t.orbieOnHint : t.orbieOffHint} tone="magenta">
+              <div className="ck-orbie-row">
+                <span className={`ck-orbie ${orbie ? 'is-on' : ''}`} aria-hidden>
+                  <span className="ck-orbie-face">?</span>
+                </span>
+                <Toggle name={t.orbieLabel} on={orbie} onChange={switched(setOrbie)} onWord={t.on} offWord={t.off} />
+              </div>
+            </Module>
+
+            {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}
+            {profile && (
+              <Module plate={7} label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint(paceSeconds) : t.timedBoostOffHint} tone="orange" hazard>
+                <Toggle
+                  name={t.timedBoostLabel}
+                  on={timedBoost}
+                  onChange={switched((on) => useProfiles.getState().update(profile.id, { timedBoost: on }))}
+                  onWord={t.on}
+                  offWord={t.off}
+                />
+              </Module>
+            )}
+
+            {/* only where the device can actually vibrate (not iPhone/iPad) */}
+            {canVibrate && (
+              <Module plate={8} label={t.vibrationLabel} screen={t.vibrationHint} tone="magenta">
+                <Toggle
+                  name={t.vibrationLabel}
+                  on={vibration}
+                  onChange={(on) => {
+                    setVibration(on);
+                    emote({ who: 'switch', mood: on ? 'buzz' : 'sleepy' });
+                    if (on) haptics.correct(); // feel it, switching on
+                  }}
+                  onWord={t.on}
+                  offWord={t.off}
+                />
+              </Module>
+            )}
+          </div>
+          <Tower side="right" />
+        </div>
+      </>
+    ),
+
+    // the doors to the ways to play, the map of what they know, and the Academy
+    missions: (
+      <>
+        {hood('missions')}
+        <div className="ck-deck">
+          <Tower side="left" />
+          <div className="ck-panel">
+            {door(11, 'cyan', '🎮', t.modes.title, () => openPage('modes'))}
+            {door(12, 'orange', '🗺️', t.stopAndReview, () => useGameStore.getState().requestHeatmap())}
+            {door(13, 'magenta', '🎓', t.cockpit.academy, () => useGameStore.getState().openAcademy())}
+          </div>
+          <Tower side="right" />
+        </div>
+      </>
+    ),
+
+    // the pilot's own: who's flying, their badges, About; and the grown-ups' dashboard and reset
+    pilot: (
+      <>
+        {hood('pilot')}
+        <div className="ck-deck">
+          <Tower side="left" />
+          <div className="ck-panel">
+            {!crewing && door(14, 'cyan', profile?.avatar ?? '🙂', t.switchPilot, () => openPage('pilot'))}
+            {door(15, 'orange', '🏅', t.badges.open, () => openPage('badges'))}
+            {door(16, 'magenta', '📖', t.about.open, () => openPage('about'))}
+            <Module plate={9} label={t.cockpit.parents} className="ck-door">
+              <PushButton icon="👪" name={t.cockpit.parents} onPress={onParents} />
+            </Module>
+            <Module plate={10} label={t.progressSection} tone="orange" hazard className="ck-door">
+              <GuardedButton
+                name={t.reset}
+                liftLabel={t.cockpit.liftCover}
+                lowerLabel={t.cockpit.lowerCover}
+                onPress={onReset}
+                onLift={() => emote({ who: 'both', mood: 'scared' })}
+              />
+            </Module>
+          </div>
+          <Tower side="right" />
+        </div>
+      </>
+    ),
+  };
+
   return (
     <div
       ref={rootRef}
-      className={`cockpit ${moving ? 'is-moving' : ''}`}
+      className={`cockpit ${moving ? 'is-moving' : ''} ${turning ? 'is-turning' : ''}`}
       role="dialog"
       aria-modal="true"
-      aria-label={t.settings}
+      aria-label={t.cockpit.seat(pilotName(profile, t.defaultPilotName))}
       tabIndex={-1}
       style={{ opacity: way === 'iris' ? 1 : 0, clipPath: way === 'calm' ? 'none' : 'circle(0px at 50% 50%)' }}
-      // the game's own keys (answers, the hint) stay out while the cockpit is open
-      onKeyDown={(e) => e.key !== 'Escape' && e.stopPropagation()}
+      onKeyDown={(e) => {
+        // the game's own keys (answers, the hint) stay out while the cockpit is open
+        if (e.key !== 'Escape') e.stopPropagation();
+        // ← → look round (not while a slider or the lever has them)
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !(e.target as Element).closest('[role="slider"], .ck-hyper')) {
+          e.preventDefault();
+          turnTo(toward(e.key === 'ArrowRight' ? 1 : -1));
+        }
+      }}
     >
       <div ref={innerRef} className="ck-inner">
-        <div ref={scrollRef} className="ck-scroll" tabIndex={-1} onScroll={onScroll} data-fits="yes">
-          <div ref={windowRef} className="ck-window">
-            <div className="ck-window-view">
-              <CockpitSpace calm={calm} destination={destination} over={SPACE_OVER} />
-            </div>
-            <Canopy />
-          </div>
-
-          <div className="ck-dash">
-            {/* (its light, falling through the glass) */}
-            <span className="ck-passlight" aria-hidden />
-            <div className="ck-hood">
-              <PlateLight cast={false} />
-              <Droid who="sound" side="left" color="#2ff3ff" />
-              <span className="ck-gadgets is-l" aria-hidden>
-                <span className="ck-radar" />
-                <Bulbs n={14} seed={1} />
-                <span className="ck-dial">
-                  <i />
-                </span>
-              </span>
-              <div className="ck-hood-screen">
-                {profile?.avatar && (
-                  <span className="ck-bobble" aria-hidden>
-                    {profile.avatar}
-                  </span>
-                )}
-                <div className="ck-hud-title">{t.settings}</div>
-                <div className="ck-hud-seat">{t.cockpit.seat(pilotName(profile, t.defaultPilotName))}</div>
-              </div>
-              <span className="ck-gadgets is-r" aria-hidden>
-                <span className="ck-dial">
-                  <i />
-                </span>
-                <Bulbs n={14} seed={2} />
-                <span className="ck-gauge">
-                  <i />
-                </span>
-              </span>
-              <Droid who="switch" side="right" color="#ff3df0" />
-            </div>
-
-            <Wires />
-            <div className="ck-deck">
-              <Tower side="left" />
-              <div className="ck-panel">
-                <Module plate={1} label={t.answerBy} screen={answerMode === 'type' ? t.modeTypeHint : t.modeChoiceHint} tone="cyan" className="ck-wide">
-                  <Selector<AnswerMode>
-                    kind="lever"
-                    label={t.answerBy}
-                    rtl={rtl}
-                    choices={[
-                      { value: 'choice', name: t.modeChoice },
-                      { value: 'type', name: t.modeType },
-                    ]}
-                    value={answerMode}
-                    onChange={(m) => {
-                      setAnswerMode(m);
-                      emote({ who: 'switch', mood: 'happy' });
-                    }}
-                  />
-                </Module>
-
-                {/* touch devices only: on a computer, typed answers always wait for Enter */}
-                {answerMode === 'type' && isTouchDevice && (
-                  <Module plate={2} label={t.typedCheckLabel} screen={checkHint(typedCheck)} tone="cyan" className="ck-wide">
-                    <Selector<TypedCheck>
-                      kind="knob"
-                      label={t.typedCheckLabel}
-                      rtl={rtl}
-                      choices={[
-                        { value: 'auto', name: checkName('auto') },
-                        { value: 'confirm', name: checkName('confirm') },
-                      ]}
-                      value={typedCheck}
-                      onChange={(c) => {
-                        setTypedCheck(c);
-                        emote({ who: 'switch', mood: 'happy' });
-                      }}
-                    />
-                  </Module>
-                )}
-
-                <Module plate={3} label={t.sound} tone="orange" hazard className="ck-sound">
-                  <Throttle
-                    name={t.music}
-                    icon="🎵"
-                    value={musicVolume}
-                    onChange={(v) => {
-                      setMusicVolume(v);
-                      emote({ who: 'sound', mood: 'music', level: v });
-                    }}
-                  />
-                  <Throttle
-                    name={t.effects}
-                    icon="✨"
-                    value={effectsVolume}
-                    onChange={(v) => {
-                      setEffectsVolume(v);
-                      emote({ who: 'sound', mood: 'effects', level: v });
-                    }}
-                    // at the new volume, on letting go
-                    onRelease={() => sfx.correct(3, false)}
-                  />
-                </Module>
-
-                <Module plate={4} label={t.language} className="ck-mid">
-                  <Selector
-                    kind="knob"
-                    label={t.language}
-                    rtl={rtl}
-                    choices={[
-                      { value: 'he', name: 'עברית' },
-                      { value: 'en', name: 'English' },
-                    ]}
-                    value={lang}
-                    onChange={(l) => {
-                      if (l === lang) return;
-                      toggleLang();
-                      // (hello in the new one)
-                      emote({ who: 'switch', mood: 'hello', word: STRINGS[l].cockpit.hello });
-                    }}
-                  />
-                </Module>
-
-                <Module plate={5} label={t.mistakeReviewLabel} screen={t.mistakeReviewHint} tone="magenta">
-                  <Toggle name={t.mistakeReviewLabel} on={mistakeReview} onChange={switched(setMistakeReview)} onWord={t.on} offWord={t.off} />
-                </Module>
-
-                {/* Orbie, the ship's computer, floating beside its switch (lit while it's on) */}
-                <Module plate={6} label={t.orbieLabel} screen={orbie ? t.orbieOnHint : t.orbieOffHint} tone="magenta">
-                  <div className="ck-orbie-row">
-                    <span className={`ck-orbie ${orbie ? 'is-on' : ''}`} aria-hidden>
-                      <span className="ck-orbie-face">?</span>
-                    </span>
-                    <Toggle name={t.orbieLabel} on={orbie} onChange={switched(setOrbie)} onWord={t.on} offWord={t.off} />
-                  </div>
-                </Module>
-
-                {/* this pilot's own: racing the clock for a bigger boost, or a steady one with no clock */}
-                {profile && (
-                  <Module plate={7} label={t.timedBoostLabel} screen={timedBoost ? t.timedBoostOnHint(paceSeconds) : t.timedBoostOffHint} tone="orange" hazard>
-                    <Toggle
-                      name={t.timedBoostLabel}
-                      on={timedBoost}
-                      onChange={switched((on) => useProfiles.getState().update(profile.id, { timedBoost: on }))}
-                      onWord={t.on}
-                      offWord={t.off}
-                    />
-                  </Module>
-                )}
-
-                {/* only where the device can actually vibrate (not iPhone/iPad) */}
-                {canVibrate && (
-                  <Module plate={8} label={t.vibrationLabel} screen={t.vibrationHint} tone="magenta">
-                    <Toggle
-                      name={t.vibrationLabel}
-                      on={vibration}
-                      onChange={(on) => {
-                        setVibration(on);
-                        emote({ who: 'switch', mood: on ? 'buzz' : 'sleepy' });
-                        if (on) haptics.correct(); // feel it, switching on
-                      }}
-                      onWord={t.on}
-                      offWord={t.off}
-                    />
-                  </Module>
-                )}
-
-                <Module plate={9} label={t.cockpit.parents}>
-                  <PushButton icon="👪" name={t.cockpit.parents} onPress={onParents} />
-                </Module>
-
-                <Module plate={10} label={t.progressSection} tone="orange" hazard>
-                  <GuardedButton
-                    name={t.reset}
-                    liftLabel={t.cockpit.liftCover}
-                    lowerLabel={t.cockpit.lowerCover}
-                    onPress={onReset}
-                    onLift={() => emote({ who: 'both', mood: 'scared' })}
-                  />
-                </Module>
-              </div>
-              <Tower side="right" />
-            </div>
-
-            <div className="ck-launch">
-              <HyperdriveLever
-                label={t.cockpit.back}
-                name={t.cockpit.hyperdrive}
-                go={t.cockpit.go}
-                push={t.cockpit.push}
-                calm={calm}
-                onLaunch={() => {
-                  emote({ who: 'both', mood: 'cheer', word: t.cockpit.cheer });
-                  onClose();
-                }}
-              />
-            </div>
-          </div>
+        <div
+          ref={stageRef}
+          className="ck-stage"
+          tabIndex={-1}
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+        >
+          {views.map((id, i) => (
+            <Corner key={id} id={id} index={i} pos={pos} rtl={rtl} current={i === view}>
+              {corners[id]}
+            </Corner>
+          ))}
         </div>
 
         <div className="ck-flash" aria-hidden />
         <button type="button" className="ck-x" onClick={onClose} aria-label={t.close} title={t.close}>
           ✕
         </button>
-        <button
-          type="button"
-          className={`ck-look is-up ${more.above ? 'is-shown' : ''}`}
-          onClick={() => turn(-1)}
-          aria-label={t.cockpit.lookUp}
-          tabIndex={more.above ? 0 : -1}
-        >
-          <span aria-hidden>▲</span>
-        </button>
-        <button
-          type="button"
-          className={`ck-look is-down ${more.below ? 'is-shown' : ''}`}
-          onClick={() => turn(1)}
-          aria-label={t.cockpit.lookDown}
-          tabIndex={more.below ? 0 : -1}
-        >
-          <span aria-hidden>▼</span>
-        </button>
+        {/* with a mouse: at the screen's edge, the head turns that way */}
+        {([-1, 1] as const).map((side) => {
+          const to = toward(side);
+          if (to < 0 || to >= views.length) return null;
+          return (
+            <button
+              key={side}
+              type="button"
+              tabIndex={-1}
+              className={`ck-edge ${side < 0 ? 'is-left' : 'is-right'}`}
+              aria-label={side < 0 ? t.cockpit.lookLeft : t.cockpit.lookRight}
+              onClick={() => turnTo(to)}
+              onPointerEnter={(e) => {
+                if (e.pointerType !== 'mouse') return;
+                unhover();
+                hover.current = window.setTimeout(() => turnTo(to), EDGE_MS);
+              }}
+              onPointerLeave={unhover}
+            >
+              <span aria-hidden>{side < 0 ? '◀' : '▶'}</span>
+            </button>
+          );
+        })}
+        {/* the dock: a key for each corner, lit for the one in view */}
+        <nav className="ck-dock" aria-label={t.cockpit.lookAround}>
+          {views.map((id, i) => (
+            <button key={id} type="button" className={`ck-dock-key ${i === view ? 'is-on' : ''}`} aria-current={i === view || undefined} onClick={() => turnTo(i)}>
+              <span className="ck-dock-lamp" aria-hidden />
+              <span className="ck-dock-icon" aria-hidden>
+                {id === 'pilot' && profile?.avatar ? profile.avatar : VIEW_ICONS[id]}
+              </span>
+              <span className="ck-dock-name">{t.cockpit.views[id]}</span>
+            </button>
+          ))}
+        </nav>
       </div>
     </div>
+  );
+}
+
+/** the screens its doors open, over it */
+const OVER_IT = '[aria-modal="true"]:not(.cockpit), .heatmap-overlay, .academy';
+/** how long the mouse waits at the screen's edge before the head turns */
+const EDGE_MS = 260;
+/** how far round each corner is from the next (deg), the walls meeting edge to edge */
+const CORNER_DEG = 50;
+
+/**
+ * One of the cockpit's corners, on the walls round the pilot's seat: as the
+ * head turns (pos), the one in view swings away to the side and the next
+ * comes round, both of them on the same circle, the one going darkening.
+ */
+function Corner({ id, index, pos, rtl, current, children }: { id: ViewId; index: number; pos: MotionValue<number>; rtl: boolean; current: boolean; children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useLayoutEffect(() => {
+    const el = ref.current?.parentElement;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  // the walls meet edge to edge on a circle this far from its centre, seen from a little behind it
+  const radius = width / (2 * Math.tan((CORNER_DEG / 2) * (Math.PI / 180)));
+  const transform = useTransform(pos, (v) => {
+    const a = (index - v) * CORNER_DEG * (rtl ? 1 : -1);
+    return Math.abs(a) < 0.01 ? 'none' : `perspective(${(radius * 1.5).toFixed(0)}px) translateZ(${radius.toFixed(0)}px) rotateY(${a.toFixed(2)}deg) translateZ(${(-radius).toFixed(0)}px)`;
+  });
+  const visibility = useTransform(pos, (v) => (Math.abs(index - v) < 0.995 ? 'visible' : 'hidden'));
+  const away = useTransform(pos, (v) => Math.min(1, Math.abs(index - v)));
+  return (
+    <motion.section
+      ref={ref}
+      className={`ck-view is-${id}`}
+      style={{ transform, visibility, '--away': away } as unknown as MotionStyle}
+      aria-hidden={!current || undefined}
+      inert={!current}
+    >
+      {children}
+    </motion.section>
   );
 }
 

@@ -11,8 +11,10 @@ export interface Profile {
   name: string;
   avatar: string;
   createdAt: number;
-  /** has opened the Deep Space Academy (the porthole stops shimmering) */
+  /** has opened the Deep Space Academy */
   academySeen?: boolean;
+  /** has been in the cockpit (the porthole, the way in, stops shimmering) */
+  cockpitSeen?: boolean;
   /** what they practise; profiles from before missions existed are multiplication */
   mission?: PilotMission;
   /** addition Academy courses finished ('add1'-'add3') */
@@ -86,7 +88,7 @@ interface ProfilesState extends Saved {
   /** chosen in this session (the picker shows at startup when there are 2+ profiles) */
   chosen: boolean;
   create: (name: string, avatar: string, mission: PilotMission) => string;
-  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'mission' | 'academyDone' | 'timedBoost' | 'ship' | 'shipsSeen'>>) => void;
+  update: (id: string, patch: Partial<Pick<Profile, 'name' | 'avatar' | 'academySeen' | 'cockpitSeen' | 'mission' | 'academyDone' | 'timedBoost' | 'ship' | 'shipsSeen'>>) => void;
   remove: (id: string) => void;
   select: (id: string) => void;
 }

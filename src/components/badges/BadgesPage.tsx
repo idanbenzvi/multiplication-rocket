@@ -11,6 +11,7 @@ import { BadgeArt } from './BadgeArt';
 import { badgeText } from '../../i18n/strings';
 import GradientText from '../reactbits/GradientText';
 import { useBack } from '../../native/back';
+import { usePageRequest } from '../pages';
 
 // The pilot's rank, the ladder up to Honored Captain, and every badge:
 // earned ones in color, locked ones dimmed with how close they are.
@@ -133,6 +134,8 @@ export function BadgesButton() {
   const hasNew = useAchievements((s) => s.unseen.length > 0);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  // (and from the cockpit's door)
+  usePageRequest('badges', () => setOpen(true));
   return (
     <>
       <button

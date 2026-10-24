@@ -139,7 +139,7 @@ export function flyHome() {
   kick(1.1);
 }
 
-// ---- tapping the porthole: the camera zooms in a step per tap ----
+// ---- the porthole: a tap on it flies the camera in, to the cockpit ----
 
 /** the porthole's height above the rocket group's origin (RocketSprite: plane centre 1.1 + porthole offset) */
 export const PORTHOLE_Y = 1.17;
@@ -157,13 +157,6 @@ export const portholeWorld = { x: 0, y: PORTHOLE_Y, z: 0 };
  * is left of it), and its glass's radius.
  */
 export const porthole = { x: 0, radius: (23 / 200) * 1.1 };
-
-/** tap stage 0-3; diveAt = performance.now() when the third tap started the dive */
-export const portholeZoom = { level: 0, lastTap: 0, diveAt: 0 };
-/** without another tap within this, the zoom eases back out */
-export const ZOOM_RESET_MS = 1400;
-/** the final rush into the window, before the Academy opens */
-export const DIVE_MS = 950;
 
 // ---- the cockpit: settings open by flying the camera in through the porthole ----
 

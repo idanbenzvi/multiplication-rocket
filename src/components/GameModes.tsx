@@ -14,6 +14,8 @@ import { playTrack } from '../audio/useAudio';
 import GradientText from './reactbits/GradientText';
 import { BACKDROP_VARIANTS, flyOffTo, SHEET_VARIANTS, type SheetLeave } from './warpTransition';
 import { useBack } from '../native/back';
+import { usePageRequest } from './pages';
+import { useCockpit } from './cockpit/cockpitStore';
 
 /**
  * The Black Sun for the active pilot: it opens once every fact of their
@@ -56,6 +58,11 @@ export function GameModesButton() {
     setOpen(false);
   };
   useBack(open && close);
+  // (and from the cockpit's door)
+  usePageRequest('modes', () => {
+    setLeave(null);
+    setOpen(true);
+  });
 
   const modes = [
     {
@@ -163,6 +170,8 @@ export function GameModesButton() {
                         className={`pilot-card pilot-card-new pilot-card-crew ${m.disabled ? 'is-disabled' : ''} ${m.key === 'boss' ? `pilot-card-boss ${boss.isNew ? 'is-new' : ''} ${boss.wins ? 'is-cured' : ''}` : ''}`}
                         disabled={m.disabled}
                         onClick={(e) => {
+                          // (opened from the cockpit: off it goes from there)
+                          useCockpit.getState().dismiss();
                           m.start(e.currentTarget);
                           setOpen(false);
                         }}

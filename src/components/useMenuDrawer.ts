@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBack } from '../native/back';
-import { pauseGame, resumeGame } from '../game/gameClock';
-import { sfx } from '../audio/sfx';
 
 // A phone on its side is too short for the top bar above the rocket and the
 // question below it. There the top bar becomes a drawer tucked off the right
@@ -11,11 +9,10 @@ import { sfx } from '../audio/sfx';
 // tab, App.css lays the sideways game out, FlightController moves the rocket
 // to the left.)
 //
-// A phone held upright is too narrow for it: there the top bar is a slim
-// strip of the pilot's badge (Station.tsx) and where they're flying to, and
-// the rest waits in the station, which drops down from the badge when it's
-// tapped. The flight waits while it's open, so nothing is lost to a look
-// round it, and it stays until it's put away (no swipes, shakes or timer).
+// A phone held upright has no room for the top bar's buttons either: there
+// the top bar is a slim strip of where they're flying to, and the pilot's
+// badge (CockpitButton.tsx), which flies them into their rocket's cockpit,
+// where everything else is (as the rocket's window does).
 
 export const SIDEWAYS_QUERY = '(orientation: landscape) and (max-height: 500px) and (pointer: coarse)';
 /** one shared query, so the 3D scene can check it every frame */
@@ -52,10 +49,7 @@ const SHAKE_WINDOW_MS = 1000;
 
 type MotionAccess = { requestPermission?: () => Promise<string> };
 
-/** `kind`: the drawer (a phone on its side), the station (upright), or neither (the top bar as it is) */
-export function useMenuDrawer(kind: 'drawer' | 'station' | null) {
-  const enabled = kind !== null;
-  const drawer = kind === 'drawer';
+export function useMenuDrawer(enabled: boolean) {
   const [open, setOpen] = useState(false);
   const [touched, setTouched] = useState(0);
   const askedMotion = useRef(false);
@@ -67,32 +61,20 @@ export function useMenuDrawer(kind: 'drawer' | 'station' | null) {
   const show = useCallback(() => {
     setOpen(true);
     const motion = (window as unknown as { DeviceMotionEvent?: MotionAccess }).DeviceMotionEvent;
-    if (!drawer || askedMotion.current || !motion?.requestPermission) return;
+    if (askedMotion.current || !motion?.requestPermission) return;
     askedMotion.current = true;
     motion.requestPermission().catch(() => {});
-  }, [drawer]);
+  }, []);
 
   useEffect(() => {
-    if (!open || !drawer) return;
+    if (!open) return;
     const timer = window.setTimeout(() => setOpen(false), AUTO_HIDE_MS);
     return () => window.clearTimeout(timer);
-  }, [open, touched, drawer]);
-
-  // the station: the flight waits while it's open
-  const station = kind === 'station' && open;
-  useEffect(() => {
-    if (!station) return;
-    pauseGame('menu');
-    sfx.blip(7);
-    return () => {
-      resumeGame('menu');
-      sfx.blip(3);
-    };
-  }, [station]);
+  }, [open, touched]);
 
   // swiping in from the right edge pulls it out; a swipe to the right puts it away
   useEffect(() => {
-    if (!drawer) return;
+    if (!enabled) return;
     let start: { x: number; y: number; id: number; edge: boolean } | null = null;
     const down = (e: TouchEvent) => {
       const t = e.changedTouches[0];
@@ -123,11 +105,11 @@ export function useMenuDrawer(kind: 'drawer' | 'station' | null) {
       window.removeEventListener('touchend', end, opts);
       window.removeEventListener('touchcancel', end, opts);
     };
-  }, [drawer]);
+  }, [enabled]);
 
   // shaking the phone pulls it out too
   useEffect(() => {
-    if (!drawer) return;
+    if (!enabled) return;
     let jolts: number[] = [];
     const motion = (e: DeviceMotionEvent) => {
       const a = e.acceleration;
@@ -148,7 +130,7 @@ export function useMenuDrawer(kind: 'drawer' | 'station' | null) {
     };
     window.addEventListener('devicemotion', motion);
     return () => window.removeEventListener('devicemotion', motion);
-  }, [drawer]);
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled || !open) return;

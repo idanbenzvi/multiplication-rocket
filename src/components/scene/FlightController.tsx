@@ -11,14 +11,11 @@ import {
   cockpitDollyAt,
   courseRotation,
   cockpitView,
-  DIVE_MS,
   flight,
   porthole,
   portholeScreen,
   portholeWorld,
-  portholeZoom,
   targetSpeed,
-  ZOOM_RESET_MS,
 } from '../../game/flight';
 
 const CAMERA_POS = new Vector3(0.9, 0.2, 5.0);
@@ -32,9 +29,8 @@ const CHARGE_FOV = 5;
 const SIDEWAYS_SHIFT = 0.22;
 let sideShift = 0;
 
-// Porthole zoom: how far toward the window (portholeWorld) each tap stage
-// takes the camera (0 = normal view, 1 = through the glass).
-const ZOOM_STAGES = [0, 0.38, 0.64, 0.8];
+// The camera's way toward the window (portholeWorld), flying into the
+// cockpit: 0 = the normal view, 1 = through the glass.
 /** fully zoomed, the camera is this far from the window (inside the near plane) */
 const NEAREST = 0.04;
 const zoomTarget = new Vector3();
@@ -176,18 +172,9 @@ export function FlightController() {
     // (a blast-off's build-up rumbles harder and harder, and its ignition knocks)
     const rumble = (s * s * 0.025 + flight.charge * flight.charge * 0.03) * m;
     const knock = (flight.jolt * 0.12 + flight.ignition * 0.1) * m;
-    // porthole zoom: ease toward the tap stage (or through the glass on the dive)
-    const z = portholeZoom;
+    // (out of the cockpit, eased back to the usual view)
     const nowMs = performance.now();
-    let zoomGoal = 0;
-    if (z.diveAt) {
-      const k = Math.min(1, (nowMs - z.diveAt) / DIVE_MS);
-      zoomGoal = ZOOM_STAGES[3] + (1 - ZOOM_STAGES[3]) * k * k; // accelerating rush in
-    } else if (z.level > 0 && nowMs - z.lastTap < ZOOM_RESET_MS) {
-      zoomGoal = ZOOM_STAGES[z.level];
-    }
-    const zoomRate = z.diveAt ? 14 : zoomGoal > zoomValue ? 7 : 2.5;
-    zoomValue += (zoomGoal - zoomValue) * (1 - Math.exp(-zoomRate * dt));
+    zoomValue *= Math.exp(-2.5 * dt);
     zoomTarget.set(portholeWorld.x, portholeWorld.y, portholeWorld.z);
     // Opening the settings flies in through the window to the cockpit (and
     // back out): ever closer by the same factor each moment, so the window

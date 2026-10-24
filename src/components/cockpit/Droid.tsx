@@ -8,6 +8,8 @@ interface Props {
   side: 'left' | 'right';
   /** its casing's colour */
   color: string;
+  /** beeping along (false: one of the droids in a corner out of view, there being some in each) */
+  voiced?: boolean;
 }
 
 interface Bit {
@@ -31,7 +33,7 @@ const BIT_MS = 160;
 // droid is happy at an ON, sleepy at an OFF, buzzes when the vibration's
 // switched on, says hello in the new language, and is scared when the reset
 // button's cover is lifted. Both cheer as the hyperdrive kicks in.
-export function Droid({ who, side, color }: Props) {
+export function Droid({ who, side, color, voiced = true }: Props) {
   const [mood, setMood] = useState<DroidMood | 'idle'>('idle');
   const [beat, setBeat] = useState(0);
   const [level, setLevel] = useState(0.5);
@@ -39,13 +41,17 @@ export function Droid({ who, side, color }: Props) {
   const [bits, setBits] = useState<Bit[]>([]);
   const lastBit = useRef(0);
   const nextId = useRef(1);
+  const voice = useRef(voiced);
+  useEffect(() => {
+    voice.current = voiced;
+  });
 
   useEffect(
     () =>
       onEmote((e) => {
         if (e.who !== who && e.who !== 'both') return;
         // (the switch droid beeps along, just after the switch's own clunk)
-        if (who === 'switch' && e.mood !== 'cheer' && e.mood !== 'buzz') {
+        if (who === 'switch' && voice.current && e.mood !== 'cheer' && e.mood !== 'buzz') {
           window.setTimeout(() => sfx.droid(e.mood !== 'sleepy' && e.mood !== 'scared'), 140);
         }
         setMood(e.mood);

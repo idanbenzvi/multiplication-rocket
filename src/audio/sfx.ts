@@ -516,6 +516,13 @@ export const sfx = {
     tone(c, 110, t + 0.6, 0.6, { type: 'sawtooth', gain: 0.045, glideTo: 330, attack: 0.15 });
   },
 
+  /** The cockpit: the head turning to another corner of it, a soft swish. */
+  turn() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    noiseBurst(c, c.currentTime + 0.005, 0.32, 700, 2600, 0.045);
+  },
+
   /** A knob clicking round a notch. */
   knob() {
     const c = audio();

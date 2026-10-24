@@ -1,11 +1,10 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useGameStore } from '../../game/useGameStore';
 import { useCrewStore } from '../../game/useCrewStore';
 import { PortholeShimmer } from './PortholeShimmer';
 import { PilotFade } from './PilotFade';
-import { DIVE_MS, porthole, portholeZoom, ZOOM_RESET_MS } from '../../game/flight';
-import { sfx } from '../../audio/sfx';
+import { porthole } from '../../game/flight';
 import { haptics } from '../../audio/haptics';
 import { Billboard } from '@react-three/drei';
 import { colorForLevel } from './palette';
@@ -13,6 +12,7 @@ import { shipArt, spriteSize } from './ships';
 import { useProfiles, useShip } from '../../profiles/useProfiles';
 import { useAdmiral } from '../../game/useAchievements';
 import { useSvgTexture } from './spriteTexture';
+import { useCockpit } from '../cockpit/cockpitStore';
 
 interface Props {
   level: number;
@@ -41,7 +41,7 @@ export function RocketSprite({ level }: Props) {
   const art = useMemo(() => shipArt(ship, accent, !!crew, admiral), [ship, accent, crew, admiral]);
   const window0 = art.windows[0];
   // until this pilot has found the Academy, the window shimmers to invite taps
-  const academySeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.academySeen);
+  const cockpitSeen = useProfiles((s) => !!s.profiles.find((p) => p.id === s.activeId)?.cockpitSeen);
   const portholes = useMemo(
     () =>
       crewAvatars
@@ -59,11 +59,8 @@ export function RocketSprite({ level }: Props) {
     porthole.radius = window0.radius * WIDTH;
   }, [window0]);
 
-  // Secret door: three quick taps on the porthole open the Deep Space Academy.
-  // Each tap pulls the camera a step closer to the window (FlightController
-  // follows portholeZoom, and the engine's hum rises as it comes); the third
-  // dives into it, then the Academy opens.
-  const diving = useRef(false);
+  // The way in: a tap on the porthole flies the camera in through it, to the
+  // cockpit (where the settings are, and the rest of the game's screens).
   const onTap = (e: ThreeEvent<MouseEvent>) => {
     const uv = e.uv;
     if (!uv) return;
@@ -72,30 +69,12 @@ export function RocketSprite({ level }: Props) {
     const dy = (uv.y - (1 - window0.y)) * HEIGHT;
     if (Math.hypot(dx, dy) > window0.radius * WIDTH * 1.8) return;
     e.stopPropagation();
-    if (diving.current) return;
     const s = useGameStore.getState();
     // only from normal flight (not over a bonus round, launch or review)
     if (s.academyOpen || s.justLaunched || s.showHeatmap || s.challenge || s.bonusRound) return;
     if (useCrewStore.getState().active) return;
-    const now = performance.now();
-    const z = portholeZoom;
-    if (now - z.lastTap > ZOOM_RESET_MS) z.level = 0;
-    z.level = Math.min(3, z.level + 1);
-    z.lastTap = now;
-    sfx.pick(z.level);
     haptics.tick();
-    if (z.level >= 3) {
-      diving.current = true;
-      z.diveAt = now;
-      window.setTimeout(() => {
-        useGameStore.getState().openAcademy();
-        // back to normal: the camera eases out again once the scene resumes
-        z.level = 0;
-        z.diveAt = 0;
-        z.lastTap = 0;
-        diving.current = false;
-      }, DIVE_MS);
-    }
+    useCockpit.getState().open();
   };
 
   if (!texture) return null;
@@ -117,7 +96,7 @@ export function RocketSprite({ level }: Props) {
           height={HEIGHT}
         />
       )}
-      {!academySeen && !crew && (
+      {!cockpitSeen && !crew && (
         <PortholeShimmer
           x={(window0.x - 0.5) * WIDTH}
           y={(0.5 - window0.y) * HEIGHT}

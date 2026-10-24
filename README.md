@@ -35,10 +35,25 @@ Progress is saved automatically on the computer.
 
 Leaving the game (another tab or app, minimizing, locking the tablet) pauses it: music and sounds stop, the answer timer and any bonus round freeze, and a tap or key press carries on exactly where you left off.
 
-### Settings: the cockpit
+### The cockpit: settings, and the rest of the game
 
-**⚙️** flies you into the rocket's cockpit: the camera dives in through the porthole and the
-settings are the dashboard's controls, with the level's destination (the Moon, the Sun, Saturn…) dead ahead through the windscreen, as near as the fuel tank says and growing as you watch. A lever switches between answering by choosing and by
+**Tap the rocket's window** (where the pilot's animal sits), or **⚙️**, and the camera flies in
+through it into the rocket's cockpit. Until a pilot has been in, their window shimmers (a pulsing
+halo, a glint sweeping across the glass) to invite the tap. On a phone held upright there's no
+row of buttons on top at all, just where you're flying to and the pilot's badge (their animal,
+their right answers under it), which flies you in too; on a computer or tablet the top bar's
+buttons stay as well.
+
+The cockpit is a room to look round, its corners on the walls round the pilot's seat, each a
+screen of its own with nothing to scroll: **Flight** ahead (the windscreen with the level's
+destination, the Moon, the Sun, Saturn…, dead ahead, as near as the fuel tank says and growing as
+you watch, and the hyperdrive lever back to the flight), **Controls** and **Helpers** to one side,
+**Missions** (doors to the game modes, the map of what you know, and the Academy) and the
+**Pilot**'s own (switching pilot, your badges, About, the parent dashboard and Reset) to the
+other. A dock along the bottom has a key for each, lit for the one in view; a key turns your head
+there, and so does a swipe across, the arrow keys, or, with a mouse, resting at the screen's edge.
+
+On the dashboard, a lever switches between answering by choosing and by
 typing, knobs set when a typed answer is checked and the language, throttles set the music and
 sound-effect volume, toggle switches turn the practice map and vibration on and off, a lit
 button opens the parent dashboard, and **Reset** is a red button under a safety cover that has
@@ -153,9 +168,10 @@ a **Change ship** button (a ship they haven't seen yet is marked *New!* there).
 A Space Admiral's Explorer or Venus has gold trim and the admiral's medal. A crew flight always takes
 the classic rocket, with a window for each pilot.
 
-## Deep Space Academy 🪐 (hidden)
+## Deep Space Academy 🪐
 
-**Tap the rocket's window three times quickly** to warp into the Deep Space Academy. Until a pilot has found it, their window shimmers (a pulsing halo, a glint sweeping across the glass) to invite the taps. Each tap pulls the camera closer to the ship, and the third dives through the window into the Academy. If the taps stop, the camera eases back out. The Academy is a calm
+The Academy's door is in the cockpit, among the **Missions**: it warps into the Deep Space
+Academy, and closing it takes you back to the cockpit. The Academy is a calm
 screen that teaches multiplication from the ground up, for a child who has never met "×". The
 game waits while it's open. Every step can be read aloud (🔊) in English or Hebrew, so
 pre-readers can follow.

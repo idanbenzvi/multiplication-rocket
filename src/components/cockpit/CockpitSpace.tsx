@@ -245,12 +245,15 @@ function drawPasser(ctx: CanvasRenderingContext2D, w: number, top: number, vh: n
   disc(ctx, x, y, r * 0.9);
 }
 
-export function CockpitSpace({ calm, destination, over = 0 }: { calm: boolean; destination?: Destination; over?: number }) {
+/** `active`: drawn (not while the head is turned away from the windscreen) */
+export function CockpitSpace({ calm, destination, over = 0, active = true }: { calm: boolean; destination?: Destination; over?: number; active?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // (read by the drawing loop, which doesn't restart for it)
   const ahead = useRef(destination);
+  const shown = useRef(active);
   useEffect(() => {
     ahead.current = destination;
+    shown.current = active;
   });
 
   useEffect(() => {
@@ -290,7 +293,7 @@ export function CockpitSpace({ calm, destination, over = 0 }: { calm: boolean; d
       raf = requestAnimationFrame(draw);
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (!w || !h) return;
+      if (!w || !h || !shown.current) return;
       // (the glass is the canvas but for the room above it)
       const vh = h / (1 + over);
       const top = h - vh;
