@@ -44,8 +44,8 @@
     "three": "^0.185.1",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5",
-    "vitest": "^3.2.4",
+    "vite": "^6.4.5",
+    "vitest": "^4.1.12",
     "zustand": "^5.0.14"
   },
   "description": "A space-rocket multiplication-table game for kids, in English and Hebrew.",
@@ -100,5 +100,10 @@
     "type": "git",
     "url": "https://github.com/idanbenzvi/multiplication-rocket.git"
   },
-  "homepage": "https://github.com/idanbenzvi/multiplication-rocket"
+  "homepage": "https://github.com/idanbenzvi/multiplication-rocket",
+  "overrides": {
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
+  }
 }
