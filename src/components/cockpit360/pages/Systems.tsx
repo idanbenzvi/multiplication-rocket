@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { useT } from '../../../i18n/useLang';
 import { useGameStore } from '../../../game/useGameStore';
 import { paceMs } from '../../../game/scoring';
-import { activeProfile, pilotName, useProfiles } from '../../../profiles/useProfiles';
+import { activeProfile, pilotName, useMission, useProfiles } from '../../../profiles/useProfiles';
+import { missionName } from '../../../i18n/strings';
 import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../../../settings/useSettings';
 import { canVibrate, haptics } from '../../../audio/haptics';
 import { sfx } from '../../../audio/sfx';
@@ -73,6 +74,7 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) 
 export function SystemsPage({ onParents, onReset, onAbout }: { onParents: () => void; onReset: () => void; onAbout: () => void }) {
   const t = useT();
   const d = t.deck;
+  const mission = useMission();
   const answerMode = useSettings((s) => s.answerMode);
   const setAnswerMode = useSettings((s) => s.setAnswerMode);
   const typedCheck = useSettings((s) => s.typedCheck);
@@ -150,7 +152,7 @@ export function SystemsPage({ onParents, onReset, onAbout }: { onParents: () => 
           ℹ️ {d.about}
         </button>
       </div>
-      <Row name={t.progressSection} hint={d.resetHint(pilotName(activeProfile(), t.defaultPilotName))}>
+      <Row name={t.progressSection} hint={d.resetHint(pilotName(activeProfile(), t.defaultPilotName), missionName(t, mission))}>
         <HoldButton backgroundColor="#2a0f0c" fillColor="#ff5a3d" textColor="#ffc9bd" fillTextColor="#1a0503" holdTime={1600} doneLabel={d.resetDone} resetAfter={1600} onHold={onReset}>
           ⚠️ {d.holdToReset}
         </HoldButton>

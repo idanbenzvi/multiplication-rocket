@@ -260,10 +260,15 @@ The game is paused while the tour is open, and its music (the About page's) play
 
 Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10),
 **➕ Addition**, or **×+ Mixed**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM* /
-*MIX-ROCKET*, *טיל הכפל* / *טיל החיבור* / *טיל המספרים*), and each mission keeps its own progress,
-so a pilot can switch in their profile (✏️) and come back to where they were in the other one.
+*MIX-ROCKET*, *טיל הכפל* / *טיל החיבור* / *טיל המספרים*). Each mission keeps its own journey (its
+level, fuel and streaks), but what a pilot knows is theirs in all of them: a fact mastered in ×
+is mastered in Mixed too, on its practice map and in its spaced review. The cockpit's Pilot screen
+(⚙️) has the three side by side, each at its own level with a bar of its facts mastered; tapping
+another flies off in it, back where they were (its sums as far on as the sums they already know
+open). Their pilot card in the launch bay shows the other missions they've flown, and editing them
+(✏️) switches too. A reset is the mission's: its journey and the facts it practises (Mixed's, all).
 
-**Mixed** is a journey of its own: each question is × or + at random (about half each), the sums
+**Mixed** has a journey of its own: each question is × or + at random (about half each), the sums
 climbing the same three addition stages as the addition mission, and each bonus round picks one of
 the two for the whole round (a wormhole of drills or of sums, a meteor shower of either). Its
 practice map has both grids, a tab each (and the hover peek shows both); the parent dashboard has a

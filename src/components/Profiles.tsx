@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Profile } from '../profiles/useProfiles';
 import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
+import { switchMission } from '../game/switchMission';
 import { useLang, useT } from '../i18n/useLang';
 import { missionHint, missionName, shipName } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
@@ -60,10 +61,9 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
   const save = () => {
     if (!canSave) return;
     if (profile) {
-      const switched = mission !== (profile.mission ?? 'mul');
-      update(profile.id, { name, avatar, mission });
-      // the other mission has its own progress: load it
-      if (switched && profile.id === activeId) startGameForActive();
+      update(profile.id, { name, avatar });
+      // the other mission has its own journey: set off in it (game/switchMission.ts)
+      switchMission(profile.id, mission);
     } else {
       create(name, avatar, mission);
       startGameForActive();
@@ -285,6 +285,10 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
 
   const tile = (p: Profile) => {
     const stats = profileStats(p.id);
+    // the other missions they've flown, each with its own level
+    const others = PILOT_MISSIONS.filter((m) => m !== (p.mission ?? 'mul'))
+      .map((m) => ({ m, s: profileStats(p.id, m) }))
+      .filter(({ s }) => s.played);
     return (
       <div key={p.id} className={`pilot-card ${p.id === activeId ? 'is-active' : ''}`}>
         <button
@@ -304,6 +308,15 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
           <span className="pilot-card-stats">
             <span className={`pilot-card-mission is-${p.mission ?? 'mul'}`}>{MISSION_SYMBOL[p.mission ?? 'mul']}</span> {t.level(stats.level)} · ✓ {stats.correct}
           </span>
+          {others.length > 0 && (
+            <span className="pilot-card-others">
+              {others.map(({ m, s }) => (
+                <span key={m} title={missionName(t, m)}>
+                  <span className={`pilot-card-mission is-${m}`}>{MISSION_SYMBOL[m]}</span> {t.level(s.level)}
+                </span>
+              ))}
+            </span>
+          )}
         </button>
         <button type="button" className="pilot-card-edit" onClick={() => onEdit(p)} aria-label={t.editPilot}>
           ✏️

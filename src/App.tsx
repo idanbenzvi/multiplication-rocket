@@ -22,6 +22,7 @@ import { ModeWarp } from './components/ModeWarp';
 import { StudioSplash } from './components/splash/StudioSplash';
 import { activeProfile, pilotName, useMission, useProfileGateOpen, useTimedBoost } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
+import { missionName } from './i18n/strings';
 import { clampStage } from './game/addition';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
@@ -244,7 +245,7 @@ function App() {
   };
 
   const handleReset = () => {
-    if (window.confirm(t.resetConfirm(pilotName(activeProfile(), t.defaultPilotName)))) {
+    if (window.confirm(t.resetConfirm(pilotName(activeProfile(), t.defaultPilotName), missionName(t, mission)))) {
       resetProgress();
     }
   };

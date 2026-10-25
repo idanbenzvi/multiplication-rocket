@@ -132,3 +132,10 @@ export function stageMastery(stage: number, mastery: Record<string, FactStat>): 
 export function stageReady(stage: number, mastery: Record<string, FactStat>): boolean {
   return clampStage(stage) < ADD_STAGES && stageMastery(stage, mastery) >= READY_AT;
 }
+
+/** the stage a pilot's sums start at in a mission they switch to: as far on as the facts they already know (sharedFacts.ts) open */
+export function stageFor(stage: number | undefined, mastery: Record<string, FactStat>): 1 | 2 | 3 {
+  let s = clampStage(stage);
+  while (stageReady(s, mastery)) s = clampStage(s + 1);
+  return s;
+}

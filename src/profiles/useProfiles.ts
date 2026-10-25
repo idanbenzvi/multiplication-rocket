@@ -33,10 +33,16 @@ const PROGRESS_PREFIX = 'multiplication-rocket:progress:v1';
 /** progress saved before profiles existed */
 const LEGACY_PROGRESS_KEY = PROGRESS_PREFIX;
 
-// Each mission keeps its own progress. Multiplication stays under the key it
-// always had, so nobody's levels move when missions arrive.
+// Each mission keeps its own journey (its level, fuel and streaks).
+// Multiplication stays under the key it always had, so nobody's levels move
+// when missions arrive.
 export function progressKeyFor(profileId: string, mission: PilotMission): string {
   return mission === 'mul' ? `${PROGRESS_PREFIX}:${profileId}` : `${PROGRESS_PREFIX}:${profileId}:${mission}`;
+}
+
+// The facts a pilot knows are kept once, for every mission (game/sharedFacts.ts).
+export function factsKeyFor(profileId: string): string {
+  return `multiplication-rocket:facts:v1:${profileId}`;
 }
 
 interface Saved {
@@ -116,6 +122,7 @@ export const useProfiles = create<ProfilesState>((set, get) => {
     remove: (id) => {
       try {
         for (const m of PILOT_MISSIONS) localStorage.removeItem(progressKeyFor(id, m));
+        localStorage.removeItem(factsKeyFor(id)); // the facts they know
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
         localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
         localStorage.removeItem(`multiplication-rocket:boss:v1:${id}`); // their Black Sun
@@ -184,18 +191,18 @@ export function useShip(): ShipId {
   return useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.ship ?? 'classic');
 }
 
-/** a profile's level / correct count in their current mission, for the picker, read straight from storage */
-export function profileStats(id: string): { level: number; correct: number } {
+/** a profile's level / correct count in a mission (their current one unless said), for the picker, read straight from storage; `played` if they've flown it */
+export function profileStats(id: string, mission: PilotMission = missionOf(id)): { level: number; correct: number; played: boolean } {
   try {
-    const raw = localStorage.getItem(progressKeyFor(id, missionOf(id)));
+    const raw = localStorage.getItem(progressKeyFor(id, mission));
     if (raw) {
       const p = JSON.parse(raw) as { level?: number; totalCorrectAnswers?: number };
-      return { level: p.level ?? 1, correct: p.totalCorrectAnswers ?? 0 };
+      return { level: p.level ?? 1, correct: p.totalCorrectAnswers ?? 0, played: true };
     }
   } catch {
     // ignore
   }
-  return { level: 1, correct: 0 };
+  return { level: 1, correct: 0, played: false };
 }
 
 /** display name, with a friendly fallback for a profile migrated without one */

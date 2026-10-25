@@ -2219,6 +2219,15 @@ button:focus-visible {
   font-size: 0.8rem;
   color: #c8bcd9;
 }
+/* the other missions they've flown, each at its own level */
+.pilot-card-others {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 10px;
+  font-size: 0.72rem;
+  color: #a99cbd;
+}
 .pilot-card-edit {
   position: absolute;
   top: 6px;
