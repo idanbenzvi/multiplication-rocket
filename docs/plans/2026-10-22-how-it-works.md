@@ -26,7 +26,7 @@ the About page, and maybe from the cockpit. The game is paused while it's open.
 
 ## As built
 
-Seven pages, one per idea above. What changed from the idea:
+Seven pages, one per idea above (and an eighth since, below). What changed from the idea:
 
 - **The rocket is a sticker** walks the camera round the card over a launch pad's grid, rather
   than turning the card. With *Turn it to face me* on (the game's billboard), it always looks the
@@ -43,6 +43,28 @@ Seven pages, one per idea above. What changed from the idea:
   `thinkSteps` with the pilot's own mastery. Its step wording moved to `computer/stepText.ts`.
 - **Sounds**: an `AnalyserNode` between the sounds and the speakers. `sfx.correct` takes a
   `dest`, `sfxContext` is the effects' audio context, and the hum is `humGraph` into it.
+
+### An eighth page: the cockpit (2026-10-25)
+
+The user asked for a page on how the 360° cockpit is shown and the name of the technique. It's the
+fourth, after the engine's shader (it carries on from "for every dot, the computer works out…"):
+**The cockpit is a picture wrapped around you** (`CockpitDemo.tsx`).
+
+- The cockpit's own picture (`cockpit360/panorama.ts`, now shared with `Shell` and its preload, so
+  the tour doesn't load the cockpit) on a sheet whose vertex shader curls it, by a slider, from
+  flat into a ball round the camera: each point goes to its direction on a ball as much bigger as
+  it's less curled, the picture's middle staying put ahead. The camera backs off to see it all
+  flat, and moves into the ball's middle, seeing wider, as it closes. The windows are cut out, so
+  the stars show through them.
+- Wrapped, a drag (or a touch) looks round, pulling the picture, and it turns slowly by itself when
+  left (not with reduced motion); unwrapping turns it back ahead.
+- A little map of the flat picture outlines what's seen: the screen's edge, each sample's direction
+  turned into a spot on the picture (how far round across, how high up), drawn a picture's width
+  either side too, for whatever goes off one end.
+- *Show the grid* draws 30° boxes, on the picture and on the map.
+- The words name it a 360° panorama and *equirectangular* ("equal rectangles", with how to say
+  it), compare it to wrapping a world map back round a globe from the inside, and end on the two
+  numbers every dot is looked up by, as longitude and latitude.
 
 It opens from the About page (not the cockpit); closing it goes back to the About page, and *Back
 to my rocket* on the last page goes back to the game. It's loaded the first time it's opened.

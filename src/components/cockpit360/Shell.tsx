@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { dirOf, type Vec3 } from './geometry';
 import { LEDS, QUADS, SCREENS } from './screens';
 import { glowLights } from './lights';
+import { PANORAMA_URL } from './panorama';
 
 // The cockpit itself: the panorama, on a sphere round the camera. Each
 // pixel looks the picture up by the direction it's seen in (so there's no
@@ -14,8 +15,6 @@ import { glowLights } from './lights';
 // hovered or zoomed into), its little buttons blinking (bright enough to
 // bloom), and now and then something passing by outside, its light coming
 // in through the glass (lights.ts); a shudder makes it all flicker.
-
-export const PANORAMA_URL = './cockpit/nasa-punk-360.webp';
 
 const MAX_LIGHTS = 8;
 

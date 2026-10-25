@@ -555,6 +555,62 @@
   color: #eaf2ff;
 }
 
+/* the cockpit's picture: wrapped, a drag looks round, and a little map of it, flat, shows what's seen */
+.how-pano.is-wrapped {
+  cursor: grab;
+  touch-action: none;
+}
+.how-pano.is-wrapped:active {
+  cursor: grabbing;
+}
+.how-pano-map {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  width: clamp(130px, 36%, 230px);
+  margin: 0;
+  padding: 4px 4px 5px;
+  border-radius: 11px;
+  border: 1px solid rgba(143, 230, 255, 0.35);
+  background: rgba(8, 6, 26, 0.85);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.how-pano-map svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2;
+  border-radius: 7px;
+  background: #120d2c;
+}
+.how-pano-map figcaption {
+  margin: 4px 2px 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #bff3ff;
+}
+.how-pano-view {
+  fill: rgba(255, 215, 122, 0.2);
+  stroke: #ffd77a;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.how-pano-grid {
+  fill: none;
+  stroke: rgba(92, 242, 255, 0.75);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.how-pano-hint {
+  inset-inline: auto;
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* the oscilloscope */
 .how-scope {
   background: radial-gradient(ellipse at 50% 50%, rgba(20, 60, 80, 0.55), #050812 72%);
@@ -649,6 +705,9 @@
   }
   .how-stage {
     height: max(150px, calc(100dvh - 230px));
+  }
+  .how-pano-map {
+    width: clamp(110px, 28%, 180px);
   }
   .how-words h2 {
     font-size: 1.2rem;

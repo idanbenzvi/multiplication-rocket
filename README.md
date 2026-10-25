@@ -225,7 +225,7 @@ practice (a picture, then symbols only, with "Show me").
 ## How does it work? 🔧 (for curious kids)
 
 The About page (ⓘ) has a **How does the game work?** button. It opens a tour of what's going on
-behind the scenes, seven short pages for 7 to 10 year olds, in English or Hebrew, each read aloud
+behind the scenes, eight short pages for 7 to 10 year olds, in English or Hebrew, each read aloud
 by 🔊. It opens with the biggest secret: all of it runs on the math they're practising, since a
 computer only multiplies and adds numbers, millions of times a second (even turning the rocket's
 card to face you is a few multiplications and additions for each corner). Every page runs one of
@@ -240,16 +240,24 @@ with:
 3. **The fire is a tiny program.** The engine's plume shader at a power to slide, from icy blue to
    hot pink, a wrong answer making it sputter. *Show where it runs* outlines the rectangle it works
    out, and a counter says how many dots that is, how many times a second.
-4. **The water isn't moving.** The About page's colour-cycling canyon, with three of its palette's
+4. **The cockpit is a picture wrapped around you.** The 360° cockpit is one flat picture, an
+   *equirectangular* panorama (a full turn across, from straight down to straight up, so its top
+   and bottom are stretched like a world map's). A slider curls it into a ball round the camera,
+   which is how the cockpit draws it; wrapped, a drag looks round, and a little map of the flat
+   picture outlines the part being seen (bending as it would, wider towards the top and bottom).
+   *Show the grid* draws 30° boxes, all the same size flat and squeezed towards the poles on the
+   ball. Every dot's direction, how far round and how high, is where it's found in the picture,
+   like longitude and latitude.
+5. **The water isn't moving.** The About page's colour-cycling canyon, with three of its palette's
    ranges as strips turning beside it. The colours can be stopped, and *Show the dots that change*
    dims every pixel that never changes.
-5. **The game remembers.** The spaced review's eight boxes, with a fact to answer right or wrong
+6. **The game remembers.** The spaced review's eight boxes, with a fact to answer right or wrong
    and days to let go by. The game's own rules (`game/memory.ts`) move it up, back, or keep it put,
    and it fades when it's left too long.
-6. **Orbie thinks with you.** Orbie's clock runs out, its orb lights up, and its window thinks a
+7. **Orbie thinks with you.** Orbie's clock runs out, its orb lights up, and its window thinks a
    question through with the same steps it would give this pilot (one starts from a fact they've
    mastered, if there is one).
-7. **Sounds are made, not recorded.** An oscilloscope listens in while the four wave shapes, the
+8. **Sounds are made, not recorded.** An oscilloscope listens in while the four wave shapes, the
    right-answer chime (climbing with the streak) and the engine's hum play, all made by `sfx.ts`.
 
 The game is paused while the tour is open, and its music (the About page's) plays on. It's in

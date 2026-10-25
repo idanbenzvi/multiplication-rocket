@@ -511,6 +511,19 @@ const en = {
       oops: 'Oops! A wrong answer',
       count: (dots: string, fps: string, total: string) => `Right now: ${dots} dots, ${fps} times a second. That's ${total} colours every second!`,
     },
+    cockpit: {
+      title: 'The cockpit is a picture wrapped around you',
+      text: [
+        "Open the cockpit with ⚙️ and look around: it's all around you, in front, behind, above and below. But it isn't built in 3D! It's one flat picture, twice as wide as it is tall. Here it is: see how stretched its top and bottom are, like on a map of the world?",
+        "Slide it, and the computer wraps the picture into a giant ball, with you right in the middle. It's like wrapping a map of the world back around a globe, except you're inside the globe! Then drag to look around: the little map in the corner shows the part of the picture you're seeing.",
+        "A picture like this is called a 360° panorama, and its real name is a mouthful: equirectangular (say ek-wih-rek-TANG-yoo-lar), which means 'equal rectangles'. Switch on the grid: on the flat picture every box is the same size, but on the ball they squeeze together at the top and bottom, like the lines on a globe meeting at the poles. That's why the picture is stretched there: so it looks just right once it's wrapped.",
+        'For every dot on your screen, the computer works out which way it points: how far around you, and how high up. Those two numbers say exactly where to look in the flat picture: how far around is how far across, and how high up is how far up. Maps of the Earth use the same two numbers, and call them longitude and latitude.',
+      ],
+      wrap: 'Wrap it around me',
+      grid: 'Show the grid',
+      drag: 'Drag to look around',
+      map: 'What you see, on the flat picture',
+    },
     cycle: {
       title: "The water isn't moving",
       text: [
@@ -1568,6 +1581,19 @@ const he: Strings = {
       box: 'הראו איפה היא רצה',
       oops: 'אופס! תשובה שגויה',
       count: (dots, fps, total) => `ממש עכשיו: ${dots} נקודות, ${fps} פעמים בשנייה. זה ${total} צבעים בכל שנייה!`,
+    },
+    cockpit: {
+      title: 'תא הטייס הוא תמונה שעוטפת אתכם',
+      text: [
+        'פתחו את תא הטייס עם ⚙️ והסתכלו מסביב: הוא מכל הכיוונים, מלפנים, מאחור, למעלה ולמטה. אבל הוא לא בנוי בתלת־ממד! זו תמונה שטוחה אחת, רחבה פי שניים מהגובה שלה. הנה היא: רואים כמה החלק העליון והתחתון שלה מתוחים, כמו במפה של העולם?',
+        'הזיזו את המחוון, והמחשב עוטף את התמונה לכדור ענק, ואתם בדיוק באמצע. זה כמו לעטוף מפת עולם בחזרה סביב גלובוס, רק שאתם בתוך הגלובוס! אחר כך גררו כדי להסתכל מסביב: המפה הקטנה בפינה מראה איזה חלק של התמונה אתם רואים.',
+        'לתמונה כזאת קוראים פנורמה של 360°, ולשם האמיתי שלה צריך לקחת אוויר: אקווירקטנגולרית (equirectangular), כלומר "מלבנים שווים". הדליקו את הרשת: בתמונה השטוחה כל המשבצות באותו גודל, אבל על הכדור הן נדחסות למעלה ולמטה, כמו הקווים על גלובוס שנפגשים בקטבים. בגלל זה התמונה מתוחה שם: כדי שתיראה בדיוק נכון כשהיא עטופה.',
+        'על כל נקודה במסך, המחשב מחשב לאיזה כיוון היא מצביעה: כמה מסביבכם, וכמה למעלה. שני המספרים האלה אומרים בדיוק איפה להסתכל בתמונה השטוחה: כמה מסביב זה כמה לרוחב, וכמה למעלה זה כמה לגובה. גם במפות של כדור הארץ משתמשים באותם שני מספרים, וקוראים להם קו אורך וקו רוחב.',
+      ],
+      wrap: 'עטפו אותה סביבי',
+      grid: 'הראו את הרשת',
+      drag: 'גררו כדי להסתכל מסביב',
+      map: 'מה שאתם רואים, על התמונה השטוחה',
     },
     cycle: {
       title: 'המים לא זזים',

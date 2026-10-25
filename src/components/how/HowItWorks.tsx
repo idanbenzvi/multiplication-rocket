@@ -8,6 +8,7 @@ import { sfx } from '../../audio/sfx';
 import { useBack } from '../../native/back';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { CardDemo, PlumeDemo, SpeedDemo } from './FlightDemos';
+import { CockpitDemo } from './CockpitDemo';
 import { CycleDemo } from './CycleDemo';
 import { MemoryDemo } from './MemoryDemo';
 import { OrbieDemo } from './OrbieDemo';
@@ -17,15 +18,17 @@ import './how.css';
 // "How does it work?": a tour for curious kids of how the game works behind
 // the scenes (docs/plans/2026-10-22-how-it-works.md), a page at a time, each
 // with one of the game's own pieces running in it to play with: the rocket's
-// card, the space dust, the engine's shader, the canyon's colour cycling,
-// the spaced review's boxes, Orbie, and the sounds made from waves. It opens
-// with what all of it runs on: the math they're practising. Opened from the
-// About page; the game is paused while it's open.
+// card, the space dust, the engine's shader, the cockpit's 360° picture
+// wrapped round them, the canyon's colour cycling, the spaced review's boxes,
+// Orbie, and the sounds made from waves. It opens with what all of it runs
+// on: the math they're practising. Opened from the About page; the game is
+// paused while it's open.
 
 const PAGES = [
   { id: 'card', Demo: CardDemo, math: true },
   { id: 'speed', Demo: SpeedDemo },
   { id: 'plume', Demo: PlumeDemo },
+  { id: 'cockpit', Demo: CockpitDemo },
   { id: 'cycle', Demo: CycleDemo },
   { id: 'memory', Demo: MemoryDemo },
   { id: 'orbie', Demo: OrbieDemo },
