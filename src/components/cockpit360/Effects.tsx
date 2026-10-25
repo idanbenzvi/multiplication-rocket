@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { Effect, EffectAttribute } from 'postprocessing';
 import { Uniform, Vector2 } from 'three';
-import { surge } from './drive';
+import { drive } from './drive';
 import { view } from './view';
 
 // The camera's own effects in the cockpit. Glowing things bloom (the stars,
@@ -91,7 +91,7 @@ function Lens() {
     (u.get('turn') as Uniform<Vector2>).value.set(tx * calm, ty * calm);
     (u.get('edge') as Uniform<number>).value = view.zoom * calm;
     (u.get('vignette') as Uniform<number>).value = 0.32 + view.zoom * 0.38 + view.motion * 0.2;
-    (u.get('split') as Uniform<number>).value = 0.12 + surge.k * 0.1;
+    (u.get('split') as Uniform<number>).value = 0.1 + drive.k * 0.04;
     (u.get('time') as Uniform<number>).value = clock.elapsedTime;
   });
   return <primitive object={effect} dispose={null} />;

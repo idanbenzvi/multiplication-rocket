@@ -2,19 +2,19 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
-import { flight } from '../../game/flight';
 import { activeMission } from '../../profiles/useProfiles';
 import { LOOKS } from '../scene/planetLooks';
 import { drawPlanet } from './drawPlanet';
 import { glyphCanvas } from './glyphs';
 import { glowLights } from './lights';
 import { dirOfLook } from './geometry';
-import { NOSE_PITCH, planetAngle, surge } from './drive';
+import { drive, NOSE_PITCH, planetAngle, startDrive, stepDrive } from './drive';
 
 // Outside the cockpit's glass: the flight going on. Space streams past from
 // dead ahead (the windscreen's middle, the ship's nose): stars stretching
-// into streaks, faster as the flight is (the pilot's streak and their tank,
-// game/flight.ts), now and then surging, as if the drive kicked in; the
+// into streaks, as fast as the flight is (the pilot's streak, their tank and
+// their last right answer's boost, game/flight.ts), wavering a little as the
+// HUD's speed does (drive.ts); the
 // pilot's numbers floating past among them (glyphs.ts); and dead ahead the
 // level's destination, as big as the tank says it's near and growing a
 // little as you watch. Far behind it all, a nebula's glow. Now and then a
@@ -126,8 +126,8 @@ function Streaks({ calm }: { calm: boolean }) {
 
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.1);
-    // the flight's own speed (as it was when the cockpit opened), and the drive's surges
-    const s = (calm ? 0.25 : 1) * (0.25 + Math.min(1.2, flight.effective) * 0.9 + surge.k * 2.6);
+    // the drive's speed, the HUD's (drive.ts)
+    const s = (calm ? 0.25 : 1) * (0.25 + drive.k * 0.9);
     const speed = 40 + s * 220;
     const tail = 2 + s * s * 46;
     const glow = 1.4 + s * 0.9;
@@ -207,7 +207,7 @@ function Numbers({ calm }: { calm: boolean }) {
 
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.1);
-    const speed = (calm ? 8 : 26) * (0.7 + Math.min(1.2, flight.effective) * 0.6 + surge.k * 1.6);
+    const speed = (calm ? 8 : 26) * (0.7 + drive.k * 0.6);
     sprites.list.forEach((g, i) => {
       g.z += speed * g.f * dt;
       if (g.z > 30) sprites.list[i] = g = sprites.spawn(Z_FAR * 0.8);
@@ -394,26 +394,14 @@ function Comet({ calm }: { calm: boolean }) {
   );
 }
 
-// ---- the drive's surges ----
+// ---- the drive ----
 
-function Surges({ calm }: { calm: boolean }) {
-  useEffect(() => {
-    surge.k = 0;
-    surge.goal = 0;
-    surge.next = performance.now() + between(9, 14) * 1000;
-  }, []);
-  useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.1);
-    const now = performance.now();
-    if (!calm && now >= surge.next && !document.hidden) {
-      surge.goal = 1;
-      surge.until = now + between(1300, 2100);
-      surge.next = now + between(18, 32) * 1000;
-    }
-    if (surge.goal && now > surge.until) surge.goal = 0;
-    // (building up quickly, easing off slowly)
-    surge.k += (surge.goal - surge.k) * (1 - Math.exp(-dt * (surge.goal ? 2.8 : 1.1)));
-    glowLights.hud = surge.k;
+function Drive() {
+  useEffect(startDrive, []);
+  useFrame(({ clock }, raw) => {
+    stepDrive(clock.elapsedTime, Math.min(raw, 0.1));
+    // (the HUD's light on the dashboard, a little brighter the faster we go)
+    glowLights.hud = Math.min(1, drive.k / 1.3);
   });
   return null;
 }
@@ -421,6 +409,7 @@ function Surges({ calm }: { calm: boolean }) {
 export function Space({ destination, calm }: { destination?: Destination; calm: boolean }) {
   return (
     <>
+      <Drive />
       <Nebula />
       <group rotation-x={NOSE_PITCH}>
         <Stars radius={180} depth={120} count={4200} factor={7} saturation={0.4} fade speed={0.6} />
@@ -429,7 +418,6 @@ export function Space({ destination, calm }: { destination?: Destination; calm: 
         {destination && <Planet destination={destination} calm={calm} />}
       </group>
       <Comet calm={calm} />
-      <Surges calm={calm} />
     </>
   );
 }

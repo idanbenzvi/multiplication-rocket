@@ -11,7 +11,7 @@ export const glowLights = {
   ambient: 0.9,
   /** a shudder's flicker, 1 at its start, dying away */
   flicker: 0,
-  /** the windscreen's HUD: brighter as the ship surges */
+  /** the windscreen's HUD: brighter the faster the ship goes */
   hud: 0,
   /** each screen's glow, 0 … 1 */
   screens: { pilot: 0, badges: 0, sound: 0, systems: 0, map: 0, modes: 0 } as Record<ScreenId, number>,

@@ -131,7 +131,6 @@ const en = {
     hull: 'HULL',
     oxygen: 'O₂',
     allGo: 'ALL SYSTEMS GO',
-    surge: 'DRIVE SURGE!',
     km: 'km',
     kms: 'km/s',
     // the screens
@@ -1187,7 +1186,6 @@ const he: Strings = {
     hull: 'גוף',
     oxygen: 'חמצן',
     allGo: 'כל המערכות תקינות',
-    surge: 'האצה!',
     km: 'ק״מ',
     kms: 'ק״מ/ש׳',
     levelN: (n) => `שלב ${n}`,

@@ -10,6 +10,7 @@ import { useLang, useT } from '../../i18n/useLang';
 import { isTouchDevice } from '../../settings/useSettings';
 import { useBack } from '../../native/back';
 import { CssLayer, type FaceId } from './css3d';
+import { drive } from './drive';
 import { dirOfLook, frame, project } from './geometry';
 import { glowLights } from './lights';
 import { Scene } from './Scene';
@@ -254,6 +255,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     startShudders((strength) => {
       sfx.rumble(strength);
       glowLights.flicker = Math.max(glowLights.flicker, strength);
+      // (a bump costs the ship a little speed, the stars and the HUD's alike)
+      drive.knock = Math.max(drive.knock, strength);
       const root = rootRef.current;
       root?.classList.remove('is-jolted');
       void root?.offsetWidth;

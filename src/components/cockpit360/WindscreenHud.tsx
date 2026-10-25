@@ -3,7 +3,6 @@ import { useLang, useT } from '../../i18n/useLang';
 import { useGameStore } from '../../game/useGameStore';
 import { useCrewStore } from '../../game/useCrewStore';
 import { getLevelConfig } from '../../game/levels';
-import { flight } from '../../game/flight';
 import { pickOp } from '../../game/mission';
 import { activeMission } from '../../profiles/useProfiles';
 import { destinationName } from '../../i18n/strings';
@@ -12,7 +11,7 @@ import Radar from '../reactbits/Radar';
 import SloshGauge from '../reactbits/SloshGauge';
 import SplitFlapText from '../reactbits/SplitFlapText';
 import { dirOfLook, pointOnQuad } from './geometry';
-import { NOSE_PITCH, planetAngle, surge } from './drive';
+import { COUNTDOWN, drive, hudSpeed, NOSE_PITCH, planetAngle } from './drive';
 import { WINDSCREEN_PX, WINDSCREEN_QUAD } from './screens';
 
 // The flight's HUD, projected on the windscreen's glass in glowing amber:
@@ -24,8 +23,9 @@ import { WINDSCREEN_PX, WINDSCREEN_QUAD } from './screens';
 // ship's computer working through the pilot's own facts). It's laid on the
 // glass with the screens (css3d.ts), so it stays on the windscreen as the
 // head turns. The numbers are made up from the real ones: the tank says how
-// near the destination is, and the flight's speed (the streak, the tank)
-// and the drive's surges how fast.
+// near the destination is, and the flight's speed (the streak, the tank, the
+// last right answer's boost) how fast, hovering where the stars streaming
+// past say it is (drive.ts).
 
 /** px on the HUD's page for a degree of view, near its middle */
 const PX_PER_DEG = WINDSCREEN_PX[0] / 62.8;
@@ -34,9 +34,8 @@ const NOSE = (() => {
   const p = pointOnQuad(WINDSCREEN_QUAD, dirOfLook({ yaw: 0, pitch: NOSE_PITCH })) ?? [0.5, 0.5];
   return { x: p[0] * WINDSCREEN_PX[0], y: p[1] * WINDSCREEN_PX[1] };
 })();
-/** the made-up distance at an empty tank (km), and how much faster than the speed the range counts down */
+/** the made-up distance at an empty tank (km) */
 const FAR_KM = 384_400;
-const COUNTDOWN = 6;
 
 const rand = (n: number) => Math.floor(Math.random() * n);
 const pad = (n: number) => String(Math.floor(n)).padStart(2, '0');
@@ -102,14 +101,14 @@ export function WindscreenFace() {
   const opened = useRef(performance.now());
 
   const elapsed = (performance.now() - opened.current) / 1000;
-  const speed = 7.8 + Math.min(1.3, flight.effective) * 46 + surge.k * 180 + Math.sin(elapsed * 1.7) * 0.4;
-  const range = Math.max(600, (1 - fuel / 100) * FAR_KM + 2800 - elapsed * speed * COUNTDOWN);
+  const speed = hudSpeed(drive.k);
+  // (the way still to go: what the tank says, less what's been flown since the cockpit opened)
+  const range = Math.max(600, (1 - fuel / 100) * FAR_KM + 2800 - drive.km);
   const eta = range / (speed * COUNTDOWN);
   const reticle = planetAngle(fuel / 100) * (180 / Math.PI) * PX_PER_DEG * 1.35 + 26;
-  const surging = surge.k > 0.35;
 
   return (
-    <div className={`ck3-hud-glass ${surging ? 'is-surging' : ''}`} dir="ltr" style={{ '--speed': Math.min(1, speed / 120) } as CSSProperties}>
+    <div className="ck3-hud-glass" dir="ltr" style={{ '--speed': Math.min(1, speed / 70) } as CSSProperties}>
       {/* the destination, locked in the reticle */}
       {!crewing && (
         <div className="ck3-lock" style={{ left: NOSE.x, top: NOSE.y, '--r': `${reticle.toFixed(0)}px` } as CSSProperties}>
@@ -198,9 +197,9 @@ export function WindscreenFace() {
       </ul>
 
       {/* the ship's state, top right */}
-      <div className={`ck3-hud-status ${surging ? 'is-surging' : ''}`}>
+      <div className="ck3-hud-status">
         <span className="ck3-hud-ok">
-          <i /> {surging ? d.surge : d.allGo}
+          <i /> {d.allGo}
         </span>
         <span>
           {d.hull} 100% · {d.oxygen} {(97.5 + Math.sin(elapsed / 3) * 1.4).toFixed(1)}%

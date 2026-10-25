@@ -43,8 +43,8 @@ sitting in a NASA-punk cockpit you can look all the way round. It's one 360° pi
 [`scripts/cockpit-360.py`](scripts/cockpit-360.py)) with the game's own screens laid on its
 screens, live:
 
-- **Straight ahead**, through the windscreen, the flight goes on: stars streaking past (faster the
-  faster you were flying, and now and then the drive surges), your own times tables floating by,
+- **Straight ahead**, through the windscreen, the flight goes on: stars streaking past (as fast as
+  you were flying, the HUD's speed hovering where they say), your own times tables floating by,
   and the level's destination dead ahead, as near as the fuel tank says. A HUD on the glass locks
   onto it: its name flipping in like a departures board, how far it is and how long till you're
   there (counting down), the speed, the fuel, a radar, your level, streak and right answers, and a
