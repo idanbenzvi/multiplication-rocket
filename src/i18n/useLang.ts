@@ -1,16 +1,30 @@
 import { create } from 'zustand';
 import { STRINGS, type Lang, type Strings } from './strings';
+import { guessLang } from './guessLang';
 
 const STORAGE_KEY = 'multiplication-rocket:lang';
 
-function initialLang(): Lang {
+/** the language the device suggests: the ones it reads, and where its clock says it is */
+function deviceLang(): Lang {
+  let zone: string | undefined;
+  try {
+    zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    // no time zone: by the languages alone
+  }
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language ?? ''];
+  return guessLang(languages, zone);
+}
+
+/** the one chosen before, or else the device's */
+function initialLang(): { lang: Lang; chosen: boolean } {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'he') return saved;
+    if (saved === 'en' || saved === 'he') return { lang: saved, chosen: true };
   } catch {
-    // storage blocked — fall through to the browser language
+    // storage blocked — fall through to the device's language
   }
-  return navigator.language?.toLowerCase().startsWith('he') ? 'he' : 'en';
+  return { lang: deviceLang(), chosen: false };
 }
 
 function applyToDocument(lang: Lang) {
@@ -20,14 +34,17 @@ function applyToDocument(lang: Lang) {
 
 interface LangState {
   lang: Lang;
+  /** chosen (and kept), rather than guessed from the device */
+  chosen: boolean;
   toggle: () => void;
 }
 
 export const useLang = create<LangState>((set, get) => {
-  const lang = initialLang();
+  const { lang, chosen } = initialLang();
   applyToDocument(lang);
   return {
     lang,
+    chosen,
     toggle: () => {
       const next: Lang = get().lang === 'he' ? 'en' : 'he';
       try {
@@ -36,7 +53,7 @@ export const useLang = create<LangState>((set, get) => {
         // non-persistent is fine
       }
       applyToDocument(next);
-      set({ lang: next });
+      set({ lang: next, chosen: true });
     },
   };
 });

@@ -20,6 +20,7 @@ import { LaunchBay } from './components/bay/LaunchBay';
 import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
 import { StudioSplash } from './components/splash/StudioSplash';
+import { LanguageOffer } from './components/LanguageOffer';
 import { activeProfile, pilotName, useMission, useProfileGateOpen, useTimedBoost } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { missionName } from './i18n/strings';
@@ -323,6 +324,8 @@ function App() {
       <ModeWarp />
       {/* the studio's opening, over the game while it loads */}
       <StudioSplash />
+      {/* "Switch to English", when Hebrew was guessed */}
+      <LanguageOffer />
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
         // (on a mixed mission, the Academy for the kind of question showing)

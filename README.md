@@ -547,7 +547,12 @@ Edge decide by themselves; Firefox asks once), and the parent dashboard has a **
 
 ## Hebrew
 
-Choose **עברית** on the cockpit's Sound screen. The layout switches to right-to-left while equations and hint
+The first time it opens, the game starts in Hebrew on a device that reads Hebrew (anywhere in its
+list of languages) or is in Israel (its time zone, or a locale like `en-IL`), and in English
+otherwise ([`src/i18n/guessLang.ts`](src/i18n/guessLang.ts)). It goes by what the device says of
+itself: nothing is looked up elsewhere. When it guessed Hebrew, a little **Switch to English** note
+shows at the top as it opens (on up to three openings, till it's tapped or closed with ✕).
+Choose **עברית** or **English** on the cockpit's Sound screen any time; a choice is kept. The layout switches to right-to-left while equations and hint
 formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 [`src/i18n/strings.ts`](src/i18n/strings.ts).
 
