@@ -3,6 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { useT } from '../../i18n/useLang';
 import { currentTrack, playTrack, type Track } from '../../audio/useAudio';
 import { AboutPage } from './AboutPage';
+import { usePageRequest } from '../pages';
 
 // (loaded the first time it's opened)
 const HowItWorks = lazy(() => import('../how/HowItWorks').then((m) => ({ default: m.HowItWorks })));
@@ -18,16 +19,19 @@ export function AboutButton() {
     playTrack(before.current);
     setOpen(null);
   };
+  const show = () => {
+    // (from the tap itself, so the browser lets the music start)
+    before.current = currentTrack();
+    playTrack('about');
+    setOpen('about');
+  };
+  // (the cockpit's panel overhead opens it too)
+  usePageRequest('about', show);
   return (
     <>
       <button
         className="about-button"
-        onClick={() => {
-          // (from the tap itself, so the browser lets the music start)
-          before.current = currentTrack();
-          playTrack('about');
-          setOpen('about');
-        }}
+        onClick={show}
         aria-label={t.open}
         title={t.open}
       >

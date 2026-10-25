@@ -16,8 +16,8 @@ let pausedAt: number | null = null;
 export type PauseReason = 'away' | 'academy' | 'about' | 'how' | 'badges' | 'sky' | 'sun' | 'boss' | 'splash' | 'cockpit' | 'bay';
 const reasons = new Set<PauseReason>();
 
-/** paused at all; away (the player left the game); held (paused for a screen of its own too: the cockpit, a mode…) */
-export const usePause = create<{ paused: boolean; away: boolean; held: boolean }>(() => ({ paused: false, away: false, held: false }));
+/** paused at all; away (the player left the game); held (paused for a screen of its own too: the cockpit, a mode…); why, every reason it is */
+export const usePause = create<{ paused: boolean; away: boolean; held: boolean; why: PauseReason[] }>(() => ({ paused: false, away: false, held: false, why: [] }));
 
 const held = () => [...reasons].some((r) => r !== 'away');
 
@@ -56,7 +56,7 @@ export function gameTimeout(fn: () => void, ms: number): () => void {
 
 export function pauseGame(reason: PauseReason = 'away') {
   reasons.add(reason);
-  usePause.setState({ away: reasons.has('away'), held: held() });
+  usePause.setState({ away: reasons.has('away'), held: held(), why: [...reasons] });
   if (pausedAt !== null) return;
   pausedAt = performance.now();
   for (const t of timers) {
@@ -69,7 +69,7 @@ export function pauseGame(reason: PauseReason = 'away') {
 
 export function resumeGame(reason: PauseReason = 'away') {
   reasons.delete(reason);
-  usePause.setState({ away: reasons.has('away'), held: held() });
+  usePause.setState({ away: reasons.has('away'), held: held(), why: [...reasons] });
   if (reasons.size > 0 || pausedAt === null) return;
   pausedTotal += performance.now() - pausedAt;
   pausedAt = null;

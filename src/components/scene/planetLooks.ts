@@ -1,6 +1,6 @@
 // How each destination looks (the same order as the destinations in
 // levels.ts): the planet in the sky (DestinationPlanet.tsx) and the one ahead
-// through the cockpit's windscreen (cockpit/CockpitSpace.tsx).
+// through the cockpit's windscreen (cockpit360/Space.tsx).
 
 export interface Look {
   base: string;

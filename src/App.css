@@ -1515,6 +1515,7 @@ button:focus-visible {
 
 /* ==================== SETTINGS ==================== */
 .settings-button {
+  position: relative;
   padding: 0.4rem 0.6rem;
 }
 .settings-backdrop {
@@ -5112,128 +5113,20 @@ button:focus-visible {
 
 /* ==================== A PHONE ON ITS SIDE ==================== */
 /* Too short for the top bar above the rocket and the question below it (see
-   useMenuDrawer.ts): the top bar waits in a drawer off the right edge, the
-   rocket flies on the left (FlightController slides the picture over), and
-   the question sits on the right, a little more compact. */
+   useSideways.ts): the top bar is just the pilot and ⚙️, floating in the top
+   right corner (as on any phone, the rest is in the cockpit), the rocket
+   flies on the left (FlightController slides the picture over), and the
+   question sits on the right, a little more compact. */
 .app-root.is-sideways .hud-topbar {
   left: auto;
-  bottom: 0;
-  width: min(380px, 60vw);
-  z-index: 24;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 0.75rem;
-  padding: calc(0.9rem + env(safe-area-inset-top)) calc(0.9rem + env(safe-area-inset-right))
-    calc(0.9rem + env(safe-area-inset-bottom)) 0.9rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: rgba(15, 11, 28, 0.95);
+  padding: calc(0.5rem + env(safe-area-inset-top)) calc(0.6rem + env(safe-area-inset-right)) 0 0;
+  background: none;
   border-bottom: none;
-  border-left: 1px solid rgba(255, 157, 118, 0.3);
-  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.55);
-  translate: 105% 0;
-  visibility: hidden;
-  transition: translate 0.3s cubic-bezier(0.4, 0, 0.6, 1), visibility 0s linear 0.3s;
+  backdrop-filter: none;
 }
-.app-root.is-sideways .hud-topbar.is-open {
-  translate: 0 0;
-  visibility: visible;
-  transition: translate 0.35s cubic-bezier(0.2, 1.1, 0.4, 1);
-}
-.app-root.is-sideways .hud-logo {
-  text-align: center;
-}
-.app-root.is-sideways .hud-topbar-right {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-}
-/* the sound panel opens along the drawer's foot, not off its edge */
-.app-root.is-sideways .audio-panel {
-  position: fixed;
-  top: auto;
-  left: 0.9rem;
-  right: calc(0.9rem + env(safe-area-inset-right));
-  bottom: calc(0.9rem + env(safe-area-inset-bottom));
-}
-
-/* the drawer's tab on the right edge */
-.menu-tab {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 34px);
-  right: 0;
-  z-index: 23;
-  width: 36px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-radius: 14px 0 0 14px;
-  border: 1px solid rgba(255, 157, 118, 0.45);
-  border-right: none;
-  background: rgba(26, 19, 46, 0.8);
-  backdrop-filter: blur(6px);
-  color: #ffd77a;
-  font-size: 1.2rem;
-  transition: translate 0.25s ease, opacity 0.25s ease;
-}
-.menu-tab.is-hidden {
-  translate: 100% 0;
-  opacity: 0;
-  pointer-events: none;
-}
-/* the first time: a nudge or three, and how to pull the menu out */
-.menu-tab.is-hinting {
-  animation: menuTabNudge 1s ease-in-out 3;
-}
-@keyframes menuTabNudge {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  40% {
-    translate: -8px 0;
-  }
-}
-.menu-tab-hint {
-  position: absolute;
-  right: calc(100% + 10px);
-  top: 50%;
-  translate: 0 -50%;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(26, 19, 46, 0.9);
-  border: 1px solid rgba(255, 215, 122, 0.4);
-  color: #fff4dc;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  pointer-events: none;
-  animation: menuHint 5s ease both;
-}
-@keyframes menuHint {
-  0% {
-    opacity: 0;
-  }
-  8%,
-  85% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-/* behind the open drawer: a tap anywhere else puts it away */
-.menu-shade {
-  position: fixed;
-  inset: 0;
-  z-index: 23;
-  background: rgba(7, 5, 15, 0.35);
-  animation: dimIn 0.25s ease-out both;
+.app-root.is-sideways .hud-logo,
+.app-root.is-sideways .level-banner {
+  display: none;
 }
 
 /* the question, beside the rocket */
@@ -5303,11 +5196,6 @@ button:focus-visible {
   min-height: 44px;
   font-size: 1.3rem;
 }
-@media (prefers-reduced-motion: reduce) {
-  .menu-tab.is-hinting {
-    animation: none;
-  }
-}
 
 /* ==================== THE HANGAR (Hangar.tsx; the launch bay's own in bay/bay.css) ==================== */
 .hangar-kicker {
@@ -5343,4 +5231,25 @@ button:focus-visible {
 .profile-ship {
   text-align: start;
   padding: 0 1rem;
+}
+
+/* ==================== ON A PHONE OR A TABLET: THE PILOT AND ⚙️ ==================== */
+/* everything else is in the cockpit (components/cockpit360); About stays, out of sight, for it to open */
+.hud-topbar-right.is-compact .about-button {
+  display: none;
+}
+.hud-topbar-right.is-compact .settings-button {
+  min-width: 44px;
+  font-size: 1.1rem;
+}
+.settings-button.has-new::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff5d73;
+  box-shadow: 0 0 8px rgba(255, 93, 115, 0.8);
 }

@@ -516,13 +516,6 @@ export const sfx = {
     tone(c, 110, t + 0.6, 0.6, { type: 'sawtooth', gain: 0.045, glideTo: 330, attack: 0.15 });
   },
 
-  /** A knob clicking round a notch. */
-  knob() {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    noiseBurst(c, c.currentTime + 0.005, 0.035, 5200, 3000, 0.1);
-  },
-
   /** Space Traffic: the pilot swerves past a slow ship, which drops back with a falling whoosh. */
   whoosh() {
     const c = audio();
@@ -710,16 +703,6 @@ export const sfx = {
     const t = c.currentTime + 0.01;
     noiseBurst(c, t, 0.7, 260, 70, 0.07 * strength);
     tone(c, 52, t, 0.5, { type: 'sine', gain: 0.05 * strength, glideTo: 38 });
-  },
-
-  /** a dashboard droid beeping: up and happy, or down and sleepy */
-  droid(happy: boolean) {
-    const c = audio();
-    if (!c || volume() === 0) return;
-    const t = c.currentTime + 0.01;
-    const [a, b] = happy ? [880, 1320] : [660, 440];
-    tone(c, a, t, 0.08, { type: 'square', gain: 0.035 });
-    tone(c, b, t + 0.09, 0.1, { type: 'square', gain: 0.035 });
   },
 
   // ---- the launch bay ----

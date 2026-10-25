@@ -35,27 +35,48 @@ Progress is saved automatically on the computer.
 
 Leaving the game (another tab or app, minimizing, locking the tablet) pauses it: music and sounds stop, the answer timer and any bonus round freeze, and a tap or key press carries on exactly where you left off.
 
-### Settings: the cockpit
+### The cockpit (⚙️)
 
-**⚙️** flies you into the rocket's cockpit: the camera dives in through the porthole and the
-settings are the dashboard's controls, with the level's destination (the Moon, the Sun, Saturn…) dead ahead through the windscreen, as near as the fuel tank says and growing as you watch. A lever switches between answering by choosing and by
-typing, knobs set when a typed answer is checked and the language, throttles set the music and
-sound-effect volume, toggle switches turn the practice map and vibration on and off, a lit
-button opens the parent dashboard, and **Reset** is a red button under a safety cover that has
-to be lifted first. Little screens say what each control does, and through the windscreen space
-drifts by with numbers floating past. **Back to flight** (or ✕, or Escape) flies back out through
-the porthole. The game is paused while you're in the cockpit. When the rocket isn't on screen
-(during a bonus round or a crew flight, say), the cockpit opens out of the ⚙️ button instead, and
-with reduced motion it simply fades in.
+**⚙️** flies you into the rocket's cockpit: the camera dives in through the porthole and you're
+sitting in a NASA-punk cockpit you can look all the way round. It's one 360° picture
+([`public/cockpit/`](public/cockpit/), its windows cut out by
+[`scripts/cockpit-360.py`](scripts/cockpit-360.py)) with the game's own screens laid on its
+screens, live:
+
+- **Straight ahead**, through the windscreen, the flight goes on: stars streaking past (faster the
+  faster you were flying, and now and then the drive surges), your own times tables floating by,
+  and the level's destination dead ahead, as near as the fuel tank says. A HUD on the glass locks
+  onto it: its name flipping in like a departures board, how far it is and how long till you're
+  there (counting down), the speed, the fuel, a radar, your level, streak and right answers, and a
+  telemetry log of the ship's computer checking facts.
+- **The console screen** under the windscreen is the practice map.
+- **The tall screen on the right wall** has the game modes; picking one blasts off to it.
+- **The bank of four on the left wall**: the pilot (switch pilot, or edit yours and your ship),
+  badges and rank, the sound (music and effects dials) and language, and the ship's systems (every
+  setting, the parent dashboard, About, and **Reset**, which has to be held down a moment).
+- **The joystick** flies back to the game, **the panel overhead** opens About, and **the remote on
+  the floor** is for grown-ups (the parent dashboard).
+
+Look round by dragging (with a mouse, resting it at an edge of the screen turns that way too, and
+the wheel zooms). On a phone or a tablet the ◀ ▶ arrows turn from one screen to the next, and with
+a keyboard ← → do. Touch a screen and the view rushes in to it, blurring at the edges, until it
+fills the view and its page powers on; ✕ (or Escape, or a tap beside it) backs out. Now and then
+the flight shudders, the lights flicker and a comet streaks past. The game is paused while you're
+inside, and **Back to flight**, the joystick or Escape flies back out through the porthole. When
+the rocket isn't on screen (during a bonus round or a crew flight, say), the cockpit opens out of
+the ⚙️ button instead, and with reduced motion it simply fades in, and turns without sweeping.
+
+On a computer the top bar keeps all its buttons. On a phone or a tablet it's just the pilot and
+⚙️; everything else is in the cockpit.
 
 ### Tablets and phones
 
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),
-or switch **⚙️ Settings → Answer by → Typing** for a big on-screen number pad. In **⚙️ Settings**
-you can also choose when a typed answer is checked: **right away** (as soon as all its digits are
+or switch **⚙️ → Ship systems → Answer by → Typing** for a big on-screen number pad. On the same
+screen you can also choose when a typed answer is checked: **right away** (as soon as all its digits are
 in) or **when you tap the screen** (or press ✓). On a computer, typed answers always wait for
 **Enter**, so a typo can be fixed first. On Android, right answers give a revving buzz and
-mistakes a thump; this can be switched off in Settings. iPhone and iPad browsers don't support
+mistakes a thump; this can be switched off in Ship systems. iPhone and iPad browsers don't support
 vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
 **⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon. On an iPad or
 iPhone this also keeps the progress safe: Safari clears a website's saved data when it isn't opened
@@ -64,8 +85,7 @@ though, so first save a backup in the parent dashboard and restore it there (see
 [Backups](#backups-)).
 
 A phone works on its side too: the rocket flies on the left with the question beside it, and the
-top bar tucks away into a drawer off the right edge. Swipe in from the right edge, shake the
-phone or tap the ☰ tab to pull it out; it tucks itself away again after a few seconds.
+pilot and ⚙️ wait in the top right corner.
 
 ## How it works
 
@@ -74,7 +94,7 @@ phone or tap the ☰ tab to pull it out; it tucks itself away again after a few 
 - **No skipping facts you still miss.** Even with a full tank, the rocket won't launch while a recently missed fact is still unresolved. The game keeps asking it until it's fixed.
 - **Wrong answers teach.** A miss shows the fact as a grid (*x rows of y*) before moving on.
 - **Strategy hints** (press **H**) break hard facts into easy steps, like `7 × 9 → 7 × 10 − 7`, and leave the last step to the player.
-- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green, deeper the longer it's been remembered), what's fading (amber, with a dashed outline: time for a check) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in ⚙️ Settings). With a mouse, just hover over *Stop & Review* for a quick read-only peek at the map, with a mastered / fading / to-practice / not-tried-yet count, without pausing the game.
+- **Mastery map.** *Stop & Review* shows a 10×10 heatmap of what's mastered (green, deeper the longer it's been remembered), what's fading (amber, with a dashed outline: time for a check) and what needs practice (red). It can also open by itself after 5 mistakes (off by default, in the cockpit's Ship systems). It's on the cockpit's console screen too. With a mouse, just hover over *Stop & Review* for a quick read-only peek at the map, with a mastered / fading / to-practice / not-tried-yet count, without pausing the game.
 - **Spaced review: what's learned stays learned.** A fact is mastered when 4 of its last 5 answers are right. From then on it comes back now and then for a quick check: after a day, then 3 days, a week, 2 weeks, a month, 2 months and 4 months, each time it's remembered (a Leitner box system). A right answer before its check is due doesn't count, since practice on the same day isn't spacing. A miss starts its checks over: from the next day if it was a slip, from scratch if not. A fact left well past its check (twice its wait, and at least a week) is *fading*. It turns amber, doesn't count as mastered (for badges still to earn, the addition stages or the Black Sun's progress; ones already earned stay), and comes up often until it's answered right again. The question picker asks the facts that are due for a check as often as new ones, and fading ones more. Progress saved before spaced review was replayed from the answer history, so each fact starts in the box its past answers earned.
 - **On fire 🔥.** Three in a row lights up an electric border around the question, and it gets wilder the longer the streak lasts.
 - **Bonus rounds.** Every 6th question becomes a bonus round: eight kinds, shuffled, so each one comes up once before any comes again (and the order is new every time the game opens):
@@ -299,7 +319,8 @@ Addition climbs three stages, shown under the destination:
 Each child can have their own pilot: a name plus an animal avatar (🐶🐱🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐧🦄🐙).
 Every pilot has separate progress: level, fuel, streaks and practice map. With more than one
 pilot, the game opens on **"Who's flying today?"**. Switch pilots, add a new one, or edit or delete
-one from the avatar button in the top bar. **Reset** in Settings only resets the current pilot.
+one from the avatar button in the top bar (or the cockpit's Pilot screen). **Reset** in the cockpit
+only resets the current pilot.
 Everything is stored on the device; nothing is sent anywhere. Progress from before profiles existed
 is kept and becomes the first pilot.
 
@@ -313,7 +334,7 @@ Answer mode, language and sound are shared by everyone on the device.
 
 Two pilots fly **one rocket together on one device**, taking turns. The crew's rocket has two
 windows, one above the other, with each pilot's animal looking out of one. Open it from **🎮 Game modes**
-in the top bar (**Fly together**, which needs 2+ pilots on the device), pick the two pilots, and
+in the top bar or the cockpit's game-modes screen (**Fly together**, which needs 2+ pilots on the device), pick the two pilots, and
 give each a seat:
 
 - **🚀 Pilot.** The usual timed times-table drills, weighted towards that pilot's hard facts.
@@ -477,7 +498,7 @@ Design notes: [`docs/plans/2026-10-19-black-sun.md`](docs/plans/2026-10-19-black
 
 ## Parent dashboard 👪
 
-**⚙️ Settings → 👪 Parent dashboard** shows how each pilot is doing over time. A
+**⚙️ → Ship systems → 📊 Parent dashboard** (or the remote on the cockpit's floor) shows how each pilot is doing over time. A
 quick grown-up math question keeps kids out. Pick a pilot and a range (last 7
 days, last 30 days, or all time). Each number is compared with the period just
 before it.
@@ -513,7 +534,7 @@ Edge decide by themselves; Firefox asks once), and the parent dashboard has a **
 
 ## Hebrew
 
-Click **עברית** in the top bar. The layout switches to right-to-left while equations and hint
+Choose **עברית** on the cockpit's Sound screen. The layout switches to right-to-left while equations and hint
 formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 [`src/i18n/strings.ts`](src/i18n/strings.ts).
 
@@ -523,7 +544,8 @@ The theme song, *Gliding Past the Rim*, was made for this game with Google Gemin
 has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; the
 Black Sun, the final boss, plays *The View from the Last Lap*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to
-whatever was playing when it closes. Click 🔊 in the top bar (or use the throttles in the cockpit)
+whatever was playing when it closes; the cockpit plays *Starboard View*. Click 🔊 in the top bar
+on a computer (or turn the dials on the cockpit's Sound screen)
 for separate **music** and **sound-effect** volume (all the way down = off). The
 sound effects are synthesized in the browser with Web Audio, so there are no sample files.
 
@@ -542,7 +564,9 @@ npm run dist     # build a desktop executable for this OS into release/
 Built with React, TypeScript, Vite, [react-three-fiber](https://github.com/pmndrs/react-three-fiber)
 for the 3D launch scene, [zustand](https://github.com/pmndrs/zustand) for state, and animated
 components adapted from [React Bits](https://reactbits.dev) (Hyperspeed, LightTunnel,
-Aurora, ElectricBorder, ElectricLogo, ParticleText, ClickSpark, CountUp, ShinyText, GradientText, StarBorder) in
+Aurora, ElectricBorder, ElectricLogo, ParticleText, ClickSpark, CountUp, ShinyText, GradientText, StarBorder,
+and in the cockpit Radar, SplitFlapText, Counter, DecryptedText, SpotlightCard, SquishSwitch,
+HoldButton, CometDial, TargetCursor, SloshGauge) in
 [`src/components/reactbits/`](src/components/reactbits/). The engine plume is React Bits'
 LaserFlow shader, ported to run inside the 3D scene
 ([`laserFlowShader.ts`](src/components/scene/laserFlowShader.ts)). Flight speed is modeled in

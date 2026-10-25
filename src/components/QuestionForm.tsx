@@ -218,6 +218,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
   const zone = speedZone(elapsedMs, pace);
   const barPercent = Math.max(0, 100 - (Math.min(elapsedMs, 2 * pace) / (2 * pace)) * 100);
   const onFire = streak >= ON_FIRE_STREAK;
+  const paused = usePause((s) => s.paused);
   const heat = onFire ? fireLevel(streak) : 0;
   // Bigger streak = bigger word. Picked by askedAt so it's stable per
   // question and doesn't reshuffle on every timer tick.
@@ -244,7 +245,8 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
       </AnimatePresence>
 
       <ElectricBorder
-        active={onFire}
+        // (still, while the game's paused: something covers it, the cockpit, a page…)
+        active={onFire && !paused}
         color={FIRE_COLORS[heat]}
         speed={1 + heat * 0.6}
         chaos={0.08 + heat * 0.05}

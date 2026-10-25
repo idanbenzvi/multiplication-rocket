@@ -17,19 +17,10 @@ import { useBack } from '../../native/back';
 // The game is paused while it's open.
 export function BadgesPage({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const tb = t.badges;
   const lang = useLang((s) => s.lang);
-  const mission = useMission();
-  const progress = useGameStore((s) => s.progress);
-  const stats = useAchievements((s) => s.stats);
-  const earned = useAchievements((s) => s.earned);
   // captured on open, so NEW tags stay up while the screen is showing
   const [unseen] = useState(() => new Set(useAchievements.getState().unseen));
   useBack(onClose);
-  const rank = useRank();
-  const earnedCount = Object.keys(earned).length;
-  const nextAt = RANK_THRESHOLDS[rank + 1];
-  const name = pilotName(activeProfile(), t.defaultPilotName);
 
   useEffect(() => {
     pauseGame('badges');
@@ -41,10 +32,6 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
       useAchievements.getState().markAllSeen();
     };
   }, [onClose]);
-
-  // progress through the current rank, towards the next one
-  const rankStart = RANK_THRESHOLDS[rank];
-  const rankFill = nextAt === undefined || rankStart === undefined ? 1 : Math.min(1, (earnedCount - rankStart) / (nextAt - rankStart));
 
   return createPortal(
     <motion.div className="badges-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -59,69 +46,95 @@ export function BadgesPage({ onClose }: { onClose: () => void }) {
         transition={{ delay: 0.05 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="about-close" onClick={onClose} aria-label={tb.close}>
+        <button className="about-close" onClick={onClose} aria-label={t.badges.close}>
           ✕
         </button>
-
-        <div className="badges-rank">
-          <BadgeArt name={`rank-${rank}`} icon={RANK_ICONS[rank]} size={84} />
-          <div className="badges-rank-text">
-            <h2 id="badges-title">
-              <GradientText colors={['#ffd77a', '#ff9d76', '#ff6ad5', '#ffd77a']} animationSpeed={4}>
-                {tb.pilotRank(tb.ranks[rank], name)}
-              </GradientText>
-            </h2>
-            <div className="badges-rank-bar" aria-hidden="true">
-              <span style={{ width: `${Math.round(rankFill * 100)}%` }} />
-            </div>
-            <div className="badges-rank-next">
-              {/* Honored Captain's next step isn't more badges: it's the Black Sun */}
-              {rank >= ADMIRAL_RANK ? tb.topRank : nextAt === undefined ? tb.toAdmiral : tb.toNextRank(nextAt - earnedCount, tb.ranks[rank + 1])}
-              <span className="badges-count">{tb.earnedCount(earnedCount, BADGES.length)}</span>
-            </div>
-          </div>
-        </div>
-
-        <ol className="badges-ladder">
-          {tb.ranks.map((r, i) => (
-            <li key={r} className={i < rank ? 'is-past' : i === rank ? 'is-current' : 'is-future'} title={r}>
-              <BadgeArt name={`rank-${i}`} icon={RANK_ICONS[i]} locked={i > rank} size={i === rank ? 40 : 30} />
-              <span className="badges-ladder-label">{r}</span>
-            </li>
-          ))}
-        </ol>
-
-        {BADGE_GROUPS.map((group) => (
-          <section key={group} className="badges-group">
-            <h3>{tb.groups[group]}</h3>
-            <div className="badges-grid">
-              {BADGES.filter((b) => b.group === group).map((b) => {
-                const text = badgeText(t, b.id, mission);
-                const isEarned = !!earned[b.id];
-                const { have, need } = b.goal({ progress, stats });
-                return (
-                  <div key={b.id} className={`badge-tile ${isEarned ? 'is-earned' : 'is-locked'}`}>
-                    {isEarned && unseen.has(b.id) && <span className="badge-new">{tb.isNew}</span>}
-                    <BadgeArt name={b.id} icon={b.icon} group={b.group} locked={!isEarned} size={56} />
-                    <div className="badge-tile-name">{text.name}</div>
-                    <div className="badge-tile-desc">{text.desc}</div>
-                    {!isEarned && need > 1 && (
-                      <div className="badge-tile-progress" aria-label={`${have} / ${need}`}>
-                        <span style={{ width: `${(have / need) * 100}%` }} />
-                        <em dir="ltr">
-                          {have} / {need}
-                        </em>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+        <BadgesContent unseen={unseen} />
       </motion.div>
     </motion.div>,
     document.body,
+  );
+}
+
+/**
+ * The pilot's rank, the ladder up to Honored Captain, and every badge (the
+ * badges page's, and the cockpit's badges screen's). `unseen`: the badges to
+ * tag NEW.
+ */
+export function BadgesContent({ unseen }: { unseen: ReadonlySet<string> }) {
+  const t = useT();
+  const tb = t.badges;
+  const mission = useMission();
+  const progress = useGameStore((s) => s.progress);
+  const stats = useAchievements((s) => s.stats);
+  const earned = useAchievements((s) => s.earned);
+  const rank = useRank();
+  const earnedCount = Object.keys(earned).length;
+  const nextAt = RANK_THRESHOLDS[rank + 1];
+  const name = pilotName(activeProfile(), t.defaultPilotName);
+  // progress through the current rank, towards the next one
+  const rankStart = RANK_THRESHOLDS[rank];
+  const rankFill = nextAt === undefined || rankStart === undefined ? 1 : Math.min(1, (earnedCount - rankStart) / (nextAt - rankStart));
+
+  return (
+    <>
+      <div className="badges-rank">
+        <BadgeArt name={`rank-${rank}`} icon={RANK_ICONS[rank]} size={84} />
+        <div className="badges-rank-text">
+          <h2 id="badges-title">
+            <GradientText colors={['#ffd77a', '#ff9d76', '#ff6ad5', '#ffd77a']} animationSpeed={4}>
+              {tb.pilotRank(tb.ranks[rank], name)}
+            </GradientText>
+          </h2>
+          <div className="badges-rank-bar" aria-hidden="true">
+            <span style={{ width: `${Math.round(rankFill * 100)}%` }} />
+          </div>
+          <div className="badges-rank-next">
+            {/* Honored Captain's next step isn't more badges: it's the Black Sun */}
+            {rank >= ADMIRAL_RANK ? tb.topRank : nextAt === undefined ? tb.toAdmiral : tb.toNextRank(nextAt - earnedCount, tb.ranks[rank + 1])}
+            <span className="badges-count">{tb.earnedCount(earnedCount, BADGES.length)}</span>
+          </div>
+        </div>
+      </div>
+
+      <ol className="badges-ladder">
+        {tb.ranks.map((r, i) => (
+          <li key={r} className={i < rank ? 'is-past' : i === rank ? 'is-current' : 'is-future'} title={r}>
+            <BadgeArt name={`rank-${i}`} icon={RANK_ICONS[i]} locked={i > rank} size={i === rank ? 40 : 30} />
+            <span className="badges-ladder-label">{r}</span>
+          </li>
+        ))}
+      </ol>
+
+      {BADGE_GROUPS.map((group) => (
+        <section key={group} className="badges-group">
+          <h3>{tb.groups[group]}</h3>
+          <div className="badges-grid">
+            {BADGES.filter((b) => b.group === group).map((b) => {
+              const text = badgeText(t, b.id, mission);
+              const isEarned = !!earned[b.id];
+              const { have, need } = b.goal({ progress, stats });
+              return (
+                <div key={b.id} className={`badge-tile ${isEarned ? 'is-earned' : 'is-locked'}`}>
+                  {isEarned && unseen.has(b.id) && <span className="badge-new">{tb.isNew}</span>}
+                  <BadgeArt name={b.id} icon={b.icon} group={b.group} locked={!isEarned} size={56} />
+                  <div className="badge-tile-name">{text.name}</div>
+                  <div className="badge-tile-desc">{text.desc}</div>
+                  {!isEarned && need > 1 && (
+                    <div className="badge-tile-progress" aria-label={`${have} / ${need}`}>
+                      <span style={{ width: `${(have / need) * 100}%` }} />
+                      <em dir="ltr">
+                        {have} / {need}
+                      </em>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </>
   );
 }
 

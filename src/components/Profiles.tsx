@@ -14,6 +14,7 @@ import { colorForLevel } from './scene/palette';
 import { BayScreen } from './bay/BayScreen';
 import { BayShip } from './bay/useBay';
 import { haptics } from '../audio/haptics';
+import { usePageRequest } from './pages';
 
 // After switching or creating a pilot, reload the game with their progress.
 function startGameForActive() {
@@ -460,6 +461,9 @@ export function PilotButton() {
   const close = () => setView(null);
   // Back: the pilots again from a new one or an edit (their Cancel), and from the pilots, closed
   useBack(view && (view.kind === 'pick' ? close : () => setView({ kind: 'pick' })));
+  // (the cockpit's pilot screen opens them too)
+  usePageRequest('pilots', () => setView({ kind: 'pick' }));
+  usePageRequest('editPilot', () => active && setView({ kind: 'edit', profile: active }));
 
   return (
     <>

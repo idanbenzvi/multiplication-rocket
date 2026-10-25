@@ -1,0 +1,15 @@
+/* Radar from React Bits (https://reactbits.dev/backgrounds/radar), by David Haz, MIT + Commons Clause (see Radar.tsx) */
+.radar-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.radar-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}

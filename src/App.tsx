@@ -11,6 +11,7 @@ import { LaunchOverlay } from './components/LaunchOverlay';
 import { MasteryHeatmap } from './components/MasteryHeatmap';
 import { useT } from './i18n/useLang';
 import { SettingsMenu } from './components/SettingsMenu';
+import { CockpitHost } from './components/cockpit360/CockpitHost';
 import { ReviewButton } from './components/ReviewButton';
 import { AboutButton } from './components/about/AboutButton';
 import { PilotButton, ProfileGate } from './components/Profiles';
@@ -57,8 +58,7 @@ import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickS
 import CountUp from './components/reactbits/CountUp';
 import ShinyText from './components/reactbits/ShinyText';
 import { paceMs, speedZone } from './game/scoring';
-import { MenuTab } from './components/MenuTab';
-import { useMenuDrawer, useSideways } from './components/useMenuDrawer';
+import { useSideways } from './components/useSideways';
 import './App.css';
 
 const ANSWER_FEEDBACK_DELAY_MS = 900;
@@ -133,14 +133,13 @@ function App() {
     init();
   }, [init]);
 
-  // A phone on its side: the top bar is a drawer off the right edge (see useMenuDrawer.ts)
+  // A phone on its side: the rocket on the left, the question on the right, the pilot and ⚙️ in the corner (useSideways.ts)
   const sideways = useSideways();
-  const menu = useMenuDrawer(sideways);
 
   // The top bar's height varies (it wraps to two rows on phones, and the
   // level banner can wrap too), so overlays position themselves below it
-  // via --hud-top instead of guessing a fixed offset. With the top bar tucked
-  // away in its drawer, they have the whole height.
+  // via --hud-top instead of guessing a fixed offset. On a phone on its side
+  // the top bar is just two buttons in the corner, so they have the whole height.
   const topbarRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = topbarRef.current;
@@ -274,38 +273,33 @@ function App() {
       <MilestoneBanner streak={milestone} />
       {!gateOpen && <BadgeToast />}
 
-      <header
-        className={`hud-topbar ${menu.open ? 'is-open' : ''}`}
-        ref={topbarRef}
-        onPointerDown={menu.poke}
-        onClick={(e) => {
-          // in the drawer: a button that opens something puts the drawer away (the sound panel opens inside it)
-          const target = e.target as Element;
-          if (menu.open && target.closest('button') && !target.closest('.audio-controls')) menu.hide();
-        }}
-      >
+      <header className="hud-topbar" ref={topbarRef}>
         <div className="hud-logo">
           🚀 <ShinyText text={mission === 'add' ? t.logoAdd : mission === 'mix' ? t.logoMix : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
         {!crewActive && <LevelBanner level={displayLevel} stage={mission !== 'mul' ? clampStage(progress.stage) : undefined} />}
-        <div className="hud-topbar-right">
+        {/* on a phone or a tablet, only the pilot and ⚙️: the rest is in the cockpit (About stays, out of sight, for the cockpit to open) */}
+        <div className={`hud-topbar-right ${isTouchDevice ? 'is-compact' : ''}`}>
           {/* solo pilot's own things: the crew bar shows both pilots instead */}
           {!crewActive && <PilotButton />}
-          {!crewActive && <GameModesButton />}
-          <BadgesButton />
-          {!crewActive && (
-            <div className="hud-stat-chip">
-              ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
-            </div>
+          {!isTouchDevice && (
+            <>
+              {!crewActive && <GameModesButton />}
+              <BadgesButton />
+              {!crewActive && (
+                <div className="hud-stat-chip">
+                  ✓ <CountUp to={progress.totalCorrectAnswers} duration={0.8} />
+                </div>
+              )}
+              <AudioControls />
+              {!crewActive && <ReviewButton mastery={progress.mastery} mission={mission} onClick={requestHeatmap} />}
+            </>
           )}
-          <AudioControls />
-          {!crewActive && <ReviewButton mastery={progress.mastery} mission={mission} onClick={requestHeatmap} />}
-          <SettingsMenu onReset={handleReset} />
+          <SettingsMenu />
           <AboutButton />
         </div>
       </header>
-      {sideways && <MenuTab open={menu.open} onOpen={menu.show} onClose={menu.hide} />}
 
       {!crewActive && (
         <FuelGauge
@@ -316,6 +310,8 @@ function App() {
       )}
 
       <ProfileGate />
+      {/* the cockpit, from ⚙️ (cockpit360/) */}
+      <CockpitHost onReset={handleReset} />
       <Hangar />
       {/* where the two above show: the hangar's launch bay */}
       <LaunchBay />

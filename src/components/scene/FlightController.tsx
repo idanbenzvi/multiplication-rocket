@@ -4,7 +4,7 @@ import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { useGameStore } from '../../game/useGameStore';
 import { usePause } from '../../game/gameClock';
 import { engineHum } from '../../audio/sfx';
-import { sidewaysQuery } from '../useMenuDrawer';
+import { sidewaysQuery } from '../useSideways';
 import { getLevelConfig } from '../../game/levels';
 import {
   cockpitDolly,
