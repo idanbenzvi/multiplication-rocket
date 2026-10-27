@@ -824,6 +824,7 @@ export class BlackSunScene extends EclipseScene {
         this.diskFlash = Math.max(this.diskFlash, n.loud ? 0.8 : 0.35);
         this.eaten.push(n.text);
         this.onSwallow?.(n.loud);
+        this.swallowed?.(n.text, { x: (p.x / d) * 1.02, y: (p.y / d) * 1.02 });
         continue;
       }
       kept.push(n);
@@ -860,6 +861,14 @@ export class BlackSunScene extends EclipseScene {
 
   /** someone listening for swallows (the overlay plays their sound) */
   onSwallow?: (loud: boolean) => void;
+
+  /** `text` swallowed, where it touched the dark (in sun radii from its middle): the story's sun splashes with it */
+  protected swallowed?(text: string, at: Point): void;
+
+  /** a number as it's drawn (the story's sun draws its own, with a bloom) */
+  protected numberArt(text: string, color: string): HTMLCanvasElement {
+    return numberSprite(text, color);
+  }
 
   private stepFireball() {
     const f = this.fireball;
@@ -1194,7 +1203,7 @@ export class BlackSunScene extends EclipseScene {
         ctx.drawImage(glow(color), -r / 2, -r / 2, r, r);
         ctx.globalCompositeOperation = 'source-over';
       }
-      stamp(ctx, numberSprite(n.text, n.red ? '#ffffff' : color), 0, 0, hgt);
+      stamp(ctx, this.numberArt(n.text, n.red ? '#ffffff' : color), 0, 0, hgt);
       ctx.restore();
     }
   }

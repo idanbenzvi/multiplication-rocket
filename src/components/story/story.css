@@ -110,6 +110,65 @@
   }
 }
 
+/* the where and when, typed in before a scene (film.tsx's Slate) */
+.story-slate {
+  position: absolute;
+  inset-inline-start: clamp(16px, 4vw, 52px);
+  bottom: calc(var(--bar) + env(safe-area-inset-bottom) + clamp(14px, 3.5vh, 36px));
+  z-index: 2;
+  max-width: calc(100% - 32px);
+  font: 400 clamp(19px, 0.9rem + 1.1vw, 30px) / 1.12 'VT323', 'Rubik Pixels', ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  color: #9dffbe;
+  text-shadow:
+    0 0 3px rgba(150, 255, 185, 0.95),
+    0 0 12px rgba(40, 255, 120, 0.6),
+    0 0 28px rgba(40, 255, 120, 0.3);
+  pointer-events: none;
+}
+.story-slate-line {
+  min-height: 1.12em;
+  white-space: pre-wrap;
+  animation: story-slate-hum 3.2s steps(1) infinite;
+}
+.story-slate-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.82em;
+  margin-inline-start: 0.06em;
+  vertical-align: -0.06em;
+  background: currentColor;
+  box-shadow: 0 0 10px rgba(40, 255, 120, 0.8);
+  animation: story-caret 1s steps(1) infinite;
+}
+.story-slate-line:not(.is-typing) .story-slate-caret {
+  display: none;
+}
+@keyframes story-caret {
+  50% {
+    opacity: 0;
+  }
+}
+/* (a terminal's faint flicker) */
+@keyframes story-slate-hum {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  31% {
+    opacity: 0.86;
+  }
+  33% {
+    opacity: 1;
+  }
+  71% {
+    opacity: 0.92;
+  }
+  72% {
+    opacity: 1;
+  }
+}
+
 /* Orbie, lighting up beside Earth (placed and sized by the scene) */
 .story-orbie {
   position: absolute;
@@ -148,7 +207,8 @@
   .story-bar {
     transition: none;
   }
-  .story-play {
+  .story-play,
+  .story-slate-line {
     animation: none;
   }
 }

@@ -719,6 +719,9 @@ const en = {
       'Will it be you?',
     ],
     launch: (name: string) => `Earth is counting on you, ${name}!`,
+    // typed in before the opening and before the launch, as a film's where and when
+    slate: (date: string) => [`DATE: ${date}`, 'LOCATION: NEAR EARTH ORBIT', 'SPACE TRAFFIC: NORMAL'],
+    slateLaunch: (name: string) => ['LOCATION: EARTH, LAUNCH PAD 1', `PILOT: ${name.toUpperCase()}`, 'MISSION: STOP THE BLACK SUN'],
     orbie: 'Orbie',
     orbieHello: (name: string) => `Hi ${name}! I'm Orbie, your ship's computer. I'll fly with you and help with every question. Pick our ship, and let's go stop the Black Sun!`,
     watch: '▶ Watch the story',
@@ -1802,6 +1805,8 @@ const he: Strings = {
       'אולי זה אתם?',
     ],
     launch: (name) => `כדור הארץ סומך עליכם, ${name}!`,
+    slate: (date) => [`תאריך: ${date}`, 'מיקום: מסלול סביב כדור הארץ', 'תנועה בחלל: רגילה'],
+    slateLaunch: (name) => ['מיקום: כדור הארץ, כן שיגור 1', `בתא הטייס: ${name}`, 'משימה: לעצור את השמש השחורה'],
     orbie: 'אורבי',
     orbieHello: (name) => `שלום ${name}! אני אורבי, מחשב החללית שלכם. אטוס איתכם ואעזור בכל שאלה. בחרו לנו חללית, ויוצאים לעצור את השמש השחורה!`,
     watch: '▶ לצפות בסיפור',

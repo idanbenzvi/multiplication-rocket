@@ -1,6 +1,9 @@
 import { BlackSunScene, type ShipPose } from '../boss/blackSunScene';
 import { hex, type Point, type RGB } from '../arrival/eclipse';
 import { glow, rgba } from '../traffic/trafficArt';
+import { bloomNumber } from './bloom';
+import { AsciiFlares, GlyphSplash } from './corruption';
+import { TAU, clamp01 } from './storyMath';
 
 // The story's Sun (StoryOpening, StoryLaunch): the Black Sun's own scene
 // (boss/blackSunScene.ts), placed where the story's camera puts it, with no
@@ -8,10 +11,9 @@ import { glow, rgba } from '../traffic/trafficArt';
 // and smiling. Its turn: it flickers, its smile turns, dark veins creep in
 // across it from its rim, and its light caves in, leaving the eclipse
 // (Monster Sun's: the diamond ring flashing, the angry eyes opening), which
-// then becomes the black hole, whirlpool and all, and swallows the numbers.
-
-const TAU = Math.PI * 2;
-const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
+// then becomes the black hole, whirlpool and all, and swallows the numbers,
+// each with a little bloom, splashing glyphs as it goes in, and spits out what
+// it's corrupted them into (corruption.ts).
 
 /** the Sun as it was: near its rim, further out, furthest */
 const WARM: RGB[] = [hex('#fffbe6'), hex('#ffd36b'), hex('#ff9f4a')];
@@ -44,6 +46,11 @@ export class StorySun extends BlackSunScene {
   /** where it is on screen, and its radius: the story's camera sets it every frame */
   at = { x: 0, y: 0, r: 1 };
 
+  private readonly splash = new GlyphSplash();
+  private readonly ascii = new AsciiFlares();
+  /** when it became the Black Sun (its own time) */
+  private awokeAt = Infinity;
+
   constructor(calm: boolean) {
     super(calm, 'mul');
     // (it turns when the story says: till then its own clock is far from its arrival)
@@ -57,6 +64,36 @@ export class StorySun extends BlackSunScene {
   /** (no ship of the pilot's below it) */
   override ship(): ShipPose {
     return { x: this.at.x, y: this.at.y + this.at.r * 2, w: 1, rot: 0, alpha: 0, burn: 0 };
+  }
+
+  override awaken() {
+    super.awaken();
+    this.awokeAt = this.t;
+  }
+
+  protected override numberArt(text: string, color: string): HTMLCanvasElement {
+    return bloomNumber(text, color);
+  }
+
+  protected override swallowed(text: string, at: Point) {
+    if (this.calm) return;
+    this.splash.splash(at, text);
+    this.ascii.gush(at, text);
+  }
+
+  override update(dt: number) {
+    super.update(dt);
+    if (this.calm) return;
+    // (arcs of it leaping off, once it's a black hole)
+    this.ascii.rate = this.t - this.awokeAt > 0.8 ? 0.9 : 0;
+    this.ascii.step(dt);
+    this.splash.step(dt);
+  }
+
+  override draw(ctx: CanvasRenderingContext2D, w: number, h: number, t?: number, look?: Point | null) {
+    super.draw(ctx, w, h, t, look);
+    this.ascii.draw(ctx, this.at);
+    this.splash.draw(ctx, this.at);
   }
 
   /** the Sun as it was, warm, shining and smiling, at `time` (seconds, for its corona's motion) */

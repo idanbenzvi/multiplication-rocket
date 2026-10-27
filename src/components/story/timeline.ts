@@ -41,6 +41,29 @@ export const LAUNCH = {
   end: 8.6,
 } as const;
 
+/** the where-and-when typed in before a scene (film.tsx's Slate), a character at a time, a pause between its lines (seconds) */
+export const TYPING = { char: 0.034, line: 0.3 } as const;
+
+/** how many of `lines`' characters are typed in by `t` seconds */
+export function typedAt(lines: readonly string[], t: number): number {
+  let n = 0;
+  let at = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (i) at += TYPING.line;
+    if (t < at) return n;
+    const k = Math.floor((t - at) / TYPING.char);
+    if (k < lines[i].length) return n + k;
+    n += lines[i].length;
+    at += lines[i].length * TYPING.char;
+  }
+  return n;
+}
+
+/** how long `lines` take to type in (seconds) */
+export function typeTime(lines: readonly string[]): number {
+  return lines.reduce((sum, l) => sum + l.length * TYPING.char, 0) + Math.max(0, lines.length - 1) * TYPING.line;
+}
+
 /** a beat's index at `t` seconds into the opening */
 export function beatAt(t: number): number {
   let i = 0;

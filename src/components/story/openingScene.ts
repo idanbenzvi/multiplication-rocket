@@ -1,28 +1,26 @@
-import { numberSprite, stamp } from '../boss/blackSunScene';
+import { stamp } from '../boss/blackSunScene';
 import { glow, HULLS, IONS, rgba, SHIP_KINDS, trafficSprite } from '../traffic/trafficArt';
 import type { Point } from '../arrival/eclipse';
+import { bloomNumber } from './bloom';
+import { drawGlobe, turned, unit } from './earth';
 import { StorySun } from './storySun';
+import { TAU, clamp01, easeInOut, lerp, seeded } from './storyMath';
 import { BEATS, OPENING, beatAt } from './timeline';
 
 // The story's opening (StoryOpening.tsx), one continuous shot on one canvas,
 // in the style of the arrivals': everything in space runs on numbers, the Sun
 // shining, ships gliding about with numbers puffing from their engines, and
-// numbers twinkling all round like stars. Then the Sun turns bad (StorySun)
+// numbers twinkling all round like stars, each with a little bloom. Then the Sun turns bad (StorySun)
 // and becomes the Black Sun, the numbers are pulled in from everywhere and
 // swallowed, the ships' engines sputter and go out and they drift to a stop,
-// and the stars stop twinkling. The camera goes over to Earth, its lights
-// flickering, where Orbie lights up (the overlay draws Orbie where `orbie`
+// and the stars stop twinkling. The camera goes over to Earth (earth.ts), its
+// lights flickering, where Orbie lights up (the overlay draws Orbie where `orbie`
 // says), and pushes in on it.
 //
 // It's drawn in the world's units (the Sun's radius is one), through a
 // camera that moves from shot to shot. `draw` takes the story's time (which
 // waits at a beat's end while its line is read) and the time that always
 // runs on (for what twinkles, spins and glides).
-
-const TAU = Math.PI * 2;
-const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
 /** where Earth is, and Orbie beside it (world units: the Sun is at 0, 0, its radius 1) */
 const EARTH = { x: -5.4, y: 3.7, r: 1.3 };
@@ -51,15 +49,6 @@ const CALM_SHOTS = [0, 2, 4, 6, 7];
 const NUMBERS = ['7', '12', '24', '9', '36', '5', '81', '3', '42', '18', '6', '56', '4', '27', '8', '64', '2', '30', '49', '15', '72', '1', '35', '20', '63', '16', '45', '10', '54', '28', '40', '21', '32', '48'];
 const NUMBER_COLORS = ['#fdf3e7', '#ffb37a', '#c9a4de', '#7fe0ff', '#ffd77a', '#ff9de2'];
 const STARS = 240;
-
-/** a little random, the same every time (the sky is laid out the same for everyone) */
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
 
 interface SkyNumber {
   text: string;
@@ -112,6 +101,7 @@ export class OpeningScene {
   constructor(calm: boolean) {
     this.calm = calm;
     this.sun = new StorySun(calm);
+    // (the sky is laid out the same for everyone)
     const rnd = seeded(20261027);
     // the numbers all round, none on the Sun, more near it; pulled in nearest first
     this.numbers = NUMBERS.map((text, i) => {
@@ -141,12 +131,14 @@ export class OpeningScene {
       [5.0, -3.6, -0.16, 0.03, 0.56],
       [-7.6, 0.9, 0.2, -0.01, 0.66],
     ];
+    // (with reduced motion they hold still, partway along their lanes)
+    const along = calm ? 20 : 0;
     this.ships = lanes.map(([x, y, vx, vy, size], i) => ({
       kind: i % SHIP_KINDS.length,
       hull: HULLS[(i * 3) % HULLS.length],
       ion: IONS[i % IONS.length],
-      x,
-      y,
+      x: x + vx * along,
+      y: y + vy * along,
       vx,
       vy,
       size,
@@ -326,15 +318,12 @@ export class OpeningScene {
       const jx = this.calm ? 0 : Math.sin(time * 47 + n.phase) * tremble * 0.06;
       const bob = this.calm ? 0 : Math.sin(time * 0.7 + n.phase) * 0.08;
       const p = this.screen(n.x + jx, n.y + bob);
-      const tw = this.calm ? 0.9 : 0.6 + 0.4 * Math.sin(time * 1.6 + n.phase * 2);
-      const size = n.size * z * (1 + 0.08 * Math.sin(time * 1.6 + n.phase * 2));
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'lighter';
-      const halo = size * 2.4 * tw;
-      ctx.drawImage(glow(n.color), p.x - halo / 2, p.y - halo / 2, halo, halo);
-      ctx.globalCompositeOperation = 'source-over';
+      const tw = this.calm ? 0.95 : 0.8 + 0.2 * Math.sin(time * 1.6 + n.phase * 2);
+      const size = n.size * z * (1 + 0.06 * Math.sin(time * 1.6 + n.phase * 2));
       ctx.globalAlpha = tw;
-      stamp(ctx, numberSprite(n.text, n.color), p.x, p.y, size);
+      ctx.globalCompositeOperation = 'lighter';
+      stamp(ctx, bloomNumber(n.text, n.color), p.x, p.y, size);
+      ctx.globalCompositeOperation = 'source-over';
     }
     ctx.restore();
   }
@@ -354,7 +343,7 @@ export class OpeningScene {
         const q = this.screen(puff.x, puff.y);
         ctx.save();
         ctx.globalAlpha = (1 - k) * 0.85;
-        stamp(ctx, numberSprite(puff.text, s.ion), q.x, q.y, sw * 0.2 * (1 + k * 0.6));
+        stamp(ctx, bloomNumber(puff.text, s.ion), q.x, q.y, sw * 0.2 * (1 + k * 0.6));
         ctx.restore();
       }
       ctx.save();
@@ -413,92 +402,23 @@ export class OpeningScene {
     ctx.restore();
   }
 
-  /** Earth: blue seas, green lands and clouds, its night side's city lights (flickering once the numbers are gone) */
+  /** Earth (earth.ts), turning slowly, lit by the Sun, dimming as it turns; its cities' lights flickering, some going out, once the numbers are gone */
   private drawEarth(ctx: CanvasRenderingContext2D, t: number, time: number) {
     const c = this.screen(EARTH.x, EARTH.y);
     const r = EARTH.r * this.cam.z;
     if (c.x + r * 1.5 < 0 || c.y - r * 1.5 > this.h || c.x - r * 1.5 > this.w || c.y + r * 1.5 < 0) return;
-    // the light comes from the Sun (up and to the right), dimming as it turns
-    const lightA = Math.atan2(0 - EARTH.y, 0 - EARTH.x);
-    const day = 1 - 0.4 * clamp01((t - OPENING.turn) / 3);
-    ctx.save();
-    // its air, glowing round it
-    ctx.globalCompositeOperation = 'lighter';
-    const air = ctx.createRadialGradient(c.x, c.y, r * 0.95, c.x, c.y, r * 1.4);
-    air.addColorStop(0, rgba('#6ad7ff', 0.45));
-    air.addColorStop(0.35, rgba('#5b6cff', 0.14));
-    air.addColorStop(1, rgba('#5b6cff', 0));
-    ctx.fillStyle = air;
-    ctx.fillRect(c.x - r * 1.5, c.y - r * 1.5, r * 3, r * 3);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, r, 0, TAU);
-    ctx.clip();
-    const sea = ctx.createRadialGradient(c.x + Math.cos(lightA) * r * 0.4, c.y + Math.sin(lightA) * r * 0.4, 0, c.x, c.y, r * 1.1);
-    sea.addColorStop(0, '#5cc2ff');
-    sea.addColorStop(0.55, '#2a7fd6');
-    sea.addColorStop(1, '#123a8a');
-    ctx.fillStyle = sea;
-    ctx.fillRect(c.x - r, c.y - r, r * 2, r * 2);
-    // lands, turning slowly past
-    const turn = (this.calm ? 0 : time * 0.025) % 2;
-    ctx.fillStyle = '#58b86a';
-    for (const [lx, ly, rx, ry, a] of [
-      [-0.35, -0.3, 0.32, 0.2, 0.4],
-      [0.3, 0.15, 0.26, 0.36, -0.3],
-      [-0.2, 0.45, 0.22, 0.14, 0.1],
-      [0.75, -0.5, 0.2, 0.12, 0.8],
-      [-0.9, 0.1, 0.18, 0.3, 0.2],
-    ]) {
-      const x = ((lx + turn + 3) % 2) - 1;
-      ctx.beginPath();
-      ctx.ellipse(c.x + x * r, c.y + ly * r, rx * r, ry * r, a, 0, TAU);
-      ctx.fill();
-    }
-    // clouds
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-    for (const [cx, cy, rx, ry] of [
-      [-0.5, -0.55, 0.3, 0.06],
-      [0.2, -0.1, 0.36, 0.05],
-      [-0.1, 0.25, 0.28, 0.05],
-      [0.55, 0.55, 0.25, 0.06],
-    ]) {
-      const x = ((cx + turn * 1.6 + 3) % 2) - 1;
-      ctx.beginPath();
-      ctx.ellipse(c.x + x * r, c.y + cy * r, rx * r, ry * r, 0, 0, TAU);
-      ctx.fill();
-    }
-    // its night side
-    const nx = Math.cos(lightA);
-    const ny = Math.sin(lightA);
-    const shade = ctx.createLinearGradient(c.x + nx * r, c.y + ny * r, c.x - nx * r, c.y - ny * r);
-    shade.addColorStop(0, `rgba(4, 6, 26, ${0.6 * (1 - day)})`);
-    shade.addColorStop(0.5, `rgba(4, 6, 26, ${0.35 + 0.35 * (1 - day)})`);
-    shade.addColorStop(1, 'rgba(4, 6, 26, 0.85)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(c.x - r, c.y - r, r * 2, r * 2);
-    // its cities' lights, on the dark side; flickering, some going out, once the numbers are gone
-    const rnd = seeded(7);
-    const flicker = clamp01((t - OPENING.pull[0]) / 6);
-    ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 70; i++) {
-      const a = lightA + Math.PI + (rnd() - 0.5) * 2.4;
-      const d = Math.sqrt(rnd()) * 0.92;
-      const x = c.x + Math.cos(a) * d * r;
-      const y = c.y + Math.sin(a) * d * r;
-      const on = this.calm ? 1 : Math.sin(time * (3 + rnd() * 9) + i) > flicker * 1.4 - 0.4 ? 1 : 0.1;
-      const size = r * (0.06 + rnd() * 0.06) * on;
-      if (size > 0.3) ctx.drawImage(glow('#ffc96a'), x - size, y - size, size * 2, size * 2);
-    }
-    ctx.restore();
-    // a thin bright rim on its lit side
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = rgba('#bff3ff', 0.6 * day + 0.15);
-    ctx.lineWidth = Math.max(1, r * 0.025);
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, r * 0.995, lightA - 1.1, lightA + 1.1);
-    ctx.stroke();
-    ctx.restore();
+    // the light comes from the Sun (up and to the right on screen; into view, y is up), and a little from in front
+    const toSun = Math.atan2(0 - EARTH.y, 0 - EARTH.x);
+    const light = unit([Math.cos(toSun), -Math.sin(toSun), 0.18]);
+    const spin = -0.35 + (this.calm ? 0 : time * 0.018);
+    drawGlobe(ctx, c, r, {
+      lands: turned(spin, 0.32, -0.4),
+      clouds: turned(spin * 1.3 + 0.5, 0.32, -0.4),
+      light,
+      dim: 0.55 * clamp01((t - OPENING.turn) / 3),
+      time,
+      outage: clamp01((t - OPENING.pull[0]) / 6),
+      calm: this.calm,
+    });
   }
 }

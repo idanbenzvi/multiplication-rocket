@@ -17,6 +17,13 @@ at the end, like a movie.
 And the game's logo becomes SPACE TIMES (the Gemini art, docs/brand), its background removed, its
 objects and its chrome letters animated.
 
+Then, on the preview (2026-10-27), more film to it: before a scene, as in sci-fi films, the date,
+*Location: Near Earth Orbit* and so on typed in at the bottom left in glowing green. Each number
+swallowed bursts like React Bits Pro's Glyph Stream, and the Sun throws off glowing ASCII
+characters, the numbers it's corrupted, like its Liquid ASCII (both Pro, so both our own). The
+numbers each get a little bloom instead of the glow round them, and Earth is drawn like
+Kurzgesagt's.
+
 ## The flow, the first time the game opens
 
 1. The studio's opening, as now.
@@ -87,6 +94,35 @@ again from About, it plays over About's own, which comes back after.
   and the pilot's ship from `shipArt`. Each is a class stepped by time (`draw(ctx, w, h, t)`),
   so it's easy to seek and to test frame by frame.
 - Orbie is the game's own `Orb` (React Bits), laid over the canvas where the scene says.
+- **The where and when** (`film.tsx`'s `Slate`): typed a character at a time (34 ms each, 0.3 s
+  between lines, `timeline.ts`'s `typedAt`, tested), a key's click with each (`sfx.type`), in
+  VT323 (Rubik Pixels for Hebrew), green with a glow and a faint flicker; at the bottom left
+  (the right, in Hebrew), above the film's bar. The opening's is today's date and time, *Near
+  Earth orbit* and *space traffic: normal*; the launch's, the launch pad, the pilot and the
+  mission. The lights go down after ▶ Start, it's typed on the dark, and the pictures come up
+  under it (the story's clock waits till then); in the launch it's gone as they do, since the
+  ship lifts off where it is. With reduced motion it's just there.
+- **The numbers' bloom** (`bloom.ts`): each drawn once with its colour hazed close round it, a
+  tighter glow on its strokes and their middles nearly white, added with `lighter`. The Black
+  Sun's scene takes a `numberArt` the story's sun overrides, so the swallowed ones bloom too.
+- **What the Black Sun does to them** (`corruption.ts`, the story's sun only; the boss fight is
+  unchanged): the Black Sun's scene now says where each number touched the dark (`swallowed`).
+  There a crown of glyph tiles is thrown up and falls back (rounded squares from violet to pink,
+  a sheen along the top, their characters flickering fast and then settling, each with a short
+  tail, one tile to a grid cell). From the far side what's left of it gushes out as liquid made of
+  characters: lumps under the sun's pull, spread over a grid of terminal-shaped cells (0.6 as wide
+  as tall), each cell's character by how thick it is there (`.:-~=+*#%@`), violet to pink, the
+  number's own digits and glitches flickering in it while it's fresh. Arcs of it leap off the sun
+  all the while, most falling back like prominences. The grid's drawn on a canvas of its own 30
+  times a second, a terminal's refresh, and moved with the sun in between (about 56 fps with the
+  CPU slowed 4×, in dev).
+- **Earth** (`earth.ts`), Kurzgesagt's way: a ball, its lands, deserts, ice and clouds kept in
+  longitude and latitude, rounded off, and seen from far off as it turns (an orthographic view;
+  what's round the back is pressed to the edge). A blue sea, flat green lands, a light blue haze
+  round and just inside its edge, a soft shine on its lit side, and its night side in four soft
+  bands (each the shadow's half-ellipse a little further round). 640 cities' lights, crowded
+  round the great cities, on land only, twinkling, going out as the numbers go. The launch sees
+  the same Earth's night side, turned so Europe is just below the bloom.
 - The overlays sit over the bay (under the studio's opening), pause the game, and handle Back,
   Esc and *Skip*.
 

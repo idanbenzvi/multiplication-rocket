@@ -526,6 +526,15 @@ export const sfx = {
     tone(c, 520, t + 0.22, 0.5, { type: 'triangle', gain: 0.04, glideTo: 160 });
   },
 
+  /** the story's where and when, typed in: a terminal's key, a tiny click */
+  type() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.005;
+    noiseBurst(c, t, 0.03, 4200, 2400, 0.045);
+    tone(c, 1800 + Math.random() * 400, t, 0.035, { type: 'square', gain: 0.01 });
+  },
+
   /** Space Traffic: a slow ship closing in, each blip a little higher (0, 1, 2, …). */
   blip(step: number) {
     const c = audio();

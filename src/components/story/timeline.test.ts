@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BEATS, HOLD_MAX, StoryClock, beatAt, circleThrough } from './timeline';
+import { BEATS, HOLD_MAX, StoryClock, TYPING, beatAt, circleThrough, typeTime, typedAt } from './timeline';
 
 describe('beatAt', () => {
   it('finds the beat a moment is in', () => {
@@ -55,5 +55,26 @@ describe('circleThrough', () => {
     expect(c.r).toBe(50);
     expect(c.x).toBeCloseTo(0, 6);
     expect(c.y).toBeCloseTo(50, 6);
+  });
+});
+
+describe('typedAt', () => {
+  const lines = ['DATE: 27 OCT', 'LOCATION: NEAR EARTH ORBIT'];
+  const total = lines.join('').length;
+
+  it('types a character at a time, pausing between the lines', () => {
+    expect(typedAt(lines, 0)).toBe(0);
+    expect(typedAt(lines, TYPING.char * 3.5)).toBe(3);
+    // the first line done, then a pause before the next
+    const first = lines[0].length * TYPING.char;
+    expect(typedAt(lines, first + 0.001)).toBe(lines[0].length);
+    expect(typedAt(lines, first + TYPING.line - 0.001)).toBe(lines[0].length);
+    expect(typedAt(lines, first + TYPING.line + TYPING.char * 2.5)).toBe(lines[0].length + 2);
+  });
+
+  it('has typed it all once typeTime has passed, and no more', () => {
+    expect(typedAt(lines, typeTime(lines) - 0.01)).toBeLessThan(total);
+    expect(typedAt(lines, typeTime(lines) + 0.001)).toBe(total);
+    expect(typedAt(lines, 99)).toBe(total);
   });
 });

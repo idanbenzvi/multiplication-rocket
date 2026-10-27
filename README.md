@@ -11,14 +11,19 @@ reach the destination planet, which grows in the sky as you get closer, and warp
 
 ## The story 🌑
 
-The first time the game opens, a short film tells why: everything in space runs on numbers, until
-the Sun turns bad. Dark veins creep across it, its light caves in, angry eyes open and it becomes
-the **Black Sun**, a black hole that swallows every number in the universe. The ships' engines
-sputter out and space traffic stops. Earth needs a pilot, and Orbie, the ship's computer, is ready
-to fly with them. It's told with the game's own art, animated on a canvas, letterboxed, its words
+The first time the game opens, a short film tells why. It opens as films do, the date and time
+and *LOCATION: NEAR EARTH ORBIT* typed in, in a terminal's glowing green, on the dark. Everything in
+space runs on numbers, each with a little bloom, until the Sun turns bad. Dark veins creep across
+it, its light caves in, angry eyes open and it becomes the **Black Sun**, a black hole that
+swallows every number in the universe: each one splashes a crown of glyph tiles as it goes in, and
+the Sun spits out what's left of them as liquid made of glowing characters, heavier where it's
+thicker. The ships' engines sputter out and space traffic stops. Earth (drawn the way Kurzgesagt
+draws it: flat colours, rounded lands, its night side in soft bands, its cities' lights going
+out) needs a pilot, and Orbie, the ship's computer, is ready to fly with them. It's told with the game's own art, animated on a canvas, letterboxed, its words
 along the bottom and read aloud (🔇 turns the voice off; *Skip* skips it). Then the launch bay
 reads **EARTH NEEDS A PILOT!**, Orbie greets the new pilot by name in the hangar, and their first
-take-off is a launch from Earth: its night side below, its edge a line of light from the top of the
+take-off is a launch from Earth (the launch pad, the pilot's name and the mission typed in first):
+its night side below, its edge a line of light from the top of the
 screen to the bottom with a purple haze and a bloom where the Black Sun hangs over it, the ship
 turning some 40° towards it, the stars stretching into hyperspace as it shrinks to a dot, and a
 white-out into the **SPACE TIMES** title, which flies up into the top bar as the game begins. It

@@ -2,12 +2,14 @@ import { glow, pilotCanopy, pilotEngines, rearShipSvg, rgba, sprite } from '../t
 import { HYPER_TINTS, hyperStreak } from '../arrival/dropOut';
 import type { Point } from '../arrival/eclipse';
 import type { PadShipSpec } from '../bay/useBay';
+import { bringing, drawNightSide } from './earth';
 import { StorySun } from './storySun';
+import { TAU, clamp01, easeIn, easeInOut, easeOut, lerp } from './storyMath';
 import { LAUNCH, circleThrough } from './timeline';
 
 // The launch (StoryLaunch.tsx): a new pilot's first take-off, as a film's.
-// Earth's night side fills the lower left, its city lights twinkling, and its
-// edge runs from the top of the screen to the bottom, a razor line of light
+// Earth's night side fills the lower left (earth.ts), its cities' lights
+// twinkling, and its edge runs from the top of the screen to the bottom, a razor line of light
 // with its air glowing pink to violet beyond it, a purple haze, and a bloom
 // of light on the edge where the Black Sun hangs above it (after React Bits
 // Pro's Horizon Bloom, its Edge preset, on its side; ours). The pilot's own
@@ -16,20 +18,12 @@ import { LAUNCH, circleThrough } from './timeline';
 // brighter, blooming, as it shrinks to a glint and a dot, and the screen
 // washes out to white.
 
-const TAU = Math.PI * 2;
-const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
-const easeOut = (t: number) => 1 - (1 - t) ** 3;
-const easeIn = (t: number) => t * t * t;
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-
 const STARS = 260;
 /** the ship's heading, once it has turned (degrees right of straight up; on a narrow screen a little steeper, to stay on it) */
 const HEADING = 41;
 const HEADING_NARROW = 30;
-/** the cities on Earth's night side: so many clusters, of so many lights */
-const CITIES = 46;
-const CITY_LIGHTS = 7;
+/** the place on Earth just below the bloom, at the edge (Europe's lights, lon/lat) */
+const BELOW_BLOOM: [number, number] = [14, 46];
 
 interface Star {
   /** where it is round the vanishing point (angle) and how far out, near to the camera (z from 1 far to 0 at the camera) */
@@ -47,7 +41,6 @@ export class LaunchScene {
   private readonly shipSvg: string;
   private readonly ship: PadShipSpec;
   private readonly stars: Star[];
-  private readonly lights: Array<{ s: number; d: number; size: number; rate: number; phase: number }> = [];
   private t = 0;
   /** how fast the stars come at it (0 to 1, the warp) */
   private warp = 0;
@@ -63,14 +56,6 @@ export class LaunchScene {
     this.shipSvg = rearShipSvg(ship.accent, ship.admiral, ship.ship);
     sprite(this.shipSvg, 384, 384, ship.avatar ? { emoji: ship.avatar, ...pilotCanopy(ship.ship) } : undefined);
     this.stars = Array.from({ length: STARS }, () => newStar(Math.random()));
-    // the cities, in clusters along the edge and back from it (where along the edge on screen, 0 to 1, and how far in, a share of the screen)
-    for (let c = 0; c < CITIES; c++) {
-      const s = Math.random();
-      const d = 0.015 + Math.random() ** 1.4 * 0.75;
-      for (let i = 0; i < CITY_LIGHTS; i++) {
-        this.lights.push({ s: s + (Math.random() - 0.5) * 0.035, d: Math.max(0.006, d + (Math.random() - 0.5) * 0.04), size: 0.4 + Math.random(), rate: 1 + Math.random() * 4, phase: Math.random() * TAU });
-      }
-    }
   }
 
   /** where the ship lifts off (the bottom left), and where it's heading off to (the vanishing point) */
@@ -278,35 +263,22 @@ export class LaunchScene {
     ctx.fillRect(bx - aura, by - aura, aura * 2, aura * 2);
     ctx.restore();
 
-    // the night side
+    // the night side: its seas, its lands and its cities, Europe's just below the bloom
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, TAU);
     const body = ctx.createRadialGradient(bx, by, 0, bx, by, r * 0.9);
     body.addColorStop(0, '#2a1a5c');
-    body.addColorStop(0.12, '#141640');
-    body.addColorStop(0.5, '#090b26');
-    body.addColorStop(1, '#05061a');
+    body.addColorStop(0.12, '#121a48');
+    body.addColorStop(0.5, '#0a1032');
+    body.addColorStop(1, '#060a24');
     ctx.fillStyle = body;
     ctx.fill();
     ctx.clip();
-    // its cities, twinkling, all along the edge on screen (from where it leaves the top to the bottom) and back from it, foreshortened near it
-    ctx.globalCompositeOperation = 'lighter';
-    const across = (y: number) => Math.atan2(y - cy, Math.sqrt(Math.max(0, r * r - (y - cy) ** 2)));
-    const a0 = across(0);
-    const a1 = across(h);
-    for (const l of this.lights) {
-      const a = lerp(a0, a1, l.s);
-      const d = r - l.d * u;
-      const x = cx + Math.cos(a) * d;
-      const y = cy + Math.sin(a) * d;
-      if (x < -10 || y < -10 || x > w + 10 || y > h + 10) continue;
-      const fore = 0.35 + 0.65 * clamp01(l.d * 6);
-      const tw = this.calm ? 0.8 : 0.6 + 0.4 * Math.sin(t * l.rate + l.phase);
-      const size = u * 0.009 * l.size * fore * tw;
-      ctx.drawImage(glow('#ffc46a'), x - size, y - size * fore, size * 2, size * 2 * fore);
-    }
+    const lands = bringing(BELOW_BLOOM[0], BELOW_BLOOM[1], [Math.cos(toSun) * 0.9, -Math.sin(toSun) * 0.9, 0.44]);
+    drawNightSide(ctx, { x: cx, y: cy }, r, { lands, time: t, calm: this.calm, lamp: u * 0.015, w, h });
     // the air, lit, just inside the edge
+    ctx.globalCompositeOperation = 'lighter';
     const inner = ctx.createRadialGradient(cx, cy, r * 0.94, cx, cy, r);
     inner.addColorStop(0, rgba('#ff6ad5', 0));
     inner.addColorStop(0.8, rgba('#b45cff', 0.18));
