@@ -5,6 +5,7 @@ import { isTouchDevice } from '../../../settings/useSettings';
 import { sfx } from '../../../audio/sfx';
 import { OP_SYMBOL } from '../../../game/mission';
 import CountUp from '../../reactbits/CountUp';
+import Counter from '../../reactbits/Counter';
 import DecryptedText from '../../reactbits/DecryptedText';
 import ElectricBorder from '../../reactbits/ElectricBorder';
 import GradientText from '../../reactbits/GradientText';
@@ -14,18 +15,20 @@ import StarBorder from '../../reactbits/StarBorder';
 import { dirOfLook, pointOnQuad } from '../geometry';
 import { NOSE_PITCH } from '../drive';
 import { WINDSCREEN_PX, WINDSCREEN_QUAD } from '../screens';
-import { GATE_GAP, LANE, type Gate, type GateResult } from './gates';
+import { GATE_GAP, LANE, RULER, type Gate, type GateResult } from './gates';
 import { live, useCanyon } from './useCanyon';
 import './canyon.css';
 
 // What a Canyon Run shows the pilot. On the windscreen's glass, in the HUD's
-// amber: the gate coming up and its fact, how far to it, the speed, a pip
-// for each gate (gold a bullseye, cyan close, dim a miss), and, through a
-// gate, what it was: BULLSEYE (and how many in a row), or how close, with
-// a little number line from the number flown through to the answer, the gap
-// between them being the difference. Over the view: the countdown before
-// diving in, the way to steer, End run, the pad steering takes on a touch
-// screen, and the run's results at its end.
+// amber: the gate coming up and its fact, how far to it, the speed, the
+// number the ship's aiming at (rolling up and down as it's steered, as the
+// HUD's numbers do), a pip for each gate (gold a bullseye, cyan close, dim a
+// miss), and, through a gate, what it was: BULLSEYE (and how many in a
+// row), or how close, with a little number line from the number flown
+// through to the answer, the gap between them being the difference. Over
+// the view: the countdown before diving in (or, arriving, the canyon's name
+// as the white clears), the way to steer (keys, the mouse across the
+// screen, or a finger), End run, and the run's results at its end.
 
 /** the nose on the windscreen's page (the flight's heading) */
 const NOSE = (() => {
@@ -33,6 +36,8 @@ const NOSE = (() => {
   return { x: p[0] * WINDSCREEN_PX[0], y: p[1] * WINDSCREEN_PX[1] };
 })();
 const SHOUT_MS = 2600;
+/** the screen's edges the mouse steers short of (a share of its width, either side) */
+const MOUSE_MARGIN = 0.1;
 
 /** re-render every `ms` (the live numbers) */
 function useTicker(ms: number) {
@@ -92,6 +97,7 @@ export function CanyonGlass() {
   const rtl = useLang((s) => s.lang) === 'he';
   const phase = useCanyon((s) => s.phase);
   const shout = useCanyon((s) => s.shout);
+  const titled = useCanyon((s) => s.titled);
   const [shown, setShown] = useState<typeof shout>(null);
   useTicker(110);
   useEffect(() => {
@@ -108,13 +114,14 @@ export function CanyonGlass() {
   const gate = run.ahead();
   const to = run.toGate();
   const near = gate && to < 700;
+  const aimed = gate && run.phase === 'fly' ? run.aimed() : null;
   const speed = run.forward() * 0.55;
   const shoutGate = shown ? run.gates[shown.result.gate] : null;
 
   return (
     <div className="ck3-hud-glass cn-glass" dir="ltr">
-      {/* the gate coming up, and its fact (making way for what the last one was) */}
-      <div className={`cn-fact ${shown ? 'is-away' : ''}`}>
+      {/* the gate coming up, and its fact (making way for what the last one was, or the canyon's name) */}
+      <div className={`cn-fact ${shown || titled ? 'is-away' : ''}`}>
         {gate ? (
           <>
             <em>{t.gate(run.next + 1, run.gates.length)}</em>
@@ -146,6 +153,16 @@ export function CanyonGlass() {
         <circle r="9" />
         <path d="M -9 0 H -34 M 9 0 H 34 M 0 -9 V -20" />
       </svg>
+
+      {/* the number it's aiming at, under the nose */}
+      {aimed !== null && (
+        <div className="cn-aim" style={{ left: NOSE.x, top: NOSE.y + 44 }}>
+          <em>{t.aim}</em>
+          <span className="cn-aim-box">
+            <Counter value={aimed} fontSize={58} textColor="currentColor" intro={false} />
+          </span>
+        </div>
+      )}
 
       {/* the speed */}
       <div className="cn-speed">
@@ -231,6 +248,21 @@ function useSteering(enabled: boolean) {
   }, [enabled]);
 }
 
+/** the mouse across the screen: the ruler ahead from one side to the other, the ship aiming at the number under it */
+function useMouseSteering(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      // (a margin either side, so the ends are easy to reach)
+      const k = (e.clientX / window.innerWidth - MOUSE_MARGIN) / (1 - 2 * MOUSE_MARGIN);
+      live.run?.aimAt(-RULER + Math.max(0, Math.min(1, k)) * RULER * 2);
+    };
+    window.addEventListener('pointermove', move);
+    return () => window.removeEventListener('pointermove', move);
+  }, [enabled]);
+}
+
 function SteerPad() {
   const touch = useRef<{ id: number; x: number; side: -1 | 1; from: number; dragging: boolean } | null>(null);
   const onDown = (e: React.PointerEvent) => {
@@ -300,7 +332,14 @@ export function CanyonVisor() {
   const close = useCanyon((s) => s.close);
   const start = useCanyon((s) => s.start);
   const rtl = lang === 'he';
+  const entry = useCanyon((s) => s.entry);
+  const veil = useCanyon((s) => s.veil);
+  // arriving: the canyon's name, once the white's clearing
+  const titled = useCanyon((s) => s.titled && s.phase === 'flight');
   useSteering(phase === 'flight');
+  useMouseSteering(phase === 'flight' && !isTouchDevice);
+  const place = useT();
+  const world = live.place.world;
   const [title, setTitle] = useState({ w: 0, h: 0 });
   useEffect(() => setTitle({ w: Math.min(window.innerWidth * 0.86, 720), h: Math.min(170, window.innerWidth * 0.2) }), []);
 
@@ -321,12 +360,24 @@ export function CanyonVisor() {
         </div>
       )}
 
-      {phase === 'flight' && (
+      <AnimatePresence>
+        {titled && (
+          <motion.div key="arrival" className="cn-arrival" initial={{ opacity: 0, y: 24, filter: 'blur(10px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, scale: 1.08, filter: 'blur(8px)' }} transition={{ duration: 0.6 }}>
+            <GradientText className="cn-arrival-title" colors={['#ffd36b', '#ff9d4d', '#ff6a3d', '#ffd36b']} animationSpeed={2.4}>
+              {t.title}
+            </GradientText>
+            <ShinyText text={t.on(place.destinations[world])} className="cn-arrival-on" color="#ffe2bd" shineColor="#ffffff" speed={2} />
+            <p className="cn-intro-brief">{t.brief}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {phase === 'flight' && !veil && (
         <>
           <button type="button" className="cn-end ck3-hud-ui" onClick={() => land(false)}>
             ✕ {t.end}
           </button>
-          <p className="cn-hint">{isTouchDevice ? t.steerTouch : t.steerKeys}</p>
+          <p className="cn-hint">{isTouchDevice ? t.steerTouch : t.steerMouse}</p>
         </>
       )}
 
@@ -380,7 +431,7 @@ export function CanyonVisor() {
                     🏜️ {t.again}
                   </StarBorder>
                   <button type="button" className="cn-results-back" onClick={close}>
-                    {t.back}
+                    {entry === 'arrival' ? t.onward : t.back}
                   </button>
                 </div>
               </div>

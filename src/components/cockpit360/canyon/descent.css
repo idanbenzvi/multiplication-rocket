@@ -1,0 +1,78 @@
+/* ==================== ARRIVING FOR A CANYON RUN (canyon/Descent.tsx) ==================== */
+.cd {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  background: #05030c;
+  color: #fff1dc;
+  font-family: 'Orbitron', 'Secular One', 'Fredoka', sans-serif;
+  user-select: none;
+}
+.cd-scene {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 42%;
+  will-change: transform, filter;
+}
+.cd-canvas,
+.cd-smoke-host,
+.cd-smoke {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cd-smoke {
+  mix-blend-mode: screen;
+}
+.cd-words {
+  position: absolute;
+  top: calc(12vh + env(safe-area-inset-top));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  pointer-events: none;
+}
+.cd-entering {
+  color: #ffd27a;
+  font-weight: 800;
+  font-size: clamp(14px, 2.2vw, 22px);
+  letter-spacing: 0.4em;
+  text-shadow: 0 0 14px rgba(255, 140, 50, 0.85);
+}
+.cd-name {
+  font-weight: 900;
+  font-size: clamp(34px, 7vw, 76px);
+  letter-spacing: 0.06em;
+  filter: drop-shadow(0 0 18px rgba(255, 150, 60, 0.7));
+}
+.cd-skip {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  inset-inline-end: calc(14px + env(safe-area-inset-right));
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 210, 160, 0.45);
+  border-radius: 999px;
+  background: rgba(10, 4, 0, 0.45);
+  color: #ffe2bd;
+  font: 700 14px 'Chakra Petch', 'Rubik', sans-serif;
+  cursor: pointer;
+}
+.cd-skip:hover,
+.cd-skip:focus-visible {
+  background: rgba(60, 28, 6, 0.75);
+}
+.cd-white {
+  position: absolute;
+  inset: 0;
+  background: #fffaf2;
+  pointer-events: none;
+}

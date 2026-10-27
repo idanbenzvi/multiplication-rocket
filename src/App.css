@@ -828,6 +828,17 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.launch-overlay-canyon {
+  margin: 0.6rem auto 0.9rem !important;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 140, 60, 0.14);
+  border: 1px solid rgba(255, 160, 90, 0.5);
+  box-shadow: 0 0 24px rgba(255, 120, 40, 0.25);
+  color: #ffe2bd !important;
+  font-weight: 700;
+}
+
 .launch-stage-up {
   margin: 0.6rem auto 0.9rem;
   padding: 0.6rem 1rem;

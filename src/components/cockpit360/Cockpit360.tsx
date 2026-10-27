@@ -20,7 +20,7 @@ import { Panel } from './Panel';
 import { HOTSPOT_QUADS, HOTSPOTS, QUADS, SCREENS, WINDSCREEN_QUAD, type HotspotId, type ScreenId } from './screens';
 import { stopLook, useCockpit } from './store';
 import { useLookControls } from './useLookControls';
-import { useCanyon } from './canyon/useCanyon';
+import { runQuality, useCanyon } from './canyon/useCanyon';
 import { CanyonGlass, CanyonVisor } from './canyon/CanyonHud';
 import { baseFov, HOME, lookAt, lookTo, settled, shudder, startShudders, stopShudders, view } from './view';
 import './cockpit360.css';
@@ -42,7 +42,9 @@ import './cockpit360.css';
 // opens out of the ⚙️ button instead; with reduced motion it fades.
 //
 // The orange buttons by the stick take the ship: MANUAL, and the Canyon
-// Run (canyon/), flown from the seat, the canyon outside the glass.
+// Run (canyon/), flown from the seat, the canyon outside the glass. At a
+// level's end it can open straight into one, under the white of arriving
+// (canyon/Descent.tsx): there at once, and back out through an iris.
 
 /** the flight in: the cockpit fills the screen about half-way, the camera keeps going behind it */
 const OPEN_MS = 1500;
@@ -58,7 +60,7 @@ const CALM_MS = 250;
 /** a screen's page opens once the zoom is nearly there (or after this long, whatever) */
 const PANEL_AFTER_MS = 900;
 
-type Way = 'porthole' | 'iris' | 'calm';
+type Way = 'porthole' | 'iris' | 'calm' | 'white';
 
 // While in the cockpit the game's HUD steps aside (cockpit360.css), fading out
 // as the camera dives in and back once you're out again.
@@ -77,6 +79,8 @@ function hudBack() {
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+/** a Canyon Run's look: straight out, a little up (more up and narrower on a phone held upright) */
+const runLook = (aspect: number) => ({ look: { yaw: 0, pitch: (aspect >= 1.15 ? 1 : 3) * (Math.PI / 180) }, fov: view.base * (aspect >= 1.15 ? 1 : 0.86) });
 const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
 
 /** the rocket is out there in plain view, flying along: go in through its window */
@@ -128,8 +132,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const [hover, setHover] = useState<FaceId | null>(null);
   const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   // a phone or a small tablet: a lighter lens
-  const [low] = useState(() => isTouchDevice && Math.min(window.innerWidth, window.innerHeight) < 820);
-  const [way] = useState<Way>(() => (calm ? 'calm' : canFlyIn() ? 'porthole' : 'iris'));
+  const [low] = useState(() => runQuality() === 'low');
+  const [way] = useState<Way>(() => (useCockpit.getState().arriving ? 'white' : calm ? 'calm' : canFlyIn() ? 'porthole' : 'iris'));
   const [r0] = useState(() => Math.max(2, portholeScreen.r));
   const [moving, setMoving] = useState(true);
   const [panelFor, setPanelFor] = useState<ScreenId | null>(null);
@@ -144,15 +148,24 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     return () => css.dispose();
   }, [css]);
 
-  // looking ahead as it opens, from a little way in (the view widening as you arrive)
+  // looking ahead as it opens, from a little way in (the view widening as you arrive); arriving, out at the canyon
   useState(() => {
     view.calm = calm;
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     view.base = baseFov(aspect);
+    if (way === 'white') {
+      const run = runLook(aspect);
+      lookAt(run.look, run.fov);
+      return 0;
+    }
     lookAt(HOME, calm ? view.base : view.base * 0.62);
     lookTo(HOME, view.base, 4.2);
     return 0;
   });
+  // (arriving, the canyon's been built during the descent: into it)
+  useEffect(() => {
+    if (way === 'white') useCanyon.getState().fly();
+  }, [way]);
 
   // ---- flying in and out ----
   useEffect(() => {
@@ -186,7 +199,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       step.current = { leaving, at: performance.now() };
       setMoving(true);
       if (leaving) sfx.cockpitOut();
-      else sfx.cockpitIn();
+      else if (way !== 'white') sfx.cockpitIn();
     }
     if (!leaving) {
       hudAway();
@@ -203,11 +216,12 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       raf = requestAnimationFrame(tick);
       const now = performance.now();
       const el = now - t0;
-      if (way === 'calm') {
-        const k = clamp01(el / CALM_MS);
+      if (way === 'calm' || (way === 'white' && !leaving)) {
+        // (arriving, there at once: the white's over it)
+        const k = way === 'white' ? 1 : clamp01(el / CALM_MS);
         root.style.opacity = String(leaving ? 1 - k : k);
         if (k < 1) return;
-      } else if (way === 'iris') {
+      } else if (way === 'iris' || way === 'white') {
         const k = clamp01(el / (leaving ? IRIS_CLOSE_MS : IRIS_OPEN_MS));
         const p = leaving ? 1 - ease(k) : ease(k);
         show(origin.x, origin.y, cover(origin.x, origin.y) * p, p);
@@ -253,7 +267,9 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       resumeGame('cockpit');
       if (cockpitDolly.to > 0) moveCockpitDolly(0, CLOSE_MS);
       glowLights.hot = null;
-      useCanyon.getState().close();
+      // (only when it's closed: an arrival's run is under way before the cockpit's there, and React's
+      // strict mode takes it down and puts it back once as it's first shown)
+      if (useCockpit.getState().phase === 'closed') useCanyon.getState().close();
     },
     [],
   );
@@ -261,8 +277,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   // a Canyon Run looks straight out of the windscreen, a little higher than usual (more of the canyon, less of the console)
   useEffect(() => {
     if (canyon === 'intro') {
-      const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-      lookTo({ yaw: 0, pitch: (aspect >= 1.15 ? 1 : 3) * (Math.PI / 180) }, view.base * (aspect >= 1.15 ? 1 : 0.86), 6);
+      const run = runLook(window.innerWidth / Math.max(1, window.innerHeight));
+      lookTo(run.look, run.fov, 6);
     } else if (canyon === 'off') lookTo(HOME, view.base, 8);
   }, [canyon]);
 
@@ -330,7 +346,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
         sfx.clunk(true);
         glowLights.hot = null;
         if (useCockpit.getState().focused) unfocus();
-        useCanyon.getState().start(low ? 'low' : 'high', calm);
+        useCanyon.getState().start(low ? 'low' : 'high', calm, 'manual', level);
         return;
       }
       if (id === 'overhead') return onAbout();
@@ -338,7 +354,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       sfx.whoosh();
       turnTo(id);
     },
-    [turnTo, onClose, onAbout, onParents, unfocus, low, calm],
+    [turnTo, onClose, onAbout, onParents, unfocus, low, calm, level],
   );
 
   const onClick = (e: React.MouseEvent) => {
@@ -426,7 +442,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       aria-label={t.settings}
       tabIndex={-1}
       dir="ltr"
-      style={{ opacity: way === 'iris' ? 1 : 0, clipPath: way === 'calm' ? 'none' : 'circle(0px at 50% 50%)' }}
+      style={{ opacity: way === 'iris' || way === 'white' ? 1 : 0, clipPath: way === 'calm' || way === 'white' ? 'none' : 'circle(0px at 50% 50%)' }}
       // the game's own keys (answers, the hint) stay out while the cockpit is open
       onKeyDown={(e) => e.key !== 'Escape' && e.stopPropagation()}
       onClick={onClick}

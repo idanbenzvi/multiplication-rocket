@@ -3,8 +3,11 @@ import type { Progress } from '../../../game/types';
 import { Canyon, GATE_HALF, HOVER, MAX_HEIGHT, sunlight } from './field';
 import { buildChunk, CHUNK, columns } from './chunk';
 import { buildGates, GATE_COUNT, gateDistances, judge, LANE, RULER, RULER_ROOM, runLength, SPAN, uOf, valueAt, windowFor } from './gates';
-import { Run } from './run';
+import { PACE_MAX, PACE_MIN, PACE_START, Run } from './run';
 import { seeded } from './noise';
+import { canLand, nextDue, NO_CANYON } from './arrival';
+import { canyonPalette, hexToLinear, linearToHex, STRATA, tint } from './palette';
+import { getLevelConfig } from '../../../game/levels';
 
 const progress = (level: number, stage?: number): Progress => ({
   version: 1,
@@ -187,10 +190,10 @@ describe('Canyon Run: the gates', () => {
 });
 
 describe('Canyon Run: the flight', () => {
-  const runFor = (seed: number, calm = false) => {
+  const runFor = (seed: number, calm = false, pace?: number) => {
     const rand = seeded(seed);
     const gates = buildGates(progress(4), 'mul', rand);
-    return new Run(new Canyon({ seed, gates: gates.map((g) => g.d), end: runLength() }), gates, calm);
+    return new Run(new Canyon({ seed, gates: gates.map((g) => g.d), end: runLength() }), gates, calm, pace);
   };
 
   it('dives in, flies the canyon through every gate by itself, climbs out and ends', () => {
@@ -200,9 +203,9 @@ describe('Canyon Run: the flight', () => {
     expect(run.results).toHaveLength(GATE_COUNT);
     expect(events.filter((e) => e.type === 'climb')).toHaveLength(1);
     expect(events.filter((e) => e.type === 'done')).toHaveLength(1);
-    // about a minute and a bit
+    // a minute and a half or two (not steered, it misses, so it slows to its gentlest)
     expect(run.time).toBeGreaterThan(50);
-    expect(run.time).toBeLessThan(95);
+    expect(run.time).toBeLessThan(130);
   });
 
   it('keeps over the floor and inside the walls all the way', () => {
@@ -236,6 +239,36 @@ describe('Canyon Run: the flight', () => {
     expect(fastest).toBeGreaterThan(70);
   });
 
+  it('eases its pace down with misses and up with bullseyes, between its slowest and fastest', () => {
+    const missed = runFor(26);
+    expect(missed.pace).toBe(PACE_START);
+    fly(missed, (r) => {
+      const g = r.ahead();
+      if (g) r.dragTo(uOf(g, g.answer + (g.answer - g.lo > 10 ? -6 : 6)));
+    });
+    expect(missed.results.every((r) => r.verdict === 'miss')).toBe(true);
+    expect(missed.pace).toBe(PACE_MIN);
+    const flown = runFor(26, false, 1);
+    fly(flown, (r) => {
+      const g = r.ahead();
+      if (g) r.dragTo(uOf(g, g.answer));
+    });
+    expect(flown.pace).toBe(PACE_MAX);
+    // (and a run carries on at the pace it's given, within the bounds)
+    expect(runFor(26, false, 3).pace).toBe(PACE_MAX);
+  });
+
+  it('aims where the mouse points, settling on the nearest number', () => {
+    const run = runFor(27);
+    for (let i = 0; i < 60 * 4; i++) run.step(1 / 60);
+    const g = run.ruler()!;
+    run.aimAt(uOf(g, g.lo + 12) + LANE * 0.3);
+    expect(run.aimed()).toBe(g.lo + 12);
+    for (let i = 0; i < 60 * 1.5; i++) run.step(1 / 60);
+    expect(valueAt(g, run.ship.u)).toBe(g.lo + 12);
+    expect(run.ship.u).toBeCloseTo(uOf(g, g.lo + 12), 1);
+  });
+
   it('steps one number along a tap, and glides held', () => {
     const run = runFor(24);
     for (let i = 0; i < 60 * 4; i++) run.step(1 / 60);
@@ -261,5 +294,63 @@ describe('Canyon Run: the flight', () => {
     const events = [];
     for (let i = 0; i < 60 * 8; i++) events.push(...run.step(1 / 60));
     expect(events.some((e) => e.type === 'scrape')).toBe(true);
+  });
+});
+
+describe('Canyon Run: arriving at a level’s end', () => {
+  it('lands every three or four levels, never into the asteroid belt (then the next level’s end)', () => {
+    expect(nextDue(3, true)).toEqual({ land: false, due: 2 });
+    expect(nextDue(2, true)).toEqual({ land: false, due: 1 });
+    const landed = nextDue(1, true, () => 0.99);
+    expect(landed.land).toBe(true);
+    expect([3, 4]).toContain(landed.due);
+    expect(nextDue(1, true, () => 0).due).toBe(3);
+    // due at the asteroid belt: held over
+    expect(nextDue(1, false)).toEqual({ land: false, due: 0 });
+    expect(nextDue(0, true).land).toBe(true);
+    // over many level ends, about one in three or four
+    const rand = seeded(5);
+    let due = 3;
+    let lands = 0;
+    for (let level = 1; level <= 120; level++) {
+      const next = nextDue(due, canLand(level), rand);
+      due = next.due;
+      if (next.land) {
+        lands++;
+        expect(NO_CANYON.has(getLevelConfig(level).destinationIndex)).toBe(false);
+      }
+    }
+    expect(lands).toBeGreaterThan(120 / 4.6);
+    expect(lands).toBeLessThan(120 / 2.8);
+  });
+
+  it('knows the asteroid belt has no ground', () => {
+    const belt = Array.from({ length: 16 }, (_, i) => i + 1).find((l) => getLevelConfig(l).destinationIndex === 5)!;
+    expect(canLand(belt)).toBe(false);
+    expect(canLand(belt + 1)).toBe(true);
+  });
+});
+
+describe('Canyon Run: its colours', () => {
+  it('keeps the canyon as it was with no world, and leans it towards a world’s colours, its layers as light and dark', () => {
+    const plain = canyonPalette(null, null);
+    expect(plain.strata).toEqual(STRATA);
+    const neptune = canyonPalette(9, 9);
+    const lum = ([r, g, b]: [number, number, number]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    neptune.strata.forEach(([hex], i) => {
+      const before = hexToLinear(STRATA[i][0]);
+      const after = hexToLinear(hex);
+      // bluer than it was, about as bright
+      expect(after[2] / Math.max(after[0], 1e-3)).toBeGreaterThan(before[2] / Math.max(before[0], 1e-3));
+      expect(lum(after)).toBeCloseTo(lum(before), 1);
+    });
+    // its star's light leaning to the star's colour
+    expect(neptune.sunLight[2] / neptune.sunLight[0]).toBeGreaterThan(plain.sunLight[2] / plain.sunLight[0]);
+  });
+
+  it('round-trips colours, and tints by none at all when asked to', () => {
+    expect(linearToHex(hexToLinear('#c8653b'))).toBe('#c8653b');
+    const c = hexToLinear('#c8653b');
+    expect(tint(c, hexToLinear('#4a78e0'), 0)).toEqual(c);
   });
 });

@@ -101,7 +101,10 @@ On a computer the top bar keeps all its buttons. On a phone or a tablet it's jus
 ### Canyon Run 🏜️ (in the cockpit)
 
 **The orange buttons by the joystick** (MANUAL) take the controls: a countdown, a white-out, and
-the ship dives into a canyon on an alien world at sunset and races along it. Across the canyon,
+the ship dives into a canyon on the world it's flying to and races along it, at sunset, the next
+destination hanging low in the sky where the sun would be. The canyon takes a little of its world's
+colours (Mars redder, Neptune bluer, the alien planet greener) and its light a little of that
+star's. Across the canyon,
 eight times, a **gate**: a pane of light from wall to wall with **a stretch of the number line**
 on it (21 numbers, every fifth named) and a fact over it, *7 × 8 = ?*, which comes up on the
 windscreen too. The answer is somewhere on that line, never at its very ends: **steer to where it
@@ -109,10 +112,17 @@ is and fly through.** Near a gate the number line is painted on the floor too, a
 canyon for each number, your own lane lit amber, and an amber bar on the gate shows where you'll
 go through.
 
-- **← →** (or A, D) step one number; holding one glides along. On a phone or a tablet, tap a side
-  of the screen for one number, hold to glide, or slide a finger across.
+- **← →** (or A, D) step one number; holding one glides along. On a computer the mouse steers
+  too: across the screen is across the number line. On a phone or a tablet, tap a side of the
+  screen for one number, hold to glide, or slide a finger across.
+- Under the crosshair, **AIM** shows the number you're heading for, its digits rolling up and down
+  as you steer. Every move throws you about in the seat a little: the view sways against a swerve
+  and leans back as the ship speeds up.
 - **Bullseye** (right on the answer): a gold flash, a whoosh, *BULLSEYE!* and a burst of speed.
   Bullseyes in a row fly faster and faster (*3 IN A ROW!*).
+- **The pace follows the pilot**: every bullseye speeds the canyon up a little, and every miss
+  slows it down more, between a gentle 65% and 125% of its speed, and the next run starts at the
+  pace the last one ended at.
 - **So close** (one or two off) and **missed it**: the windscreen shows a little number line from
   the number you flew through to the answer, the gap between them being the difference
   (*You flew through 47 · 7 × 7 = 49 · 2 further on*).
@@ -126,6 +136,15 @@ practice map and the parent dashboard (a bullseye as right, anything else as wro
 for the **first run at each level** (half a right answer's for a bullseye, a fifth for a close one;
 it never launches by itself, that's the game's, on the next right answer); after that, runs are
 for fun. With reduced motion the canyon is flown more slowly, without the shake and the blur.
+
+**Arriving in a canyon.** Now and then (every three or four levels, at random) reaching a
+destination lands in one. The launch card says so (*🏜️ Next: a Canyon Run on Mars!*), and when
+the pilot flies on, the ship dives into that world from behind, wrapped in fire as it hits the
+air: a glow round its nose, tongues of flame, embers flying off, smoke streaming back (React Bits'
+JetSmoke), *ENTERING ATMOSPHERE* decoding in over the world's name, the view shaking harder as it
+goes deeper. Then the view rushes in, blurring, to white, and out of the white the pilot's in the
+cockpit flying the canyon. At its end, **Fly on** goes back to the game. Never into the asteroid
+belt, which has no ground to fly along: then it waits for the next level's end.
 
 The canyon is made as it's flown, from noise: a height field of fractal noise with the canyon
 carved along a winding path, its walls stepped in terraces of layered sandstone, gullies, dunes,

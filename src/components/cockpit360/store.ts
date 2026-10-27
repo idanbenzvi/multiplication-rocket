@@ -12,6 +12,8 @@ import { baseFov, HOME, lookTo, view } from './view';
 
 interface CockpitState {
   phase: 'closed' | 'open' | 'leaving';
+  /** opened under the white of arriving at a destination (a Canyon Run's: canyon/arrival.ts), not flown into */
+  arriving: boolean;
   /** the button it opened from (it opens out of it when it can't fly in through the window), to go back to after */
   from: HTMLElement | null;
   before: Track;
@@ -19,8 +21,8 @@ interface CockpitState {
   stop: Stop;
   /** a screen zoomed into, its page open */
   focused: ScreenId | null;
-  /** from a tap (so the browser lets its music start) */
-  open: (from?: HTMLElement | null) => void;
+  /** from a tap (so the browser lets its music start); arriving, it keeps the run's music, and goes back to `before` */
+  open: (from?: HTMLElement | null, arriving?: { before: Track }) => void;
   /** flying back out */
   close: () => void;
   /** out: gone */
@@ -52,15 +54,16 @@ export function stopLook(stop: Stop, aspect = ASPECT()) {
 
 export const useCockpit = create<CockpitState>((set, get) => ({
   phase: 'closed',
+  arriving: false,
   from: null,
   before: 'theme',
   stop: 'ahead',
   focused: null,
-  open: (from = null) => {
+  open: (from = null, arriving) => {
     if (get().phase !== 'closed') return;
-    const before = currentTrack();
-    playTrack('cockpit');
-    set({ phase: 'open', from, before, stop: 'ahead', focused: null });
+    const before = arriving?.before ?? currentTrack();
+    if (!arriving) playTrack('cockpit');
+    set({ phase: 'open', arriving: !!arriving, from, before, stop: 'ahead', focused: null });
   },
   close: () => {
     const { phase, before } = get();
@@ -71,14 +74,14 @@ export const useCockpit = create<CockpitState>((set, get) => ({
   },
   gone: () => {
     const { from } = get();
-    set({ phase: 'closed', from: null, focused: null });
+    set({ phase: 'closed', arriving: false, from: null, focused: null });
     from?.focus({ preventScroll: true });
   },
   dismiss: () => {
     const { phase, before } = get();
     if (phase === 'closed') return;
     if (currentTrack() === 'cockpit') playTrack(before);
-    set({ phase: 'closed', from: null, focused: null });
+    set({ phase: 'closed', arriving: false, from: null, focused: null });
   },
   turnTo: (stop) => {
     const { look, fov } = stopLook(stop);

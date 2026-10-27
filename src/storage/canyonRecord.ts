@@ -3,12 +3,18 @@ import type { PilotMission } from '../game/mission';
 // What a pilot has flown in the cockpit's Canyon Run, in each mission, saved
 // next to their progress: the level whose fuel a run last paid (a run pays
 // fuel once a level; the rest are for fun), their most bullseyes in a run,
-// and how many runs they've flown.
+// how many runs they've flown, the pace their next run starts at (eased by
+// how the last went), and how many levels till a run comes by itself at a
+// level's end.
 
 export interface CanyonRecord {
   paidLevel: number;
   best: number;
   runs: number;
+  /** the next run's pace (run.ts), or none yet */
+  pace?: number;
+  /** levels to go till one lands in a canyon (arrival.ts), or none yet */
+  due?: number;
 }
 
 const PREFIX = 'multiplication-rocket:canyon:v1';

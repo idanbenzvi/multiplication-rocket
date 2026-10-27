@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import { SUN } from './field';
 import { LANE, RULER } from './gates';
+import type { CanyonPalette } from './palette';
 
 // How the canyon looks: its sky, its rock and its gates of light.
 //
 // The sky is a late afternoon's on another world: deep violet overhead, a
-// lilac haze at the horizon warming to gold towards the sun, which sits low
-// ahead, a disc past white (so it blooms), streaks of high cloud catching
-// its light, and the first stars out. The air between the ship and the rock
+// lilac haze at the horizon warming to gold towards its star, which sits low
+// ahead (the next destination, canyon/World.tsx hangs it there), streaks of
+// high cloud catching its light, and the first stars out. All of it leans a
+// little towards the world's own colours, and its star's (palette.ts). The air between the ship and the rock
 // is the same haze, thicker with distance and as a mist low in the canyon,
 // so the canyon fades into the sky with no seam.
 //
@@ -23,11 +25,13 @@ import { LANE, RULER } from './gates';
 
 const HAZE = /* glsl */ `
 uniform vec3 uSun;
-// the air's colour looking along d: lilac, warming towards the sun
+uniform vec3 uHazeLow;
+uniform vec3 uHazeSun;
+// the air's colour looking along d: lilac, warming towards the star
 vec3 haze(vec3 d) {
   float s = max(dot(d, uSun), 0.0);
-  vec3 c = mix(vec3(0.46, 0.25, 0.5), vec3(1.0, 0.5, 0.3), 0.12 + 0.88 * pow(s, 2.5));
-  return c + vec3(1.0, 0.72, 0.42) * pow(s, 20.0) * 0.55;
+  vec3 c = mix(uHazeLow, uHazeSun, 0.12 + 0.88 * pow(s, 2.5));
+  return c + uHazeSun * vec3(1.0, 1.44, 1.4) * pow(s, 20.0) * 0.55;
 }
 `;
 
@@ -42,6 +46,9 @@ void main() {
 const SKY_FRAGMENT = /* glsl */ `
 ${HAZE}
 uniform float uTime;
+uniform vec3 uSkyHigh;
+uniform vec3 uSkyTop;
+uniform vec3 uCloud;
 varying vec3 vDir;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -55,7 +62,7 @@ float noise(vec2 p) {
 void main() {
   vec3 d = normalize(vDir);
   float up = d.y;
-  vec3 high = mix(vec3(0.16, 0.06, 0.26), vec3(0.03, 0.016, 0.085), smoothstep(0.1, 0.8, up));
+  vec3 high = mix(uSkyHigh, uSkyTop, smoothstep(0.1, 0.8, up));
   vec3 col = mix(haze(d), high, smoothstep(-0.01, 0.38, up));
   float s = max(dot(d, uSun), 0.0);
   // streaks of high cloud, lit from below by the sun
@@ -63,10 +70,10 @@ void main() {
   vec2 q = vec2(around * 4.0 + uTime * 0.004, up * 26.0);
   float n = noise(q * vec2(1.0, 2.0)) * 0.6 + noise(q * vec2(2.3, 4.6) + 7.0) * 0.3 + noise(q * 6.0) * 0.1;
   float cloud = smoothstep(0.55, 0.85, n) * smoothstep(0.03, 0.1, up) * (1.0 - smoothstep(0.18, 0.42, up));
-  col = mix(col, vec3(1.0, 0.45, 0.5) * (0.35 + 1.4 * pow(s, 3.0)), cloud * 0.55);
-  // the sun: its glow, and its disc
-  col += vec3(1.0, 0.55, 0.3) * pow(s, 9.0) * 0.3;
-  col += vec3(3.4, 2.6, 1.8) * smoothstep(0.99955, 0.99978, s);
+  col = mix(col, uCloud * (0.35 + 1.4 * pow(s, 3.0)), cloud * 0.55);
+  // the star's glow round it (the star itself is the next destination, hung there)
+  col += uHazeSun * vec3(1.0, 1.1, 1.0) * pow(s, 9.0) * 0.3;
+  col += uHazeSun * 1.6 * pow(s, 400.0);
   // the first stars, high up
   vec2 g = vec2(around * 60.0, asin(clamp(up, -1.0, 1.0)) * 60.0);
   vec2 cell = floor(g);
@@ -79,14 +86,24 @@ void main() {
 }
 `;
 
-export function skyMaterial(): THREE.ShaderMaterial {
+const vec = (c: [number, number, number]) => new THREE.Vector3(...c);
+
+export function skyMaterial(palette: CanyonPalette): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexShader: SKY_VERTEX,
     fragmentShader: SKY_FRAGMENT,
     side: THREE.BackSide,
     depthWrite: false,
     depthTest: false,
-    uniforms: { uSun: { value: new THREE.Vector3(...SUN) }, uTime: { value: 0 } },
+    uniforms: {
+      uSun: { value: new THREE.Vector3(...SUN) },
+      uTime: { value: 0 },
+      uHazeLow: { value: vec(palette.hazeLow) },
+      uHazeSun: { value: vec(palette.hazeSun) },
+      uSkyHigh: { value: vec(palette.skyHigh) },
+      uSkyTop: { value: vec(palette.skyTop) },
+      uCloud: { value: vec(palette.cloud) },
+    },
   });
 }
 
@@ -117,6 +134,12 @@ uniform vec4 uBand;
 uniform vec3 uBandColor;
 // a flash of light over the canyon (a bullseye's)
 uniform vec3 uFlash;
+// the world's colours (palette.ts): its sand, and the light
+uniform vec3 uSandA;
+uniform vec3 uSandB;
+uniform vec3 uSunLight;
+uniform vec3 uSkyLight;
+uniform vec3 uBounce;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying vec4 vShade;
@@ -139,18 +162,18 @@ void main() {
   vec3 rock = texture2D(uStrata, vec2(vShade.z / 64.0, 0.5)).rgb;
   float flatness = smoothstep(0.8, 0.96, n.y);
   float ripple = 0.5 + 0.5 * sin(d * 0.9 + sin(u * 0.15) * 3.0);
-  vec3 sand = mix(vec3(0.5, 0.21, 0.1), vec3(0.78, 0.4, 0.2), 0.5 + ripple * 0.3);
+  vec3 sand = mix(uSandA, uSandB, 0.5 + ripple * 0.3);
   vec3 albedo = mix(rock, sand, flatness);
 
   // the sun (wrapped a little round, as light scattered in rock is), the violet sky, light bounced off sunny rock
   float direct = clamp((dot(n, uSun) + 0.2) / 1.2, 0.0, 1.0) * sun;
-  vec3 light = vec3(1.0, 0.74, 0.5) * 2.4 * direct
-    + vec3(0.26, 0.2, 0.46) * sky * (0.75 + 0.25 * n.y)
-    + vec3(0.42, 0.17, 0.09) * sky * (0.5 - 0.5 * n.y);
+  vec3 light = uSunLight * direct
+    + uSkyLight * sky * (0.75 + 0.25 * n.y)
+    + uBounce * sky * (0.5 - 0.5 * n.y);
   vec3 col = albedo * light;
   // edges against the sun, lit through the haze
   float rim = pow(1.0 - abs(dot(n, V)), 3.0) * pow(max(dot(V, uSun), 0.0), 2.0) * sun;
-  col += vec3(1.0, 0.6, 0.35) * rim * 0.9;
+  col += uSunLight * vec3(0.42, 0.34, 0.29) * rim * 0.9;
 
   // the next gate's number line, painted on the floor in light as it nears
   float before = uRuler.x - d;
@@ -186,30 +209,14 @@ void main() {
 }
 `;
 
-/** the sandstone's layers, bottom up (each colour, and how thick, in units), repeating every 64 */
-const STRATA: Array<[string, number]> = [
-  ['#7a2c38', 6],
-  ['#a5432f', 5],
-  ['#c8653b', 8],
-  ['#e5965c', 4],
-  ['#f2cf9e', 1.5],
-  ['#c05845', 6],
-  ['#8a3a52', 2.5],
-  ['#d27848', 8],
-  ['#ae4936', 5],
-  ['#eeb47b', 3],
-  ['#93394a', 4],
-  ['#cf6f44', 11],
-];
-
-function strataTexture(): THREE.Texture {
+function strataTexture(strata: CanyonPalette['strata']): THREE.Texture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 1;
   const ctx = canvas.getContext('2d')!;
-  const total = STRATA.reduce((s, [, h]) => s + h, 0);
+  const total = strata.reduce((s, [, h]) => s + h, 0);
   let x = 0;
-  for (const [color, h] of STRATA) {
+  for (const [color, h] of strata) {
     const w = (h / total) * 512;
     ctx.fillStyle = color;
     ctx.fillRect(x, 0, w + 1, 1);
@@ -229,13 +236,13 @@ function strataTexture(): THREE.Texture {
   return texture;
 }
 
-export function terrainMaterial(fogEnd: number): THREE.ShaderMaterial {
+export function terrainMaterial(fogEnd: number, palette: CanyonPalette): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexShader: TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
       uSun: { value: new THREE.Vector3(...SUN) },
-      uStrata: { value: strataTexture() },
+      uStrata: { value: strataTexture(palette.strata) },
       uEye: { value: new THREE.Vector3() },
       uFogEnd: { value: fogEnd },
       uFloorY: { value: 0 },
@@ -244,6 +251,13 @@ export function terrainMaterial(fogEnd: number): THREE.ShaderMaterial {
       uBand: { value: new THREE.Vector4(0, 0, 0, 0) },
       uBandColor: { value: new THREE.Color(0.25, 0.9, 1.1) },
       uFlash: { value: new THREE.Color(0, 0, 0) },
+      uHazeLow: { value: vec(palette.hazeLow) },
+      uHazeSun: { value: vec(palette.hazeSun) },
+      uSandA: { value: vec(palette.sand[0]) },
+      uSandB: { value: vec(palette.sand[1]) },
+      uSunLight: { value: vec(palette.sunLight) },
+      uSkyLight: { value: vec(palette.skyLight) },
+      uBounce: { value: vec(palette.bounce) },
     },
   });
 }

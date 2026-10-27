@@ -6,19 +6,29 @@ import { judge, LANE, uOf, valueAt, type Gate, type GateResult } from './gates';
 // flies along it by itself, round its bends, banking into them; the pilot
 // steers it across. A tap (a key, or a side of the screen) moves it one
 // number along the next gate's ruler; holding glides it, and let go it
-// settles on the nearest number; a finger dragged across slides it there.
+// settles on the nearest number; a finger dragged across slides it there,
+// and the mouse aims it at a number across the screen.
 // The walls push it back, scraping, and a spire knocks it aside, slower;
 // nothing ends the run. Through a gate, the number it's at is its answer: a
-// bullseye boosts it, and bullseyes in a row fly faster and faster. After
-// the last gate it climbs out of the canyon, into the sky.
+// bullseye boosts it, and bullseyes in a row fly faster and faster. Its
+// pace follows how the pilot's doing: each bullseye a little faster, each
+// miss slower (a close one, a touch slower), so a pilot finding it hard has
+// longer to read the next gate, and one flying it well is pushed (useCanyon
+// keeps the pace for their next run). After the last gate it climbs out of
+// the canyon, into the sky.
 
 /** the dive in from high above the canyon, and the climb out (s) */
 export const DESCENT_S = 2.8;
 export const START_HEIGHT = 125;
 export const CLIMB_S = 2.6;
-/** how fast it flies (units/s): to begin with, and the most */
+/** how fast it flies (units/s), at a pace of 1 */
 const BASE = 60;
 const CALM_BASE = 50;
+/** the pace (a share of BASE): a new pilot's, the slowest and the fastest, and how a gate moves it */
+export const PACE_START = 0.85;
+export const PACE_MIN = 0.65;
+export const PACE_MAX = 1.25;
+const PACE_STEP: Record<GateResult['verdict'], number> = { bullseye: 0.05, close: -0.04, miss: -0.09 };
 /** across, gliding with a direction held */
 const GLIDE = 26;
 /** held this long, a press glides instead of stepping one number */
@@ -83,18 +93,27 @@ export class Run {
   results: GateResult[] = [];
   combo = 0;
   bestCombo = 0;
+  /** how fast it flies, a share of BASE: eased down by misses, up by bullseyes */
+  pace: number;
   private bumpCool = 0;
   private lastValue = Number.NaN;
   private lastVu = 0;
   private lastY: number;
 
-  constructor(canyon: Canyon, gates: Gate[], calm = false) {
+  constructor(canyon: Canyon, gates: Gate[], calm = false, pace = PACE_START) {
     this.canyon = canyon;
     this.gates = gates;
     this.calm = calm;
+    this.pace = Math.max(PACE_MIN, Math.min(PACE_MAX, pace));
     const y = canyon.floor(0) + HOVER + START_HEIGHT;
     this.lastY = y;
-    this.ship = { d: 0, u: 0, vu: 0, y, vy: 0, speed: calm ? CALM_BASE : BASE, boost: 0, heading: 0, pitch: -0.6, bank: 0, near: 0, scrape: 0 };
+    this.ship = { d: 0, u: 0, vu: 0, y, vy: 0, speed: this.cruise(), boost: 0, heading: 0, pitch: -0.6, bank: 0, near: 0, scrape: 0 };
+  }
+
+  /** the speed it settles to: its pace, and bullseyes in a row on top */
+  private cruise(): number {
+    const per = this.calm ? 2 : 4.5;
+    return ((this.calm ? CALM_BASE : BASE) + Math.min(this.combo, 6) * per) * this.pace;
   }
 
   /** the ruler steering settles on: the next gate's (the last one's, after it) */
@@ -164,6 +183,23 @@ export class Run {
     s.drag = null;
   }
 
+  /** the mouse: aim at the number nearest u, and settle there */
+  aimAt(u: number) {
+    const s = this.steer;
+    s.hold = 0;
+    s.held = 0;
+    s.drag = null;
+    s.target = this.settle(u);
+  }
+
+  /** the number it's going for on the ruler ahead: where it's settling (or being dragged), else where it is */
+  aimed(): number | null {
+    const g = this.ruler();
+    if (!g) return null;
+    const s = this.steer;
+    return valueAt(g, s.drag ?? s.target ?? this.ship.u);
+  }
+
   // ---- each frame ----
 
   step(rawDt: number): RunEvent[] {
@@ -178,8 +214,7 @@ export class Run {
     this.bumpCool -= dt;
 
     // ---- along ----
-    const base = (this.calm ? CALM_BASE : BASE) + Math.min(this.combo, 6) * (this.calm ? 2 : 4.5);
-    ship.speed += (base - ship.speed) * (1 - Math.exp(-dt * 0.8));
+    ship.speed += (this.cruise() - ship.speed) * (1 - Math.exp(-dt * 0.8));
     ship.boost *= Math.exp(-dt / 1.3);
     const fwd = this.forward();
     ship.d += fwd * dt;
@@ -254,6 +289,7 @@ export class Run {
       const result: GateResult = { gate: this.next, value, answer: gate.answer, verdict };
       this.results.push(result);
       this.next++;
+      this.pace = Math.max(PACE_MIN, Math.min(PACE_MAX, this.pace + PACE_STEP[verdict]));
       this.lastValue = Number.NaN;
       if (verdict === 'bullseye') {
         this.combo++;

@@ -4,6 +4,7 @@ import { useAchievements } from '../game/useAchievements';
 import { DEV_ALMOST_EVENT, DEV_COLLECT_EVENT, DEV_MISS_EVENT, DEV_SOLVE_EVENT } from '../dev/devMode';
 import { useBossStore } from '../game/useBossStore';
 import { flyOffTo } from './warpTransition';
+import { startArrival } from './cockpit360/canyon/arrival';
 import { playTrack } from '../audio/useAudio';
 import { useRippleStatus } from '../dev/rippleStatus';
 import { perfReport, usePerf } from '../dev/perfMonitor';
@@ -38,6 +39,7 @@ export function DevPanel() {
     { key: 'K', label: 'Battle: collect all cannons', run: () => window.dispatchEvent(new Event(DEV_COLLECT_EVENT)) },
     { key: 'G', label: 'Answer the round correctly', run: () => window.dispatchEvent(new Event(DEV_SOLVE_EVENT)) },
     { key: 'L', label: 'Complete level (launch)', run: () => store.getState().devLaunch() },
+    { key: 'V', label: 'Canyon Run: land on this destination', run: () => startArrival(store.getState().progress.level) },
     { key: 'F', label: 'Fuel to 95%', run: () => store.getState().devSetFuel(95) },
     { key: 'A', label: 'Deep Space Academy', run: () => store.getState().openAcademy() },
     { key: 'P', label: 'Practice map', run: () => store.getState().requestHeatmap() },

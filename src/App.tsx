@@ -19,6 +19,8 @@ import { Hangar } from './components/Hangar';
 import { LaunchBay } from './components/bay/LaunchBay';
 import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
+import { Descent } from './components/cockpit360/canyon/Descent';
+import { startArrival, takeCanyon } from './components/cockpit360/canyon/arrival';
 import { StudioSplash } from './components/splash/StudioSplash';
 import { LanguageOffer } from './components/LanguageOffer';
 import { Story } from './components/story/Story';
@@ -257,6 +259,13 @@ function App() {
 
   const displayLevel = justLaunched ? progress.level - 1 : progress.level;
 
+  // on from a launch: back to the game, or now and then down into the destination for a Canyon Run
+  const continueAfterLaunch = () => {
+    const reached = progress.level - 1;
+    dismissLaunch();
+    if (!useCrewStore.getState().active && takeCanyon(reached)) startArrival(reached);
+  };
+
   const handleWormholeDone = () => {
     exitWormhole();
     setExitFlash((n) => n + 1); // keyed, so each exit replays the fade
@@ -326,6 +335,8 @@ function App() {
       {!gateOpen && <SunMonster />}
       {!gateOpen && <BlackSun />}
       <ModeWarp />
+      {/* now and then at a level's end: diving into the destination for a Canyon Run */}
+      <Descent />
       {/* the studio's opening, over the game while it loads */}
       <StudioSplash />
       {/* "Switch to English", when Hebrew was guessed */}
@@ -418,7 +429,7 @@ function App() {
             <LaunchOverlay
               completedLevel={progress.level - 1}
               newStage={stageUp ? clampStage(progress.stage) : undefined}
-              onContinue={dismissLaunch}
+              onContinue={continueAfterLaunch}
             />
           )}
 

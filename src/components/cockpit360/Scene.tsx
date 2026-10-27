@@ -84,7 +84,7 @@ export function Scene({ css, destination, calm, low, holding, hovered, focused, 
       {/* (a device that can't keep up draws a little less sharp) */}
       <PerformanceMonitor onChange={({ factor }) => setDpr(Math.round((1 + (top - 1) * factor) * 20) / 20)} />
       <Rig css={css} holding={holding} hovered={hovered} focused={focused} />
-      {canyon === null ? <Space destination={destination} calm={calm} /> : <CanyonWorld key={canyon} destination={destination?.index ?? 0} />}
+      {canyon === null ? <Space destination={destination} calm={calm} /> : <CanyonWorld key={canyon} />}
       <Suspense fallback={null}>
         <Shell />
       </Suspense>

@@ -15,6 +15,7 @@
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+  transition: opacity 0.5s;
 }
 .cn-fact.is-away {
   opacity: 0;
@@ -223,7 +224,61 @@
   color: #fff1dc;
 }
 
+/* the number it's aiming at, under the nose */
+.cn-aim {
+  position: absolute;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cn-aim em {
+  font-size: 15px;
+}
+.cn-aim-box {
+  display: inline-flex;
+  min-width: 112px;
+  justify-content: center;
+  padding: 4px 16px 6px;
+  border: 2px solid var(--c);
+  border-radius: 12px;
+  background: rgba(40, 18, 4, 0.35);
+  color: #fff3d6;
+  font-family: var(--num-font);
+  font-weight: 800;
+  box-shadow:
+    0 0 14px rgba(255, 140, 50, 0.55),
+    inset 0 0 12px rgba(255, 140, 50, 0.3);
+}
+
 /* ---- over the view ---- */
+.ck3.is-canyon:not(.is-touch) {
+  cursor: crosshair;
+}
+/* arriving: the canyon's name as the white clears */
+.cn-arrival {
+  position: absolute;
+  top: calc(9vh + env(safe-area-inset-top));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+.cn-arrival-title {
+  font: 900 clamp(30px, 6vw, 64px) var(--hud-font);
+  letter-spacing: 0.06em;
+  filter: drop-shadow(0 0 14px rgba(255, 140, 50, 0.7));
+}
+.cn-arrival-on {
+  font: 800 clamp(16px, 2.6vw, 26px) var(--hud-font);
+  letter-spacing: 0.3em;
+}
 .ck3.is-canyon .ck3-pad {
   pointer-events: none;
 }

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
+import { canyonAhead } from './cockpit360/canyon/arrival';
 import { getLevelConfig } from '../game/levels';
 import { destinationName } from '../i18n/strings';
 import { useT } from '../i18n/useLang';
@@ -18,6 +20,8 @@ export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
   const t = useT();
   const config = getLevelConfig(completedLevel);
   const next = getLevelConfig(completedLevel + 1);
+  // (a Canyon Run on the destination reached, now and then: arrival.ts)
+  const [canyon] = useState(() => canyonAhead(completedLevel));
   return (
     <div className="launch-overlay">
       <div className="launch-warp">
@@ -44,6 +48,7 @@ export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
         <p className="launch-overlay-next">
           {t.nextStop} {next.destinationEmoji} {destinationName(t, next)}
         </p>
+        {canyon && <p className="launch-overlay-canyon">{t.canyon.ahead(destinationName(t, config))}</p>}
         {newStage !== undefined && (
           <motion.div
             className="launch-stage-up"

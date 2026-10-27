@@ -13,6 +13,7 @@ import { flash, fx } from './fx';
 import { RULER, type Gate } from './gates';
 import { BAND_H, BAND_W, SIGN_H, SIGN_W, rulerTexture, signTexture } from './labels';
 import { bridgeMaterial, skyMaterial, terrainMaterial } from './materials';
+import { canyonPalette, linearToHex } from './palette';
 import { CLIMB_S, type RunEvent } from './run';
 import { live, useCanyon } from './useCanyon';
 
@@ -24,12 +25,17 @@ import { live, useCanyon } from './useCanyon';
 // in chunks as it's needed (built by a worker, builder.ts), and the gates'
 // bridges of light as they come into the haze. Dust hangs in the air,
 // streaking past; sparks fly off a wall scraped; a ring of light bursts
-// out round the windscreen through a gate.
+// out round the windscreen through a gate. The canyon's on a destination,
+// its colours a little of that world's; the star low in its sky, lighting
+// it, is the next destination (palette.ts).
 //
-// The light in the cockpit follows the sun: warm and bright while it
+// The light in the cockpit follows the star: warm and bright while it
 // reaches the ship, cool and dim when the rock's shadow is over it, and its
 // glare on the lens when it's in view; the cockpit shudders with the speed,
-// more the nearer a wall, jolts against one and kicks through a gate.
+// more the nearer a wall, jolts against one and kicks through a gate. And
+// the pilot's head sways as the ship swerves, flung against the way it's
+// pushed and springing back, as it would be in a seat (a boost presses it
+// back, a jolt throws it forward).
 
 const AHEAD = { high: 9, low: 7 };
 const FOG_END = { high: 830, low: 650 };
@@ -38,9 +44,16 @@ const SPARKS = 140;
 const GOLD: [number, number, number] = [1, 0.78, 0.35];
 const CYAN: [number, number, number] = [0.35, 0.95, 1];
 const DUSK: [number, number, number] = [0.55, 0.25, 0.6];
-/** where the destination hangs in the sky */
-const PLANET_AT = new THREE.Vector3(-Math.sin(0.55) * Math.cos(0.36), Math.sin(0.36), -Math.cos(0.55) * Math.cos(0.36)).multiplyScalar(1500);
-const PLANET_ANGLE = 0.075;
+/** the star in the sky: how far off, and how big (its radius, radians) */
+const STAR_FAR = 1500;
+const STAR_ANGLE = 0.045;
+/** the head's sway: most it turns and rolls (radians), the push that takes it halfway there (units/s²), and its springs */
+const LEAN_YAW = 0.03;
+const LEAN_ROLL = 0.04;
+const LEAN_PITCH = 0.012;
+const LEAN_PUSH = 160;
+const LEAN_OMEGA = 8;
+const LEAN_DAMP = 0.42;
 
 interface Bridge {
   gate: Gate;
@@ -56,33 +69,62 @@ function between(a: number, b: number) {
   return a + Math.random() * (b - a);
 }
 
-export function CanyonWorld({ destination }: { destination: number }) {
+export function CanyonWorld() {
   const camera = useThree((s) => s.camera);
   // (the run as it was when this mounted: the store lets go of it as the run lands)
   const run = useMemo(() => live.run!, []);
   const builder = useMemo(() => live.builder!, []);
   const quality = live.quality;
   const calm = run.calm;
+  const place = useMemo(() => ({ ...live.place }), []);
+  const palette = useMemo(() => canyonPalette(place.world, place.star), [place]);
+  // the star's light on the cockpit
+  const starColor = useMemo(() => {
+    const [r, g, b] = palette.sunLight;
+    const top = Math.max(r, g, b);
+    return linearToHex([r / top, (g / top) * 0.95, (b / top) * 0.9]);
+  }, [palette]);
 
   const attitude = useRef<THREE.Group>(null);
   const world = useRef<THREE.Group>(null);
   const terrain = useRef<THREE.Group>(null);
 
-  const sky = useMemo(skyMaterial, []);
-  const ground = useMemo(() => terrainMaterial(FOG_END[quality]), [quality]);
-  const planet = useMemo(() => {
+  const sky = useMemo(() => skyMaterial(palette), [palette]);
+  const ground = useMemo(() => terrainMaterial(FOG_END[quality], palette), [quality, palette]);
+  // the star: the next destination, low ahead where the sun would be, its light blooming round it
+  const star = useMemo(() => {
+    const look = LOOKS[place.star % LOOKS.length];
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
-    drawPlanet(ctx, 256, 256, 96, LOOKS[destination % LOOKS.length], destination, 0);
+    drawPlanet(ctx, 256, 256, 96, look, place.star, 0);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false, toneMapped: false, fog: false }));
-    sprite.position.copy(PLANET_AT);
-    sprite.scale.setScalar(1500 * Math.tan(PLANET_ANGLE) * (512 / 96));
-    sprite.renderOrder = -9;
-    return sprite;
-  }, [destination]);
+    const body = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false, toneMapped: false, fog: false }));
+    const at = new THREE.Vector3(...SUN).multiplyScalar(STAR_FAR);
+    const r = STAR_FAR * Math.tan(STAR_ANGLE);
+    body.position.copy(at);
+    body.scale.setScalar(r * (512 / 96));
+    body.renderOrder = -8;
+    // its light: a soft round glow behind it, past white so it blooms
+    const g = document.createElement('canvas');
+    g.width = g.height = 128;
+    const gc = g.getContext('2d')!;
+    const grad = gc.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.18, 'rgba(255, 255, 255, 0.55)');
+    grad.addColorStop(0.45, 'rgba(255, 255, 255, 0.12)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    gc.fillStyle = grad;
+    gc.fillRect(0, 0, 128, 128);
+    const glowTexture = new THREE.CanvasTexture(g);
+    const tone = new THREE.Color(look.glow).multiplyScalar(look.sun ? 2.6 : 1.9);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, color: tone, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, toneMapped: false, fog: false }));
+    glow.position.copy(at);
+    glow.scale.setScalar(r * 7);
+    glow.renderOrder = -9;
+    return { body, glow, textures: [texture, glowTexture] };
+  }, [place]);
 
   // the dust in the air, and the sparks off a wall: lines, each a streak from where it is back along the ship's flight
   const dust = useMemo(() => {
@@ -133,6 +175,13 @@ export function CanyonWorld({ destination }: { destination: number }) {
     lastPitch: 0,
     windAt: 0,
     climbing: false,
+    seen: false,
+    // the head's sway: how it's pushed (smoothed), and where it is and how fast it's going
+    lastVu: 0,
+    lastFwd: 0,
+    push: [0, 0] as [number, number],
+    lean: [0, 0, 0] as [number, number, number],
+    leanV: [0, 0, 0] as [number, number, number],
   });
   const wind = useMemo(() => canyonWind(), []);
 
@@ -148,8 +197,9 @@ export function CanyonWorld({ destination }: { destination: number }) {
       sky.dispose();
       (ground.uniforms.uStrata.value as THREE.Texture).dispose();
       ground.dispose();
-      planet.material.map?.dispose();
-      planet.material.dispose();
+      star.textures.forEach((t) => t.dispose());
+      star.body.material.dispose();
+      star.glow.material.dispose();
       dust.geometry.dispose();
       (dust.lines.material as THREE.Material).dispose();
       sparks.geometry.dispose();
@@ -162,7 +212,7 @@ export function CanyonWorld({ destination }: { destination: number }) {
       glowLights.tint = [1, 1, 1];
       glowLights.passing.k = 0;
     };
-  }, [wind, sky, ground, planet, dust, sparks, ring]);
+  }, [wind, sky, ground, star, dust, sparks, ring]);
 
   const dropBridge = (b: Bridge) => {
     b.group.removeFromParent();
@@ -283,7 +333,9 @@ export function CanyonWorld({ destination }: { destination: number }) {
     const s = state.current;
     const dt = Math.min(raw, 0.05);
     const now = performance.now();
-    for (const e of run.step(dt)) handle(e);
+    // (behind the white of arriving, it waits for the canyon to be there)
+    const veiled = useCanyon.getState().veil;
+    if (!veiled) for (const e of run.step(dt)) handle(e);
     const c = run.canyon;
     const ship = run.ship;
     const fwd = run.forward();
@@ -301,6 +353,10 @@ export function CanyonWorld({ destination }: { destination: number }) {
         s.chunks.set(i, mesh);
         terrain.current?.add(mesh);
       }
+    }
+    if (!s.seen && [0, 1, 2, 3].every((i) => s.chunks.has(i))) {
+      s.seen = true;
+      useCanyon.setState({ seen: true });
     }
     for (const [i, mesh] of s.chunks) {
       if (i >= here - 1) continue;
@@ -355,7 +411,7 @@ export function CanyonWorld({ destination }: { destination: number }) {
     glowLights.ambient = 0.58 + 0.42 * s.lit;
     glowLights.tint = [0.82 + 0.28 * s.lit, 0.84 + 0.14 * s.lit, 1.1 - 0.22 * s.lit];
     glowLights.passing.dir = [tmp.sun.x, tmp.sun.y, tmp.sun.z];
-    glowLights.passing.color = '#ffc98f';
+    glowLights.passing.color = starColor;
     glowLights.passing.k = s.lit * 0.85;
     glowLights.hud = Math.min(1, fwd / 100);
     glowLights.flicker *= Math.exp(-dt * 6);
@@ -396,14 +452,35 @@ export function CanyonWorld({ destination }: { destination: number }) {
     fx.sun = s.lit * onScreen * (calm ? 0.5 : 1) * (s.climbing ? 1.4 : 1);
     fx.split = boost * 0.3;
 
+    // ---- the head, swaying as the ship's pushed about ----
+    // (across: flung against the push, turned and tilted, springing back past where it was; along: pressed back by a boost)
+    const across = (ship.vu - s.lastVu) / Math.max(dt, 1e-3);
+    const along = (fwd - s.lastFwd) / Math.max(dt, 1e-3);
+    s.lastVu = ship.vu;
+    s.lastFwd = fwd;
+    const smooth8 = 1 - Math.exp(-dt * 8);
+    s.push[0] += (across - s.push[0]) * smooth8;
+    s.push[1] += (along - s.push[1]) * smooth8;
+    if (!calm) {
+      const side = Math.tanh(s.push[0] / LEAN_PUSH);
+      const back = Math.tanh(s.push[1] / (LEAN_PUSH * 0.5));
+      // (positive yaw looks right, positive roll tilts the head left: Scene.tsx)
+      const goal = [-side * LEAN_YAW, back * LEAN_PITCH, side * LEAN_ROLL];
+      for (let i = 0; i < 3; i++) {
+        const a = LEAN_OMEGA * LEAN_OMEGA * (goal[i] - s.lean[i]) - 2 * LEAN_DAMP * LEAN_OMEGA * s.leanV[i];
+        s.leanV[i] += a * dt;
+        s.lean[i] += s.leanV[i] * dt;
+      }
+    }
+
     // ---- the shudder ----
     s.thump *= Math.exp(-dt * 5);
     if (!calm) {
       const t = run.time;
       const k = 0.0005 + 0.0011 * rush + ship.near * 0.0035 + ship.scrape * 0.012 + s.thump;
-      view.jolt.yaw = k * (0.6 * Math.sin(t * 37.3) + 0.4 * Math.sin(t * 61.7 + 2.1));
-      view.jolt.pitch = k * (0.6 * Math.sin(t * 43.1 + 1.2) + 0.4 * Math.sin(t * 71.3));
-      view.jolt.roll = k * 0.8 * Math.sin(t * 29.7 + 0.4);
+      view.jolt.yaw = s.lean[0] + k * (0.6 * Math.sin(t * 37.3) + 0.4 * Math.sin(t * 61.7 + 2.1));
+      view.jolt.pitch = s.lean[1] + k * (0.6 * Math.sin(t * 43.1 + 1.2) + 0.4 * Math.sin(t * 71.3));
+      view.jolt.roll = s.lean[2] + k * 0.8 * Math.sin(t * 29.7 + 0.4);
     }
     view.kick *= Math.exp(-dt * 3);
 
@@ -490,7 +567,8 @@ export function CanyonWorld({ destination }: { destination: number }) {
         <mesh material={sky} renderOrder={-10} frustumCulled={false}>
           <sphereGeometry args={[1800, 48, 24]} />
         </mesh>
-        <primitive object={planet} />
+        <primitive object={star.glow} />
+        <primitive object={star.body} />
       </group>
       <group ref={world} matrixAutoUpdate={false}>
         <group ref={terrain} />
