@@ -130,13 +130,36 @@ button:focus-visible {
   backdrop-filter: blur(6px);
 }
 
+/* SPACE TIMES (logo/), hanging a little below the bar */
 .hud-logo {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(0.9rem, 2.6vw, 1.15rem);
-  letter-spacing: 0.06em;
-  filter: drop-shadow(0 0 10px rgba(255, 157, 118, 0.3));
+  --st-h: 92;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: calc(var(--st-h) * 860 / 729 * 1px);
+  height: 40px;
   white-space: nowrap;
+}
+.hud-logo .st-logo {
+  --st-h: inherit;
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(var(--st-h) * -0.19px);
+  filter: drop-shadow(0 4px 12px rgba(8, 4, 24, 0.55));
+}
+.hud-logo.is-awaited .st-logo {
+  visibility: hidden;
+}
+.hud-logo .preview-badge {
+  position: absolute;
+  inset-inline-start: calc(100% - 1.5rem);
+  bottom: -0.6rem;
+}
+@media (max-width: 600px) {
+  .hud-logo {
+    --st-h: 68;
+    height: 34px;
+  }
 }
 
 .hud-topbar-right {
@@ -4474,6 +4497,9 @@ button:focus-visible {
   transition:
     background 0.15s,
     border-color 0.15s;
+}
+.about-how + .about-how {
+  margin-top: 0.4rem;
 }
 .about-how:hover,
 .about-how:focus-visible {

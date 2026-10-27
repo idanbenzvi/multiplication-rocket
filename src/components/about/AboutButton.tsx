@@ -4,6 +4,8 @@ import { useT } from '../../i18n/useLang';
 import { currentTrack, playTrack, type Track } from '../../audio/useAudio';
 import { AboutPage } from './AboutPage';
 import { usePageRequest } from '../pages';
+import { watchStory } from '../story/useStory';
+import { primeVoice } from '../story/narrate';
 
 // (loaded the first time it's opened)
 const HowItWorks = lazy(() => import('../how/HowItWorks').then((m) => ({ default: m.HowItWorks })));
@@ -25,6 +27,12 @@ export function AboutButton() {
     playTrack('about');
     setOpen('about');
   };
+  // the story again, over About, to the launch bay's music (from the tap), and back
+  const story = () => {
+    playTrack('bay');
+    primeVoice();
+    watchStory(() => playTrack('about'));
+  };
   // (the cockpit's panel overhead opens it too)
   usePageRequest('about', show);
   return (
@@ -38,7 +46,7 @@ export function AboutButton() {
         i
       </button>
       <AnimatePresence>
-        {open === 'about' && <AboutPage key="about" onClose={close} onHow={() => setOpen('how')} />}
+        {open === 'about' && <AboutPage key="about" onClose={close} onHow={() => setOpen('how')} onStory={story} />}
       </AnimatePresence>
       <Suspense fallback={null}>
         <AnimatePresence>{open === 'how' && <HowItWorks key="how" onClose={() => setOpen('about')} onDone={close} />}</AnimatePresence>

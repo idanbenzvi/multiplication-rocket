@@ -15,9 +15,6 @@ const enemiesLeft = (n: number) => (n === 1 ? '1 enemy left' : `${n} enemies lef
 const cannonsTooMany = (n: number) => (n === 1 ? '1 cannon too many' : `${n} cannons too many`);
 
 const en = {
-  logo: 'MULT-ROCKET',
-  logoAdd: 'SPACESUM',
-  logoMix: 'MIX-ROCKET',
   pickMission: 'Pick your mission',
   missionMul: 'Multiplication',
   missionMulHint: 'The times tables, 1 to 10',
@@ -693,6 +690,8 @@ const en = {
   bay: {
     whosFlying: "WHO'S FLYING?",
     welcome: 'WELCOME, PILOT!',
+    // (the first pilot on a device, after the story's opening: the new-pilot form is the enlistment)
+    enlist: 'EARTH NEEDS A PILOT!',
     newPilot: 'NEW PILOT',
     editPilot: 'PILOT CARD',
     ships: 'SELECT YOUR VEHICLE!',
@@ -704,6 +703,25 @@ const en = {
     pilotsNext: 'More pilots',
     pilotsPage: (n: number, of: number) => `Page ${n} of ${of}`,
     more: 'There’s more below',
+  },
+  story: {
+    label: 'The story',
+    start: '▶ Start',
+    skip: 'Skip',
+    voiceOn: 'Read aloud: on',
+    voiceOff: 'Read aloud: off',
+    // the opening's five beats (story/timeline.ts)
+    lines: [
+      'Everything in space runs on numbers. The stars shine with them, and every ship flies on them.',
+      'But one day, the Sun turned bad. It became the Black Sun!',
+      "Now it's swallowing every number in the universe. Without numbers, no ship can fly. All of space has stopped!",
+      "Earth is in danger! Orbie, the cleverest ship's computer, is ready to help. Now Earth needs a brave pilot to fly to the Black Sun and stop it.",
+      'Will it be you?',
+    ],
+    launch: (name: string) => `Earth is counting on you, ${name}!`,
+    orbie: 'Orbie',
+    orbieHello: (name: string) => `Hi ${name}! I'm Orbie, your ship's computer. I'll fly with you and help with every question. Pick our ship, and let's go stop the Black Sun!`,
+    watch: '▶ Watch the story',
   },
   backup: {
     title: '💾 Backup',
@@ -1093,9 +1111,6 @@ const en = {
 export type Strings = typeof en;
 
 const he: Strings = {
-  logo: 'טיל הכפל',
-  logoAdd: 'טיל החיבור',
-  logoMix: 'טיל המספרים',
   pickMission: 'בחרו משימה',
   missionMul: 'כפל',
   missionMulHint: 'לוח הכפל, 1 עד 10',
@@ -1761,6 +1776,7 @@ const he: Strings = {
   bay: {
     whosFlying: 'מי טס היום?',
     welcome: 'ברוכים הבאים!',
+    enlist: 'כדור הארץ צריך אתכם!',
     newPilot: 'פרופיל חדש',
     editPilot: 'עריכת פרופיל',
     ships: 'בחרו חללית!',
@@ -1771,6 +1787,24 @@ const he: Strings = {
     pilotsNext: 'עוד פרופילים',
     pilotsPage: (n: number, of: number) => `עמוד ${n} מתוך ${of}`,
     more: 'יש עוד למטה',
+  },
+  story: {
+    label: 'הסיפור',
+    start: '▶ מתחילים',
+    skip: 'דילוג',
+    voiceOn: 'הקראה: פועלת',
+    voiceOff: 'הקראה: כבויה',
+    lines: [
+      'כל מה שיש בחלל פועל בעזרת מספרים. הכוכבים זורחים בזכותם, וכל חללית טסה בזכותם.',
+      'אבל יום אחד, השמש התקלקלה. היא הפכה לשמש השחורה!',
+      'עכשיו היא בולעת את כל המספרים ביקום. בלי מספרים, אף חללית לא יכולה לטוס. כל החלל נעצר!',
+      'כדור הארץ בסכנה! אורבי, מחשב החללית הכי חכם, מוכן לעזור. עכשיו צריך טייסים אמיצים שיטוסו אל השמש השחורה ויעצרו אותה.',
+      'אולי זה אתם?',
+    ],
+    launch: (name) => `כדור הארץ סומך עליכם, ${name}!`,
+    orbie: 'אורבי',
+    orbieHello: (name) => `שלום ${name}! אני אורבי, מחשב החללית שלכם. אטוס איתכם ואעזור בכל שאלה. בחרו לנו חללית, ויוצאים לעצור את השמש השחורה!`,
+    watch: '▶ לצפות בסיפור',
   },
   backup: {
     title: '💾 גיבוי',

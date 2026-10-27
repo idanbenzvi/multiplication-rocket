@@ -11,8 +11,9 @@ import { useBack } from '../../native/back';
 
 // About the maker and the game, over a colour-cycling pixel-art canyon
 // (CycleScene). The game is paused while it's open (the clock resumes on close).
-// `onHow`: "How does the game work?" (how/HowItWorks.tsx), for curious kids.
-export function AboutPage({ onClose, onHow }: { onClose: () => void; onHow: () => void }) {
+// `onHow`: "How does the game work?" (how/HowItWorks.tsx), for curious kids;
+// `onStory`: the story again (story/).
+export function AboutPage({ onClose, onHow, onStory }: { onClose: () => void; onHow: () => void; onStory: () => void }) {
   const all = useT();
   const t = all.about;
   const lang = useLang((s) => s.lang);
@@ -67,6 +68,9 @@ export function AboutPage({ onClose, onHow }: { onClose: () => void; onHow: () =
         <h3>{t.gameTitle}</h3>
         <p>{t.game1}</p>
         <p>{IN_APP ? t.game2App : t.game2}</p>
+        <button type="button" className="about-how" onClick={onStory}>
+          {all.story.watch}
+        </button>
         <button type="button" className="about-how" onClick={onHow}>
           {all.how.open}
         </button>

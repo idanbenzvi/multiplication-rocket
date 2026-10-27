@@ -13,9 +13,13 @@ import { colorForLevel } from './scene/palette';
 import { SHIPS, type ShipId } from './scene/ships';
 import { useBack } from '../native/back';
 import { BayScreen } from './bay/BayScreen';
-import { launchShip, primeBayExit, useBay } from './bay/useBay';
+import { bayMusic, launchShip, primeBayExit, useBay } from './bay/useBay';
 import { SHIP_HEIGHT } from './bay/layout';
 import BorderGlow from './reactbits/BorderGlow';
+import Orb from './reactbits/Orb';
+import { playTrack } from '../audio/useAudio';
+import { startLaunch, useStory } from './story/useStory';
+import { narrate, primeVoice } from './story/narrate';
 
 // The hangar: where a pilot picks the ship they fly (ships.ts): the classic
 // rocket, the Explorer or Venus. It opens by itself once, when the game starts
@@ -27,6 +31,10 @@ import BorderGlow from './reactbits/BorderGlow';
 // It's the launch bay's pad (bay/): the ships take turns standing on it, ‹ ›
 // (or a swipe, or a ship's name) flaring one away and beaming the next down,
 // and the one they choose takes off.
+//
+// A brand-new pilot is greeted by Orbie, who'll fly with them, and their
+// first take-off is the story's launch (story/): off from Earth towards the
+// Black Sun, and the title.
 
 export function Hangar() {
   const gateOpen = useProfileGateOpen();
@@ -63,8 +71,9 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   // (the first time, there's a ship to choose: Back sends the app away rather than skipping it; taking off, it waits)
   useBack(launching ? stayPut : !first && close);
   const [stats] = useState(() => profileStats(pilot.id));
-  // a pilot who's flown before is told there's something new, and which
+  // a pilot who's flown before is told there's something new, and which; a brand-new one is greeted by Orbie
   const returning = first && stats.correct > 0;
+  const rookie = first && stats.correct === 0;
   const seen = pilot.ship ? (pilot.shipsSeen ?? 2) : stats.correct > 0 ? 1 : SHIPS.length;
   const accent = colorForLevel(stats.level);
   const ship = useMemo(() => ({ ship: picked, accent, admiral, avatar: pilot.avatar }), [picked, accent, admiral, pilot.avatar]);
@@ -99,12 +108,24 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
   const fly = () => {
     if (launching) return;
     setLaunching(true);
-    // (the music changes back once it's gone, without a tap: this one lets it)
+    // (the music changes back once it's gone, without a tap: this one lets it, and the story's words be read)
     primeBayExit();
+    primeVoice();
     sfx.chargeUp(0.8);
     launchShip({
       onDone: () => {
         update(pilot.id, { ship: picked, shipsSeen: SHIPS.length });
+        if (rookie) {
+          // the story's launch, the bay's music playing on through it, and the music from before after the title
+          const after = bayMusic.before;
+          bayMusic.before = 'bay';
+          startLaunch({ ...ship, name: pilot.name }, () => {
+            playTrack(after);
+            flyHome();
+          });
+          close();
+          return;
+        }
         close();
         // (and in the game, it flies in, once the bay's gone)
         flyHome();
@@ -214,6 +235,7 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
               </div>
             )}
             <div ref={panelRef} className={`bay-panel ${side ? 'is-side' : 'is-under'}`} style={panel}>
+              {rookie && <OrbieHello name={pilot.name} />}
               {side && name}
               <div className="bay-ship-pills" role="radiogroup" aria-label={h.title}>
                 {SHIPS.map((s, i) => (
@@ -243,5 +265,26 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
         )}
       </AnimatePresence>
     </BayScreen>
+  );
+}
+
+/** Orbie, greeting a brand-new pilot by name (read aloud, as the story is) */
+function OrbieHello({ name }: { name: string }) {
+  const t = useT();
+  const lang = useLang((s) => s.lang);
+  const line = t.story.orbieHello(name);
+  useEffect(() => {
+    if (useStory.getState().voice) narrate(line, lang);
+  }, [line, lang]);
+  return (
+    <motion.div className="bay-orbie" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}>
+      <div className="bay-orbie-orb" aria-hidden="true">
+        <Orb hue={0} hoverIntensity={0.6} rotateOnHover forceHoverState backgroundColor="#000000" />
+        <span className="bay-orbie-face">?</span>
+      </div>
+      <p className="bay-orbie-words">
+        <b>{t.story.orbie}:</b> {line}
+      </p>
+    </motion.div>
   );
 }

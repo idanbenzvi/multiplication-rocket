@@ -1,0 +1,155 @@
+/* ==================== SPACE TIMES (SpaceTimesLogo.tsx) ==================== */
+
+.st-logo {
+  --st-h: 96;
+  position: relative;
+  flex: none;
+  width: calc(var(--st-h) * var(--st-art-w) / var(--st-art-h) * 1px);
+  height: calc(var(--st-h) * 1px);
+  pointer-events: none;
+}
+/* the art at its own size, scaled to the logo's */
+.st-logo-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  transform: scale(calc(var(--st-h) / var(--st-art-h)));
+}
+.st-logo-art > * {
+  position: absolute;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.st-whole {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.st-token {
+  will-change: transform;
+}
+.st-shine,
+.st-scan,
+.st-sparks {
+  inset: 0;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mix-blend-mode: plus-lighter;
+  opacity: 0;
+}
+
+/* ---- moving ---- */
+
+/* a shine across the chrome, now and then */
+.is-moving .st-shine {
+  opacity: 1;
+  background: linear-gradient(112deg, transparent 43%, rgba(255, 255, 255, 0.8) 50%, transparent 57%) no-repeat;
+  background-size: 250% 100%;
+  animation: st-shine 5.5s ease-in-out infinite;
+}
+@keyframes st-shine {
+  0% {
+    background-position: 100% 0;
+  }
+  32%,
+  100% {
+    background-position: 0% 0;
+  }
+}
+/* a light down the globe's lines */
+.is-moving .st-scan {
+  opacity: 1;
+  background: linear-gradient(180deg, transparent 42%, rgba(150, 240, 255, 0.85) 50%, transparent 58%) no-repeat;
+  background-size: 100% 250%;
+  animation: st-scan 7s linear infinite;
+  animation-delay: -2s;
+}
+@keyframes st-scan {
+  0% {
+    background-position: 0 100%;
+  }
+  45%,
+  100% {
+    background-position: 0 0%;
+  }
+}
+/* the lightning, crackling */
+.is-moving .st-sparks {
+  background: #e9fbff;
+  animation: st-flicker 2.7s infinite;
+}
+@keyframes st-flicker {
+  0%,
+  9%,
+  13%,
+  19%,
+  55%,
+  58%,
+  100% {
+    opacity: 0;
+    animation-timing-function: steps(1, end);
+  }
+  8% {
+    opacity: 0.9;
+    animation-timing-function: steps(1, end);
+  }
+  11%,
+  16% {
+    opacity: 1;
+    animation-timing-function: steps(1, end);
+  }
+  56% {
+    opacity: 0.7;
+    animation-timing-function: steps(1, end);
+  }
+}
+/* the rockets: a little shake, then off along their trails, and back */
+.is-moving .st-rocket {
+  animation: st-swoosh 5.8s ease-in infinite;
+}
+@keyframes st-swoosh {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(calc(var(--dx) * 2px), calc(var(--dy) * 2px));
+  }
+  40% {
+    transform: translate(calc(var(--dx) * -1px), calc(var(--dy) * -1px));
+  }
+  60% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  76% {
+    transform: translate(calc(var(--dx) * 90px), calc(var(--dy) * 90px));
+    opacity: 0;
+  }
+  77% {
+    transform: translate(calc(var(--dx) * -30px), calc(var(--dy) * -30px));
+    opacity: 0;
+    animation-timing-function: ease-out;
+  }
+}
+/* the sparkles */
+.is-moving .st-sparkle {
+  animation: st-twinkle 2.2s ease-in-out infinite;
+}
+@keyframes st-twinkle {
+  0%,
+  100% {
+    transform: scale(0.65) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.18) rotate(16deg);
+    opacity: 1;
+  }
+}

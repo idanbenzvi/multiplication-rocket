@@ -21,6 +21,8 @@ import { GameModesButton } from './components/GameModes';
 import { ModeWarp } from './components/ModeWarp';
 import { StudioSplash } from './components/splash/StudioSplash';
 import { LanguageOffer } from './components/LanguageOffer';
+import { Story } from './components/story/Story';
+import { useStory } from './components/story/useStory';
 import { activeProfile, pilotName, useMission, useProfileGateOpen, useTimedBoost } from './profiles/useProfiles';
 import { missionOfKey } from './game/mission';
 import { missionName } from './i18n/strings';
@@ -58,7 +60,7 @@ import { IS_PREVIEW } from './storage/previewNamespace';
 import { isMilestone, streakTier } from './game/streak';
 import ClickSpark, { type ClickSparkHandle } from './components/reactbits/ClickSpark';
 import CountUp from './components/reactbits/CountUp';
-import ShinyText from './components/reactbits/ShinyText';
+import { SpaceTimesLogo } from './components/logo/SpaceTimesLogo';
 import { paceMs, speedZone } from './game/scoring';
 import { useSideways } from './components/useSideways';
 import './App.css';
@@ -88,6 +90,8 @@ function App() {
   const closeAcademy = useGameStore((s) => s.closeAcademy);
   // Until a pilot is picked/created the game itself stays hidden.
   const gateOpen = useProfileGateOpen();
+  // (the story's title flies into the logo's place: it's hidden till it's there)
+  const titling = useStory((s) => s.act === 'title' && !s.replay);
   const typedCheck = useSettings((s) => s.typedCheck);
   const [milestone, setMilestone] = useState<number | null>(null);
   const sparkRef = useRef<ClickSparkHandle>(null);
@@ -276,8 +280,8 @@ function App() {
       {!gateOpen && <BadgeToast />}
 
       <header className="hud-topbar" ref={topbarRef}>
-        <div className="hud-logo">
-          🚀 <ShinyText text={mission === 'add' ? t.logoAdd : mission === 'mix' ? t.logoMix : t.logo} color="#ffb37a" shineColor="#fff6e0" speed={3} />
+        <div className={`hud-logo ${titling ? 'is-awaited' : ''}`}>
+          <SpaceTimesLogo className="hud-logo-art" />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
         {!crewActive && <LevelBanner level={displayLevel} stage={mission !== 'mul' ? clampStage(progress.stage) : undefined} />}
@@ -326,6 +330,8 @@ function App() {
       <StudioSplash />
       {/* "Switch to English", when Hebrew was guessed */}
       <LanguageOffer />
+      {/* the story: its opening the first time, a new pilot's launch, and About's ▶ */}
+      <Story />
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
         // (on a mixed mission, the Academy for the kind of question showing)

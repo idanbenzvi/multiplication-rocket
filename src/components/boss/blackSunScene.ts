@@ -221,7 +221,7 @@ type Stage = 'arrive' | 'fight' | 'cured';
 const SPRITE_PX = 64;
 const numberSprites = new Map<string, HTMLCanvasElement>();
 if (typeof document !== 'undefined') void document.fonts?.ready.then(() => numberSprites.clear());
-function numberSprite(text: string, color: string): HTMLCanvasElement {
+export function numberSprite(text: string, color: string): HTMLCanvasElement {
   const key = `${text}|${color}`;
   const cached = numberSprites.get(key);
   if (cached) return cached;
@@ -622,20 +622,24 @@ export class BlackSunScene extends EclipseScene {
     return glideS + flyS;
   }
 
-  /** a wrong answer: `text` is pulled off its button (`from`, on screen) and swallowed; the sun gloats */
-  swallowFrom(text: string, from: Point) {
+  /**
+   * A wrong answer: `text` is pulled off its button (`from`, on screen) and
+   * swallowed; the sun gloats. With `color`, it's a number of the sky's
+   * (the story's), pulled in as it is, `size` sun radii tall.
+   */
+  swallowFrom(text: string, from: Point, color?: string, size = 0.5) {
     const s = this.sun(this.w, this.h);
     const { rho, theta } = BlackSunScene.unproject({ x: (from.x - s.x) / s.r, y: (from.y - s.y) / s.r });
     this.spirals.push({
       text,
-      color: '#ffffff',
+      color: color ?? '#ffffff',
       rho,
       theta,
-      size: 0.5,
+      size,
       born: this.t - 2,
       fall: { at: this.t, dur: this.calm ? 0.6 : 1.25, rho0: rho, theta0: theta, turn: -3.6 },
-      loud: true,
-      red: true,
+      loud: !color,
+      red: !color,
     });
     this.setMood('gloat', 1.6);
   }
@@ -1833,7 +1837,7 @@ export class BlackSunScene extends EclipseScene {
 // ---------- helpers ----------
 
 /** a number's sprite, its digits `size` px tall, centred on (x, y) */
-function stamp(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y: number, size: number) {
+export function stamp(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y: number, size: number) {
   const k = size / SPRITE_PX;
   ctx.drawImage(img, x - (img.width * k) / 2, y - (img.height * k) / 2, img.width * k, img.height * k);
 }

@@ -434,7 +434,8 @@ export function ProfileGate() {
   let content: React.ReactNode = null;
   let sign = t.bay.whosFlying;
   if (profiles.length === 0) {
-    sign = t.bay.welcome;
+    // (the first pilot on the device: after the story's opening, Earth's call)
+    sign = t.bay.enlist;
     content = (
       <>
         <ProfileEditor title={t.welcomePilot} onDone={() => setView({ kind: 'pick' })} onRestore={() => setRestoring(true)} />

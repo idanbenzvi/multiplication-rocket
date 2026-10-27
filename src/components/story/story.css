@@ -1,0 +1,154 @@
+/* ==================== THE STORY (Story.tsx) ==================== */
+
+.story {
+  --bar: clamp(52px, 12vh, 116px);
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  background: #05030f;
+  color: #fff6e8;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.story-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the film's bars, sliding in as it starts */
+.story-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  background: #000;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.story-bar.is-top {
+  top: 0;
+  height: calc(var(--bar) * 0.8 + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0;
+  justify-content: space-between;
+  transform: translateY(-100%);
+}
+.story-bar.is-bottom {
+  bottom: 0;
+  min-height: calc(var(--bar) + env(safe-area-inset-bottom));
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  justify-content: center;
+  transform: translateY(100%);
+}
+.story-bar.is-in {
+  transform: none;
+}
+.story-caption {
+  margin: 0;
+  max-width: 52rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 0.72rem + 1.5vw, 1.6rem);
+  line-height: 1.32;
+  text-shadow:
+    0 0 14px rgba(180, 92, 255, 0.55),
+    0 2px 2px rgba(0, 0, 0, 0.8);
+}
+.story-chip {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e9e3ff;
+  font: 600 0.95rem var(--font-body);
+  cursor: pointer;
+}
+.story-chip:hover,
+.story-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* its first frame, waiting */
+.story-start {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 20px;
+  background: radial-gradient(circle at 50% 50%, rgba(5, 3, 15, 0.05), rgba(5, 3, 15, 0.7));
+}
+.story-play {
+  padding: 0.6em 1.6em;
+  border: 2px solid rgba(255, 236, 190, 0.95);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd77a, #ff9d76);
+  color: #2b2033;
+  font: 700 clamp(1.3rem, 1rem + 2vw, 2rem) var(--font-display);
+  box-shadow:
+    0 0 34px rgba(255, 190, 110, 0.55),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  animation: story-beckon 2.2s ease-in-out infinite;
+}
+@keyframes story-beckon {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow:
+      0 0 54px rgba(255, 190, 110, 0.75),
+      0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Orbie, lighting up beside Earth (placed and sized by the scene) */
+.story-orbie {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: 160px;
+  height: 160px;
+  opacity: 0;
+  pointer-events: none;
+}
+.story-orbie-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 700 60px var(--font-display);
+  text-shadow: 0 0 14px #6ad7ff;
+}
+
+/* the title, out of the white */
+.story-title {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.story-title-logo {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-bar {
+    transition: none;
+  }
+  .story-play {
+    animation: none;
+  }
+}

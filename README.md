@@ -9,6 +9,30 @@ reach the destination planet, which grows in the sky as you get closer, and warp
 
 ![Gameplay](docs/game-en.png)
 
+## The story 🌑
+
+The first time the game opens, a short film tells why: everything in space runs on numbers, until
+the Sun turns bad. Dark veins creep across it, its light caves in, angry eyes open and it becomes
+the **Black Sun**, a black hole that swallows every number in the universe. The ships' engines
+sputter out and space traffic stops. Earth needs a pilot, and Orbie, the ship's computer, is ready
+to fly with them. It's told with the game's own art, animated on a canvas, letterboxed, its words
+along the bottom and read aloud (🔇 turns the voice off; *Skip* skips it). Then the launch bay
+reads **EARTH NEEDS A PILOT!**, Orbie greets the new pilot by name in the hangar, and their first
+take-off is a launch from Earth: its night side below, its edge a line of light from the top of the
+screen to the bottom with a purple haze and a bloom where the Black Sun hangs over it, the ship
+turning some 40° towards it, the stars stretching into hyperspace as it shrinks to a dot, and a
+white-out into the **SPACE TIMES** title, which flies up into the top bar as the game begins. It
+plays once per device (each new pilot gets the launch), and About has **▶ Watch the story**.
+[`src/components/story/`](src/components/story/), and the plan,
+[docs/plans/2026-10-27-story-intro.md](docs/plans/2026-10-27-story-intro.md).
+
+The logo, **SPACE TIMES**, is a Gemini picture cut into layers
+([`scripts/space-times-logo.py`](scripts/space-times-logo.py)): its background taken out, the
+glow kept as light; the + × − ÷ tokens orbit the globe along their ring, a shine sweeps the
+chrome letters, a light scans the globe, the lightning flickers, the little rockets swoop off along
+their trails and the sparkles twinkle ([`SpaceTimesLogo.tsx`](src/components/logo/SpaceTimesLogo.tsx);
+still with reduced motion).
+
 ## Play in your browser
 
 **[idanbenzvi.github.io/multiplication-rocket](https://idanbenzvi.github.io/multiplication-rocket/)**. Nothing to install. Works on computers and tablets.
@@ -267,8 +291,7 @@ The game is paused while the tour is open, and its music (the About page's) play
 ## Three missions: ×, + (SpaceSum) or both mixed
 
 Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10),
-**➕ Addition**, or **×+ Mixed**. The logo follows the pilot (*MULT-ROCKET* / *SPACESUM* /
-*MIX-ROCKET*, *טיל הכפל* / *טיל החיבור* / *טיל המספרים*). Each mission keeps its own journey (its
+**➕ Addition**, or **×+ Mixed**. Each mission keeps its own journey (its
 level, fuel and streaks), but what a pilot knows is theirs in all of them: a fact mastered in ×
 is mastered in Mixed too, on its practice map and in its spaced review. The cockpit's Pilot screen
 (⚙️) has the three side by side, each at its own level with a bar of its facts mastered; tapping
