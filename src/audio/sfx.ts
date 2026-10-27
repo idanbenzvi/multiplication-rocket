@@ -736,5 +736,128 @@ export const sfx = {
     tone(c, 72, t + 1.0, 0.45, { type: 'sine', gain: 0.15, glideTo: 38 });
     [0, 2, 4].forEach((n, i) => tone(c, noteFreq(n + 5), t + 1.05 + i * 0.06, 0.8, { gain: 0.08 }));
   },
+
+  // ---- the Canyon Run (the cockpit's manual flight) ----
+
+  /** the ship comes onto the next number on the ruler ahead: a ruler's tick (a fifth's a little brighter) */
+  tick(n: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.005;
+    const five = n % 5 === 0;
+    tone(c, five ? 2900 : 2300, t, 0.035, { type: 'square', gain: five ? 0.016 : 0.01 });
+    noiseBurst(c, t, 0.025, 7000, 3500, 0.02);
+  },
+
+  /** a gate ahead, nearing: a beacon's ping, a step higher each time (0, 1, 2) */
+  beacon(step: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, noteFreq(7 + step * 2), t, 0.22, { type: 'sine', gain: 0.06 });
+    tone(c, noteFreq(14 + step * 2), t, 0.12, { type: 'triangle', gain: 0.02 });
+  },
+
+  /** through a gate: a bullseye rings out, higher with each in a row; close, a softer chime; a miss, a low thud */
+  gate(verdict: 'bullseye' | 'close' | 'miss', combo: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    if (verdict === 'bullseye') {
+      const root = Math.min(combo, 6);
+      [0, 2, 4, 5].forEach((n, i) => tone(c, noteFreq(root + n), t + i * 0.055, 0.7, { gain: 0.09 }));
+      noiseBurst(c, t, 0.5, 2400, 9000, 0.06);
+      tone(c, 90, t, 0.35, { type: 'sine', gain: 0.16, glideTo: 45 });
+    } else if (verdict === 'close') {
+      [2, 4].forEach((n, i) => tone(c, noteFreq(n), t + i * 0.07, 0.45, { gain: 0.07 }));
+      noiseBurst(c, t, 0.3, 1800, 5000, 0.04);
+    } else {
+      tone(c, 160, t, 0.4, { type: 'triangle', gain: 0.08, glideTo: 90 });
+      noiseBurst(c, t, 0.25, 900, 300, 0.06);
+    }
+  },
+
+  /** scraping along a canyon wall: grinding, sparks flying (`strength` 0..1) */
+  scrape(strength: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    const k = 0.4 + 0.6 * strength;
+    noiseBurst(c, t, 0.4, 4200, 1100, 0.13 * k);
+    noiseBurst(c, t + 0.04, 0.3, 700, 160, 0.12 * k);
+    tone(c, 74, t, 0.3, { type: 'square', gain: 0.03 * k, glideTo: 42 });
+  },
+
+  /** knocked aside by a spire of rock: a heavy thump, stones rattling */
+  thud() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 68, t, 0.5, { type: 'sine', gain: 0.22, glideTo: 30 });
+    noiseBurst(c, t, 0.3, 1600, 200, 0.2);
+    [0.08, 0.15, 0.24].forEach((d) => noiseBurst(c, t + d, 0.05, 3000, 1200, 0.06));
+  },
 };
+
+// ---------- the canyon's wind, rushing past the cockpit ----------
+// A steady sound for the Canyon Run: deep air rumbling (brown noise), the
+// rush of wind past the hull (noise through a band that rises with the
+// speed), and a higher hiss the nearer a wall goes by.
+
+export interface Wind {
+  /** `speed` and `near` 0 … 1 */
+  set: (speed: number, near: number) => void;
+  stop: () => void;
+}
+
+export function canyonWind(): Wind | null {
+  const c = audio();
+  if (!c) return null;
+  const out = c.createGain();
+  out.gain.value = 0.0001;
+  out.connect(c.destination);
+  const { white, brown } = noise(c);
+  const sources: AudioBufferSourceNode[] = [];
+  const loop = (buffer: AudioBuffer) => {
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    sources.push(src);
+    return src;
+  };
+  const rumbleLp = c.createBiquadFilter();
+  rumbleLp.type = 'lowpass';
+  rumbleLp.frequency.value = 240;
+  loop(brown).connect(rumbleLp).connect(out);
+  const rushBp = c.createBiquadFilter();
+  rushBp.type = 'bandpass';
+  rushBp.Q.value = 0.8;
+  const rush = c.createGain();
+  rush.gain.value = 0.35;
+  loop(white).connect(rushBp).connect(rush).connect(out);
+  const hissHp = c.createBiquadFilter();
+  hissHp.type = 'highpass';
+  hissHp.frequency.value = 2600;
+  const hiss = c.createGain();
+  hiss.gain.value = 0;
+  loop(white).connect(hissHp).connect(hiss).connect(out);
+  const t = c.currentTime;
+  for (const src of sources) src.start(t, Math.random() * 3);
+  const ease = (p: AudioParam, v: number) => p.setTargetAtTime(v, c.currentTime, 0.08);
+  return {
+    set: (speed, near) => {
+      ease(out.gain, (0.05 + 0.13 * speed) * volume());
+      ease(rushBp.frequency, 380 + 1300 * speed);
+      ease(rumbleLp.frequency, 160 + 260 * speed);
+      ease(hiss.gain, near * 0.5);
+    },
+    stop: () => {
+      const now = c.currentTime;
+      out.gain.cancelScheduledValues(now);
+      out.gain.setValueAtTime(out.gain.value, now);
+      out.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+      for (const src of sources) src.stop(now + 0.7);
+    },
+  };
+}
 

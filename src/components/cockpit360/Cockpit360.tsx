@@ -20,6 +20,8 @@ import { Panel } from './Panel';
 import { HOTSPOT_QUADS, HOTSPOTS, QUADS, SCREENS, WINDSCREEN_QUAD, type HotspotId, type ScreenId } from './screens';
 import { stopLook, useCockpit } from './store';
 import { useLookControls } from './useLookControls';
+import { useCanyon } from './canyon/useCanyon';
+import { CanyonGlass, CanyonVisor } from './canyon/CanyonHud';
 import { baseFov, HOME, lookAt, lookTo, settled, shudder, startShudders, stopShudders, view } from './view';
 import './cockpit360.css';
 
@@ -38,6 +40,9 @@ import './cockpit360.css';
 // cockpit did: the cockpit seen through the window, growing until you're
 // inside; closing it flies back out. When the rocket isn't in plain view it
 // opens out of the ⚙️ button instead; with reduced motion it fades.
+//
+// The orange buttons by the stick take the ship: MANUAL, and the Canyon
+// Run (canyon/), flown from the seat, the canyon outside the glass.
 
 /** the flight in: the cockpit fills the screen about half-way, the camera keeps going behind it */
 const OPEN_MS = 1500;
@@ -129,6 +134,10 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const [moving, setMoving] = useState(true);
   const [panelFor, setPanelFor] = useState<ScreenId | null>(null);
   const step = useRef<{ leaving: boolean; at: number } | null>(null);
+  // a Canyon Run: flying it, counting down to it, or looking back on it
+  const canyon = useCanyon((s) => s.phase);
+  const runId = useCanyon((s) => s.runId);
+  const running = canyon !== 'off';
 
   useEffect(() => {
     css.mount(cssHost.current);
@@ -244,12 +253,21 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       resumeGame('cockpit');
       if (cockpitDolly.to > 0) moveCockpitDolly(0, CLOSE_MS);
       glowLights.hot = null;
+      useCanyon.getState().close();
     },
     [],
   );
 
+  // a Canyon Run looks straight out of the windscreen, a little higher than usual (more of the canyon, less of the console)
+  useEffect(() => {
+    if (canyon === 'intro') {
+      const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+      lookTo({ yaw: 0, pitch: (aspect >= 1.15 ? 1 : 3) * (Math.PI / 180) }, view.base * (aspect >= 1.15 ? 1 : 0.86), 6);
+    } else if (canyon === 'off') lookTo(HOME, view.base, 8);
+  }, [canyon]);
+
   // ---- the flight's shudders: a rumble, the lights flickering, the HUD jolting ----
-  const live = !calm && !moving && !leaving && !covered;
+  const live = !calm && !moving && !leaving && !covered && !running;
   useEffect(() => {
     if (!live) return;
     startShudders((strength) => {
@@ -269,7 +287,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const unfocus = useCockpit((s) => s.unfocus);
   const turnTo = useCockpit((s) => s.turnTo);
   const stepTo = useCockpit((s) => s.step);
-  useLookControls(rootRef, { enabled: !moving && !leaving && !covered, focused: focused !== null, onUnfocus: unfocus, holding });
+  useLookControls(rootRef, { enabled: !moving && !leaving && !covered && !running, focused: focused !== null, onUnfocus: unfocus, holding });
 
   // a screen's page opens once the view has zoomed into it
   useEffect(() => {
@@ -306,15 +324,25 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
         sfx.hyperdrive();
         return onClose();
       }
+      if (id === 'manual') {
+        // MANUAL: the ship's the pilot's, and the canyon's coming
+        shudder(1.2);
+        sfx.clunk(true);
+        glowLights.hot = null;
+        if (useCockpit.getState().focused) unfocus();
+        useCanyon.getState().start(low ? 'low' : 'high', calm);
+        return;
+      }
       if (id === 'overhead') return onAbout();
       if (id === 'remote') return onParents();
       sfx.whoosh();
       turnTo(id);
     },
-    [turnTo, onClose, onAbout, onParents],
+    [turnTo, onClose, onAbout, onParents, unfocus, low, calm],
   );
 
   const onClick = (e: React.MouseEvent) => {
+    if (running) return;
     const face = (e.target as Element).closest<HTMLElement>('[data-face]');
     if (face?.dataset.face) {
       act(face.dataset.face as FaceId);
@@ -324,7 +352,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     if (focused && !(e.target as Element).closest('.ck3-panel, .ck3-hud-ui')) unfocus();
   };
   const onOver = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse') return;
+    if (e.pointerType !== 'mouse' || running) return;
     const id = ((e.target as Element).closest<HTMLElement>('[data-face]')?.dataset.face ?? null) as FaceId | null;
     if (hovered.current === id) return;
     hovered.current = id;
@@ -335,9 +363,25 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   };
 
   // Escape (and Back): out of a screen, or out of the cockpit; ← → round the screens; Enter into the one in front
-  useBack(!covered && !leaving && (focused ? unfocus : onClose));
+  const endRun = useCallback(() => {
+    const c = useCanyon.getState();
+    if (c.phase === 'results') c.close();
+    else c.land(false);
+  }, []);
+  useBack(!covered && !leaving && (running ? endRun : focused ? unfocus : onClose));
+  // (flying, Escape ends the run; the keys are the steering's, canyon/CanyonHud.tsx)
   useEffect(() => {
-    if (covered || leaving) return;
+    if (covered || leaving || !running) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      endRun();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [covered, leaving, running, endRun]);
+  useEffect(() => {
+    if (covered || leaving || running) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as Element | null;
       // (keys for a control that has them: a dial, a switch, a field)
@@ -371,12 +415,12 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // (before the cockpit keeps keys from the game below it)
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [covered, leaving, onClose, unfocus, stepTo, act, lang]);
+  }, [covered, leaving, running, onClose, unfocus, stepTo, act, lang]);
 
   return (
     <div
       ref={rootRef}
-      className={`ck3 ${moving ? 'is-moving' : ''} ${focused ? 'is-focused' : ''} ${isTouchDevice ? 'is-touch' : ''}`}
+      className={`ck3 ${moving ? 'is-moving' : ''} ${focused ? 'is-focused' : ''} ${isTouchDevice ? 'is-touch' : ''} ${running ? 'is-canyon' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={t.settings}
@@ -398,15 +442,16 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
           hovered={hovered}
           focused={focused}
           running={!away && !covered}
+          canyon={canyon === 'flight' ? runId : null}
         />
         <div ref={cssHost} className="ck3-css-host" />
-        <Hud hover={hover} onClose={onClose} />
+        {running ? <CanyonVisor /> : <Hud hover={hover} onClose={onClose} />}
         {panelFor && (
           <Panel key={panelFor} id={panelFor} onClose={unfocus} onParents={onParents} onReset={onReset} onAbout={onAbout} onPilot={onPilot} />
         )}
       </div>
       {/* the pages on the screens and the windscreen, drawn on them (css3d.ts) */}
-      {createPortal(<WindscreenFace />, css.faces.windscreen.element)}
+      {createPortal(running ? <CanyonGlass /> : <WindscreenFace />, css.faces.windscreen.element)}
       {SCREENS.map((s) => createPortal(<ScreenFace id={s.id} lit={hover === s.id} open={focused === s.id} rtl={lang === 'he'} />, css.faces[s.id].element, s.id))}
       {HOTSPOTS.map((h) => createPortal(<HotspotFace id={h.id} />, css.faces[h.id].element, h.id))}
     </div>

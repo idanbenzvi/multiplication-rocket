@@ -3,8 +3,8 @@ import { length, screenQuad, type Quad, type UV } from './geometry';
 // What's where in the cockpit's panorama (public/cockpit/nasa-punk-360.webp,
 // made from the art by scripts/cockpit-360.py, which measured these): its
 // seven screens, which the game's own screens go on, the parts of it that do
-// something when touched (the joystick, the panel overhead, the remote on the
-// floor), and its little lit buttons, which blink.
+// something when touched (the joystick, the orange buttons by it, the panel
+// overhead, the remote on the floor), and its little lit buttons, which blink.
 //
 // Round the pilot from the left: the 2 × 2 bank of screens on the left wall
 // (the pilot, their badges, the sound, the ship's systems), the windscreen
@@ -14,7 +14,7 @@ import { length, screenQuad, type Quad, type UV } from './geometry';
 export type ScreenId = 'pilot' | 'badges' | 'sound' | 'systems' | 'map' | 'modes';
 /** where the view can be turned to: a screen, or straight ahead out of the windscreen */
 export type Stop = ScreenId | 'ahead';
-export type HotspotId = 'stick' | 'overhead' | 'remote';
+export type HotspotId = 'stick' | 'manual' | 'overhead' | 'remote';
 
 export interface ScreenSpot {
   id: ScreenId;
@@ -102,6 +102,8 @@ export interface Hotspot {
 export const HOTSPOTS: Hotspot[] = [
   // the joystick: grab it to fly on (back to the flight)
   { id: 'stick', corners: [[0.4835, 0.632], [0.5165, 0.632], [0.519, 0.765], [0.481, 0.765]], icon: '🕹️' },
+  // the four orange buttons by it: MANUAL, take the ship and fly the Canyon Run (canyon/)
+  { id: 'manual', corners: [[0.4562, 0.6695], [0.4724, 0.6695], [0.4726, 0.6962], [0.4553, 0.6962]], icon: '🏜️' },
   // the panel overhead, at the top of the windscreen: what the game is (About)
   { id: 'overhead', corners: [[0.469, 0.333], [0.531, 0.333], [0.531, 0.362], [0.469, 0.362]], icon: 'ℹ️' },
   // the remote on the floor by the left seat: for grown-ups (the parents' dashboard)

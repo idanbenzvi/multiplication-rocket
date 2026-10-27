@@ -9,6 +9,8 @@ import type { ScreenId } from './screens';
 export const glowLights = {
   /** the cockpit's own light, a little under the art's full brightness so the glows show */
   ambient: 0.9,
+  /** its colour (the Canyon Run's: warm in the sun, cool in the rock's shadow) */
+  tint: [1, 1, 1] as [number, number, number],
   /** a shudder's flicker, 1 at its start, dying away */
   flicker: 0,
   /** the windscreen's HUD: brighter the faster the ship goes */

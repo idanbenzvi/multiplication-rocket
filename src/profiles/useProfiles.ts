@@ -126,6 +126,7 @@ export const useProfiles = create<ProfilesState>((set, get) => {
         localStorage.removeItem(`multiplication-rocket:log:v1:${id}`); // their answer history
         localStorage.removeItem(`multiplication-rocket:badges:v1:${id}`); // their badges
         localStorage.removeItem(`multiplication-rocket:boss:v1:${id}`); // their Black Sun
+        localStorage.removeItem(`multiplication-rocket:canyon:v1:${id}`); // their Canyon Runs
         // their crews (keys end in "<idA>+<idB>", see game/useCrewStore.ts)
         const crews: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {

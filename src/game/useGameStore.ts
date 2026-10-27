@@ -88,6 +88,8 @@ interface GameState {
    * the mastery map, add its fuel (may launch), back to normal questions.
    */
   finishBonusRound: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
+  /** a Canyon Run flown in the cockpit (the game paused under it): its answers, and its fuel, short of a launch */
+  finishCanyonRun: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
   /** open the Deep Space Academy, if nothing else is going on */
   openAcademy: () => void;
   closeAcademy: () => void;
@@ -410,6 +412,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     // back in the game: the rocket flies home from a round it flew off in; one played over it just surges on
     if (bonusRound && FLIES_OFF.has(bonusRound)) flyHome();
     else kick(0.6);
+  },
+
+  finishCanyonRun: ({ fuelGain, answers }) => {
+    const { progress } = get();
+    appendToLog(
+      useProfiles.getState().activeId,
+      answers.map((a) => ({ fact: a.factKey, correct: a.correct, ms: null, source: 'canyon' as const })),
+    );
+    let mastery = progress.mastery;
+    for (const a of answers) mastery = recordAttempt(mastery, a.factKey, a.correct);
+    // (the tank tops out a hair short of full: the launch is the game's, outside, on the next right answer)
+    const fuel = Math.max(progress.fuel, Math.min(99, progress.fuel + fuelGain));
+    const nextProgress: Progress = { ...progress, mastery, fuel };
+    localProgressStore.save(nextProgress);
+    set({ progress: nextProgress });
   },
 
   openAcademy: () => {

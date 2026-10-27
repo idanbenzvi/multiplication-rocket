@@ -10,7 +10,7 @@
 import { missionOfKey, PILOT_MISSIONS, type PilotMission } from '../game/mission';
 import { missionOf } from '../profiles/useProfiles';
 
-export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun' | 'road' | 'traffic' | 'boss';
+export type AnswerSource = 'question' | 'meteor' | 'battle' | 'stranded' | 'constellation' | 'stardust' | 'crew' | 'sky' | 'eclipse' | 'sun' | 'road' | 'traffic' | 'boss' | 'canyon';
 
 export interface LoggedAnswer {
   /** Date.now() when answered (wall-clock, so days line up with the calendar) */
@@ -28,7 +28,7 @@ export interface LoggedAnswer {
 const PREFIX = 'multiplication-rocket:log:v1';
 const MAX_ENTRIES = 6000;
 // append only: the index is what's stored
-const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse', 'sun', 'road', 'traffic', 'boss'];
+const SOURCES: AnswerSource[] = ['question', 'meteor', 'battle', 'stranded', 'constellation', 'stardust', 'crew', 'sky', 'eclipse', 'sun', 'road', 'traffic', 'boss', 'canyon'];
 
 // compact row: [at, fact, correct 0/1, ms | -1, source index, mission index (missing on older rows)]
 type Row = [number, string, 0 | 1, number, number, number?];

@@ -114,11 +114,13 @@ export function Hud({ hover, onClose }: { hover: FaceId | null; onClose: () => v
       ? null
       : hover === 'stick'
         ? d.stick
-        : hover === 'overhead'
-          ? d.overhead
-          : hover === 'remote'
-            ? d.remote
-            : `${d.screens[hover]} · ${d.clickToOpen}`;
+        : hover === 'manual'
+          ? d.manual
+          : hover === 'overhead'
+            ? d.overhead
+            : hover === 'remote'
+              ? d.remote
+              : `${d.screens[hover]} · ${d.clickToOpen}`;
 
   return (
     <div className="ck3-hud" dir={rtl ? 'rtl' : 'ltr'}>

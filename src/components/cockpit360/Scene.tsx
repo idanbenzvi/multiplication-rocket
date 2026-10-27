@@ -6,14 +6,15 @@ import { dirOfLook } from './geometry';
 import { Shell } from './Shell';
 import { Space, type Destination } from './Space';
 import { Effects } from './Effects';
+import { CanyonWorld } from './canyon/World';
 import { glowLights } from './lights';
 import type { CssLayer } from './css3d';
 import { SCREENS, type ScreenId } from './screens';
 import { baseFov, shownLook, stepView, view } from './view';
 
-// The cockpit's 3D view: the space outside, the cockpit round it, the lens,
-// and the pages on its screens (css3d.ts) drawn after it all with the same
-// camera, each frame.
+// The cockpit's 3D view: the space outside (or, flying a Canyon Run, the
+// canyon), the cockpit round it, the lens, and the pages on its screens
+// (css3d.ts) drawn after it all with the same camera, each frame.
 
 interface Props {
   css: CssLayer;
@@ -27,6 +28,8 @@ interface Props {
   focused: ScreenId | null;
   /** drawing at all (not while the game's away) */
   running: boolean;
+  /** flying a Canyon Run: the canyon outside instead of space (keyed by the run) */
+  canyon: number | null;
 }
 
 function Rig({ css, holding, hovered, focused }: Pick<Props, 'css' | 'holding' | 'hovered' | 'focused'>) {
@@ -40,7 +43,7 @@ function Rig({ css, holding, hovered, focused }: Pick<Props, 'css' | 'holding' |
     stepView(dt, performance.now(), holding.current ?? false);
     const look = shownLook();
     camera.rotation.set(look.pitch, -look.yaw, look.roll, 'YXZ');
-    camera.fov = (view.fov * 180) / Math.PI;
+    camera.fov = (view.fov * (1 + view.kick) * 180) / Math.PI;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     // each screen's glow: brightest zoomed into, brighter under the hand, and breathing a little
@@ -63,7 +66,7 @@ function Rig({ css, holding, hovered, focused }: Pick<Props, 'css' | 'holding' |
   return null;
 }
 
-export function Scene({ css, destination, calm, low, holding, hovered, focused, running }: Props) {
+export function Scene({ css, destination, calm, low, holding, hovered, focused, running, canyon }: Props) {
   // the sharpest it draws, and (should the device struggle) how far towards plain 1 it's come down
   const top = Math.min(low ? 1.25 : 1.5, window.devicePixelRatio || 1);
   const [dpr, setDpr] = useState(top);
@@ -81,7 +84,7 @@ export function Scene({ css, destination, calm, low, holding, hovered, focused, 
       {/* (a device that can't keep up draws a little less sharp) */}
       <PerformanceMonitor onChange={({ factor }) => setDpr(Math.round((1 + (top - 1) * factor) * 20) / 20)} />
       <Rig css={css} holding={holding} hovered={hovered} focused={focused} />
-      <Space destination={destination} calm={calm} />
+      {canyon === null ? <Space destination={destination} calm={calm} /> : <CanyonWorld key={canyon} destination={destination?.index ?? 0} />}
       <Suspense fallback={null}>
         <Shell />
       </Suspense>

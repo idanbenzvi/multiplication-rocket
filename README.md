@@ -98,6 +98,41 @@ the ⚙️ button instead, and with reduced motion it simply fades in, and turns
 On a computer the top bar keeps all its buttons. On a phone or a tablet it's just the pilot and
 ⚙️; everything else is in the cockpit.
 
+### Canyon Run 🏜️ (in the cockpit)
+
+**The orange buttons by the joystick** (MANUAL) take the controls: a countdown, a white-out, and
+the ship dives into a canyon on an alien world at sunset and races along it. Across the canyon,
+eight times, a **gate**: a pane of light from wall to wall with **a stretch of the number line**
+on it (21 numbers, every fifth named) and a fact over it, *7 × 8 = ?*, which comes up on the
+windscreen too. The answer is somewhere on that line, never at its very ends: **steer to where it
+is and fly through.** Near a gate the number line is painted on the floor too, a line along the
+canyon for each number, your own lane lit amber, and an amber bar on the gate shows where you'll
+go through.
+
+- **← →** (or A, D) step one number; holding one glides along. On a phone or a tablet, tap a side
+  of the screen for one number, hold to glide, or slide a finger across.
+- **Bullseye** (right on the answer): a gold flash, a whoosh, *BULLSEYE!* and a burst of speed.
+  Bullseyes in a row fly faster and faster (*3 IN A ROW!*).
+- **So close** (one or two off) and **missed it**: the windscreen shows a little number line from
+  the number you flew through to the answer, the gap between them being the difference
+  (*You flew through 47 · 7 × 7 = 49 · 2 further on*).
+- Graze a wall and sparks fly and it slows you down; a spire knocks you aside.
+- At the end the ship climbs out of the canyon and the results come up: bullseyes, close ones, the
+  best run in a row, every gate with what you flew through (and the answer, if it wasn't), and
+  the fuel won. **Fly again** for a new canyon (every run's is different).
+
+The gates ask the facts the pilot finds hard, as the game does, and every gate counts towards the
+practice map and the parent dashboard (a bullseye as right, anything else as wrong). Fuel is paid
+for the **first run at each level** (half a right answer's for a bullseye, a fifth for a close one;
+it never launches by itself, that's the game's, on the next right answer); after that, runs are
+for fun. With reduced motion the canyon is flown more slowly, without the shake and the blur.
+
+The canyon is made as it's flown, from noise: a height field of fractal noise with the canyon
+carved along a winding path, its walls stepped in terraces of layered sandstone, gullies, dunes,
+spires and far-off mesas, lit by a low sun whose soft shadows are worked out across the rock as
+each stretch is built (in a worker, off the game's thread), and hazed into the sky with distance.
+The design notes are in [`docs/plans/2026-10-28-canyon-run.md`](docs/plans/2026-10-28-canyon-run.md).
+
 ### Tablets and phones
 
 The browser version is made for touch. Answers are multiple choice by default (tap one of four),

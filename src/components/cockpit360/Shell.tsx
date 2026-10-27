@@ -5,6 +5,7 @@ import { dirOf, type Vec3 } from './geometry';
 import { LEDS, QUADS, SCREENS } from './screens';
 import { glowLights } from './lights';
 import { PANORAMA_URL } from './panorama';
+import { fx } from './canyon/fx';
 
 // The cockpit itself: the panorama, on a sphere round the camera. Each
 // pixel looks the picture up by the direction it's seen in (so there's no
@@ -30,6 +31,7 @@ const FRAGMENT = /* glsl */ `
 uniform sampler2D map;
 uniform float uTime;
 uniform float uAmbient;
+uniform vec3 uTint;
 uniform float uFlicker;
 uniform vec3 uLightDir[${MAX_LIGHTS}];
 uniform vec3 uLightColor[${MAX_LIGHTS}];
@@ -55,7 +57,7 @@ void main() {
   vec3 albedo = tex.rgb;
 
   // the light falling on the walls: the screens', and whatever's passing by outside
-  vec3 light = vec3(uAmbient * (1.0 - uFlicker * 0.35));
+  vec3 light = uTint * uAmbient * (1.0 - uFlicker * 0.35);
   for (int i = 0; i < ${MAX_LIGHTS}; i++) {
     float c = dot(d, uLightDir[i]);
     float k = smoothstep(uLightReach[i], 1.0, c);
@@ -108,6 +110,8 @@ export function Shell() {
     texture.wrapS = THREE.RepeatWrapping;
     texture.anisotropy = 4;
     texture.needsUpdate = true;
+    // (the lens keeps the Canyon Run's smear to the glass by it)
+    fx.pano = texture;
     return new THREE.ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
@@ -119,6 +123,7 @@ export function Shell() {
         map: { value: texture },
         uTime: { value: 0 },
         uAmbient: { value: 0.9 },
+        uTint: { value: new THREE.Vector3(1, 1, 1) },
         uFlicker: { value: 0 },
         uLightDir: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector3(0, -1, 0)) },
         uLightColor: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Color(0, 0, 0)) },
@@ -141,6 +146,7 @@ export function Shell() {
     u.uTime.value = clock.elapsedTime;
     u.uFlicker.value = glowLights.flicker;
     u.uAmbient.value = glowLights.ambient;
+    (u.uTint.value as THREE.Vector3).set(...glowLights.tint);
     const dirs = u.uLightDir.value as THREE.Vector3[];
     const colors = u.uLightColor.value as THREE.Color[];
     const reach = u.uLightReach.value as number[];

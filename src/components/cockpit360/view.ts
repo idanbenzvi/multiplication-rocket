@@ -55,6 +55,10 @@ export const view = {
   swayGoal: { yaw: 0, pitch: 0 },
   /** the flight's shudder (radians), added to the look */
   shake: { yaw: 0, pitch: 0, roll: 0 },
+  /** the Canyon Run's (canyon/World.tsx): the speed's shudder, a wall's, a gate's kick (radians) */
+  jolt: { yaw: 0, pitch: 0, roll: 0 },
+  /** a boost's kick: the field of view widened by this share, dying away */
+  kick: 0,
   /** how fast the view's moving, 0 … 1 (the blur) */
   motion: 0,
   /** how far into a screen, 0 … 1 (its edges blur and darken) */
@@ -70,9 +74,9 @@ export const view = {
 /** the look as the camera has it this frame, shudder and sway and all */
 export function shownLook(): Look & { roll: number } {
   return {
-    yaw: view.yaw + view.sway.yaw + view.shake.yaw,
-    pitch: view.pitch + view.sway.pitch + view.shake.pitch,
-    roll: view.shake.roll,
+    yaw: view.yaw + view.sway.yaw + view.shake.yaw + view.jolt.yaw,
+    pitch: view.pitch + view.sway.pitch + view.shake.pitch + view.jolt.pitch,
+    roll: view.shake.roll + view.jolt.roll,
   };
 }
 
