@@ -644,7 +644,8 @@ The theme song, *Gliding Past the Rim*, was made for this game with Google Gemin
 has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; the
 Black Sun, the final boss, plays *The View from the Last Lap*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to
-whatever was playing when it closes; the cockpit plays *Starboard View*. Click 🔊 in the top bar
+whatever was playing when it closes; the cockpit plays *Starboard View*, and a Canyon Run
+*Canyon Sprint*. Click 🔊 in the top bar
 on a computer (or turn the dials on the cockpit's Sound screen)
 for separate **music** and **sound-effect** volume (all the way down = off). The
 sound effects are synthesized in the browser with Web Audio, so there are no sample files.

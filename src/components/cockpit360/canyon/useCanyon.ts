@@ -126,7 +126,7 @@ export const useCanyon = create<CanyonState>((set, get) => ({
     live.run = new Run(live.builder.canyon, gates, calm, record.pace ?? PACE_START);
     live.quality = quality;
     live.calm = calm;
-    playTrack('crew');
+    playTrack('canyon');
     window.clearTimeout(introTimer);
     window.clearTimeout(titleTimer);
     if (entry === 'arrival' && !again) {

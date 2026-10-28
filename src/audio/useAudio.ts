@@ -9,11 +9,12 @@ const DEFAULT_EFFECTS = 0.7;
 // The soundtracks: the theme; Monster Sun's own while that mode is open; The
 // View From Higher Ground on a crew flight; The View from the Last Lap against
 // the Black Sun, the final boss; Velvet Horizon while the About page is open;
-// and Starboard View in the cockpit, while the settings are open. One plays at
-// a time, at the music volume, and never cuts to another: the one playing
-// fades out, then the next fades in. Paths are relative to the page, so they
-// resolve both on a web server and from the Electron app's file:// URL.
-export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit' | 'bay';
+// Starboard View in the cockpit, while the settings are open; and Canyon
+// Sprint on a Canyon Run. One plays at a time, at the music volume, and never
+// cuts to another: the one playing fades out, then the next fades in. Paths
+// are relative to the page, so they resolve both on a web server and from the
+// Electron app's file:// URL.
+export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit' | 'bay' | 'canyon';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
@@ -22,14 +23,16 @@ const tracks: Record<Track, HTMLAudioElement> = {
   about: new Audio('./audio/velvet-horizon.mp3'),
   cockpit: new Audio('./audio/starboard-view.mp3'),
   bay: new Audio('./audio/apex-ascent.mp3'),
+  canyon: new Audio('./audio/canyon-sprint.mp3'),
 };
-// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page, the cockpit or the launch bay
+// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page, the cockpit, the launch bay or a Canyon Run
 tracks.sun.preload = 'none';
 tracks.crew.preload = 'none';
 tracks.boss.preload = 'none';
 tracks.about.preload = 'none';
 tracks.cockpit.preload = 'none';
 tracks.bay.preload = 'none';
+tracks.canyon.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
 
 /** changing soundtracks, the one playing fades out over this long, then the next fades in over this long (and the music fades in starting, or back from a pause) */

@@ -136,7 +136,7 @@ turning its colour; round the ship a shock glow, flame tongues, 260 embers and s
 JetSmoke's four jets streaming smoke back; ENTERING ATMOSPHERE (DecryptedText) over the world's
 name (ShinyText). From 2.85 s the scene scales up, blurs and brightens, and the white comes up.
 Under the full white the cockpit opens (`useCockpit.open(null, { before })`, its 'white' way:
-there at once, looking out at the canyon, its music the run's) and the run flies; the white holds
+there at once, looking out at the canyon, its music the run's, *Canyon Sprint*) and the run flies; the white holds
 till the canyon's first stretch has been drawn (`seen`, at most 3 s), then clears as the lens
 flashes, and CANYON RUN · ON MARS comes up over the windscreen. The run's results say **Fly on**,
 which closes the cockpit back to the game, as does ending the run early. Skip (or Escape, Enter,
