@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Progress } from '../../../game/types';
-import { Canyon, GATE_HALF, HOVER, MAX_HEIGHT, sunlight } from './field';
+import { Canyon, CLAY, DUNES, GATE_HALF, HOVER, MAX_HEIGHT, sunlight, WASH } from './field';
 import { buildChunk, CHUNK, columns } from './chunk';
 import { buildGates, GATE_COUNT, gateDistances, judge, LANE, RULER, RULER_ROOM, runLength, SPAN, uOf, valueAt, windowFor } from './gates';
 import { PACE_MAX, PACE_MIN, PACE_START, Run } from './run';
@@ -76,6 +76,28 @@ describe('Canyon Run: the canyon', () => {
       expect(s.d).toBeGreaterThan(360);
       for (const g of c.gates) expect(s.d <= g - 250 || s.d >= g + 50).toBe(true);
       expect(c.half(s.d) - Math.abs(s.u) - s.r).toBeGreaterThanOrEqual(8.9);
+    }
+  });
+
+  it('changes its floor as it goes: dunes at the start, then every kind, never the same twice running, boulders only in a wash', () => {
+    for (const seed of [10, 11, 12, 13]) {
+      const c = canyonFor(seed);
+      const kinds = c.floors.map((f) => f.kind);
+      expect(kinds[0]).toBe(DUNES);
+      expect(new Set(kinds)).toEqual(new Set([DUNES, CLAY, WASH]));
+      kinds.forEach((k, i) => i && expect(k).not.toBe(kinds[i - 1]));
+      expect(c.ground(100)).toEqual([0, 0]);
+      let boulders = 0;
+      for (let d = 0; d < c.end; d += 3) {
+        const [clay, wash] = c.ground(d);
+        expect(clay + wash).toBeLessThanOrEqual(1 + 1e-9);
+        for (let u = -24; u <= 24; u += 1.5) {
+          const b = c.boulders(d, u);
+          if (wash === 0 || c.zone(d) === 1) expect(b).toBe(0);
+          if (b > 0.5) boulders++;
+        }
+      }
+      expect(boulders).toBeGreaterThan(50);
     }
   });
 
@@ -286,6 +308,60 @@ describe('Canyon Run: the flight', () => {
     for (let i = 0; i < 60; i++) run.step(1 / 60);
     expect(valueAt(g, run.ship.u)).toBeLessThan(at - 3);
     expect(Math.abs(run.ship.u - uOf(g, valueAt(g, run.ship.u)))).toBeLessThan(0.15);
+  });
+
+  it('adds taps up into one smooth slide, never pushed harder than its thrusters, and counts a bounce once', () => {
+    const run = runFor(28);
+    for (let i = 0; i < 60 * 4; i++) run.step(1 / 60);
+    const g = run.ruler()!;
+    const at = valueAt(g, run.ship.u);
+    const dir = at - g.lo > 10 ? -1 : 1;
+    // (a key's bounce a frame later: one press)
+    run.press(dir);
+    run.step(1 / 60);
+    run.press(dir);
+    run.release(dir);
+    expect(run.pending()).toBe(dir);
+    let most = 0;
+    let back = 0;
+    let last = run.ship.vu;
+    for (let i = 0; i < 60 * 1.5; i++) {
+      // two more taps, a tenth of a second apart
+      if (i === 6 || i === 12) {
+        run.press(dir);
+        run.release(dir);
+      }
+      run.step(1 / 60);
+      most = Math.max(most, Math.abs(run.ship.vu - last) * 60);
+      last = run.ship.vu;
+      // (it doesn't stop between taps, nor turn back before it's there)
+      if (Math.abs(uOf(g, at + 3 * dir) - run.ship.u) > 0.3) back = Math.max(back, -run.ship.vu * dir);
+    }
+    expect(run.aimed()).toBe(at + 3 * dir);
+    expect(valueAt(g, run.ship.u)).toBe(at + 3 * dir);
+    expect(run.pending()).toBe(0);
+    expect(run.ship.u).toBeCloseTo(uOf(g, at + 3 * dir), 0);
+    expect(back).toBeLessThan(0.5);
+    expect(most).toBeLessThanOrEqual(150.5);
+  });
+
+  it('follows the mouse smoothly across, and rests on the nearest number', () => {
+    const run = runFor(29);
+    for (let i = 0; i < 60 * 4; i++) run.step(1 / 60);
+    const g = run.ruler()!;
+    const from = run.ship.u;
+    const to = from + (from < 0 ? 1 : -1) * LANE * 6.4;
+    let most = 0;
+    let last = run.ship.vu;
+    for (let i = 0; i < 60 * 1.5; i++) {
+      if (i < 30) run.aimAt(from + ((to - from) * i) / 29);
+      run.step(1 / 60);
+      most = Math.max(most, Math.abs(run.ship.vu - last) * 60);
+      last = run.ship.vu;
+    }
+    expect(most).toBeLessThanOrEqual(150.5);
+    expect(run.ship.u).toBeCloseTo(uOf(g, valueAt(g, to)), 0);
+    expect(Math.abs(run.ship.vu)).toBeLessThan(1);
   });
 
   it('scrapes along a wall rather than through it', () => {

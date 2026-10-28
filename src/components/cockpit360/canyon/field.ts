@@ -10,6 +10,12 @@ import { fbm, perlin, ridged, seeded, type Noise2 } from './noise';
 // spire of rock stands in the canyon, to be flown round. Where a gate's
 // number line spans the canyon, it widens and its floor smooths out.
 //
+// Its floor changes as it goes, a stretch at a time, each blending into the
+// next: dunes, in long ridges with ripples across them; the dry bed of a
+// lake, flat clay cracked into plates (the cracks are the terrain's shader's,
+// materials.ts); or a wash, a dry stream's bed winding along it, strewn with
+// boulders dark with desert varnish.
+//
 // Its coordinates: `d`, how far along the run (the world's -z); `u`, how
 // far across from the canyon's middle (the world's x, less the path's).
 // The ship flies along d and steers across u.
@@ -69,12 +75,34 @@ const BENDS: Array<[number, number]> = [
 ];
 const SPIRE_BIN = 40;
 
+/** the floor's kinds, a stretch each */
+export const DUNES = 0;
+export const CLAY = 1;
+export const WASH = 2;
+/** a stretch of floor's length (from, to), and how long it takes to blend into the next */
+const STRETCH: [number, number] = [420, 880];
+const BLEND = 70;
+/** the boulders: one cell of the wash's grid each (if any), how big and how many */
+const BOULDER_CELL = 11;
+const BOULDER_R: [number, number] = [2, 3.6];
+const BOULDER_RISE = 0.6;
+const BOULDERS = 0.5;
+
+const hash2 = (i: number, j: number, seed: number) => {
+  let h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(seed, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+
 export class Canyon {
   readonly seed: number;
   readonly gates: number[];
   readonly end: number;
   readonly spires: Spire[] = [];
   private readonly bins = new Map<number, Spire[]>();
+  /** the floor's stretches: where each starts, and its kind */
+  readonly floors: Array<{ from: number; kind: number }> = [];
+  private readonly washPhase: number;
   private readonly phase: number[];
   private readonly origin: number;
   private readonly n1: Noise2;
@@ -99,6 +127,8 @@ export class Canyon {
     this.origin = 0;
     this.origin = this.center(0);
     this.placeSpires(seeded(seed ^ 0x51ee));
+    this.washPhase = rand() * Math.PI * 2;
+    this.placeFloors(seeded(seed ^ 0x6f10));
   }
 
   /** the canyon's middle, across (the world's x) */
@@ -153,6 +183,53 @@ export class Canyon {
     return 64 + 20 * this.wave(d / 380 + 40, 9);
   }
 
+  /** what the floor is here: how much a dry lake's clay, and how much a wash (the rest is dunes) */
+  ground(d: number): [number, number] {
+    const f = this.floors;
+    let i = 0;
+    while (i + 1 < f.length && f[i + 1].from <= d + BLEND) i++;
+    const next = f[i];
+    const prev = i > 0 ? f[i - 1] : next;
+    // (blending from the stretch before into this one, about where it starts)
+    const k = smooth(next.from - BLEND, next.from + BLEND, d);
+    const w = (kind: number) => (prev.kind === kind ? 1 - k : 0) + (next.kind === kind ? k : 0);
+    return [w(CLAY), w(WASH)];
+  }
+
+  /** the wash's stream bed: where across it winds */
+  private washAt(d: number): number {
+    return 15 * Math.sin(d / 95 + this.washPhase) + 6 * Math.sin(d / 37 + this.washPhase * 2.3);
+  }
+
+  /** how much a boulder raises the floor at (d, u) (in a wash, away from the gates' number lines), before the wash's own weight */
+  private boulder(d: number, u: number): number {
+    const ci = Math.floor(d / BOULDER_CELL);
+    const cj = Math.floor(u / BOULDER_CELL);
+    let rise = 0;
+    for (let i = ci - 1; i <= ci + 1; i++) {
+      for (let j = cj - 1; j <= cj + 1; j++) {
+        // (more of them near the stream bed, where the water left them)
+        const bd = (i + 0.5) * BOULDER_CELL;
+        const bu = (j + 0.5) * BOULDER_CELL;
+        const near = Math.exp(-(((bu - this.washAt(bd)) / 16) ** 2));
+        if (hash2(i, j, this.seed) > BOULDERS * (0.45 + 0.55 * near)) continue;
+        const r = BOULDER_R[0] + (BOULDER_R[1] - BOULDER_R[0]) * hash2(i, j, this.seed + 7);
+        const dd = d - (i + 0.2 + 0.6 * hash2(i, j, this.seed + 3)) * BOULDER_CELL;
+        const du = u - (j + 0.2 + 0.6 * hash2(i, j, this.seed + 5)) * BOULDER_CELL;
+        // (a little longer one way than the other)
+        const q = (dd * dd * 0.8 + du * du * 1.25) / (r * r);
+        if (q < 1) rise = Math.max(rise, r * BOULDER_RISE * Math.pow(1 - q, 0.6));
+      }
+    }
+    return rise;
+  }
+
+  /** the boulders' rise at (d, u), as the floor has it (the chunks mark them for the shader): in a wash, out of the gates' number lines and off the walls' scree */
+  boulders(d: number, u: number, wash = this.ground(d)[1], W = this.half(d)): number {
+    const k = wash * (1 - this.zone(d)) * (1 - smooth(W - 13, W - 6, Math.abs(u)));
+    return k > 0.01 ? k * this.boulder(d, u) : 0;
+  }
+
   /** the world's position of a point on the run */
   toWorld(d: number, u: number, y: number): Vec3 {
     return [this.center(d) + u, y, -d];
@@ -173,8 +250,22 @@ export class Canyon {
     const gully = fine ? 3.4 * ridged(this.n3, d * 0.05 + side, au * 0.012, 3) : 1.7;
     const t = au - (W + warp + gully);
     let h = F;
-    // dunes, their crests across the way (none where a gate's number line is)
-    if (fine) h += (1 - this.zone(d)) * 1.1 * (ridged(this.n4, d * 0.03, u * 0.11, 2) - 0.35);
+    if (fine) {
+      const [clay, wash] = this.ground(d);
+      const open = 1 - this.zone(d);
+      const dunes = 1 - clay - wash * 0.7;
+      // dunes, their crests across the way, and long ridges of them in a field of dunes (none where a gate's number line is)
+      h += open * dunes * 1.1 * (ridged(this.n4, d * 0.03, u * 0.11, 2) - 0.35);
+      h += open * Math.max(0, dunes - wash) * 1.6 * (ridged(this.n4, d * 0.011 + 31, u * 0.04, 2) - 0.45);
+      // a dry lake's bed, flat and a touch lower
+      h -= 0.5 * clay;
+      if (wash > 0.01) {
+        // a wash: its stream's bed, winding along, and the boulders it left
+        const bed = (u - this.washAt(d)) / 5.5;
+        h -= open * wash * 1.3 * Math.exp(-bed * bed);
+        h += this.boulders(d, u, wash, W);
+      }
+    }
     // the scree at the walls' foot
     const s = clamp01((t + 10) / 10);
     h += 5 * s * s;
@@ -205,6 +296,28 @@ export class Canyon {
   /** the spires near d (to fly round them) */
   spiresNear(d: number): Spire[] {
     return this.bins.get(Math.floor(d / SPIRE_BIN)) ?? [];
+  }
+
+  private placeFloors(rand: () => number) {
+    // (dunes on the way down at the start, then every kind in turn, in a new order each round, never the same twice running)
+    let from = 0;
+    let kind = DUNES;
+    this.floors.push({ from, kind });
+    from = 380 + rand() * 200;
+    let bag: number[] = [];
+    while (from < this.end) {
+      if (!bag.length) {
+        bag = [DUNES, CLAY, WASH];
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1));
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+        if (bag[0] === kind) bag.push(bag.shift()!);
+      }
+      kind = bag.shift()!;
+      this.floors.push({ from, kind });
+      from += STRETCH[0] + rand() * (STRETCH[1] - STRETCH[0]);
+    }
   }
 
   private placeSpires(rand: () => number) {

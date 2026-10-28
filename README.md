@@ -110,15 +110,26 @@ on it (21 numbers, every fifth named) and a fact over it, *7 × 8 = ?*, which co
 windscreen too. The answer is somewhere on that line, never at its very ends: **steer to where it
 is and fly through.** Near a gate the number line is painted on the floor too, a line along the
 canyon for each number, your own lane lit amber, and an amber bar on the gate shows where you'll
-go through.
+go through; the lane you're heading for, until you're there, is outlined in pulsing gold on the
+floor and on the gate.
 
-- **← →** (or A, D) step one number; holding one glides along. On a computer the mouse steers
-  too: across the screen is across the number line. On a phone or a tablet, tap a side of the
-  screen for one number, hold to glide, or slide a finger across.
+- **← →** (or A, D) step one number, and **taps add up**: tap three times and the ship makes one
+  smooth slide of three numbers (a key's bounce, or ← and A together, counts once). Holding one
+  glides along, and let go it eases onto the number it's coming to. On a computer the mouse steers
+  too: a **reticle** stands in for the pointer, the number under it inside it and how far that is
+  from yours beside it (*+4 ▶*); the ship follows it smoothly across, and when the mouse rests it
+  settles on that number. On a phone or a tablet, tap a side of the screen for one number (taps
+  add up there too), hold to glide, or slide a finger across.
+- However it's steered, the ship slides there smoothly, accelerating, cruising and easing in,
+  never a jerk per number. Along the bottom, the **steering rail** is the next gate's numbers
+  across the screen (as the mouse steers by them): your ship on it, where you're going, the span
+  between, and a counter of how many numbers you've still to go (*+3*), popping with each tap.
 - Under the crosshair, **AIM** shows the number you're heading for, its digits rolling up and down
   as you steer. Every move throws you about in the seat a little: the view sways against a swerve
   and leans back as the ship speeds up.
-- **Bullseye** (right on the answer): a gold flash, a whoosh, *BULLSEYE!* and a burst of speed.
+- **Bullseye** (right on the answer): a gold flash, two rings of light, the gate's pane bursting
+  into gold shards that stream past the glass, a whoosh, *BULLSEYE!* and a burst of speed (cyan
+  shards for a close one, violet for a miss).
   Bullseyes in a row fly faster and faster (*3 IN A ROW!*).
 - **The pace follows the pilot**: every bullseye speeds the canyon up a little, and every miss
   slows it down more, between a gentle 65% and 125% of its speed, and the next run starts at the
@@ -148,7 +159,9 @@ belt, which has no ground to fly along: then it waits for the next level's end.
 
 The canyon is made as it's flown, from noise: a height field of fractal noise with the canyon
 carved along a winding path, its walls stepped in terraces of layered sandstone, gullies, dunes,
-spires and far-off mesas, lit by a low sun whose soft shadows are worked out across the rock as
+spires and far-off mesas, its floor changing as it goes, a stretch at a time (dunes in long ridges;
+the dry bed of a lake, pale clay cracked into plates; a wash, a dry stream's bed winding along it,
+strewn with boulders dark with desert varnish), lit by a low sun whose soft shadows are worked out across the rock as
 each stretch is built (in a worker, off the game's thread), and hazed into the sky with distance.
 The design notes are in [`docs/plans/2026-10-28-canyon-run.md`](docs/plans/2026-10-28-canyon-run.md).
 

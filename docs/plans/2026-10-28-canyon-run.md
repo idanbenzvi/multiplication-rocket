@@ -122,6 +122,50 @@ ship's moves.
 - **Reduced motion**: slower, no shudders, no blur, no kick or ring, softer flashes; the run's the
   same.
 
+## Steering, polished
+
+The user, after flying it: one number per step looked awful with the mouse, or moving more than
+one number; debounce the keys and add up their presses with a counter; give the mouse smooth
+control with a target reticle to choose how far to go; polish the effects; vary the ground.
+
+- **The slide** (`Run.slide`): the stiff spring per number is gone. Every way of steering sets a
+  place across (`steer.target`), and the ship closes on it at the speed that's keen near it
+  (5.5 × the distance), never faster than it could stop in time (√(2·a·0.7·distance)) nor than 36
+  units/s, taken up with a lag of 1/14 s and never pushed harder than 150 units/s². So several
+  numbers are one smooth slide, accelerating, cruising and easing in, and a new target mid-slide
+  bends it rather than restarting it. Where it's going stays put through a gate (every ruler's
+  numbers are at the same places across), and short of a wall it waits where the canyon widens.
+- **Keys** (`Run.press`): each press moves the target one number on from where it's going (not
+  from where the ship is), so taps add up; a press within 35 ms of the last that way (by the
+  event's own clock) is a bounce, or ← and A together, and counts once. Held 0.26 s it glides: the
+  target runs ahead of the ship at 24 units/s, up to 32 held longer; let go, it's the number the
+  ship would naturally stop at, never one behind it.
+- **The mouse and a finger** (`Run.aimAt`, `dragTo`): the place pointed at, drawn gently towards
+  the nearest number while it moves (a smooth detent, `x − 0.6·sin 2πx / 2π` of a lane), and
+  snapped to it once the pointer has rested 0.2 s. Knocked off a spire, the pointer waits 0.6 s
+  before steering again, so it doesn't drive the ship straight back into it.
+- **The bank** follows the slide (its speed, and a quarter of its push), so braking no longer
+  throws the horizon the other way.
+- **The steering rail** (`SteerRail`, moved each frame outside React): the next gate's 21 numbers
+  across the screen, where the mouse steers by them; the ship's chevron; where it's going, its
+  number boxed; the span between; and the count still to go (`Run.pending`), popping as taps add
+  up. With a mouse the **reticle** replaces the cursor: the number under it, and how far that is
+  from the ship's (*+4 ▶*), green once it's there.
+- **On the floor and the gate**: the lane it's going to is outlined in pulsing gold until it's
+  there (`uGoal`, in the terrain's and the bridge's shaders).
+- **Through a gate** its pane bursts into shards of light (110 gold for a bullseye, 60 cyan for a
+  close one, 28 violet for a miss), flung out round the ship ahead of it and keeping most of its
+  speed, so they stream back past the glass; a bullseye's ring comes twice.
+- **The floor** (`Canyon.floors`, `ground`): stretches of 420 to 880 units, each kind in turn in
+  a shuffled order (dunes on the way down at the start): dunes, in long ridges under their
+  ripples; a dry lake's clay, flat, its cracks Worley's cell edges in the shader, warped so they
+  wander, some wider, each plate its own shade and its edges curled to the light; a wash, a stream
+  bed winding along it (two sines), its sand darker and speckled with pebbles, and boulders (a
+  hashed 11-unit grid, more near the stream, 2 to 3.6 across, off the walls' scree and out of the
+  gates' number lines) dark with desert varnish. The chunks carry each point's clay, wash and
+  boulder (a `ground` attribute); building them costs the same as before (~32 ms a chunk on the
+  worker).
+
 ## Arriving in a canyon
 
 `arrival.ts` counts down levels in the pilot's canyon record (`due`, 3 or 4 at random, set the
@@ -144,10 +188,12 @@ Space) jumps to the white. With reduced motion the dive's a still picture that f
 
 ## Checked
 
-24 unit tests (`canyon.test.ts`): determinism, a clear floor and walls, gates widening the canyon,
-spires away from gates, shadows, chunk seams, 16-bit indices, ruler windows, judging, the gates
-for ×, + and mixed, a full run that stays in bounds, a perfect run, taps and glides, scraping,
-the pace, aiming, when a canyon's due (and never the asteroid belt), and the palette.
+27 unit tests (`canyon.test.ts`): determinism, a clear floor and walls, gates widening the canyon,
+spires away from gates, the floor's stretches and boulders, shadows, chunk seams, 16-bit indices,
+ruler windows, judging, the gates for ×, + and mixed, a full run that stays in bounds, a perfect
+run, taps and glides, taps adding up into one slide (and a bounce counting once), following the
+mouse, scraping, the pace, aiming, when a canyon's due (and never the asteroid belt), and the
+palette.
 In the browser: desktop, phone, Hebrew and reduced motion, flown on an autopilot through all
 eight gates to the results; manual runs on Mars, Neptune, the alien planet and Earth; an arrival
 from the level's end through the descent, the run, its results, Fly again and back to the game;

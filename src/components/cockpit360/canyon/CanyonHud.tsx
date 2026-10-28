@@ -15,7 +15,7 @@ import StarBorder from '../../reactbits/StarBorder';
 import { dirOfLook, pointOnQuad } from '../geometry';
 import { NOSE_PITCH } from '../drive';
 import { WINDSCREEN_PX, WINDSCREEN_QUAD } from '../screens';
-import { GATE_GAP, LANE, RULER, type Gate, type GateResult } from './gates';
+import { GATE_GAP, LANE, RULER, SPAN, valueAt, type Gate, type GateResult } from './gates';
 import { live, useCanyon } from './useCanyon';
 import './canyon.css';
 
@@ -28,7 +28,12 @@ import './canyon.css';
 // through to the answer, the gap between them being the difference. Over
 // the view: the countdown before diving in (or, arriving, the canyon's name
 // as the white clears), the way to steer (keys, the mouse across the
-// screen, or a finger), End run, and the run's results at its end.
+// screen, or a finger), End run, and the run's results at its end. Along
+// the bottom while it flies, the steering rail: the next gate's numbers
+// across the screen as the mouse steers by them, the ship's place on it,
+// where it's going, and between them how many numbers it has still to go
+// (taps add up, the count popping with each); with a mouse, the reticle
+// stands for the pointer, the number under it in it and how far that is.
 
 /** the nose on the windscreen's page (the flight's heading) */
 const NOSE = (() => {
@@ -38,6 +43,10 @@ const NOSE = (() => {
 const SHOUT_MS = 2600;
 /** the screen's edges the mouse steers short of (a share of its width, either side) */
 const MOUSE_MARGIN = 0.1;
+
+/** where a place across the canyon is across the screen (a share of its width): the ruler from one side to the other, short of the edges, as the mouse steers by it */
+const railAt = (u: number) => MOUSE_MARGIN + ((Math.max(-RULER - LANE, Math.min(RULER + LANE, u)) + RULER) / (2 * RULER)) * (1 - 2 * MOUSE_MARGIN);
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
 
 /** re-render every `ms` (the live numbers) */
 function useTicker(ms: number) {
@@ -231,7 +240,7 @@ function useSteering(enabled: boolean) {
       if (!dir) return;
       e.preventDefault();
       e.stopPropagation();
-      if (!e.repeat) live.run?.press(dir);
+      if (!e.repeat) live.run?.press(dir, e.timeStamp / 1000);
     };
     const up = (e: KeyboardEvent) => {
       const dir = dirOf(e);
@@ -263,6 +272,138 @@ function useMouseSteering(enabled: boolean) {
   }, [enabled]);
 }
 
+/** the steering rail along the bottom, and the mouse's reticle (moved each frame, outside React) */
+function SteerRail({ mouse }: { mouse: boolean }) {
+  const t = useT().canyon;
+  const root = useRef<HTMLDivElement>(null);
+  const ship = useRef<HTMLDivElement>(null);
+  const span = useRef<HTMLDivElement>(null);
+  const target = useRef<HTMLDivElement>(null);
+  const targetNum = useRef<HTMLElement>(null);
+  const count = useRef<HTMLElement>(null);
+  const reticle = useRef<HTMLDivElement>(null);
+  const reticleNum = useRef<HTMLElement>(null);
+  const reticleBy = useRef<HTMLElement>(null);
+  const [lo, setLo] = useState<number | null>(() => live.run?.ruler()?.lo ?? null);
+
+  useEffect(() => {
+    let raf = 0;
+    let mx = -1;
+    let my = -1;
+    const shown = { lo: Number.NaN, pending: 0, target: Number.NaN, under: Number.NaN, by: Number.NaN, on: false };
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      mx = e.clientX;
+      my = e.clientY;
+    };
+    const pop = (el: HTMLElement | null) => {
+      if (!el) return;
+      el.classList.remove('is-pop');
+      void el.offsetWidth;
+      el.classList.add('is-pop');
+    };
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      const run = live.run;
+      const g = run?.ruler();
+      const on = !!run && !!g && run.phase === 'fly';
+      if (on !== shown.on) {
+        root.current?.classList.toggle('is-on', on);
+        shown.on = on;
+      }
+      if (!run || !g) return;
+      if (g.lo !== shown.lo) {
+        shown.lo = g.lo;
+        setLo(g.lo);
+      }
+      const W = window.innerWidth;
+      const xs = railAt(run.ship.u) * W;
+      const goal = run.steer.target ?? run.ship.u;
+      const xt = railAt(goal) * W;
+      if (ship.current) ship.current.style.transform = `translateX(${xs}px)`;
+      if (target.current) target.current.style.transform = `translateX(${xt}px)`;
+      if (span.current) span.current.style.transform = `translateX(${Math.min(xs, xt)}px) scaleX(${Math.abs(xt - xs)})`;
+      // how many numbers still to go, popping as taps add up
+      const pending = run.pending();
+      if (pending !== shown.pending) {
+        // (arrived, it keeps its last count as it fades)
+        if (count.current && pending !== 0) {
+          count.current.textContent = signed(pending);
+          if (Math.abs(pending) > Math.abs(shown.pending)) pop(count.current);
+        }
+        root.current?.classList.toggle('is-going', pending !== 0);
+        shown.pending = pending;
+      }
+      const aimed = valueAt(g, goal);
+      if (aimed !== shown.target && targetNum.current) {
+        targetNum.current.textContent = String(aimed);
+        shown.target = aimed;
+      }
+      // the reticle, for the pointer: the number under it, and how far that is from the ship's
+      if (mouse && reticle.current && mx >= 0) {
+        reticle.current.style.transform = `translate(${mx}px, ${my}px)`;
+        reticle.current.classList.add('is-on');
+        const pointer = run.steer.pointer ?? goal;
+        const under = valueAt(g, pointer);
+        const by = under - valueAt(g, run.ship.u);
+        if (under !== shown.under && reticleNum.current) {
+          reticleNum.current.textContent = String(under);
+          shown.under = under;
+        }
+        if (by !== shown.by && reticleBy.current) {
+          reticleBy.current.textContent = by === 0 ? '●' : `${signed(by)} ${by > 0 ? '▶' : '◀'}`;
+          reticle.current.classList.toggle('is-here', by === 0);
+          shown.by = by;
+        }
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    window.addEventListener('pointermove', move);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', move);
+    };
+  }, [mouse]);
+
+  return (
+    <>
+      <div ref={root} className="cn-rail" dir="ltr" style={{ '--m': `${MOUSE_MARGIN * 100}%` } as CSSProperties} aria-hidden>
+        <div className="cn-rail-track">
+          {lo !== null &&
+            Array.from({ length: SPAN + 1 }, (_, i) => lo + i).map((n, i) => (
+              <span key={n} className={`cn-rail-tick ${n % 5 === 0 ? 'is-five' : ''}`} style={{ left: `${(MOUSE_MARGIN + (i / SPAN) * (1 - 2 * MOUSE_MARGIN)) * 100}%` }}>
+                {n % 5 === 0 && <b>{n}</b>}
+              </span>
+            ))}
+        </div>
+        <div ref={span} className="cn-rail-span" />
+        <div ref={target} className="cn-rail-target">
+          <b ref={targetNum} />
+          <i />
+          <em ref={count} className="cn-rail-count" />
+        </div>
+        <div ref={ship} className="cn-rail-ship">
+          <svg viewBox="-12 -10 24 20">
+            <path d="M 0 -9 L 10 8 L 0 3 L -10 8 Z" />
+          </svg>
+        </div>
+        <em className="cn-rail-label">{t.aim}</em>
+      </div>
+      {mouse && (
+        <div ref={reticle} className="cn-reticle" aria-hidden>
+          <svg viewBox="-40 -40 80 80">
+            <circle r="22" className="cn-reticle-ring" />
+            <circle r="30" className="cn-reticle-sweep" />
+            <path d="M -38 0 H -26 M 26 0 H 38 M 0 -38 V -26 M 0 26 V 38" />
+          </svg>
+          <b ref={reticleNum} />
+          <em ref={reticleBy} />
+        </div>
+      )}
+    </>
+  );
+}
+
 function SteerPad() {
   const touch = useRef<{ id: number; x: number; side: -1 | 1; from: number; dragging: boolean } | null>(null);
   const onDown = (e: React.PointerEvent) => {
@@ -271,7 +412,7 @@ function SteerPad() {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const side = e.clientX < window.innerWidth / 2 ? -1 : 1;
     touch.current = { id: e.pointerId, x: e.clientX, side, from: run.steer.target ?? run.ship.u, dragging: false };
-    run.press(side);
+    run.press(side, e.timeStamp / 1000);
   };
   const onMove = (e: React.PointerEvent) => {
     const t = touch.current;
@@ -374,6 +515,7 @@ export function CanyonVisor() {
 
       {phase === 'flight' && !veil && (
         <>
+          <SteerRail mouse={!isTouchDevice} />
           <button type="button" className="cn-end ck3-hud-ui" onClick={() => land(false)}>
             ✕ {t.end}
           </button>

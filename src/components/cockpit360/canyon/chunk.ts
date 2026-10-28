@@ -1,4 +1,4 @@
-import { Canyon, clamp01, sunlight } from './field';
+import { Canyon, clamp01, smooth, sunlight } from './field';
 
 // The canyon, built a stretch at a time (a chunk, CHUNK long) as a mesh:
 // a grid along the run and across it, dense where the walls rise and
@@ -7,8 +7,9 @@ import { Canyon, clamp01, sunlight } from './field';
 // pixel: how much sun reaches it (the shadows, marched once, here, on every
 // other point and filled in between), how open it is to the sky (deep in a
 // crevice or at the canyon's bottom, less), the rock's layer (its height,
-// tilted and wavering a little: the strata's colours) and how far across it
-// is (the gates' number lines are painted on the floor by it).
+// tilted and wavering a little: the strata's colours), how far across it
+// is (the gates' number lines are painted on the floor by it), and what the
+// floor is there (a dry lake's clay, a wash, and a boulder in it).
 
 /** how long a chunk is, along the run */
 export const CHUNK = 96;
@@ -39,6 +40,8 @@ export interface ChunkData {
   normals: Float32Array;
   /** per point: sunlight, sky (ambient occlusion), the rock's layer, how far across */
   shade: Float32Array;
+  /** per point, on the canyon's floor: how much a dry lake's clay, how much a wash, and how much a boulder */
+  ground: Float32Array;
   indices: Uint16Array | Uint32Array;
 }
 
@@ -61,8 +64,11 @@ export function buildChunk(c: Canyon, index: number, q: Quality): ChunkData {
   const positions = new Float32Array(R * C * 3);
   const normals = new Float32Array(R * C * 3);
   const shade = new Float32Array(R * C * 4);
+  const ground = new Float32Array(R * C * 3);
   for (let r = 0; r < R; r++) {
     const d = d0 + r * step;
+    const [clay, wash] = c.ground(d);
+    const half = c.half(d);
     for (let k = 0; k < C; k++) {
       const i = r * C + k;
       positions[i * 3] = centers[r + 1] + cols[k];
@@ -96,6 +102,13 @@ export function buildChunk(c: Canyon, index: number, q: Quality): ChunkData {
       // the rock's layers: by height, dipping gently along the run and wavering
       shade[i * 4 + 2] = at(r, k) + d * 0.012 + 3.2 * Math.sin(d * 0.013 + cols[k] * 0.021) * Math.cos(d * 0.0041 - cols[k] * 0.009);
       shade[i * 4 + 3] = cols[k];
+      // (the floor's, only on the floor: not up on the tableland)
+      const onFloor = 1 - smooth(half - 2, half + 8, Math.abs(cols[k]));
+      if (onFloor > 0) {
+        ground[i * 3] = clay * onFloor;
+        ground[i * 3 + 1] = wash * onFloor;
+        ground[i * 3 + 2] = wash > 0.01 ? clamp01(c.boulders(d, cols[k]) / 0.5) * onFloor : 0;
+      }
     }
   }
 
@@ -151,5 +164,5 @@ export function buildChunk(c: Canyon, index: number, q: Quality): ChunkData {
       indices[o++] = e;
     }
   }
-  return { index, positions, normals, shade, indices };
+  return { index, positions, normals, shade, ground, indices };
 }

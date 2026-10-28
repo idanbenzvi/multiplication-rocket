@@ -16,5 +16,5 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
   }
   if (!canyon || canyon.seed !== m.seed) return;
   const chunk = buildChunk(canyon, m.index, m.quality);
-  (self as unknown as Worker).postMessage({ seed: m.seed, ...chunk }, [chunk.positions.buffer, chunk.normals.buffer, chunk.shade.buffer, chunk.indices.buffer]);
+  (self as unknown as Worker).postMessage({ seed: m.seed, ...chunk }, [chunk.positions.buffer, chunk.normals.buffer, chunk.shade.buffer, chunk.ground.buffer, chunk.indices.buffer]);
 };

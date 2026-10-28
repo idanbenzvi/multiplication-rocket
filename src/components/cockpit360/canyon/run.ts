@@ -1,13 +1,17 @@
 import { Canyon, HOVER, smooth } from './field';
-import { judge, LANE, uOf, valueAt, type Gate, type GateResult } from './gates';
+import { judge, LANE, RULER, uOf, valueAt, type Gate, type GateResult } from './gates';
 
 // A Canyon Run's flight, step by step (the scene draws it, canyon/World.tsx;
 // nothing here draws). The ship dives into the canyon from high above, then
 // flies along it by itself, round its bends, banking into them; the pilot
-// steers it across. A tap (a key, or a side of the screen) moves it one
-// number along the next gate's ruler; holding glides it, and let go it
-// settles on the nearest number; a finger dragged across slides it there,
-// and the mouse aims it at a number across the screen.
+// steers it across. A tap (a key, or a side of the screen) moves where it's
+// going one number along the next gate's ruler, and taps add up (a key's
+// bounce, or two keys at once, counting once); holding glides it, and let go
+// it settles on the number it's coming to; a finger dragged across, or the
+// mouse's reticle, puts it anywhere across, and resting there it settles on
+// the nearest number. However it's told, it slides there smoothly: as fast
+// as is near enough to stop in time, never faster than its fastest, and
+// never pushed across harder than its thrusters can.
 // The walls push it back, scraping, and a spire knocks it aside, slower;
 // nothing ends the run. Through a gate, the number it's at is its answer: a
 // bullseye boosts it, and bullseyes in a row fly faster and faster. Its
@@ -29,10 +33,24 @@ export const PACE_START = 0.85;
 export const PACE_MIN = 0.65;
 export const PACE_MAX = 1.25;
 const PACE_STEP: Record<GateResult['verdict'], number> = { bullseye: 0.05, close: -0.04, miss: -0.09 };
-/** across, gliding with a direction held */
-const GLIDE = 26;
+/** across: the fastest it slides (units/s), the hardest it's pushed (units/s²), how keenly it closes on where it's going, and how quickly it takes up a new speed */
+const SLIDE_MAX = 36;
+const SLIDE_PUSH = 150;
+const SLIDE_GAIN = 5.5;
+const SLIDE_LAG = 14;
+/** across, gliding with a direction held: at first, and held a while */
+const GLIDE = 24;
+const GLIDE_HELD = 32;
 /** held this long, a press glides instead of stepping one number */
-const GLIDES_AFTER = 0.22;
+const GLIDES_AFTER = 0.26;
+/** a way's presses closer together than this are one (a key's bounce, or ← and A at once) */
+export const DEBOUNCE_S = 0.035;
+/** the mouse or a finger still this long, it settles on the nearest number */
+const POINTER_REST = 0.2;
+/** how strongly a place pointed at is drawn to the nearest number while it moves (0 not at all, 1 snapped) */
+const DETENT = 0.6;
+/** knocked off a spire, how long the pointer waits to steer again (s) */
+const KNOCKED_S = 0.6;
 /** how near the walls it can come (its wings), and the spires */
 const WING = 3.6;
 const CLEAR = 2.8;
@@ -42,10 +60,15 @@ export interface Steer {
   hold: -1 | 0 | 1;
   /** how long it's been held (s) */
   held: number;
-  /** a finger dragging: where across it's put the ship, or null */
-  drag: number | null;
-  /** where it's settling: a number's place on the next ruler, or null */
+  /** the mouse or a finger: the place across it points at (u), or null */
+  pointer: number | null;
+  /** a finger's still on the glass (it settles on a number when it's lifted, or rests) */
+  dragging: boolean;
+  /** where it's going: a number's place on the ruler (or, a pointer moving, any place across), or null */
   target: number | null;
+  /** when each way was last pressed, left and right (the press's own clock, s), and the pointer last moved (the run's time, s) */
+  pressedAt: [number, number];
+  pointedAt: number;
 }
 
 export type RunPhase = 'descent' | 'fly' | 'climb' | 'done';
@@ -87,7 +110,7 @@ export class Run {
   time = 0;
   phaseTime = 0;
   ship: Ship;
-  steer: Steer = { hold: 0, held: 0, drag: null, target: null };
+  steer: Steer = { hold: 0, held: 0, pointer: null, dragging: false, target: null, pressedAt: [-Infinity, -Infinity], pointedAt: 0 };
   /** the next gate's index (gates.length once they're all flown) */
   next = 0;
   results: GateResult[] = [];
@@ -96,6 +119,7 @@ export class Run {
   /** how fast it flies, a share of BASE: eased down by misses, up by bullseyes */
   pace: number;
   private bumpCool = 0;
+  private knockedAt = -1;
   private lastValue = Number.NaN;
   private lastVu = 0;
   private lastY: number;
@@ -149,55 +173,85 @@ export class Run {
 
   // ---- the controls ----
 
-  /** a direction pressed: one number along, at once; held, it glides */
-  press(dir: -1 | 1) {
+  /** a place across drawn towards the nearest number on the ruler, smoothly (a pointer moving) */
+  private detent(u: number): number {
+    const k = (u + RULER) / LANE;
+    const n = Math.round(k);
+    const x = k - n;
+    return -RULER + (n + x - (DETENT * Math.sin(2 * Math.PI * x)) / (2 * Math.PI)) * LANE;
+  }
+
+  /** a direction pressed (`at`: when, s, by the event's own clock; else the run's): where it's going one number further that way (presses add up); held, it glides */
+  press(dir: -1 | 1, at = this.time) {
     const s = this.steer;
+    const way = dir < 0 ? 0 : 1;
+    // (a bounce, or the other key for the same way: one press)
+    if (Math.abs(at - s.pressedAt[way]) < DEBOUNCE_S) return;
+    s.pressedAt[way] = at;
     s.hold = dir;
     s.held = 0;
-    s.drag = null;
-    const g = this.ruler();
-    const from = s.target ?? this.ship.u;
-    s.target = g ? this.settle(uOf(g, valueAt(g, from) + dir)) : this.settle(from + dir * LANE);
+    s.pointer = null;
+    s.dragging = false;
+    const from = this.settle(s.target ?? this.ship.u);
+    s.target = this.settle(from + dir * LANE);
   }
 
   release(dir?: -1 | 1) {
     const s = this.steer;
     if (dir !== undefined && s.hold !== dir) return;
-    // (after a glide, it settles on the number it's coming to)
-    if (s.held >= GLIDES_AFTER) s.target = this.settle(this.ship.u + this.ship.vu * 0.12);
+    // (after a glide, it settles on the number it's coming to, never back behind it)
+    if (s.held >= GLIDES_AFTER) {
+      const stop = this.ship.u + this.ship.vu / SLIDE_GAIN;
+      let to = this.settle(stop);
+      if ((to - this.ship.u) * s.hold < 0) to = this.settle(to + s.hold * LANE);
+      s.target = to;
+    }
     s.hold = 0;
     s.held = 0;
   }
 
-  /** a finger dragged across: the ship there (u) */
+  /** a finger dragged across: the ship towards there (u) */
   dragTo(u: number) {
-    const lim = this.limit(this.ship.d);
-    this.steer.hold = 0;
-    this.steer.drag = Math.max(-lim, Math.min(lim, u));
+    this.point(u);
+    this.steer.dragging = true;
   }
 
   endDrag() {
     const s = this.steer;
-    if (s.drag === null) return;
-    s.target = this.settle(s.drag);
-    s.drag = null;
+    if (!s.dragging) return;
+    s.dragging = false;
+    if (s.pointer !== null) s.target = this.settle(s.pointer);
+    s.pointer = null;
   }
 
-  /** the mouse: aim at the number nearest u, and settle there */
+  /** the mouse: the ship towards the place under its reticle (u), settling on the nearest number once it rests */
   aimAt(u: number) {
+    this.point(u);
+  }
+
+  private point(u: number) {
     const s = this.steer;
     s.hold = 0;
     s.held = 0;
-    s.drag = null;
-    s.target = this.settle(u);
+    s.pointer = Math.max(-RULER, Math.min(RULER, u));
+    s.pointedAt = this.time;
+    if (this.time - this.knockedAt >= KNOCKED_S) s.target = this.detent(s.pointer);
   }
 
-  /** the number it's going for on the ruler ahead: where it's settling (or being dragged), else where it is */
+  /** the number it's going for on the ruler ahead (where it's going, else where it is) */
   aimed(): number | null {
     const g = this.ruler();
     if (!g) return null;
     const s = this.steer;
-    return valueAt(g, s.drag ?? s.target ?? this.ship.u);
+    return valueAt(g, s.target ?? this.ship.u);
+  }
+
+  /** how many numbers it has still to go, and which way (taps added up): the number it's going for less the one it's at */
+  pending(): number {
+    const g = this.ruler();
+    const s = this.steer;
+    if (!g || s.target === null) return 0;
+    return valueAt(g, s.target) - valueAt(g, this.ship.u);
   }
 
   // ---- each frame ----
@@ -221,19 +275,21 @@ export class Run {
     const d = ship.d;
 
     // ---- across ----
+    const lim = this.limit(d);
     if (s.hold !== 0) s.held += dt;
-    if (s.drag !== null) {
-      this.spring(s.drag, 14, dt);
-    } else if (s.hold !== 0 && s.held >= GLIDES_AFTER) {
-      ship.vu += (s.hold * GLIDE - ship.vu) * (1 - Math.exp(-dt * 10));
-      ship.u += ship.vu * dt;
-      s.target = null;
+    if (s.hold !== 0 && s.held >= GLIDES_AFTER) {
+      // (gliding: where it's going runs on ahead of it, faster the longer it's held, into a wall if that's where it's held)
+      const glide = GLIDE + (GLIDE_HELD - GLIDE) * smooth(GLIDES_AFTER, 1.4, s.held);
+      s.target = Math.max(-lim - 1, Math.min(lim + 1, ship.u + (s.hold * glide) / SLIDE_GAIN));
+      this.slide(s.target, dt);
     } else {
+      // (a pointer at rest: onto the nearest number)
+      if (s.pointer !== null && this.time - s.pointedAt >= POINTER_REST && this.time - this.knockedAt >= KNOCKED_S) s.target = this.settle(s.pointer);
       s.target ??= this.settle(ship.u);
-      this.spring(s.target, 11, dt);
+      // (short of a wall, if where it's going is past it here: it'll get there where the canyon widens)
+      this.slide(Math.max(-lim + 0.4, Math.min(lim - 0.4, s.target)), dt);
     }
     // the walls
-    const lim = this.limit(d);
     if (Math.abs(ship.u) > lim) {
       const side = Math.sign(ship.u) as -1 | 1;
       const into = Math.max(0, ship.vu * side);
@@ -261,6 +317,7 @@ export class Run {
       ship.u = sp.u + side * w;
       ship.vu = side * Math.max(Math.abs(ship.vu) * 0.4, 9);
       s.target = this.settle(ship.u + side * LANE * 0.5);
+      this.knockedAt = this.time;
       ship.speed *= 0.82;
       ship.boost = 0;
       ship.scrape = 1;
@@ -299,8 +356,7 @@ export class Run {
         this.combo = 0;
         if (verdict === 'close') ship.boost += this.calm ? 5 : 12;
       }
-      // (steering settles on the next ruler from here)
-      s.target = s.drag === null && s.hold === 0 ? null : s.target;
+      // (where it's going is kept: every ruler's numbers are at the same places across)
       events.push({ type: 'gate', result, u: ship.u });
     }
 
@@ -334,19 +390,23 @@ export class Run {
     ship.heading = Math.atan2(c.slope(d) * fwd + ship.vu, fwd);
     const pitch = Math.atan2(ship.vy, fwd);
     ship.pitch += (pitch - ship.pitch) * (1 - Math.exp(-dt * 7));
-    // banked into a bend, and into its own swerves
+    // banked into a bend, and into its own slides across (the way it's going, and a little the way it's pushed)
     const swerve = (ship.vu - this.lastVu) / dt;
     this.lastVu = ship.vu;
-    const lateral = c.curve(d) * fwd * fwd + swerve;
+    const lateral = c.curve(d) * fwd * fwd + swerve * 0.25 + ship.vu * 0.9;
     const bank = Math.max(-0.5, Math.min(0.5, lateral * 0.012)) * (this.calm ? 0.3 : 1);
     ship.bank += (bank - ship.bank) * (1 - Math.exp(-dt * 5));
     return events;
   }
 
-  private spring(goal: number, omega: number, dt: number) {
+  /** across towards goal: at the speed that closes on it (keen, but no faster than it can stop in time, nor than SLIDE_MAX), taken up smoothly and never pushed harder than SLIDE_PUSH */
+  private slide(goal: number, dt: number) {
     const ship = this.ship;
-    const a = omega * omega * (goal - ship.u) - 2 * omega * ship.vu;
-    ship.vu += a * dt;
+    const e = goal - ship.u;
+    const far = Math.abs(e);
+    const want = Math.sign(e) * Math.min(SLIDE_MAX, SLIDE_GAIN * far, Math.sqrt(2 * SLIDE_PUSH * 0.7 * far));
+    const most = SLIDE_PUSH * dt;
+    ship.vu += Math.max(-most, Math.min(most, (want - ship.vu) * (1 - Math.exp(-dt * SLIDE_LAG))));
     ship.u += ship.vu * dt;
   }
 

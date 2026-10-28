@@ -256,6 +256,244 @@
 .ck3.is-canyon:not(.is-touch) {
   cursor: crosshair;
 }
+/* (the reticle stands for the mouse while it steers) */
+.ck3.is-canyon:not(.is-touch):has(.cn-reticle.is-on) {
+  cursor: none;
+}
+
+/* the steering rail: the next gate's numbers across the screen, the ship on it, where it's going and how far */
+.cn-rail {
+  --rail: rgba(92, 242, 255, 0.6);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(46px + env(safe-area-inset-bottom));
+  height: 64px;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.cn-rail.is-on {
+  opacity: 1;
+}
+.cn-rail-track {
+  position: absolute;
+  inset: 0;
+}
+.cn-rail-track::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--m) - 18px);
+  right: calc(var(--m) - 18px);
+  top: 37px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--rail) 18px, var(--rail) calc(100% - 18px), transparent);
+  box-shadow: 0 0 10px rgba(92, 242, 255, 0.45);
+}
+.cn-rail-tick {
+  position: absolute;
+  top: 33px;
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  background: var(--rail);
+}
+.cn-rail-tick.is-five {
+  top: 30px;
+  height: 16px;
+  background: #aef8ff;
+  box-shadow: 0 0 6px rgba(92, 242, 255, 0.8);
+}
+.cn-rail-tick b {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  translate: -50% 0;
+  color: #c8fbff;
+  font: 700 12px var(--hud-font);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 0 10px rgba(92, 242, 255, 0.6);
+}
+.cn-rail-ship,
+.cn-rail-target,
+.cn-rail-span {
+  position: absolute;
+  left: 0;
+  will-change: transform;
+}
+.cn-rail-ship {
+  top: 30px;
+  width: 0;
+}
+.cn-rail-ship svg {
+  position: absolute;
+  left: -13px;
+  width: 26px;
+  height: 22px;
+  fill: #ffb35c;
+  stroke: #fff2dc;
+  stroke-width: 1.4;
+  filter: drop-shadow(0 0 6px rgba(255, 150, 50, 0.95));
+}
+.cn-rail-span {
+  top: 36px;
+  width: 1px;
+  height: 4px;
+  transform-origin: 0 0;
+  background: linear-gradient(90deg, rgba(255, 190, 90, 0.95), rgba(255, 220, 140, 0.95));
+  box-shadow: 0 0 10px rgba(255, 170, 60, 0.9);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.cn-rail-target {
+  top: 0;
+  width: 0;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.cn-rail.is-going .cn-rail-span,
+.cn-rail.is-going .cn-rail-target {
+  opacity: 1;
+}
+.cn-rail-target b {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  translate: -50% 0;
+  min-width: 34px;
+  padding: 1px 6px 2px;
+  border: 1.5px solid #ffd36b;
+  border-radius: 7px;
+  background: rgba(30, 14, 2, 0.72);
+  color: #ffe9b8;
+  font: 800 15px var(--hud-font);
+  text-align: center;
+  box-shadow: 0 0 12px rgba(255, 190, 80, 0.55);
+}
+.cn-rail-target i {
+  position: absolute;
+  top: 30px;
+  left: -8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffd36b;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 200, 80, 0.9), inset 0 0 6px rgba(255, 200, 80, 0.7);
+  animation: cnTargetPulse 0.9s ease-in-out infinite alternate;
+}
+/* how many numbers still to go: taps add up, the count popping with each */
+.cn-rail-count {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffcf6b, #ff8d3a);
+  color: #2a1000;
+  font: 900 14px var(--hud-font);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 14px rgba(255, 150, 50, 0.85);
+}
+.cn-rail-count.is-pop {
+  animation: cnCountPop 0.32s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.cn-rail-label {
+  position: absolute;
+  top: 31px;
+  left: calc(var(--m) - 58px);
+  color: rgba(174, 248, 255, 0.75);
+  font: 700 11px var(--hud-font);
+  font-style: normal;
+  letter-spacing: 0.2em;
+}
+@keyframes cnTargetPulse {
+  to {
+    scale: 1.25;
+    opacity: 0.75;
+  }
+}
+@keyframes cnCountPop {
+  from {
+    scale: 1.7;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* the mouse's reticle: the number under it, and how far that is from the ship's */
+.cn-reticle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  will-change: transform;
+}
+.cn-reticle.is-on {
+  opacity: 1;
+}
+.cn-reticle svg {
+  position: absolute;
+  left: -40px;
+  top: -40px;
+  width: 80px;
+  height: 80px;
+  overflow: visible;
+  fill: none;
+  stroke: #ffd36b;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(255, 170, 60, 0.9));
+}
+.cn-reticle-sweep {
+  stroke-dasharray: 22 25;
+  stroke-width: 1.5;
+  opacity: 0.7;
+  /* (round the reticle's middle, the drawing's origin) */
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: cnSweep 2.4s linear infinite;
+}
+.cn-reticle.is-here svg {
+  stroke: #9bffd1;
+  filter: drop-shadow(0 0 6px rgba(90, 255, 180, 0.9));
+}
+.cn-reticle b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% -50%;
+  color: #fff1cf;
+  font: 800 17px var(--hud-font);
+  text-shadow: 0 0 6px #000, 0 0 10px rgba(255, 170, 60, 0.8);
+}
+.cn-reticle em {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  translate: -50% 0;
+  white-space: nowrap;
+  color: #ffd36b;
+  font: 800 13px var(--hud-font);
+  font-style: normal;
+  text-shadow: 0 0 6px #000;
+}
+.cn-reticle.is-here em {
+  color: #9bffd1;
+}
+@keyframes cnSweep {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-reticle-sweep,
+  .cn-rail-target i,
+  .cn-rail-count.is-pop {
+    animation: none;
+  }
+}
 /* arriving: the canyon's name as the white clears */
 .cn-arrival {
   position: absolute;

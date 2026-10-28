@@ -24,8 +24,10 @@ import { live, useCanyon } from './useCanyon';
 // its bank, so the horizon tilts as it banks into a bend. The canyon comes
 // in chunks as it's needed (built by a worker, builder.ts), and the gates'
 // bridges of light as they come into the haze. Dust hangs in the air,
-// streaking past; sparks fly off a wall scraped; a ring of light bursts
-// out round the windscreen through a gate. The canyon's on a destination,
+// streaking past; sparks fly off a wall scraped; through a gate, its pane
+// bursts into shards of light streaming past the glass (gold for a
+// bullseye, cyan close, violet a miss), and a ring of light bursts out round
+// the windscreen (two, for a bullseye). The canyon's on a destination,
 // its colours a little of that world's; the star low in its sky, lighting
 // it, is the next destination (palette.ts).
 //
@@ -40,7 +42,9 @@ import { live, useCanyon } from './useCanyon';
 const AHEAD = { high: 9, low: 7 };
 const FOG_END = { high: 830, low: 650 };
 const DUST = { high: 380, low: 200 };
-const SPARKS = 140;
+const SPARKS = 260;
+/** a gate's shards: how many, for each verdict */
+const SHARDS = { bullseye: 110, close: 60, miss: 28 };
 const GOLD: [number, number, number] = [1, 0.78, 0.35];
 const CYAN: [number, number, number] = [0.35, 0.95, 1];
 const DUSK: [number, number, number] = [0.55, 0.25, 0.6];
@@ -145,7 +149,7 @@ export function CanyonWorld() {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPARKS * 6), 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(SPARKS * 6), 3));
-    const list = Array.from({ length: SPARKS }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3(), life: 0, max: 1 }));
+    const list = Array.from({ length: SPARKS }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3(), life: 0, max: 1, rgb: [3, 1.7, 0.6] as [number, number, number], fall: 30 }));
     const lines = new THREE.LineSegments(
       geometry,
       new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
@@ -154,15 +158,19 @@ export function CanyonWorld() {
     lines.renderOrder = 3;
     return { lines, geometry, list, next: 0 };
   }, []);
-  // the ring of light through a gate, round the windscreen
-  const ring = useMemo(() => {
-    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(...GOLD), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
-    const mesh = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 96), material);
-    mesh.position.z = -12;
-    mesh.renderOrder = 4;
-    mesh.visible = false;
-    return { mesh, material, age: 99 };
-  }, []);
+  // the rings of light through a gate, round the windscreen (the second, a bullseye's, a moment after)
+  const rings = useMemo(
+    () =>
+      [0.86, 0.93].map((inner) => {
+        const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(...GOLD), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(new THREE.RingGeometry(inner, 1, 96), material);
+        mesh.position.z = -12;
+        mesh.renderOrder = 4;
+        mesh.visible = false;
+        return { mesh, material, age: 99 };
+      }),
+    [],
+  );
 
   const state = useRef({
     chunks: new Map<number, THREE.Mesh>(),
@@ -204,15 +212,17 @@ export function CanyonWorld() {
       (dust.lines.material as THREE.Material).dispose();
       sparks.geometry.dispose();
       (sparks.lines.material as THREE.Material).dispose();
-      ring.mesh.geometry.dispose();
-      ring.material.dispose();
+      for (const ring of rings) {
+        ring.mesh.geometry.dispose();
+        ring.material.dispose();
+      }
       view.jolt.yaw = view.jolt.pitch = view.jolt.roll = 0;
       view.kick = 0;
       glowLights.ambient = 0.9;
       glowLights.tint = [1, 1, 1];
       glowLights.passing.k = 0;
     };
-  }, [wind, sky, ground, star, dust, sparks, ring]);
+  }, [wind, sky, ground, star, dust, sparks, rings]);
 
   const dropBridge = (b: Bridge) => {
     b.group.removeFromParent();
@@ -249,20 +259,51 @@ export function CanyonWorld() {
     return { gate, group, band, sign: signMat, pylons, textures: [ruler, sign], beacons: 0 };
   };
 
-  const ringOut = (rgb: [number, number, number], k: number) => {
+  const ringOut = (rgb: [number, number, number], k: number, twice = false) => {
     if (calm) return;
-    ring.material.color.setRGB(rgb[0] * k, rgb[1] * k, rgb[2] * k);
-    ring.age = 0;
+    rings.forEach((ring, i) => {
+      if (i && !twice) return;
+      ring.material.color.setRGB(rgb[0] * k, rgb[1] * k, rgb[2] * k);
+      // (the second a moment behind the first)
+      ring.age = -0.13 * i;
+    });
   };
+
+  const spark = () => sparks.list[sparks.next++ % SPARKS];
 
   const spray = (side: -1 | 1, strength: number) => {
     const [x, y, z] = run.position();
     const count = Math.round(10 + 22 * strength);
     for (let i = 0; i < count; i++) {
-      const s = sparks.list[sparks.next++ % SPARKS];
+      const s = spark();
       s.p.set(x + side * 3.8, y + between(-1.2, 0.8), z - between(3, 9));
       s.v.set(-side * between(2, 12), between(1, 9), -run.forward() * between(0.25, 0.75));
       s.life = s.max = between(0.35, 0.8);
+      s.rgb = [3, 1.7, 0.6];
+      s.fall = 30;
+    }
+  };
+
+  /** through a gate: its pane in shards of light, flung out round the ship and streaming past the glass */
+  const shatter = (rgb: [number, number, number], count: number) => {
+    const [x, y, z] = run.position();
+    const fwd = run.forward();
+    // (the way it's flying, along the canyon)
+    const along = run.canyon.slope(run.ship.d);
+    for (let i = 0; i < (calm ? count / 2 : count); i++) {
+      const s = spark();
+      const a = Math.random() * Math.PI * 2;
+      const r = between(1.5, 6);
+      const ahead = between(5, 22);
+      s.p.set(x + Math.cos(a) * r + along * ahead, y + Math.sin(a) * r * 0.7, z - ahead);
+      const out = between(6, 26);
+      // (most of the ship's speed: they fall back past it slowly enough to be seen)
+      const keep = between(0.55, 0.9);
+      s.v.set(Math.cos(a) * out + along * fwd * keep, Math.sin(a) * out * 0.7, -fwd * keep);
+      s.life = s.max = between(0.5, 1.1);
+      const w = between(0.75, 1.25);
+      s.rgb = [rgb[0] * 2.6 * w, rgb[1] * 2.6 * w, rgb[2] * 2.6 * w];
+      s.fall = 6;
     }
   };
 
@@ -278,16 +319,19 @@ export function CanyonWorld() {
         s.flashGround.setRGB(1.2, 0.85, 0.35);
         if (!calm) view.kick = 0.085;
         s.thump = 0.006;
-        ringOut(GOLD, 2.6);
+        ringOut(GOLD, 2.6, true);
+        shatter(GOLD, SHARDS.bullseye);
       } else if (verdict === 'close') {
         flash(CYAN, 0.2 * soft, 0.03, 0.4);
         s.flashGround.setRGB(0.3, 0.8, 1);
         if (!calm) view.kick = 0.04;
         ringOut(CYAN, 1.8);
+        shatter(CYAN, SHARDS.close);
       } else {
         flash(DUSK, 0.14 * soft, 0.03, 0.45);
         s.thump = 0.005;
         ringOut(DUSK, 0.9);
+        shatter(DUSK, SHARDS.miss);
       }
     } else if (e.type === 'scrape') {
       sfx.scrape(e.strength);
@@ -398,6 +442,7 @@ export function CanyonWorld() {
       b.band.uniforms.uTime.value = clock.elapsedTime;
       b.sign.uniforms.uTime.value = clock.elapsedTime;
       b.band.uniforms.uMark.value = next && run.phase === 'fly' ? (ship.u + BAND_W / 2) / BAND_W : -1;
+      b.band.uniforms.uGoal.value = next && run.phase === 'fly' ? ((run.steer.target ?? ship.u) + BAND_W / 2) / BAND_W : -1;
       // beacons as it nears
       if (next && run.phase === 'fly') {
         while (b.beacons < 3 && to < 330 - b.beacons * 100) sfx.beacon(b.beacons++);
@@ -422,6 +467,7 @@ export function CanyonWorld() {
     (u.uEye.value as THREE.Vector3).set(...pos);
     u.uFloorY.value = c.floor(ship.d);
     u.uTime.value = clock.elapsedTime;
+    u.uGoal.value = run.steer.target ?? ship.u;
     if (gate) {
       const to = gate.d - ship.d;
       (u.uRuler.value as THREE.Vector4).set(gate.d, gate.lo, run.phase === 'fly' ? 1 : 0, ship.u);
@@ -532,7 +578,7 @@ export function CanyonWorld() {
         return;
       }
       p.life -= dt;
-      p.v.y -= 30 * dt;
+      p.v.y -= p.fall * dt;
       p.p.addScaledVector(p.v, dt);
       const k = clamp01(p.life / p.max);
       sp[o] = p.p.x;
@@ -541,23 +587,26 @@ export function CanyonWorld() {
       sp[o + 3] = p.p.x - (p.v.x - vel.x) * 0.03;
       sp[o + 4] = p.p.y - (p.v.y - vel.y) * 0.03;
       sp[o + 5] = p.p.z - (p.v.z - vel.z) * 0.03;
-      sc[o] = 3 * k;
-      sc[o + 1] = 1.7 * k;
-      sc[o + 2] = 0.6 * k;
-      sc[o + 3] = 1.2 * k;
-      sc[o + 4] = 0.4 * k;
-      sc[o + 5] = 0.1 * k;
+      // (bright at its head, its tail dimmer and warmer)
+      sc[o] = p.rgb[0] * k;
+      sc[o + 1] = p.rgb[1] * k;
+      sc[o + 2] = p.rgb[2] * k;
+      sc[o + 3] = p.rgb[0] * 0.4 * k;
+      sc[o + 4] = p.rgb[1] * 0.25 * k;
+      sc[o + 5] = p.rgb[2] * 0.18 * k;
     });
     sparks.geometry.attributes.position.needsUpdate = true;
     sparks.geometry.attributes.color.needsUpdate = true;
 
-    // ---- the ring through a gate ----
-    ring.age += dt;
-    const ringK = 1 - ring.age / 0.65;
-    ring.mesh.visible = ringK > 0;
-    if (ringK > 0) {
-      ring.mesh.scale.setScalar(2 + ring.age * 34);
-      ring.material.opacity = ringK * ringK;
+    // ---- the rings through a gate ----
+    for (const ring of rings) {
+      ring.age += dt;
+      const ringK = ring.age < 0 ? 0 : 1 - ring.age / 0.65;
+      ring.mesh.visible = ringK > 0;
+      if (ringK > 0) {
+        ring.mesh.scale.setScalar(2 + ring.age * 34);
+        ring.material.opacity = ringK * ringK;
+      }
     }
   }, -2);
 
@@ -576,7 +625,9 @@ export function CanyonWorld() {
         <primitive object={sparks.lines} />
       </group>
       <group rotation-x={NOSE_PITCH}>
-        <primitive object={ring.mesh} />
+        {rings.map((ring, i) => (
+          <primitive key={i} object={ring.mesh} />
+        ))}
       </group>
     </>
   );
@@ -587,6 +638,7 @@ function chunkMesh(data: ChunkData, material: THREE.Material): THREE.Mesh {
   geometry.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
   geometry.setAttribute('normal', new THREE.BufferAttribute(data.normals, 3));
   geometry.setAttribute('shade', new THREE.BufferAttribute(data.shade, 4));
+  geometry.setAttribute('ground', new THREE.BufferAttribute(data.ground, 3));
   geometry.setIndex(new THREE.BufferAttribute(data.indices, 1));
   geometry.computeBoundingSphere();
   const mesh = new THREE.Mesh(geometry, material);

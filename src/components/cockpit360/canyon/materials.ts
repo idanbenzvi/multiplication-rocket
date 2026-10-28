@@ -20,8 +20,13 @@ import type { CanyonPalette } from './palette';
 // occlusion, baked too), by the light bounced off the sunny rock, and round
 // its edges against the sun, where the haze is lit. Near a gate, a number
 // line is painted on the floor in light, a line along the canyon for every
-// number, and the ship's own lane lit between; the gate's light falls on the
-// rock round it.
+// number, the ship's own lane lit between and the lane it's going to
+// outlined, pulsing; the gate's light falls on the rock round it.
+//
+// The floor changes as it goes (field.ts): sand in dunes, rippled; a dry
+// lake's pale clay, cracked into plates (the edges of Worley's cells, a
+// little uneven each); or a wash, its sand darker and speckled with
+// pebbles, its boulders dark with desert varnish.
 
 const HAZE = /* glsl */ `
 uniform vec3 uSun;
@@ -109,13 +114,16 @@ export function skyMaterial(palette: CanyonPalette): THREE.ShaderMaterial {
 
 const TERRAIN_VERTEX = /* glsl */ `
 attribute vec4 shade;
+attribute vec3 ground;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying vec4 vShade;
+varying vec3 vGround;
 void main() {
   vWorld = position;
   vNormal = normal;
   vShade = shade;
+  vGround = ground;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
@@ -129,6 +137,8 @@ uniform float uFloorY;
 uniform float uTime;
 // the next gate: where along, its ruler's first number, how bright its number line on the floor, the ship's place across
 uniform vec4 uRuler;
+// where across the ship's going (its lane's outlined on the floor's number line when it isn't there yet)
+uniform float uGoal;
 // the next gate's light: the middle of its bridge, how strong, and its colour
 uniform vec4 uBand;
 uniform vec3 uBandColor;
@@ -143,10 +153,37 @@ uniform vec3 uBounce;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying vec4 vShade;
+varying vec3 vGround;
 
 const float RULER = ${RULER.toFixed(1)};
 const float LANE = ${LANE.toFixed(4)};
 const float BAND_HALF = ${(RULER + 3).toFixed(1)};
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+// a dry lake's cracks: how far from the edge between two of Worley's cells, and the plate's own shade
+vec2 cracks(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  float d1 = 8.0;
+  float d2 = 8.0;
+  float id = 0.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 g = vec2(float(x), float(y));
+      vec2 r = g + vec2(hash(i + g), hash(i + g + 19.7)) - f;
+      float dd = dot(r, r);
+      if (dd < d1) {
+        d2 = d1;
+        d1 = dd;
+        id = hash(i + g + 4.3);
+      } else if (dd < d2) {
+        d2 = dd;
+      }
+    }
+  }
+  return vec2(sqrt(d2) - sqrt(d1), id);
+}
 
 void main() {
   vec3 n = normalize(vNormal);
@@ -163,7 +200,41 @@ void main() {
   float flatness = smoothstep(0.8, 0.96, n.y);
   float ripple = 0.5 + 0.5 * sin(d * 0.9 + sin(u * 0.15) * 3.0);
   vec3 sand = mix(uSandA, uSandB, 0.5 + ripple * 0.3);
+  float clay = vGround.x;
+  float wash = vGround.y;
+  // (the dunes' ripples deeper, out of the lake)
+  sand = mix(sand, mix(uSandA, uSandB, 0.5 + ripple * 0.5), 0.25 * (1.0 - clay));
+  // (fine detail fades out with distance, where it would only flicker)
+  float close = 1.0 - smoothstep(70.0, 220.0, dist);
+  // a dry lake's bed: pale clay cracked into plates
+  if (clay > 0.01) {
+    // (warped a little, so the plates' edges wander)
+    vec2 p = vec2(d, u) * 0.3;
+    p += 0.18 * vec2(sin(p.y * 2.3 + p.x * 0.7), sin(p.x * 1.9 - p.y * 0.4));
+    vec2 c = cracks(p);
+    float lum = dot(sand, vec3(0.3, 0.55, 0.15));
+    vec3 plate = mix(sand, vec3(lum), 0.3) * (1.12 + 0.16 * (c.y - 0.5));
+    float w = fwidth(c.x);
+    // (some cracks wider than others)
+    float wide = 0.02 + 0.04 * hash(floor(p * 0.5));
+    float crack = (1.0 - smoothstep(wide, wide + w * 1.5, c.x)) * close;
+    // (each plate's edges curled up a little, catching the light)
+    plate *= 1.0 + 0.12 * (1.0 - smoothstep(wide, wide + 0.14, c.x)) * close;
+    sand = mix(sand, mix(plate, plate * 0.42, crack), clay);
+  }
+  // a wash: darker sand, speckled with pebbles
+  if (wash > 0.01) {
+    vec2 cell = floor(vec2(d, u) * 1.4);
+    float h = hash(cell);
+    float pebble = step(0.78, h) * close;
+    vec3 bed = sand * vec3(0.72, 0.7, 0.74);
+    bed = mix(bed, bed * (h > 0.9 ? 1.45 : 0.5), pebble);
+    sand = mix(sand, bed, wash);
+  }
   vec3 albedo = mix(rock, sand, flatness);
+  // its boulders, dark with desert varnish
+  vec3 varnish = vec3(0.13, 0.065, 0.045) * (0.8 + 0.4 * hash(floor(vec2(d, u) * 0.12)));
+  albedo = mix(albedo, varnish, vGround.z * 0.85);
 
   // the sun (wrapped a little round, as light scattered in rock is), the violet sky, light bounced off sunny rock
   float direct = clamp((dot(n, uSun) + 0.2) / 1.2, 0.0, 1.0) * sun;
@@ -190,6 +261,14 @@ void main() {
     float mine = 1.0 - smoothstep(LANE * 0.5 - 0.3, LANE * 0.5 + 0.3, abs(u - uRuler.w));
     col += vec3(0.3, 1.0, 1.2) * (line * (0.15 + 0.85 * dash) * (0.5 + 0.7 * five) + bar * 0.22 * step(abs(u), RULER)) * fade * 0.8;
     col += vec3(1.2, 0.75, 0.3) * mine * fade * 0.28;
+    // the lane it's going to, outlined and pulsing, until it's there
+    float goalLane = (floor((uGoal + RULER) / LANE + 0.5)) * LANE - RULER;
+    float away = smoothstep(LANE * 0.4, LANE * 0.7, abs(goalLane - uRuler.w));
+    float edge = abs(abs(u - goalLane) - LANE * 0.42);
+    float outline = 1.0 - smoothstep(0.08, 0.08 + fwidth(u) * 1.5 + 0.1, edge);
+    float inside = 1.0 - smoothstep(LANE * 0.4, LANE * 0.45, abs(u - goalLane));
+    float pulse = 0.65 + 0.35 * sin(uTime * 7.0 - before * 0.12);
+    col += vec3(1.4, 1.0, 0.35) * (outline * 0.7 + inside * 0.08) * pulse * away * fade;
   }
 
   // the gate's light on the rock round it
@@ -248,6 +327,7 @@ export function terrainMaterial(fogEnd: number, palette: CanyonPalette): THREE.S
       uFloorY: { value: 0 },
       uTime: { value: 0 },
       uRuler: { value: new THREE.Vector4(0, 0, 0, 0) },
+      uGoal: { value: 0 },
       uBand: { value: new THREE.Vector4(0, 0, 0, 0) },
       uBandColor: { value: new THREE.Color(0.25, 0.9, 1.1) },
       uFlash: { value: new THREE.Color(0, 0, 0) },
@@ -277,13 +357,15 @@ void main() {
 // A sheet of light across the canyon, a pane of dark glass for what's
 // written on it to read against the bright haze: its ruler (drawn on a
 // canvas, labels.ts), a faint shimmer drifting up it, and, where the ship
-// will go through, its mark: a bar of amber light.
+// will go through, its mark: a bar of amber light; and where it's going, if
+// it isn't there yet, a pair of gold lines pulsing either side of it.
 const BRIDGE_FRAGMENT = /* glsl */ `
 uniform sampler2D map;
 uniform vec3 uColor;
 uniform float uFade;
 uniform float uTime;
 uniform float uMark;
+uniform float uGoal;
 uniform float uWidth;
 varying vec2 vUv;
 void main() {
@@ -297,7 +379,12 @@ void main() {
   float dx = (vUv.x - uMark) * uWidth;
   float mark = exp(-dx * dx * 1.6) * smoothstep(0.12, 0.42, vUv.y) * smoothstep(0.92, 0.62, vUv.y) * step(0.0, uMark);
   col += vec3(2.3, 1.35, 0.45) * mark;
-  gl_FragColor = vec4(col, min(1.0, alpha + mark) * uFade);
+  float gx = abs((vUv.x - uGoal) * uWidth);
+  float away = smoothstep(1.0, 2.2, abs(uGoal - uMark) * uWidth) * step(0.0, uGoal) * step(0.0, uMark);
+  float brackets = exp(-pow((gx - 1.45) * 3.2, 2.0)) * smoothstep(0.1, 0.3, vUv.y) * smoothstep(0.95, 0.72, vUv.y);
+  float goal = brackets * away * (0.7 + 0.3 * sin(uTime * 8.0));
+  col += vec3(2.0, 1.6, 0.5) * goal;
+  gl_FragColor = vec4(col, min(1.0, alpha + mark + goal) * uFade);
 }
 `;
 
@@ -315,6 +402,7 @@ export function bridgeMaterial(map: THREE.Texture, width: number): THREE.ShaderM
       uFade: { value: 0 },
       uTime: { value: 0 },
       uMark: { value: -1 },
+      uGoal: { value: -1 },
       uWidth: { value: width },
     },
   });
