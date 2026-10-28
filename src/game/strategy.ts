@@ -17,6 +17,7 @@ export interface Strategy {
 // handing over the answer.
 export function strategyFor(x: number, y: number, t: Strings, mission: Mission = 'mul'): Strategy {
   if (mission === 'add') return additionStrategy(x, y, t);
+  if (mission === 'sub') return subtractionStrategy(x, y, t);
   if (x === 1 || y === 1) {
     return { text: t.hintTimesOne };
   }
@@ -101,4 +102,38 @@ export function additionStrategy(x: number, y: number, t: Strings): Strategy {
   const onesSum = (x % 10) + (y % 10);
   const last = onesSum > 0 ? `${tensSum} + ${onesSum}  →  ?` : '?';
   return { text: t.hintTensAndOnes, math: `${x} + ${y}  →  ${parts.join(' + ')}  →  ${last}` };
+}
+
+// x − y, x the bigger. Within the table: one less, ten less, a double's
+// half, counting back a little, back through ten from a teen, else thinking
+// of the sum (what goes with y to make x). Beyond it: tens like units, the
+// ones on their own, back to the ten first, or the tens then the ones.
+export function subtractionStrategy(x: number, y: number, t: Strings): Strategy {
+  if (x <= 20 && y <= 10) {
+    if (y === 1) return { text: t.hintOneLess };
+    if (y === 10) return { text: t.hintMinusTen };
+    if (x === 2 * y) return { text: t.hintHalfDouble(y), math: `${y} + ${y}  =  ${x}  →  ${x} − ${y}  =  ?` };
+    if (y <= 3) {
+      const counts = Array.from({ length: y - 1 }, (_, i) => x - 1 - i);
+      return { text: t.hintCountBack, math: `${x}  →  ${[...counts, '?'].join(', ')}` };
+    }
+    const ones = x % 10;
+    if (x > 10 && ones > 0 && ones < y) {
+      return { text: t.hintBackThroughTen, math: `${x} − ${y}  →  ${x} − ${ones} − ${y - ones}  →  10 − ${y - ones}  →  ?` };
+    }
+    if (x > 10 && ones === y) return { text: t.hintTakeOnes, math: `${x} − ${y}  →  10 + ${ones} − ${y}  →  ?` };
+    return { text: t.hintThinkAdd, math: `${x} − ${y}  →  ${y} + ?  =  ${x}` };
+  }
+
+  // two-digit differences
+  if (x % 10 === 0 && y % 10 === 0) return { text: t.hintTensLikeSub(x / 10, y / 10) };
+  const ones = x % 10;
+  if (y < 10) {
+    if (ones === 0) return { text: t.hintBreakTen, math: `${x} − ${y}  →  ${x - 10} + 10 − ${y}  →  ${x - 10} + ${10 - y}  →  ?` };
+    if (ones >= y) return { text: t.hintTakeOnes, math: `${x} − ${y}  →  ${tensOf(x)} + ${ones} − ${y}  →  ${tensOf(x)} + ${ones - y}  →  ?` };
+    return { text: t.hintBackThroughTen, math: `${x} − ${y}  →  ${x} − ${ones} − ${y - ones}  →  ${tensOf(x)} − ${y - ones}  →  ?` };
+  }
+  const yOnes = y % 10;
+  if (yOnes === 0) return { text: t.hintTakeTens, math: `${x} − ${y}  →  ${tensOf(x)} − ${y} + ${ones}  →  ${tensOf(x) - y} + ${ones}  →  ?` };
+  return { text: t.hintTensThenOnes, math: `${x} − ${y}  →  ${x} − ${tensOf(y)} − ${yOnes}  →  ${x - tensOf(y)} − ${yOnes}  →  ?` };
 }

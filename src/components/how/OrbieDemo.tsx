@@ -10,6 +10,7 @@ import { useLang, useT } from '../../i18n/useLang';
 import { speak } from '../../audio/speech';
 import { sfx } from '../../audio/sfx';
 import '../computer/computer.css';
+import { OP_SYMBOL, opsOf } from '../../game/mission';
 
 // Orbie, the ship's computer (computer/ShipComputer.tsx), on a question of
 // its own: the clock it waits by (game/thinkThrough.ts's stuckAfterMs, at a
@@ -30,7 +31,8 @@ export function OrbieDemo() {
   const lang = useLang((s) => s.lang);
   const mission = useMission();
   const mastery = useGameStore((s) => s.progress.mastery);
-  const q = mission === 'add' ? { x: 8, y: 7, mission: 'add' as const } : { x: 6, y: 7, mission: 'mul' as const };
+  const op1 = opsOf(mission)[0];
+  const q = op1 === 'add' ? { x: 8, y: 7, mission: 'add' as const } : op1 === 'sub' ? { x: 13, y: 5, mission: 'sub' as const } : { x: 6, y: 7, mission: 'mul' as const };
   const steps = useMemo(() => thinkSteps(q.x, q.y, q.mission, mastery), [q.x, q.y, q.mission, mastery]);
   const waitMs = stuckAfterMs(PACE_MS, false);
 
@@ -52,7 +54,7 @@ export function OrbieDemo() {
     sfx.blip(5 + d);
   };
   const read = () => speak([words.title, words.text, words.math?.replace(/→/g, ',')].filter(Boolean).join('. '), lang, all.academy.speakWords);
-  const op = q.mission === 'add' ? '+' : '×';
+  const op = OP_SYMBOL[q.mission];
 
   return (
     <>

@@ -105,6 +105,7 @@ function pickDecoys(target: number, correct: Array<[number, number]>): Array<[nu
 
 export function buildChallenge(level: number, mission: Mission = 'mul', stage = 1): Challenge {
   if (mission === 'add') return buildAdditionChallenge(stage);
+  if (mission === 'sub') return buildSubtractionChallenge(stage);
   const targets = eligibleTargets(level);
   const target = targets[Math.floor(Math.random() * targets.length)];
   const correct = pickCorrect(target, level);
@@ -157,4 +158,45 @@ export function buildAdditionChallenge(stage: number): Challenge {
     ...decoys.map(([x, y]) => ({ x, y, correct: false })),
   ]).map((d, id) => ({ ...d, id }));
   return { mission: 'add', target, drills, createdAt: Date.now() };
+}
+
+// ---------- subtraction ----------
+
+/** the difference to make and the biggest number taken from, by stage */
+function gapRange(stage: number): { target: number; lo: number; hi: number } {
+  // each target has at least three ways to make it
+  if (stage <= 1) return { target: 2 + Math.floor(Math.random() * 4), lo: 1, hi: 10 }; // 2-5, from up to 10
+  if (stage === 2) return { target: 3 + Math.floor(Math.random() * 7), lo: 11, hi: 20 }; // 3-9, from the teens
+  return { target: pick([20, 30, 40, 50]), lo: 31, hi: 99 }; // round numbers from two-digit ones
+}
+
+// Three different pairs whose difference is the target (9 − 4, 7 − 2, 10 − 5
+// all make 5), the bigger number first, and two decoys a number off (with
+// two-digit numbers, sometimes a ten off) so the difference is close.
+export function buildSubtractionChallenge(stage: number): Challenge {
+  const { target, lo, hi } = gapRange(stage);
+  const pairs: Array<[number, number]> = [];
+  for (let a = Math.max(lo, target + 1); a <= hi; a++) {
+    const b = a - target;
+    if (stage >= 3 ? b >= 11 && b % 10 !== 0 : b <= 10) pairs.push([a, b]);
+  }
+  const correct = shuffle(pairs).slice(0, CORRECT_PICKS);
+  const seen = new Set(correct.map(([a, b]) => `${a}-${b}`));
+  const nudges = stage >= 3 ? [-10, -1, 1, 10] : [-2, -1, 1, 2];
+  const decoys: Array<[number, number]> = [];
+  for (const [a, b] of shuffle([...correct])) {
+    for (const d of shuffle(nudges)) {
+      const pair: [number, number] = Math.random() < 0.5 ? [a + d, b] : [a, b + d];
+      const key = `${pair[0]}-${pair[1]}`;
+      if (pair[1] < 1 || pair[0] <= pair[1] || pair[0] > hi || seen.has(key) || decoys.length >= DRILL_COUNT - CORRECT_PICKS) continue;
+      seen.add(key);
+      decoys.push(pair);
+      break;
+    }
+  }
+  const drills = shuffle([
+    ...correct.map(([x, y]) => ({ x, y, correct: true })),
+    ...decoys.map(([x, y]) => ({ x, y, correct: false })),
+  ]).map((d, id) => ({ ...d, id }));
+  return { mission: 'sub', target, drills, createdAt: Date.now() };
 }

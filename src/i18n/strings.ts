@@ -1,6 +1,7 @@
 import { isAddKind } from '../game/addition';
+import { isSubKind } from '../game/subtraction';
 import { formatFactKey } from '../game/facts';
-import type { PilotMission } from '../game/mission';
+import type { Mission, PilotMission } from '../game/mission';
 import type { ShipId } from '../components/scene/ships';
 
 export type Lang = 'en' | 'he';
@@ -22,9 +23,15 @@ const en = {
   missionAddHint: 'Sums to 10, then to 20 and 100',
   missionMix: 'Mixed',
   missionMixHint: 'Times tables and sums, all mixed up',
+  missionSub: 'Subtraction',
+  missionSubHint: 'Take away within 10, then 20 and 100',
+  missionAddSub: 'Plus & minus',
+  missionAddSubHint: 'Sums and take-aways, all mixed up',
   stageName: (n: number) => `Sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   stageUpTitle: 'New mission level! 🎉',
   stageUp: (n: number) => `From now on: sums to ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
+  subStageName: (n: number): string => (n === 1 ? 'Take away within 10' : n === 2 ? 'Take away from 20' : 'Take away within 100'),
+  subStageUp: (n: number) => `From now on: take away ${n === 1 ? 'within 10' : n === 2 ? 'from numbers up to 20' : 'within 100'}`,
   level: (n: number) => `Level ${n}`,
   destination: 'Destination:',
   stopAndReview: 'Stop & Review',
@@ -245,9 +252,24 @@ const en = {
   hintAddOnes: 'Add the ones:',
   hintNextTen: 'Jump to the next ten first:',
   hintTensAndOnes: 'Tens with tens, ones with ones:',
+  hintOneLess: '− 1 is just the number before.',
+  hintMinusTen: 'Take the ten away and the ones are left.',
+  hintHalfDouble: (n: number) => `A double! ${n} and ${n} make it, so take one ${n} away:`,
+  hintCountBack: 'Start at the big number and count back:',
+  hintBackThroughTen: 'Go back to 10 first:',
+  hintTakeOnes: 'Take the ones away from the ones:',
+  hintThinkAdd: 'Think of the sum: what goes with it to make the big number?',
+  hintTensLikeSub: (a: number, b: number) => `Just like ${a} − ${b}, but with tens.`,
+  hintBreakTen: 'Break a ten into ones:',
+  hintTakeTens: 'Take the tens away from the tens:',
+  hintTensThenOnes: 'Take the tens away, then the ones:',
   addExplainCount: 'Count them all:',
   addExplainMakeTen: 'Fill up the 10 first, then the rest:',
   addExplainTens: 'Tens with tens, ones with ones:',
+  subExplainTakeAway: 'Take them away from the end, and count what’s left:',
+  subExplainBackTen: 'Take away back to 10 first, then the rest:',
+  subExplainTens: 'Take the tens from the tens, the ones from the ones:',
+  subExplainBorrow: 'Not enough ones? Break a ten into ten ones first:',
 
   blastOff: 'Blast off!',
   youReached: 'You reached',
@@ -258,6 +280,7 @@ const en = {
   wormholeAhead: 'Wormhole ahead!',
   wormholeInstructions: (n: number) => `Pick the 3 drills that equal ${n}`,
   wormholeInstructionsAdd: (n: number) => `Pick the 3 sums that make ${n}`,
+  wormholeInstructionsSub: (n: number) => `Pick the 3 take-aways that leave ${n}`,
   wormholePicked: (k: number) => `${k} / 3 found`,
   wormholeKeys: 'or press 1–5',
   wormholeOneLeft: 'Careful — one more miss closes the wormhole!',
@@ -265,6 +288,7 @@ const en = {
   wormholeBoost: 'DOUBLE BOOST!',
   drillLabel: (x: number, y: number) => `${x} times ${y}`,
   drillLabelAdd: (x: number, y: number) => `${x} plus ${y}`,
+  drillLabelSub: (x: number, y: number) => `${x} minus ${y}`,
 
 
   meteorTitle: 'Meteor shower!',
@@ -335,9 +359,11 @@ const en = {
   trafficTitle: 'Space Traffic!',
   trafficIntro: 'Slow ships ahead! Each one has a number. Pick the drill that makes it, and steer around it!',
   trafficIntroAdd: 'Slow ships ahead! Each one has a number. Pick the sum that makes it, and steer around it!',
+  trafficIntroSub: 'Slow ships ahead! Each one has a number. Pick the take-away that leaves it, and steer around it!',
   trafficPasses: (k: number, n: number) => `Pass ${k} / ${n}`,
   trafficAsk: (n: number) => `Which drill makes ${n}?`,
   trafficAskAdd: (n: number) => `Which sum makes ${n}?`,
+  trafficAskSub: (n: number) => `Which take-away leaves ${n}?`,
   trafficWrong: (drill: string, n: number) => `${drill}, not ${n}! Brake!`,
   trafficSteer: '← ↑ → ↓ to steer',
   trafficDirs: { up: 'Up', left: 'Left', right: 'Right', down: 'Down' },
@@ -352,6 +378,8 @@ const en = {
   reviewPeekTitle: 'Your multiplication map',
   reviewPeekTitleAdd: 'Your addition map',
   reviewPeekTitleMix: 'Your maps: × and +',
+  reviewPeekTitleSub: 'Your subtraction map',
+  reviewPeekTitleAddSub: 'Your maps: + and −',
   reviewPeekStats: (m: number, f: number, p: number, n: number) => `${m} mastered${f ? ` · ${f} fading` : ''} · ${p} to practice · ${n} not tried yet`,
   reviewPeekHint: 'Click for the full review',
 
@@ -409,6 +437,80 @@ const en = {
     speakWords: { times: 'times', plus: 'plus', equals: 'equals' },
   },
 
+  subAcademy: {
+    subtitle: 'Subtraction, step by step',
+    pick: 'Pick a course',
+    youAreHere: 'You are here',
+    finished: 'Done ✓',
+    courses: [
+      { name: 'Take away within 10', hint: 'Taking away, counting back, thinking of the sum' },
+      { name: 'Back from 20', hint: 'Back to ten first, sums and doubles' },
+      { name: 'Within 100', hint: 'Tens, then ones, and breaking a ten' },
+    ],
+    lessons: [
+      ['Taking away', 'Counting back', 'Think of the sum', 'Your turn'],
+      ['Ten and some more', 'Back to ten first', 'Think of the sum', 'Your turn'],
+      ['Tens and ones', 'Taking tens', 'Tens, then ones', 'Breaking a ten', 'Your turn'],
+    ],
+    takeTen: '− ten',
+    takeOne: '− one',
+    breakTen: 'Break a ten',
+    s1: '7 stars are lit. 3 of them fly away: tap 3 stars.',
+    s1q: 'How many stars are left?',
+    s1done: '3 flew away and 4 are left!',
+    s2: 'Taking away has its own sign: −. We write {7 − 3 = 4} and say “7 minus 3 equals 4”.',
+    s2b: 'The answer, 4, is what’s left: the difference.',
+    s3: 'No need to count them all! The rocket starts at 8 and counts back 3. Press Hop!',
+    s3done: 'Start at 8, count back 3: 7, 6, 5. So {8 − 3 = 5}.',
+    s4: 'Your turn: what is {9 − 2}? Start at 9 and count back 2.',
+    s4done: '9… 8, 7. So {9 − 2 = 7}!',
+    s5: '{9 − 5}: counting back 5 is a long way… Think of the sum instead: 5 and how many make 9? Tap to fill up to 9.',
+    s5done: '5 and 4 make 9. So {9 − 5 = 4}!',
+    s6: '3, 4 and 7 are a family: two sums and two take-aways. Know one, and you know them all!',
+    s7q1: 'Which take-away does this picture show?',
+    s7q2: 'And how many stars are left?',
+    s7done: '{8 − 3 = 5}!',
+    s8: 'Last one, with no pictures! What is {10 − 4}?',
+    s8done: '{6 + 4 = 10}, so {10 − 4 = 6}!',
+    t1: 'A teen number is a full ten and some more: 14 is ten and four. Take the four away, and ten is left: {14 − 4 = 10}.',
+    t2: 'Now {13 − 5}. Take away the 3 on their own first, back to 10. Tap the stars to take 5 away.',
+    t2ten: 'Back to 10! 2 more to take away.',
+    t2done: '3 back to 10, then 2 more: {13 − 5 = 10 − 2 = 8}.',
+    t3q1: 'Try {12 − 4}. How many do you take away to get back to 10?',
+    t3q2: '{12 − 2 = 10}. How many of the 4 are still to take away?',
+    t3q3: 'So it’s {10 − 2}. How much is that?',
+    t3done: '{12 − 4 = 10 − 2 = 8}!',
+    t4: '{15 − 7}: what goes with 7 to make 15? Think of the sum: 7 and how many make 15?',
+    t4done: '{7 + 8 = 15}, so {15 − 7 = 8}!',
+    t5: '{16 − 8}: 8 and 8 make 16, a double! So taking 8 away leaves…',
+    t5done: '{8 + 8 = 16}, so {16 − 8 = 8}!',
+    t6: 'Your turn! What is {14 − 6}?',
+    t6done: '{14 − 4 = 10}, and 2 more: {14 − 6 = 8}!',
+    t7: 'Last one, with no pictures! What is {17 − 9}?',
+    t7done: '{17 − 7 = 10}, and 2 more: {17 − 9 = 8}!',
+    u1: 'Big numbers are made of tens and ones. A rod is a ten, a dot is a one. {47} is 4 tens and 7 ones.',
+    u2: '{70 − 30}: 7 tens take away 3 tens. How many tens are left?',
+    u2done: '4 tens: {70 − 30 = 40}. Just like {7 − 3 = 4}, with tens!',
+    u3: 'Now {58 − 23}. Take away the tens first: 2 of them.',
+    u3ones: 'Now the ones: take away 3.',
+    u3done: '{58 − 20 = 38}, and {38 − 3 = 35}. So {58 − 23 = 35}.',
+    u4q1: 'Try {76 − 34}. Tens first: what is {76 − 30}?',
+    u4q2: 'Now the ones: what is {46 − 4}?',
+    u4done: '{76 − 34 = 42}!',
+    u5: '{42 − 7}: there are only 2 ones, but 7 to take away! Break a ten into ten ones.',
+    u5take: 'Now there are 12 ones. Take 7 away.',
+    u5done: '3 tens and 5 ones are left: {42 − 7 = 35}.',
+    u6: 'Your turn! What is {53 − 8}? Hint: back to the ten first.',
+    u6done: '{53 − 3 = 50}, and 5 more: {53 − 8 = 45}!',
+    u7: 'Last one! What is {64 − 27}?',
+    u7done: '{64 − 20 = 44}, {44 − 4 = 40}, and {40 − 3 = 37}: {64 − 27 = 37}!',
+    doneTitles: ['You are a Take-Away Cadet! 🎓', 'You are a Ten-Finder! 🎓', 'You are a Hundred Breaker! 🎓'],
+    doneTexts: [
+      'Fly back and practise. Remember: count back a little, or think of the sum.',
+      'Fly back and practise. Remember: go back to ten first, then take the rest.',
+      'Fly back and practise. Remember: tens from tens, ones from ones, and break a ten when the ones run out.',
+    ],
+  },
   addAcademy: {
     subtitle: 'Addition, step by step',
     pick: 'Pick a course',
@@ -715,6 +817,10 @@ const en = {
     meaningTens: { title: 'Tens and ones', text: 'Each long bar is ten, each dot is one. Add the tens, then the ones.' },
     countOn: { title: 'Count on', text: (big: number, small: number) => `Start at ${big}, and count ${small} more.` },
     swapAdd: { title: 'Start with the bigger one', text: (x: number, y: number) => `${ltr(`${x} + ${y}`)} is the same as ${ltr(`${y} + ${x}`)}. Starting from ${y} is quicker!` },
+    meaningSub: { title: 'Take them away', text: (x: number, y: number) => `${x} dots, and ${y} of them go away. How many are left?` },
+    meaningTensSub: { title: 'Tens and ones', text: 'Each long bar is ten, each dot is one. Take the tens away from the tens, then the ones from the ones.' },
+    countBack: { title: 'Count back', text: (x: number, y: number) => `Start at ${x}, and count ${y} back.` },
+    thinkAdd: { title: 'Think of the sum', text: (x: number, y: number) => `What goes with ${y} to make ${x}? That's what's left.` },
   },
   hangar: {
     title: 'Choose your ship',
@@ -840,13 +946,25 @@ const en = {
       spaceAdmiral: { name: 'Master of Universal Multiples', desc: 'Cure the Black Sun, the final boss' },
       spaceAdmiralAdd: { name: 'Master of Universal Sums', desc: 'Cure the Black Sun, the final boss' },
       spaceAdmiralMix: { name: 'Master of Universal Multiples and Sums', desc: 'Cure the Black Sun, the final boss' },
+      spaceAdmiralSub: { name: 'Master of Universal Differences', desc: 'Cure the Black Sun, the final boss' },
+      spaceAdmiralAddsub: { name: 'Master of Universal Sums and Differences', desc: 'Cure the Black Sun, the final boss' },
     },
   },
 
   heatmapTitle: 'Your Multiplication Map',
   heatmapTitleAdd: 'Your Addition Map',
   heatmapTitleMix: 'Your Mixed Maps',
+  heatmapTitleSub: 'Your Subtraction Map',
+  heatmapTitleAddSub: 'Your Plus & Minus Maps',
   heatmapKinds: 'Two-digit sums',
+  heatmapKindsSub: 'Two-digit take-aways',
+  subKinds: {
+    'tens-tens': 'tens − tens',
+    '2d-1d': 'two-digit − one-digit',
+    '2d-2d': 'two-digit − two-digit',
+    '2d-1d:b': 'two-digit − one-digit, borrowing',
+    '2d-2d:b': 'two-digit − two-digit, borrowing',
+  },
   addKinds: {
     'tens+tens': 'tens + tens',
     '2d+1d': 'two-digit + one-digit',
@@ -855,6 +973,7 @@ const en = {
     '2d+2d:c': 'two-digit + two-digit, carrying',
   },
   heatmapSubtitle: 'Green = mastered · Amber = time for a check · Red = needs more practice',
+  heatmapSubtitleSub: 'Each square is its number take away its row, which leaves its column (13 − 5 = 8). Green = mastered · Amber = time for a check · Red = needs more practice',
   heatmapFading: 'time for a check',
   heatmapWhy: "That was 5 tricky ones. Here's where to practice:",
   keepPracticing: 'Keep Practicing',
@@ -894,10 +1013,14 @@ const en = {
     seatPilotHint: 'Times tables, against the clock',
     seatPilotHintAdd: 'Sums, against the clock',
     seatPilotHintMix: 'Times tables and sums, against the clock',
+    seatPilotHintSub: 'Take-aways, against the clock',
+    seatPilotHintAddSub: 'Sums and take-aways, against the clock',
     seatNavigator: '🧭 Navigator',
     seatNavigatorHint: 'Count groups of stars',
     seatNavigatorHintAdd: 'Count two groups of stars',
     seatNavigatorHintMix: 'Count stars: in groups, or two groups together',
+    seatNavigatorHintSub: 'Count the stars left when some fly away',
+    seatNavigatorHintAddSub: 'Count stars: two groups together, or the ones left',
     launchTogether: 'Launch together! 🚀',
     turnOf: (name: string) => `${name}'s turn`,
     crewLevel: (n: number) => `Crew level ${n}`,
@@ -909,6 +1032,8 @@ const en = {
     navTotal: (g: number, s: number) => `${g} groups of ${s} = ${g * s}`,
     navAddQuestion: (a: number, b: number) => `${a === 1 ? '1 star' : `${a} stars`} and ${b} more. How many stars?`,
     navAddCountOn: "Let's count on from the first group:",
+    navSubQuestion: (a: number, b: number) => `${a} stars, and ${b} fly away. How many are left?`,
+    navSubCountLeft: "Let's count the stars that are left:",
     dockTitle: 'Docking!',
     dockIntro: (n: number) => `Make ${n} together! Each of you picks one number.`,
     dockTalk: 'Talk it over: which two numbers make it?',
@@ -1145,6 +1270,8 @@ const en = {
     admiralSub: 'You are now master of universal multiples',
     admiralSubAdd: 'You are now master of universal sums',
     admiralSubMix: 'You are now master of universal multiples and sums',
+    admiralSubTake: 'You are now master of universal differences',
+    admiralSubAddTake: 'You are now master of universal sums and differences',
     admiralName: (name: string) => `Admiral ${name}`,
     statRun: (n: number) => `🔥 ${n} in a row`,
     statDodged: (n: number) => (n === 1 ? '😎 1 fireball dodged' : `😎 ${n} fireballs dodged`),
@@ -1167,9 +1294,15 @@ const he: Strings = {
   missionAddHint: 'חיבור עד 10, ואז עד 20 ועד 100',
   missionMix: 'משולב',
   missionMixHint: 'לוח הכפל וחיבור, מעורבבים',
+  missionSub: 'חיסור',
+  missionSubHint: 'חיסור עד 10, ואז עד 20 ועד 100',
+  missionAddSub: 'חיבור וחיסור',
+  missionAddSubHint: 'חיבור וחיסור, מעורבבים',
   stageName: (n) => `חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   stageUpTitle: 'שלב חדש במשימה! 🎉',
   stageUp: (n) => `מעכשיו: חיבור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
+  subStageName: (n) => `חיסור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
+  subStageUp: (n) => `מעכשיו: חיסור עד ${n === 1 ? 10 : n === 2 ? 20 : 100}`,
   level: (n) => `שלב ${n}`,
   destination: 'יעד:',
   stopAndReview: 'עצירה וחזרה',
@@ -1382,9 +1515,24 @@ const he: Strings = {
   hintAddOnes: 'מחברים את היחידות:',
   hintNextTen: 'קודם קופצים לעשרת הבאה:',
   hintTensAndOnes: 'עשרות עם עשרות, יחידות עם יחידות:',
+  hintOneLess: 'פחות 1 זה פשוט המספר שלפניו.',
+  hintMinusTen: 'מורידים את העשרת, ונשארות היחידות.',
+  hintHalfDouble: (n) => `כפולה! ${n} ועוד ${n} עושים את המספר, אז מורידים ${n} אחד:`,
+  hintCountBack: 'מתחילים מהמספר הגדול וסופרים אחורה:',
+  hintBackThroughTen: 'קודם חוזרים ל־10:',
+  hintTakeOnes: 'מורידים יחידות מהיחידות:',
+  hintThinkAdd: 'חושבים על החיבור: כמה צריך להוסיף כדי להגיע למספר הגדול?',
+  hintTensLikeSub: (a, b) => `בדיוק כמו \u2066${a} − ${b}\u2069, רק בעשרות.`,
+  hintBreakTen: 'פורטים עשרת ליחידות:',
+  hintTakeTens: 'מורידים עשרות מהעשרות:',
+  hintTensThenOnes: 'מורידים את העשרות, ואז את היחידות:',
   addExplainCount: 'סופרים את כולם:',
   addExplainMakeTen: 'קודם ממלאים את ה־10, ואז את השאר:',
   addExplainTens: 'עשרות עם עשרות, יחידות עם יחידות:',
+  subExplainTakeAway: 'מורידים מהסוף, וסופרים כמה נשארו:',
+  subExplainBackTen: 'קודם מורידים עד 10, ואז את השאר:',
+  subExplainTens: 'מורידים עשרות מהעשרות, יחידות מהיחידות:',
+  subExplainBorrow: 'אין מספיק יחידות? קודם פורטים עשרת לעשר יחידות:',
 
   blastOff: 'שיגור!',
   youReached: 'הגעת אל',
@@ -1395,6 +1543,7 @@ const he: Strings = {
   wormholeAhead: 'חור תולעת לפנינו!',
   wormholeInstructions: (n) => `בחרו את 3 התרגילים ששווים ${n}`,
   wormholeInstructionsAdd: (n) => `בחרו את 3 התרגילים שסכומם ${n}`,
+  wormholeInstructionsSub: (n) => `בחרו את 3 התרגילים שנשאר בהם ${n}`,
   wormholePicked: (k) => `נמצאו ${k} מתוך 3`,
   wormholeKeys: 'או הקישו 1–5',
   wormholeOneLeft: 'זהירות — עוד טעות אחת וחור התולעת ייסגר!',
@@ -1402,6 +1551,7 @@ const he: Strings = {
   wormholeBoost: 'בוסט כפול!',
   drillLabel: (x, y) => `${x} כפול ${y}`,
   drillLabelAdd: (x, y) => `${x} ועוד ${y}`,
+  drillLabelSub: (x, y) => `${x} פחות ${y}`,
 
 
   meteorTitle: 'מטר מטאורים!',
@@ -1472,9 +1622,11 @@ const he: Strings = {
   trafficTitle: 'פקק בחלל!',
   trafficIntro: 'חלליות איטיות לפנינו! על כל אחת יש מספר. בחרו את התרגיל ששווה למספר, ועקפו אותה!',
   trafficIntroAdd: 'חלליות איטיות לפנינו! על כל אחת יש מספר. בחרו את התרגיל שסכומו הוא המספר, ועקפו אותה!',
+  trafficIntroSub: 'חלליות איטיות לפנינו! על כל אחת יש מספר. בחרו את התרגיל שנשאר בו המספר, ועקפו אותה!',
   trafficPasses: (k, n) => `עקיפה ${k} מתוך ${n}`,
   trafficAsk: (n) => `איזה תרגיל שווה ${n}?`,
   trafficAskAdd: (n) => `איזה תרגיל שווה ${n}?`,
+  trafficAskSub: (n) => `באיזה תרגיל נשאר ${n}?`,
   trafficWrong: (drill, n) => `\u2066${drill}\u2069, לא ${n}! בולמים!`,
   trafficSteer: '← ↑ → ↓ כדי לנווט',
   trafficDirs: { up: 'למעלה', left: 'שמאלה', right: 'ימינה', down: 'למטה' },
@@ -1489,6 +1641,8 @@ const he: Strings = {
   reviewPeekTitle: 'מפת הכפל שלך',
   reviewPeekTitleAdd: 'מפת החיבור שלך',
   reviewPeekTitleMix: 'המפות שלך: × ו־+',
+  reviewPeekTitleSub: 'מפת החיסור שלך',
+  reviewPeekTitleAddSub: 'המפות שלך: + ו־−',
   reviewPeekStats: (m, f, p, n) => `${m} שולטים${f ? ` · ${f} לחזרה` : ''} · ${p} לתרגול · ${n} עוד לא נוסו`,
   reviewPeekHint: 'לחצו לחזרה המלאה',
 
@@ -1546,6 +1700,80 @@ const he: Strings = {
     speakWords: { times: 'כפול', plus: 'ועוד', equals: 'שווה' },
   },
 
+  subAcademy: {
+    subtitle: 'חיסור, צעד אחר צעד',
+    pick: 'בחרו קורס',
+    youAreHere: 'אתם כאן',
+    finished: 'הושלם ✓',
+    courses: [
+      { name: 'חיסור עד 10', hint: 'מורידים, סופרים אחורה, חושבים על החיבור' },
+      { name: 'חיסור עד 20', hint: 'קודם חוזרים לעשר, חיבור וכפולות' },
+      { name: 'חיסור עד 100', hint: 'עשרות, אחר כך יחידות, ופריטת עשרת' },
+    ],
+    lessons: [
+      ['מורידים', 'סופרים אחורה', 'חושבים על החיבור', 'תורכם'],
+      ['עשר ועוד קצת', 'קודם חוזרים לעשר', 'חושבים על החיבור', 'תורכם'],
+      ['עשרות ויחידות', 'מורידים עשרות', 'עשרות, ואז יחידות', 'פורטים עשרת', 'תורכם'],
+    ],
+    takeTen: '− עשרת',
+    takeOne: '− יחידה',
+    breakTen: 'פורטים עשרת',
+    s1: '7 כוכבים דולקים. 3 מהם עפים: הקישו על 3 כוכבים.',
+    s1q: 'כמה כוכבים נשארו?',
+    s1done: '3 עפו, ונשארו 4!',
+    s2: 'להורדה יש סימן משלה: −. כותבים {7 − 3 = 4} ואומרים "7 פחות 3 שווה 4".',
+    s2b: 'התשובה, 4, היא מה שנשאר: ההפרש.',
+    s3: 'לא צריך לספור את כולם! הטיל מתחיל ב־8 וסופר 3 אחורה. לחצו קפיצה!',
+    s3done: 'מתחילים ב־8, סופרים 3 אחורה: 7, 6, 5. אז {8 − 3 = 5}.',
+    s4: 'תורכם: כמה זה {9 − 2}? מתחילים ב־9 וסופרים 2 אחורה.',
+    s4done: '9… 8, 7. אז {9 − 2 = 7}!',
+    s5: '{9 − 5}: לספור 5 אחורה זה ארוך… חושבים על החיבור: 5 ועוד כמה עושים 9? הקישו כדי למלא עד 9.',
+    s5done: '5 ועוד 4 עושים 9. אז {9 − 5 = 4}!',
+    s6: '3, 4 ו־7 הם משפחה: שני תרגילי חיבור ושני תרגילי חיסור. יודעים אחד, יודעים את כולם!',
+    s7q1: 'איזה תרגיל חיסור מראה התמונה?',
+    s7q2: 'וכמה כוכבים נשארו?',
+    s7done: '{8 − 3 = 5}!',
+    s8: 'אחרון, בלי תמונות! כמה זה {10 − 4}?',
+    s8done: '{6 + 4 = 10}, אז {10 − 4 = 6}!',
+    t1: 'מספר בין 11 ל־19 הוא עשר שלם ועוד קצת: 14 זה עשר וארבע. מורידים את הארבע, ונשאר עשר: {14 − 4 = 10}.',
+    t2: 'עכשיו {13 − 5}. קודם מורידים את ה־3 לבד, חזרה ל־10. הקישו על הכוכבים כדי להוריד 5.',
+    t2ten: 'חזרנו ל־10! עוד 2 להוריד.',
+    t2done: '3 עד 10, ואז עוד 2: {13 − 5 = 10 − 2 = 8}.',
+    t3q1: 'נסו {12 − 4}. כמה מורידים כדי לחזור ל־10?',
+    t3q2: '{12 − 2 = 10}. כמה מה־4 עוד נשאר להוריד?',
+    t3q3: 'אז זה {10 − 2}. כמה זה?',
+    t3done: '{12 − 4 = 10 − 2 = 8}!',
+    t4: '{15 − 7}: כמה צריך להוסיף ל־7 כדי להגיע ל־15? חושבים על החיבור: 7 ועוד כמה עושים 15?',
+    t4done: '{7 + 8 = 15}, אז {15 − 7 = 8}!',
+    t5: '{16 − 8}: 8 ועוד 8 עושים 16, כפולה! אז כשמורידים 8 נשאר…',
+    t5done: '{8 + 8 = 16}, אז {16 − 8 = 8}!',
+    t6: 'תורכם! כמה זה {14 − 6}?',
+    t6done: '{14 − 4 = 10}, ועוד 2: {14 − 6 = 8}!',
+    t7: 'אחרון, בלי תמונות! כמה זה {17 − 9}?',
+    t7done: '{17 − 7 = 10}, ועוד 2: {17 − 9 = 8}!',
+    u1: 'מספרים גדולים בנויים מעשרות ויחידות. מקל הוא עשר, נקודה היא אחת. {47} זה 4 עשרות ו־7 יחידות.',
+    u2: '{70 − 30}: 7 עשרות פחות 3 עשרות. כמה עשרות נשארו?',
+    u2done: '4 עשרות: {70 − 30 = 40}. בדיוק כמו {7 − 3 = 4}, בעשרות!',
+    u3: 'עכשיו {58 − 23}. קודם מורידים את העשרות: 2 מהן.',
+    u3ones: 'עכשיו היחידות: מורידים 3.',
+    u3done: '{58 − 20 = 38}, ו־{38 − 3 = 35}. אז {58 − 23 = 35}.',
+    u4q1: 'נסו {76 − 34}. קודם העשרות: כמה זה {76 − 30}?',
+    u4q2: 'עכשיו היחידות: כמה זה {46 − 4}?',
+    u4done: '{76 − 34 = 42}!',
+    u5: '{42 − 7}: יש רק 2 יחידות, וצריך להוריד 7! פורטים עשרת לעשר יחידות.',
+    u5take: 'עכשיו יש 12 יחידות. מורידים 7.',
+    u5done: 'נשארו 3 עשרות ו־5 יחידות: {42 − 7 = 35}.',
+    u6: 'תורכם! כמה זה {53 − 8}? רמז: קודם חוזרים לעשרת.',
+    u6done: '{53 − 3 = 50}, ועוד 5: {53 − 8 = 45}!',
+    u7: 'אחרון! כמה זה {64 − 27}?',
+    u7done: '{64 − 20 = 44}, {44 − 4 = 40}, ו־{40 − 3 = 37}: {64 − 27 = 37}!',
+    doneTitles: ['אתם צוערי חיסור! 🎓', 'אתם מוצאי העשר! 🎓', 'אתם פורטי המאה! 🎓'],
+    doneTexts: [
+      'טוסו חזרה ותתאמנו. זכרו: סופרים קצת אחורה, או חושבים על החיבור.',
+      'טוסו חזרה ותתאמנו. זכרו: קודם חוזרים לעשר, ואז מורידים את השאר.',
+      'טוסו חזרה ותתאמנו. זכרו: עשרות מעשרות, יחידות מיחידות, ופורטים עשרת כשהיחידות נגמרות.',
+    ],
+  },
   addAcademy: {
     subtitle: 'לומדים חיבור, צעד אחר צעד',
     pick: 'בחרו קורס',
@@ -1850,6 +2078,10 @@ const he: Strings = {
     meaningTens: { title: 'עשרות ואחדות', text: 'כל מקל ארוך הוא עשר, כל נקודה היא אחת. מחברים את העשרות, ואז את האחדות.' },
     countOn: { title: 'ממשיכים לספור', text: (big, small) => `מתחילים מ־${big}, וסופרים עוד ${small}.` },
     swapAdd: { title: 'מתחילים מהגדול', text: (x, y) => `${ltr(`${x} + ${y}`)} זה כמו ${ltr(`${y} + ${x}`)}. להתחיל מ־${y} יותר מהר!` },
+    meaningSub: { title: 'מורידים', text: (x, y) => `${x} נקודות, ו־${y} מהן הולכות. כמה נשארו?` },
+    meaningTensSub: { title: 'עשרות ואחדות', text: 'כל מקל ארוך הוא עשר, כל נקודה היא אחת. מורידים עשרות מהעשרות, ואז אחדות מהאחדות.' },
+    countBack: { title: 'סופרים אחורה', text: (x, y) => `מתחילים מ־${x}, וסופרים ${y} אחורה.` },
+    thinkAdd: { title: 'חושבים על החיבור', text: (x, y) => `כמה צריך להוסיף ל־${y} כדי להגיע ל־${x}? זה מה שנשאר.` },
   },
   hangar: {
     title: 'בחרו חללית',
@@ -1970,13 +2202,25 @@ const he: Strings = {
       spaceAdmiral: { name: 'מאסטר הכפל של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
       spaceAdmiralAdd: { name: 'מאסטר החיבור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
       spaceAdmiralMix: { name: 'מאסטר הכפל והחיבור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
+      spaceAdmiralSub: { name: 'מאסטר החיסור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
+      spaceAdmiralAddsub: { name: 'מאסטר החיבור והחיסור של היקום', desc: 'רפאו את השמש השחורה, האויב האחרון' },
     },
   },
 
   heatmapTitle: 'מפת הכפל שלך',
   heatmapTitleAdd: 'מפת החיבור שלך',
   heatmapTitleMix: 'המפות המשולבות שלך',
+  heatmapTitleSub: 'מפת החיסור שלך',
+  heatmapTitleAddSub: 'מפות החיבור והחיסור שלך',
   heatmapKinds: 'חיבור דו־ספרתי',
+  heatmapKindsSub: 'חיסור דו־ספרתי',
+  subKinds: {
+    'tens-tens': 'עשרות − עשרות',
+    '2d-1d': 'דו־ספרתי − חד־ספרתי',
+    '2d-2d': 'דו־ספרתי − דו־ספרתי',
+    '2d-1d:b': 'דו־ספרתי − חד־ספרתי, עם פריטה',
+    '2d-2d:b': 'דו־ספרתי − דו־ספרתי, עם פריטה',
+  },
   addKinds: {
     'tens+tens': 'עשרות + עשרות',
     '2d+1d': 'דו־ספרתי + חד־ספרתי',
@@ -1985,6 +2229,7 @@ const he: Strings = {
     '2d+2d:c': 'דו־ספרתי + דו־ספרתי, עם המרה',
   },
   heatmapSubtitle: 'ירוק = שולטים · כתום = הגיע הזמן לחזרה · אדום = צריך עוד תרגול',
+  heatmapSubtitleSub: 'בכל משבצת: המספר שלה פחות השורה, ונשאר הטור (\u206613 − 5 = 8\u2069). ירוק = שולטים · כתום = הגיע הזמן לחזרה · אדום = צריך עוד תרגול',
   heatmapFading: 'הגיע הזמן לחזרה',
   heatmapWhy: 'היו 5 תרגילים קשים. הנה איפה כדאי להתאמן:',
   keepPracticing: 'ממשיכים להתאמן',
@@ -2024,10 +2269,14 @@ const he: Strings = {
     seatPilotHint: 'לוח הכפל, נגד השעון',
     seatPilotHintAdd: 'חיבור, נגד השעון',
     seatPilotHintMix: 'לוח הכפל וחיבור, נגד השעון',
+    seatPilotHintSub: 'חיסור, נגד השעון',
+    seatPilotHintAddSub: 'חיבור וחיסור, נגד השעון',
     seatNavigator: '🧭 נווט',
     seatNavigatorHint: 'סופרים קבוצות של כוכבים',
     seatNavigatorHintAdd: 'סופרים שתי קבוצות של כוכבים',
     seatNavigatorHintMix: 'סופרים כוכבים: בקבוצות, או שתי קבוצות ביחד',
+    seatNavigatorHintSub: 'סופרים את הכוכבים שנשארו כשחלק עפים',
+    seatNavigatorHintAddSub: 'סופרים כוכבים: שתי קבוצות ביחד, או אלה שנשארו',
     launchTogether: 'משגרים יחד! 🚀',
     turnOf: (name) => `התור של ${name}`,
     crewLevel: (n) => `שלב צוות ${n}`,
@@ -2039,6 +2288,8 @@ const he: Strings = {
     navTotal: (g, s) => `${g} קבוצות של ${s} = ${g * s}`,
     navAddQuestion: (a, b) => `${a === 1 ? 'כוכב אחד' : `${a} כוכבים`} ועוד ${b}. כמה כוכבים יש?`,
     navAddCountOn: 'בואו נמשיך לספור מהקבוצה הראשונה:',
+    navSubQuestion: (a, b) => `${a} כוכבים, ו־${b} עפים. כמה נשארו?`,
+    navSubCountLeft: 'בואו נספור את הכוכבים שנשארו:',
     dockTitle: 'עגינה!',
     dockIntro: (n) => `הרכיבו ${n} יחד! כל אחד בוחר מספר אחד.`,
     dockTalk: 'דברו ביניכם: אילו שני מספרים יוצרים אותו?',
@@ -2272,6 +2523,8 @@ const he: Strings = {
     admiralSub: 'מעכשיו: מאסטר הכפל של היקום',
     admiralSubAdd: 'מעכשיו: מאסטר החיבור של היקום',
     admiralSubMix: 'מעכשיו: מאסטר הכפל והחיבור של היקום',
+    admiralSubTake: 'מעכשיו: מאסטר החיסור של היקום',
+    admiralSubAddTake: 'מעכשיו: מאסטר החיבור והחיסור של היקום',
     admiralName: (name) => `האדמירל ${name}`,
     statRun: (n) => `🔥 ${n} ברצף`,
     statDodged: (n) => (n === 1 ? '😎 כדור אש אחד נחמק' : `😎 ${n} כדורי אש נחמקו`),
@@ -2286,9 +2539,14 @@ const he: Strings = {
 
 export const STRINGS: Record<Lang, Strings> = { en, he };
 
-/** a tracked fact for people to read: "3 × 7", "3 + 4", or an addition kind's name */
+/** a tracked fact for people to read: "3 × 7", "3 + 4", "9 − 4", or a kind's name */
 export function factLabel(t: Strings, key: string): string {
-  return isAddKind(key) ? t.addKinds[key] : formatFactKey(key);
+  return isAddKind(key) ? t.addKinds[key] : isSubKind(key) ? t.subKinds[key] : formatFactKey(key);
+}
+
+/** a drill read aloud: "3 times 4", "3 plus 4", "9 minus 4" */
+export function drillLabel(t: Strings, op: Mission, x: number, y: number): string {
+  return op === 'add' ? t.drillLabelAdd(x, y) : op === 'sub' ? t.drillLabelSub(x, y) : t.drillLabel(x, y);
 }
 
 export function destinationName(
@@ -2299,10 +2557,10 @@ export function destinationName(
   return config.destinationSector === 1 ? base : `${base} (${t.sector(config.destinationSector)})`;
 }
 
-/** a badge's translated name and description, by badge id (game/achievements.ts); some say it differently on the addition or mixed mission */
+/** a badge's translated name and description, by badge id (game/achievements.ts); some say it differently on another mission (`${id}Add`, `${id}Sub`, `${id}Mix`, `${id}Addsub`) */
 export function badgeText(t: Strings, id: string, mission: PilotMission = 'mul'): { name: string; desc: string } {
   const list = t.badges.list as Record<string, { name: string; desc: string }>;
-  const own = mission === 'add' ? list[`${id}Add`] : mission === 'mix' ? list[`${id}Mix`] : undefined;
+  const own = mission === 'mul' ? undefined : list[`${id}${mission[0].toUpperCase()}${mission.slice(1)}`];
   return own ?? list[id] ?? { name: id, desc: '' };
 }
 
@@ -2316,9 +2574,9 @@ export function shipHint(t: Strings, ship: ShipId): string {
 }
 
 export function missionName(t: Strings, mission: PilotMission): string {
-  return mission === 'add' ? t.missionAdd : mission === 'mix' ? t.missionMix : t.missionMul;
+  return { mul: t.missionMul, add: t.missionAdd, sub: t.missionSub, mix: t.missionMix, addsub: t.missionAddSub }[mission];
 }
 
 export function missionHint(t: Strings, mission: PilotMission): string {
-  return mission === 'add' ? t.missionAddHint : mission === 'mix' ? t.missionMixHint : t.missionMulHint;
+  return { mul: t.missionMulHint, add: t.missionAddHint, sub: t.missionSubHint, mix: t.missionMixHint, addsub: t.missionAddSubHint }[mission];
 }

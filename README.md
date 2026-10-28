@@ -1,7 +1,8 @@
 # 🚀 Multiplication Rocket
 
-A space-rocket game for practicing the multiplication table (1–10), or addition
-(**SpaceSum**: sums to 10, then 20, then 100), in **English and Hebrew**.
+A space-rocket game for practicing the multiplication table (1–10), addition
+(**SpaceSum**: sums to 10, then 20, then 100) or subtraction (within 10, back from 20, then
+within 100), in **English and Hebrew**.
 The rocket is always flying, under northern-lights curtains that change color every level. Every correct answer fuels it and speeds it up, and a streak of
 correct answers makes it go faster still: stars stretch into streaks, the screen motion-blurs,
 and the engine plume grows hotter. A wrong answer makes it brake and slow down. Fill the tank to
@@ -366,13 +367,14 @@ The game is paused while the tour is open, and its music (the About page's) play
 [`src/components/how/`](src/components/how/), and the plan is
 [`docs/plans/2026-10-22-how-it-works.md`](docs/plans/2026-10-22-how-it-works.md).
 
-## Three missions: ×, + (SpaceSum) or both mixed
+## Missions: ×, + (SpaceSum), −, or mixed
 
 Each pilot picks a mission when they're created: **✖️ Multiplication** (the times tables, 1–10),
-**➕ Addition**, or **×+ Mixed**. Each mission keeps its own journey (its
+**➕ Addition**, **➖ Subtraction**, **×+ Mixed** or **+− Plus & Minus** (see
+[Subtraction](#subtraction-a--mission-and--mixed)). Each mission keeps its own journey (its
 level, fuel and streaks), but what a pilot knows is theirs in all of them: a fact mastered in ×
 is mastered in Mixed too, on its practice map and in its spaced review. The cockpit's Pilot screen
-(⚙️) has the three side by side, each at its own level with a bar of its facts mastered; tapping
+(⚙️) has them side by side, each at its own level with a bar of its facts mastered; tapping
 another flies off in it, back where they were (its sums as far on as the sums they already know
 open). Their pilot card in the launch bay shows the other missions they've flown, and editing them
 (✏️) switches too. A reset is the mission's: its journey and the facts it practises (Mixed's, all).
@@ -427,6 +429,34 @@ Addition climbs three stages, shown under the destination:
   to a × pilot. In **Split Sky**, an addition host's game has each phone count its own group of
   stars (in rows of ten), then both add the two together. Eclipse Hunters (common multiples) and
   the Academy stay multiplication only.
+
+## Subtraction: a − mission and +− mixed
+
+Subtraction is the step before division. Pilots can pick **➖ Subtraction** or **+− Plus & Minus**
+(each question a sum or a difference, about half each). A difference is never negative, and its
+order is never swapped. It climbs three stages of its own (a +− pilot climbs both, each as its own
+facts are mastered):
+
+| Stage | Range | Example | What's being learned |
+| --- | --- | --- | --- |
+| 1 | take away within 10 | 7 − 3 | taking away, counting back, think of the sum |
+| 2 | back from 20 | 13 − 5 | back to ten first: 13 − 3 − 2 |
+| 3 | numbers up to 100 | 52 − 27 | tens then ones, breaking a ten (borrowing) |
+
+- **The practice map** reads the addition table backwards: row b, column d holds b + d, the number
+  taken from (`13 − 5` sits at 5, 8). Stage 3 tracks kinds (tens − tens, two-digit − one- or
+  two-digit, with and without borrowing).
+- **Hints** count back, use the sum (`15 − 7 → 7 + ? = 15`), go back to ten first, or take the tens
+  then the ones. **A miss** shows the stars taken away from ten-frames, or rods and dots with a ten
+  broken into ones. The ship's computer thinks it through the same way, and the wrong options are
+  the usual slips (one off, a ten off, adding instead).
+- **The Deep Space Academy** has three subtraction courses, one per stage: *Take away within 10*,
+  *Back from 20* and *Within 100*.
+- **Modes:** the Wormhole, Meteor Shower, Space Traffic, the Canyon Run, Crew Flight, Monster Sun,
+  Split Sky and the Black Sun all play with differences. The other bonus rounds have no − version
+  yet: a − pilot's rotation skips them, and on +− they're played with sums.
+
+The plan is [`docs/plans/2026-10-28-subtraction.md`](docs/plans/2026-10-28-subtraction.md).
 
 ## Pilot profiles (siblings)
 

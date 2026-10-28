@@ -30,5 +30,13 @@ export function stepText(step: ThinkStep, c: Strings['computer'], t: Strings, qu
       return { title: c.countOn.title, text: c.countOn.text(step.big, step.small) };
     case 'swapAdd':
       return { title: c.swapAdd.title, text: c.swapAdd.text(step.x, step.y), math: step.math };
+    case 'meaningSub':
+      return { title: c.meaningSub.title, text: c.meaningSub.text(step.x, step.y) };
+    case 'meaningTensSub':
+      return { title: c.meaningTensSub.title, text: c.meaningTensSub.text };
+    case 'countBack':
+      return { title: c.countBack.title, text: c.countBack.text(step.x, step.y) };
+    case 'thinkAdd':
+      return { title: c.thinkAdd.title, text: c.thinkAdd.text(step.x, step.y), math: step.math };
   }
 }

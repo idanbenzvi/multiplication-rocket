@@ -1861,7 +1861,7 @@ function newParticle(rho: number, turn: number) {
 function numberText(mission: PilotMission): string {
   const r = (n: number) => Math.floor(Math.random() * n);
   if (Math.random() < 0.2) return String(r(10));
-  return pickOp(mission) === 'add' ? String(2 + r(60)) : String((1 + r(10)) * (1 + r(10)));
+  return pickOp(mission) !== 'mul' ? String(2 + r(60)) : String((1 + r(10)) * (1 + r(10)));
 }
 
 function blast(x: number, y: number, born: number, life: number, size: number, color: string, sparks: number): Blast {

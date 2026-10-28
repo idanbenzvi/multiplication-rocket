@@ -11,6 +11,7 @@ import { DEV_MODE } from '../dev/devMode';
 import { useT } from '../i18n/useLang';
 import { playTrack } from '../audio/useAudio';
 import { flyOffTo, type SheetLeave } from './warpTransition';
+import { opsOf } from '../game/mission';
 
 /**
  * The Black Sun for the active pilot: it opens once every fact of their
@@ -51,7 +52,7 @@ export interface GameMode {
 export function useGameModes() {
   const t = useT();
   const pilots = useProfiles((s) => s.profiles.length);
-  // an addition pilot's two-phone game is Split Sky (Eclipse Hunters is about multiples)
+  // the two-phone game of a pilot without × is Split Sky (Eclipse Hunters is about multiples)
   const mission = useMission();
   const boss = useBossAccess();
   const modes: GameMode[] = [
@@ -68,7 +69,7 @@ export function useGameModes() {
       key: 'sky',
       icon: '📱📱',
       name: t.sky.card,
-      hint: mission === 'add' ? t.sky.games.split.name : t.sky.cardHint,
+      hint: opsOf(mission).includes('mul') ? t.sky.cardHint : t.sky.games.split.name,
       disabled: false,
       leave: 'warp',
       run: (card) => flyOffTo(() => useSkyStore.getState().openSky(), card),

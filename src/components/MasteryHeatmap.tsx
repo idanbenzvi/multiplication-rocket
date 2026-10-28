@@ -2,8 +2,10 @@ import { useState } from 'react';
 import type { FactStat } from '../game/types';
 import { masteryCellStyle as cellStyle } from '../game/masteryStats';
 import { dayNumber, factStatus } from '../game/memory';
-import { applyOp, OP_SYMBOL, pairKey, type Mission, type PilotMission } from '../game/mission';
+import { applyOp, OP_SYMBOL, opsOf, pairKey, type Mission, type PilotMission } from '../game/mission';
 import { ADD_KINDS, type AddKind } from '../game/addition';
+import { SUB_KINDS, type SubKind } from '../game/subtraction';
+import { missionName, type Strings } from '../i18n/strings';
 import { useT } from '../i18n/useLang';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
@@ -28,9 +30,26 @@ const KIND_EXAMPLES: Record<AddKind, string> = {
   '2d+2d:c': '37 + 45',
 };
 
+/** and of each two-digit kind of difference, for the subtraction map */
+const SUB_KIND_EXAMPLES: Record<SubKind, string> = {
+  'tens-tens': '70 − 30',
+  '2d-1d': '58 − 3',
+  '2d-2d': '58 − 23',
+  '2d-1d:b': '52 − 7',
+  '2d-2d:b': '52 − 27',
+};
+
+/** the map's title for a mission */
+function mapTitle(t: Strings, mission: PilotMission): string {
+  return { mul: t.heatmapTitle, add: t.heatmapTitleAdd, sub: t.heatmapTitleSub, mix: t.heatmapTitleMix, addsub: t.heatmapTitleAddSub }[mission];
+}
+
 // The addition map is the same 10 × 10 grid (sums instead of products),
-// plus a row for the kinds of two-digit sum. A mixed mission has both, a tab
-// each.
+// plus a row for the kinds of two-digit sum. The subtraction map is that
+// grid read backwards: a row for each number taken away and a column for
+// each left, so each square is the number taken from (row 5, column 8: 13,
+// for 13 − 5 = 8), and a row for the kinds of two-digit difference. A mixed
+// mission has both of its own, a tab each.
 export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, auto = false }: Props) {
   const t = useT();
   useBack(onContinue);
@@ -39,7 +58,7 @@ export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, aut
       <div className="heatmap-card">
         <h2>
           <GradientText colors={['#7ec4b0', '#ffd77a', '#ff9d76', '#7ec4b0']} animationSpeed={5}>
-            {pilotMission === 'mix' ? t.heatmapTitleMix : pilotMission === 'add' ? t.heatmapTitleAdd : t.heatmapTitle}
+            {mapTitle(t, pilotMission)}
           </GradientText>
         </h2>
         {auto && <p className="heatmap-why">{t.heatmapWhy}</p>}
@@ -69,28 +88,35 @@ export function MasteryHeatmap({ mastery, mission: pilotMission, onContinue, aut
  */
 export function MasteryMap({ mastery, mission: pilotMission }: { mastery: Record<string, FactStat>; mission: PilotMission }) {
   const t = useT();
-  const [tab, setTab] = useState<Mission>('mul');
-  const mission: Mission = pilotMission === 'mix' ? tab : pilotMission;
+  const ops = opsOf(pilotMission);
+  const [tab, setTab] = useState<Mission>(ops[0]);
+  const mission: Mission = ops.includes(tab) ? tab : ops[0];
   const sym = OP_SYMBOL[mission];
   const day = dayNumber();
+  const taking = mission === 'sub';
+  // a square's problem: x op y, or for subtraction, (x + y) − x, leaving y
+  const problem = (x: number, y: number): [number, number] => (taking ? [x + y, x] : [x, y]);
+  const kinds = taking ? SUB_KINDS : mission === 'add' ? ADD_KINDS : [];
+  const kindName = (k: string) => (taking ? t.subKinds[k as SubKind] : t.addKinds[k as AddKind]);
+  const kindExample = (k: string) => (taking ? SUB_KIND_EXAMPLES[k as SubKind] : KIND_EXAMPLES[k as AddKind]);
   return (
     <>
-    {pilotMission === 'mix' && (
+    {ops.length > 1 && (
       <div className="heatmap-tabs" role="tablist">
-        {(['mul', 'add'] as Mission[]).map((op) => (
-          <button key={op} type="button" role="tab" aria-selected={tab === op} className={`heatmap-tab ${tab === op ? 'is-on' : ''}`} onClick={() => setTab(op)}>
-            {OP_SYMBOL[op]} {op === 'add' ? t.missionAdd : t.missionMul}
+        {ops.map((op) => (
+          <button key={op} type="button" role="tab" aria-selected={mission === op} className={`heatmap-tab ${mission === op ? 'is-on' : ''}`} onClick={() => setTab(op)}>
+            {OP_SYMBOL[op]} {missionName(t, op)}
           </button>
         ))}
       </div>
     )}
-    <p className="heatmap-subtitle">{t.heatmapSubtitle}</p>
+    <p className="heatmap-subtitle">{taking ? t.heatmapSubtitleSub : t.heatmapSubtitle}</p>
 
     <div className="heatmap-grid-wrap" dir="ltr">
       <table className="heatmap-grid">
         <thead>
           <tr>
-            <th />
+            <th className={taking ? 'heatmap-corner' : undefined}>{taking ? '−\u2009=' : null}</th>
             {NUMBERS.map((y) => (
               <th key={y}>{y}</th>
             ))}
@@ -101,17 +127,18 @@ export function MasteryMap({ mastery, mission: pilotMission }: { mastery: Record
             <tr key={x}>
               <th>{x}</th>
               {NUMBERS.map((y) => {
-                const stat = mastery[pairKey(mission, x, y)];
+                const [a, b] = problem(x, y);
+                const stat = mastery[pairKey(mission, a, b)];
                 const status = factStatus(stat, day);
-                const value = applyOp(mission, x, y);
+                const value = applyOp(mission, a, b);
                 return (
                   <td
                     key={y}
                     className={`is-${status}`}
                     style={cellStyle(stat, day)}
-                    title={`${x} ${sym} ${y} = ${value}${status === 'fading' ? ` · ${t.heatmapFading}` : ''}`}
+                    title={`${a} ${sym} ${b} = ${value}${status === 'fading' ? ` · ${t.heatmapFading}` : ''}`}
                   >
-                    {value}
+                    {taking ? a : value}
                   </td>
                 );
               })}
@@ -120,21 +147,21 @@ export function MasteryMap({ mastery, mission: pilotMission }: { mastery: Record
         </tbody>
       </table>
     </div>
-    {mission === 'add' && (
+    {kinds.length > 0 && (
       <div className="heatmap-kinds">
-        <div className="heatmap-kinds-title">{t.heatmapKinds}</div>
+        <div className="heatmap-kinds-title">{taking ? t.heatmapKindsSub : t.heatmapKinds}</div>
         <div className="heatmap-kinds-row">
-          {ADD_KINDS.map((k) => (
+          {kinds.map((k) => (
             <div
               key={k}
               className={`heatmap-kind is-${factStatus(mastery[k], day)}`}
               style={cellStyle(mastery[k], day)}
-              title={factStatus(mastery[k], day) === 'fading' ? `${t.addKinds[k]} · ${t.heatmapFading}` : t.addKinds[k]}
+              title={factStatus(mastery[k], day) === 'fading' ? `${kindName(k)} · ${t.heatmapFading}` : kindName(k)}
             >
               <bdi dir="ltr" className="heatmap-kind-example">
-                {KIND_EXAMPLES[k]}
+                {kindExample(k)}
               </bdi>
-              <span className="heatmap-kind-name">{t.addKinds[k]}</span>
+              <span className="heatmap-kind-name">{kindName(k)}</span>
             </div>
           ))}
         </div>

@@ -8,11 +8,12 @@ import Hyperspeed from './reactbits/Hyperspeed';
 import { LAUNCH_WARP } from './launchWarp';
 import GradientText from './reactbits/GradientText';
 import StarBorder from './reactbits/StarBorder';
+import type { StageStep } from '../game/stages';
 
 interface Props {
   completedLevel: number;
-  /** this launch opened a new addition stage */
-  newStage?: number;
+  /** the addition or subtraction stage this launch opened */
+  newStage?: StageStep;
   onContinue: () => void;
 }
 
@@ -57,7 +58,7 @@ export function LaunchOverlay({ completedLevel, newStage, onContinue }: Props) {
             transition={{ delay: 1.6, type: 'spring', stiffness: 300, damping: 12 }}
           >
             <div className="launch-stage-up-title">{t.stageUpTitle}</div>
-            <div>{t.stageUp(newStage)}</div>
+            <div>{newStage.op === 'add' ? t.stageUp(newStage.stage) : t.subStageUp(newStage.stage)}</div>
           </motion.div>
         )}
         <StarBorder

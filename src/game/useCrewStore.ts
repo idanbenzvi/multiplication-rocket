@@ -11,13 +11,14 @@ import {
   fuelPerAnswer,
   MAX_DOCK_TRIES,
   navigatorAddPool,
+  navigatorSubPool,
   navigatorChoices,
   poolFor,
   type Docking,
   type DockResult,
   type Seat,
 } from './crew';
-import { covers, pairKey, pickOp } from './mission';
+import { covers, opsOf, pairKey, pickOp } from './mission';
 import { pickFact } from './questions';
 import { clampStage } from './addition';
 import { missionOf, timedBoostOf } from '../profiles/useProfiles';
@@ -156,7 +157,7 @@ function questionFor(members: [CrewMember, CrewMember], member: 0 | 1): CrewQues
   const fact =
     seat === 'pilot'
       ? pickFact(op, progress)
-      : pickNextFact(op === 'add' ? navigatorAddPool(mastery) : poolFor(seat, mastery), mastery);
+      : pickNextFact(op === 'add' ? navigatorAddPool(mastery) : op === 'sub' ? navigatorSubPool(mastery) : poolFor(seat, mastery), mastery);
   const { x, y } = randomizeOrder(fact);
   return { kind: 'question', member, fact, x, y, askedAt: gameNow(), choices: seat === 'navigator' ? navigatorChoices(x, y, op) : [] };
 }
@@ -181,14 +182,20 @@ function record(profileId: string, factKey: string, correct: boolean, ms: number
   appendToLog(profileId, [{ fact: factKey, correct, ms, source: 'crew' }]);
 }
 
-// Docking is played together, so in a crew with an addition pilot it's an
-// addition round (at the stage of whoever doing sums, a mixed pilot too, is
-// further back): the one both can play.
+// Docking is played together, so in a crew with a pilot whose mission has
+// no × (+, −, or +−) it's an addition round (at the stage of whoever doing
+// sums or differences, a mixed pilot too, is further back): the one both can
+// play.
 function dockingFor(members: [CrewMember, CrewMember]): Docking {
   const withNavigator = members.some((m) => m.seat === 'navigator');
-  const adders = members.filter((m) => missionOf(m.profileId) === 'add');
+  const adders = members.filter((m) => !opsOf(missionOf(m.profileId)).includes('mul'));
   if (adders.length > 0) {
-    const stages = members.filter((m) => missionOf(m.profileId) !== 'mul').map((m) => clampStage(loadProgressFor(m.profileId).stage));
+    const stages = members
+      .filter((m) => missionOf(m.profileId) !== 'mul')
+      .map((m) => {
+        const progress = loadProgressFor(m.profileId);
+        return missionOf(m.profileId) === 'sub' ? clampStage(progress.subStage) : clampStage(progress.stage);
+      });
     const lead = adders.find((m) => m.seat === 'pilot') ?? adders[0];
     return buildDocking(loadProgressFor(lead.profileId).mastery, withNavigator, 'add', Math.min(...stages));
   }

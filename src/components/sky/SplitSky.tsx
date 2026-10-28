@@ -20,6 +20,7 @@ import { ModeArrival } from '../arrival/ModeArrival';
 import { useArrivalCard, useCardEntrance, type ArrivalCard } from '../arrival/arrivalCard';
 import './sky.css';
 import { useBack } from '../../native/back';
+import { opsOf } from '../../game/mission';
 
 const other = (s: Side): Side => (s === 'left' ? 'right' : 'left');
 
@@ -61,8 +62,8 @@ function GamePicker() {
   const t = useT();
   const game = useSkyStore((s) => s.state.game);
   const chooseGame = useSkyStore((s) => s.chooseGame);
-  // Eclipse Hunters is about multiples: a + host plays Split Sky only
-  const games: DuoGame[] = useMission() === 'add' ? ['split'] : ['split', 'eclipse'];
+  // Eclipse Hunters is about multiples: a host whose mission has no × plays Split Sky only
+  const games: DuoGame[] = opsOf(useMission()).includes('mul') ? ['split', 'eclipse'] : ['split'];
   return (
     <div className="settings-segment sky-games">
       {games.map((g) => (

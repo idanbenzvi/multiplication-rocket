@@ -18,10 +18,16 @@ const rand = (n: number) => Math.floor(Math.random() * n);
 
 export function glyphText(mission: PilotMission): string {
   const r = Math.random();
-  if (pickOp(mission) === 'add') {
+  const op = pickOp(mission);
+  if (op === 'add') {
     const a = 1 + rand(19);
     const b = 1 + rand(19);
     return r < 0.45 ? `${a}+${b}` : r < 0.8 ? String(a + b) : String(rand(10));
+  }
+  if (op === 'sub') {
+    const b = 1 + rand(10);
+    const a = b + 1 + rand(10);
+    return r < 0.45 ? `${a}−${b}` : r < 0.8 ? String(a - b) : String(rand(10));
   }
   const a = 1 + rand(10);
   const b = 1 + rand(10);

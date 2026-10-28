@@ -26,9 +26,9 @@ import { LanguageOffer } from './components/LanguageOffer';
 import { Story } from './components/story/Story';
 import { useStory } from './components/story/useStory';
 import { activeProfile, pilotName, useMission, useProfileGateOpen, useTimedBoost } from './profiles/useProfiles';
-import { missionOfKey } from './game/mission';
+import { missionOfKey, opsOf } from './game/mission';
+import { stagesOf } from './game/stages';
 import { missionName } from './i18n/strings';
-import { clampStage } from './game/addition';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
 import { haptics } from './audio/haptics';
@@ -50,6 +50,7 @@ import { prepareLaunchWarp } from './components/launchWarp';
 import { PauseController } from './components/PauseController';
 import { DeepSpaceAcademy } from './components/academy/DeepSpaceAcademy';
 import { AdditionAcademy } from './components/academy/AdditionAcademy';
+import { SubtractionAcademy } from './components/academy/SubtractionAcademy';
 import { CrewFlight } from './components/crew/CrewFlight';
 import { CrewSetup } from './components/crew/CrewSetup';
 import { SplitSky } from './components/sky/SplitSky';
@@ -101,6 +102,7 @@ function App() {
   const mission = useMission();
   const stageUp = useGameStore((s) => s.stageUp);
   const question = useGameStore((s) => s.question);
+  const academyOp = question ? missionOfKey(question.fact.key) : opsOf(mission)[0];
   const feedback = useGameStore((s) => s.feedback);
   const justLaunched = useGameStore((s) => s.justLaunched);
   const showHeatmap = useGameStore((s) => s.showHeatmap);
@@ -293,7 +295,7 @@ function App() {
           <SpaceTimesLogo className="hud-logo-art" />
           {IS_PREVIEW && <span className="preview-badge">PREVIEW</span>}
         </div>
-        {!crewActive && <LevelBanner level={displayLevel} stage={mission !== 'mul' ? clampStage(progress.stage) : undefined} />}
+        {!crewActive && <LevelBanner level={displayLevel} stages={stagesOf(mission, progress)} />}
         {/* on a phone or a tablet, only the pilot and ⚙️: the rest is in the cockpit (About stays, out of sight, for the cockpit to open) */}
         <div className={`hud-topbar-right ${isTouchDevice ? 'is-compact' : ''}`}>
           {/* solo pilot's own things: the crew bar shows both pilots instead */}
@@ -346,8 +348,10 @@ function App() {
       {!gateOpen && crewActive && <CrewFlight onBurst={burstAt} />}
       {academyOpen &&
         // (on a mixed mission, the Academy for the kind of question showing)
-        ((mission === 'mix' ? missionOfKey(question?.fact.key ?? '') : mission) === 'add' ? (
+        (academyOp === 'add' ? (
           <AdditionAcademy onClose={closeAcademy} onBurst={burstAt} />
+        ) : academyOp === 'sub' ? (
+          <SubtractionAcademy onClose={closeAcademy} onBurst={burstAt} />
         ) : (
           <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />
         ))}
@@ -428,7 +432,7 @@ function App() {
           {justLaunched && (
             <LaunchOverlay
               completedLevel={progress.level - 1}
-              newStage={stageUp ? clampStage(progress.stage) : undefined}
+              newStage={stageUp ?? undefined}
               onContinue={continueAfterLaunch}
             />
           )}

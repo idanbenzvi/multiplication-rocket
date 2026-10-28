@@ -4,6 +4,7 @@ import { useT } from '../../i18n/useLang';
 import { useMission } from '../../profiles/useProfiles';
 import { fadeDays, RECENT_ANSWERS, REVIEW_DAYS, review, TOP_BOX } from '../../game/memory';
 import { sfx } from '../../audio/sfx';
+import { opsOf } from '../../game/mission';
 
 // The spaced review's boxes (game/memory.ts), with a fact in them to answer
 // and let days go by for: the game's own rules move it, a box up when it's
@@ -25,7 +26,7 @@ const START: Card = { last: '010', box: 0, day: 1, note: null };
 export function MemoryDemo() {
   const t = useT().how.memory;
   const mission = useMission();
-  const fact = mission === 'add' ? '8 + 7' : '7 × 8';
+  const fact = { mul: '7 × 8', add: '8 + 7', sub: '15 − 7' }[opsOf(mission)[0]];
   const [card, setCard] = useState<Card>(START);
   const { box, since = card.day, day } = card;
   const waited = day - since;

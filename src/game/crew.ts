@@ -3,7 +3,8 @@ import { buildFactPool, isMastered, pickNextFact } from './facts';
 import { DEFAULT_PACE_MS, MAX_SPEED_FACTOR, MIN_SPEED_FACTOR, speedFactor } from './scoring';
 import { applyOp, type Mission } from './mission';
 import { additionTable } from './addition';
-import { additionDistractors } from './distractors';
+import { subtractionTable } from './subtraction';
+import { additionDistractors, subtractionDistractors } from './distractors';
 
 // Crew Flight: two pilots fly one rocket on one device, taking turns. Each
 // sits in a seat: the Pilot gets the usual timed drills, the Navigator (a
@@ -61,6 +62,11 @@ export function navigatorAddPool(mastery: Record<string, FactStat>, max = naviga
   return additionTable(1).filter((f) => f.answer <= max);
 }
 
+/** a subtraction navigator's: taking away from as many stars as their sums would go up to */
+export function navigatorSubPool(mastery: Record<string, FactStat>, max = navigatorAddMax(mastery)): Fact[] {
+  return subtractionTable(1).filter((f) => f.a <= Math.max(max, 5));
+}
+
 /** seats for two pilots by their solo levels: the one further along flies */
 export function suggestSeats(levelA: number, levelB: number): [Seat, Seat] {
   if (levelA === levelB) return ['pilot', 'pilot'];
@@ -108,6 +114,7 @@ function shuffle<T>(items: T[]): T[] {
 // together, only the miscounting).
 export function navigatorChoices(groups: number, size: number, mission: Mission = 'mul'): number[] {
   if (mission === 'add') return shuffle([groups + size, ...additionDistractors(groups, size, 3)]);
+  if (mission === 'sub') return shuffle([groups - size, ...subtractionDistractors(groups, size, 3)]);
   const answer = groups * size;
   const slips = shuffle([...new Set([answer + size, answer - size, answer + 1, answer - 1, answer + 2])]).filter(
     (v) => v > 0 && v !== answer,

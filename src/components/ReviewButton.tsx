@@ -4,6 +4,7 @@ import { masteryCellStyle, masterySummary } from '../game/masteryStats';
 import { dayNumber, factStatus } from '../game/memory';
 import { applyOp, OP_SYMBOL, opsOf, pairKey, type PilotMission } from '../game/mission';
 import { useT } from '../i18n/useLang';
+import type { Strings } from '../i18n/strings';
 
 interface Props {
   mastery: Record<string, FactStat>;
@@ -17,6 +18,11 @@ const NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 // read-only practice map (and keyboard focus does too) without pausing the
 // game; clicking still opens the full review. Touch has no hover, so a tap
 // just opens the full review as before. A mixed mission's peek has both maps.
+/** the peek's title for a mission */
+function peekTitle(t: Strings, mission: PilotMission): string {
+  return { mul: t.reviewPeekTitle, add: t.reviewPeekTitleAdd, sub: t.reviewPeekTitleSub, mix: t.reviewPeekTitleMix, addsub: t.reviewPeekTitleAddSub }[mission];
+}
+
 export function ReviewButton({ mastery, mission, onClick }: Props) {
   const t = useT();
   const [peek, setPeek] = useState(false);
@@ -46,18 +52,20 @@ export function ReviewButton({ mastery, mission, onClick }: Props) {
       </button>
       {peek && summary && (
         <div className="review-peek" id="review-peek" role="tooltip">
-          <div className="review-peek-title">{mission === 'add' ? t.reviewPeekTitleAdd : mission === 'mix' ? t.reviewPeekTitleMix : t.reviewPeekTitle}</div>
-          <div className={`review-peek-maps ${mission === 'mix' ? 'is-two' : ''}`}>
+          <div className="review-peek-title">{peekTitle(t, mission)}</div>
+          <div className={`review-peek-maps ${opsOf(mission).length > 1 ? 'is-two' : ''}`}>
             {opsOf(mission).map((op) => (
               <div key={op} className="review-peek-map">
-                {mission === 'mix' && <div className="review-peek-op">{OP_SYMBOL[op]}</div>}
+                {opsOf(mission).length > 1 && <div className="review-peek-op">{OP_SYMBOL[op]}</div>}
                 <div className="review-peek-grid" dir="ltr">
                   {NUMBERS.map((x) =>
                     NUMBERS.map((y) => {
-                      const stat = mastery[pairKey(op, x, y)];
+                      // (subtraction's grid is the table read backwards: x taken from x + y)
+                      const [a, b] = op === 'sub' ? [x + y, x] : [x, y];
+                      const stat = mastery[pairKey(op, a, b)];
                       return (
                         <span key={`${x}-${y}`} className={`review-peek-cell is-${factStatus(stat, day)}`} style={masteryCellStyle(stat, day)}>
-                          {applyOp(op, x, y)}
+                          {op === 'sub' ? a : applyOp(op, a, b)}
                         </span>
                       );
                     }),

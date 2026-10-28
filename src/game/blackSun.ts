@@ -1,7 +1,9 @@
 import type { FactStat } from './types';
 import { masterySummary } from './masteryStats';
-import { pairKey, parsePair, pickOp, type PilotMission } from './mission';
-import { additionTrackKey, pickAdditionFact } from './addition';
+import { applyOp, commutes, missionOfKey, pairKey, parsePair, pickOp, type PilotMission } from './mission';
+import { pickAdditionFact } from './addition';
+import { pickSubtractionFact } from './subtraction';
+import { trackKeyOf } from './tracking';
 import { dayNumber, pickWeight } from './memory';
 
 // The Black Sun: the final boss, for a pilot who has mastered every fact of
@@ -122,27 +124,25 @@ function toughness(a: number, b: number): number {
  */
 export function nextBossQuestion(fight: BossFight, mission: PilotMission, mastery: Record<string, FactStat>, rand: () => number = Math.random): BossQuestion {
   const flip = rand() < 0.5;
-  const shown = (key: string, a: number, b: number, answer: number, track: string, retry: boolean): BossQuestion => ({
-    key,
-    track,
-    x: flip ? b : a,
-    y: flip ? a : b,
-    answer,
-    retry,
-  });
+  const shown = (key: string, a: number, b: number, answer: number, track: string, retry: boolean): BossQuestion => {
+    const turn = flip && commutes(missionOfKey(key));
+    return { key, track, x: turn ? b : a, y: turn ? a : b, answer, retry };
+  };
 
   const due = fight.retries.find((r) => r.due <= fight.answered);
   const pair = due && parsePair(due.key);
   if (pair) {
-    const add = pair.mission === 'add';
-    return shown(due.key, pair.a, pair.b, add ? pair.a + pair.b : pair.a * pair.b, add ? additionTrackKey(pair.a, pair.b) : due.key, true);
+    const track = pair.mission === 'mul' ? due.key : trackKeyOf(pair.mission, pair.a, pair.b);
+    return shown(due.key, pair.a, pair.b, applyOp(pair.mission, pair.a, pair.b), track, true);
   }
 
-  if (pickOp(mission, rand) === 'add') {
+  const op = pickOp(mission, rand);
+  if (op !== 'mul') {
     // (tries a few times for one not asked lately)
-    let fact = pickAdditionFact(3, mastery, fight.recent[fight.recent.length - 1], rand);
-    for (let i = 0; i < 6 && fight.recent.includes(pairKey('add', fact.a, fact.b)); i++) fact = pickAdditionFact(3, mastery, undefined, rand);
-    return shown(pairKey('add', fact.a, fact.b), fact.a, fact.b, fact.a + fact.b, additionTrackKey(fact.a, fact.b), false);
+    const pickAt3 = (avoid?: string) => (op === 'add' ? pickAdditionFact(3, mastery, avoid, rand) : pickSubtractionFact(3, mastery, avoid, rand));
+    let fact = pickAt3(fight.recent[fight.recent.length - 1]);
+    for (let i = 0; i < 6 && fight.recent.includes(pairKey(op, fact.a, fact.b)); i++) fact = pickAt3();
+    return shown(pairKey(op, fact.a, fact.b), fact.a, fact.b, fact.answer, trackKeyOf(op, fact.a, fact.b), false);
   }
 
   const [lo, hi] = fight.run >= RUN_TO_WIN - CHECKPOINT_EVERY ? [3, 9] : [2, 10];

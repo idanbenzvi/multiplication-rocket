@@ -4,6 +4,7 @@ import type { Question } from '../game/useGameStore';
 import { DEFAULT_PACE_MS, speedZone } from '../game/scoring';
 import { MultiplicationGrid } from './MultiplicationGrid';
 import { AdditionExplainer } from './AdditionExplainer';
+import { SubtractionExplainer } from './SubtractionExplainer';
 import { missionOfKey, OP_SYMBOL } from '../game/mission';
 import { useT } from '../i18n/useLang';
 import ElectricBorder from './reactbits/ElectricBorder';
@@ -319,7 +320,13 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
 
           {feedback === 'wrong' && (
             <div className="wrong-explainer">
-              {mission === 'add' ? <AdditionExplainer x={question.x} y={question.y} /> : <MultiplicationGrid x={question.x} y={question.y} />}
+              {mission === 'add' ? (
+                <AdditionExplainer x={question.x} y={question.y} />
+              ) : mission === 'sub' ? (
+                <SubtractionExplainer x={question.x} y={question.y} />
+              ) : (
+                <MultiplicationGrid x={question.x} y={question.y} />
+              )}
               <button ref={continueButtonRef} type="submit" className="continue-button">
                 {t.gotItContinue} {!touch && <span className="continue-key">(Enter)</span>}
               </button>

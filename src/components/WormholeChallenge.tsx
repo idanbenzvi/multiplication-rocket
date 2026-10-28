@@ -7,6 +7,7 @@ import { OP_SYMBOL } from '../game/mission';
 import { sfx } from '../audio/sfx';
 import { haptics } from '../audio/haptics';
 import { useT } from '../i18n/useLang';
+import { drillLabel } from '../i18n/strings';
 import GradientText from './reactbits/GradientText';
 import { RELEASE_MS, WormholeArrival } from './arrival/WormholeArrival';
 import { portholeCentre } from './arrival/portholeCentre';
@@ -103,7 +104,9 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
               ? t.wormholeOneLeft
               : challenge.mission === 'add'
                 ? t.wormholeInstructionsAdd(challenge.target)
-                : t.wormholeInstructions(challenge.target)}
+                : challenge.mission === 'sub'
+                  ? t.wormholeInstructionsSub(challenge.target)
+                  : t.wormholeInstructions(challenge.target)}
         </div>
         <div className="wormhole-progress" aria-live="polite">
           {Array.from({ length: CORRECT_PICKS }, (_, i) => (
@@ -147,7 +150,7 @@ export function WormholeChallenge({ challenge, onSuccess, onCollapse, onBurst }:
                   className={`drill-bubble ${state}`}
                   onClick={(e) => pick(drill, e.currentTarget)}
                   disabled={done || isFound || isMissed}
-                  aria-label={`${i + 1}: ${challenge.mission === 'add' ? t.drillLabelAdd(drill.x, drill.y) : t.drillLabel(drill.x, drill.y)}`}
+                  aria-label={`${i + 1}: ${drillLabel(t, challenge.mission, drill.x, drill.y)}`}
                   initial={false}
                   animate={
                     isMissed

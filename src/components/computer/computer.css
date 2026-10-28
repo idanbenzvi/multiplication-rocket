@@ -284,6 +284,15 @@
   color: #ffd77a;
   box-shadow: 0 0 12px rgba(255, 215, 122, 0.35);
 }
+/* taken away: each dot fades and is crossed out in turn */
+.think-gone {
+  animation: thinkGone 0.4s ease-out both;
+}
+@keyframes thinkGone {
+  from {
+    opacity: 0;
+  }
+}
 @keyframes thinkHop {
   from {
     opacity: 0;
@@ -296,7 +305,8 @@
   .ship-computer-orb,
   .ship-computer-orb-button,
   .ship-computer-glyph,
-  .think-hop {
+  .think-hop,
+  .think-gone {
     animation: none;
   }
 }

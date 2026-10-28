@@ -23,8 +23,10 @@ export type ThinkVisual =
   | { kind: 'groups'; rows: number; cols: number }
   /** `a` dots and `b` more, in rows of ten */
   | { kind: 'join'; a: number; b: number }
-  /** two numbers as tens (bars) and ones (dots) */
-  | { kind: 'tens'; a: number; b: number }
+  /** two numbers as tens (bars) and ones (dots), added or (op '−') the second taken from the first */
+  | { kind: 'tens'; a: number; b: number; op?: '+' | '−' }
+  /** `a` dots in rows of ten, the last `b` of them taken away */
+  | { kind: 'takeAway'; a: number; b: number }
   /** a count in steps (null: the one to work out) */
   | { kind: 'hops'; values: Array<number | null> };
 
@@ -37,11 +39,15 @@ export type ThinkStep =
   | { id: 'meaningAdd'; x: number; y: number; visual: ThinkVisual }
   | { id: 'meaningTens'; x: number; y: number; visual: ThinkVisual }
   | { id: 'countOn'; big: number; small: number; visual: ThinkVisual }
-  | { id: 'swapAdd'; x: number; y: number; math: string };
+  | { id: 'swapAdd'; x: number; y: number; math: string }
+  | { id: 'meaningSub'; x: number; y: number; visual: ThinkVisual }
+  | { id: 'meaningTensSub'; x: number; y: number; visual: ThinkVisual }
+  | { id: 'countBack'; x: number; y: number; visual: ThinkVisual }
+  | { id: 'thinkAdd'; x: number; y: number; math: string };
 
 /** the ways to think `x op y` through, for a pilot who knows what's in `mastery` */
 export function thinkSteps(x: number, y: number, op: Mission, mastery: Record<string, FactStat>): ThinkStep[] {
-  return op === 'add' ? additionSteps(x, y) : multiplicationSteps(x, y, mastery);
+  return op === 'add' ? additionSteps(x, y) : op === 'sub' ? subtractionSteps(x, y) : multiplicationSteps(x, y, mastery);
 }
 
 function multiplicationSteps(x: number, y: number, mastery: Record<string, FactStat>): ThinkStep[] {
@@ -89,5 +95,20 @@ function additionSteps(x: number, y: number): ThinkStep[] {
   }
   steps.push({ id: 'trick' });
   if (x < y) steps.push({ id: 'swapAdd', x, y, math: `${x} + ${y}  =  ${y} + ${x}` });
+  return steps;
+}
+
+/** x − y, x the bigger: what it means (dots taken away, or tens and ones), counting back a little, the sum it's the other side of */
+function subtractionSteps(x: number, y: number): ThinkStep[] {
+  const steps: ThinkStep[] = [];
+  if (x <= 20) steps.push({ id: 'meaningSub', x, y, visual: { kind: 'takeAway', a: x, b: y } });
+  else steps.push({ id: 'meaningTensSub', x, y, visual: { kind: 'tens', a: x, b: y, op: '−' } });
+  // counting back from x: a few steps at most
+  if (y >= 2 && y <= 5) {
+    const values: Array<number | null> = Array.from({ length: y }, (_, i) => x - i);
+    steps.push({ id: 'countBack', x, y, visual: { kind: 'hops', values: [...values, null] } });
+  }
+  steps.push({ id: 'trick' });
+  if (x <= 20) steps.push({ id: 'thinkAdd', x, y, math: `${y} + ?  =  ${x}` });
   return steps;
 }

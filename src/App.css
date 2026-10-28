@@ -749,6 +749,50 @@ button:focus-visible {
   border-radius: 50%;
 }
 
+/* the subtraction explainer: what's taken away pops in with the rest, then fades and is crossed out */
+.ten-frame-cell.sub-gone,
+.place-rod.sub-gone,
+.place-dot.sub-gone {
+  position: relative;
+  animation:
+    gridCellPopIn 0.25s ease var(--in, 0ms) forwards,
+    subGone 0.35s ease var(--out, 0ms) forwards;
+}
+.sub-gone::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  opacity: 0;
+  background:
+    linear-gradient(45deg, transparent 44%, #ff8f8f 44% 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, #ff8f8f 44% 56%, transparent 56%);
+  animation: subCross 0.25s ease var(--out, 0ms) forwards;
+}
+@keyframes subGone {
+  to {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+}
+@keyframes subCross {
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ten-frame-cell.sub-gone,
+  .place-rod.sub-gone,
+  .place-dot.sub-gone {
+    animation: none;
+    opacity: 0.3;
+    transform: none;
+  }
+  .sub-gone::after {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .add-explainer-math {
   font-family: var(--font-display);
   font-weight: 600;
@@ -2362,7 +2406,7 @@ button:focus-visible {
   background: rgba(255, 215, 122, 0.15);
   transform: scale(1.08);
 }
-/* the mission: ×, + or both mixed, side by side */
+/* the mission: ×, + or −, then the two mixes below */
 .mission-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2425,6 +2469,25 @@ button:focus-visible {
 .mission-option.is-mix .mission-option-symbol,
 .pilot-card-mission.is-mix {
   background: linear-gradient(90deg, #ffd77a, #8fe6ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mission-option.is-sub.is-on {
+  border-color: #9fe0a8;
+  background: rgba(159, 224, 168, 0.14);
+}
+.mission-option.is-sub .mission-option-symbol,
+.pilot-card-mission.is-sub {
+  color: #9fe0a8;
+}
+.mission-option.is-addsub.is-on {
+  border-color: #b6f0e0;
+  background: rgba(143, 230, 214, 0.14);
+}
+.mission-option.is-addsub .mission-option-symbol,
+.pilot-card-mission.is-addsub {
+  background: linear-gradient(90deg, #8fe6ff, #9fe0a8);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -3821,6 +3884,35 @@ button:focus-visible {
 .ac-star.is-new {
   background: #7ee08f;
   box-shadow: 0 0 12px rgba(126, 224, 143, 0.9);
+}
+/* the subtraction Academy: stars taken away are crossed out */
+.ac-star.is-gone {
+  position: relative;
+  box-shadow: none;
+}
+.ac-star.is-gone::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background:
+    linear-gradient(45deg, transparent 44%, #ff8f8f 44% 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, #ff8f8f 44% 56%, transparent 56%);
+}
+.ac-frame-cell.is-off {
+  border-color: transparent;
+  opacity: 0.3;
+}
+.ac-family .ac-pair-math {
+  color: #8fe6ff;
+}
+.ac-family .ac-pair-math.is-take {
+  color: #9fe0a8;
+}
+.ac-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
 }
 .ac-frames {
   display: flex;

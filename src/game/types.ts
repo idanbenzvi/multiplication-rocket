@@ -1,9 +1,9 @@
 export interface Fact {
   a: number;
   b: number;
-  /** what answers are tracked under: "3x7", "3+4", or an addition kind ("2d+1d:c") */
+  /** what answers are tracked under: "3x7", "3+4", "9-4", or a kind ("2d+1d:c", "2d-1d:b") */
   key: string;
-  /** a × b, or a + b */
+  /** a × b, a + b, or a − b */
   answer: number;
 }
 
@@ -33,6 +33,8 @@ export interface Progress {
   mastery: Record<string, FactStat>;
   /** addition only: the stage reached (1: sums within 10, 2: within 20, 3: within 100) */
   stage?: number;
+  /** subtraction only: the stage reached (1: within 10, 2: back from the teens, 3: within 100) */
+  subStage?: number;
   /** how fast this pilot answers: the speed boost's window follows it (scoring.ts); the default until they've answered against the clock */
   pace?: Pace;
 }

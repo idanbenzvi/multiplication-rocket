@@ -104,16 +104,14 @@ function SetupSheet() {
                     <span className="settings-option-name">{s === 'pilot' ? t.crew.seatPilot : t.crew.seatNavigator}</span>
                     <span className="settings-option-hint">
                       {s === 'pilot'
-                        ? mission === 'add'
-                          ? t.crew.seatPilotHintAdd
-                          : mission === 'mix'
-                            ? t.crew.seatPilotHintMix
-                            : t.crew.seatPilotHint
-                        : mission === 'add'
-                          ? t.crew.seatNavigatorHintAdd
-                          : mission === 'mix'
-                            ? t.crew.seatNavigatorHintMix
-                            : t.crew.seatNavigatorHint}
+                        ? { mul: t.crew.seatPilotHint, add: t.crew.seatPilotHintAdd, sub: t.crew.seatPilotHintSub, mix: t.crew.seatPilotHintMix, addsub: t.crew.seatPilotHintAddSub }[mission]
+                        : {
+                            mul: t.crew.seatNavigatorHint,
+                            add: t.crew.seatNavigatorHintAdd,
+                            sub: t.crew.seatNavigatorHintSub,
+                            mix: t.crew.seatNavigatorHintMix,
+                            addsub: t.crew.seatNavigatorHintAddSub,
+                          }[mission]}
                     </span>
                   </button>
                 ))}

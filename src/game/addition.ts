@@ -15,7 +15,7 @@ export const STAGE_MAX_SUM = [10, 20, 100] as const;
 /** share of a stage's questions that review the earlier stages */
 export const REVIEW_SHARE = 0.2;
 /** share of a stage that has to be mastered before the next one opens */
-const READY_AT = 0.8;
+export const READY_AT = 0.8;
 
 /** stage 3's kinds, easiest first: ":c" means carrying (37 + 5, 37 + 45) */
 export type AddKind = 'tens+tens' | '2d+1d' | '2d+2d' | '2d+1d:c' | '2d+2d:c';

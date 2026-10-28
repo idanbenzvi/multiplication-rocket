@@ -1600,6 +1600,12 @@
 .ck3-mission.is-mix {
   --m: #ff9de2;
 }
+.ck3-mission.is-sub {
+  --m: #9fe0a8;
+}
+.ck3-mission.is-addsub {
+  --m: #8fe6d6;
+}
 .ck3-mission:hover,
 .ck3-mission:focus-visible {
   border-color: color-mix(in srgb, var(--m) 70%, transparent);
@@ -1620,6 +1626,14 @@
   line-height: 1;
   color: var(--m);
   text-shadow: 0 0 12px color-mix(in srgb, var(--m) 70%, transparent);
+}
+.ck3-mission.is-addsub .ck3-mission-symbol {
+  background: linear-gradient(90deg, #8fe6ff, #9fe0a8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 8px rgba(143, 230, 214, 0.5));
 }
 .ck3-mission.is-mix .ck3-mission-symbol {
   background: linear-gradient(90deg, #ffd77a, #8fe6ff);

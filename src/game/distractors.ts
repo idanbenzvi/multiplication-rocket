@@ -15,6 +15,7 @@ function shuffle<T>(items: T[]): T[] {
 // off by one — the classic slip), and failing that, nearby numbers.
 export function distractors(x: number, y: number, count: number, mission: Mission = 'mul'): number[] {
   if (mission === 'add') return additionDistractors(x, y, count);
+  if (mission === 'sub') return subtractionDistractors(x, y, count);
   const answer = x * y;
   const near = new Set<number>();
   for (const [a, b] of [
@@ -51,6 +52,33 @@ export function additionDistractors(x: number, y: number, count: number): number
     // forgot to carry → 10 short; a ten counted twice → 10 over
     (carried ? below : above).unshift(carried ? answer - 10 : answer + 10);
     (carried ? above : below).push(carried ? answer + 10 : answer - 10);
+  }
+  const lows = below.filter((v) => v > 0);
+  const slot = Math.min(lows.length, count, Math.floor(Math.random() * (count + 1)));
+  const picks = [...shuffle(lows.slice(0, 3)).slice(0, slot), ...shuffle(above.slice(0, 3)).slice(0, count - slot)];
+  for (let d = 4; picks.length < count; d++) {
+    for (const v of [answer + d, answer - d]) {
+      if (picks.length < count && v > 0 && !picks.includes(v)) picks.push(v);
+    }
+  }
+  return picks;
+}
+
+// Subtraction slips: counting back one or two too many or too few (counting
+// the number started from is one off), adding instead of taking away, and
+// with two-digit numbers a slipped ten: forgetting the ten that was
+// borrowed (taking the smaller ones from the bigger, 52 − 27 → 35) is 10
+// over, taking a ten too many is 10 short. x is the number taken from.
+export function subtractionDistractors(x: number, y: number, count: number): number[] {
+  const answer = x - y;
+  const below = [answer - 1, answer - 2, answer - 3];
+  const above = [answer + 1, answer + 2, answer + 3];
+  if (x >= 20) {
+    const borrowed = x % 10 < y % 10;
+    (borrowed ? above : below).unshift(borrowed ? answer + 10 : answer - 10);
+    (borrowed ? below : above).push(borrowed ? answer - 10 : answer + 10);
+  } else if (x + y <= 20 && !above.includes(x + y) && Math.random() < 0.5) {
+    above.splice(2, 0, x + y);
   }
   const lows = below.filter((v) => v > 0);
   const slot = Math.min(lows.length, count, Math.floor(Math.random() * (count + 1)));

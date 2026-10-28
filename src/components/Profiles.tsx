@@ -1,7 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AVATARS, MAX_NAME_LENGTH, pilotName, profileStats, useProfiles, type Profile } from '../profiles/useProfiles';
-import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../game/mission';
+import { MISSION_MENU, MISSION_SYMBOL, type PilotMission } from '../game/mission';
 import { useGameStore } from '../game/useGameStore';
 import { switchMission } from '../game/switchMission';
 import { useLang, useT } from '../i18n/useLang';
@@ -103,7 +103,7 @@ function ProfileEditor({ profile, title, onDone, onCancel, onRestore }: EditorPr
         />
         <div className="profile-label">{t.pickMission}</div>
         <div className="mission-options" role="radiogroup" aria-label={t.pickMission}>
-          {PILOT_MISSIONS.map((m) => (
+          {MISSION_MENU.map((m) => (
             <button
               key={m}
               type="button"
@@ -286,7 +286,7 @@ function PilotPicker({ onPicked, onNew, onEdit }: { onPicked: () => void; onNew:
   const tile = (p: Profile) => {
     const stats = profileStats(p.id);
     // the other missions they've flown, each with its own level
-    const others = PILOT_MISSIONS.filter((m) => m !== (p.mission ?? 'mul'))
+    const others = MISSION_MENU.filter((m) => m !== (p.mission ?? 'mul'))
       .map((m) => ({ m, s: profileStats(p.id, m) }))
       .filter(({ s }) => s.played);
     return (

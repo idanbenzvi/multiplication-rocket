@@ -4,7 +4,7 @@ import { useT } from '../../i18n/useLang';
 import { factLabel, missionName, type Strings } from '../../i18n/strings';
 import { missionOf, pilotName, useProfiles } from '../../profiles/useProfiles';
 import { loadProgressFor } from '../../storage/progressStore';
-import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../../game/mission';
+import { MISSION_MENU, MISSION_SYMBOL, type PilotMission } from '../../game/mission';
 import { readLog } from '../../stats/answerLog';
 import { computeDashboard, type Day, type PeriodStats, type Range } from '../../stats/metrics';
 import { LineChart, StackedBars } from './charts';
@@ -201,7 +201,7 @@ export function ParentDashboard({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <div className="pd-pills" role="radiogroup" aria-label="mission">
-            {PILOT_MISSIONS.map((m) => (
+            {MISSION_MENU.map((m) => (
               <button key={m} type="button" role="radio" aria-checked={mission === m} className={`pd-pill ${mission === m ? 'is-on' : ''}`} onClick={() => setMission(m)}>
                 {MISSION_SYMBOL[m]} {missionName(all, m)}
               </button>

@@ -1,6 +1,7 @@
 import type { FactStat } from './types';
 import { opsOf, pairKey, type PilotMission } from './mission';
 import { ADD_KINDS } from './addition';
+import { SUB_KINDS, subtractionTable } from './subtraction';
 import { dayNumber, factStatus, recentShare, TOP_BOX } from './memory';
 
 // Shared by the full practice map and the hover preview, so they always agree.
@@ -31,13 +32,18 @@ export function masteryCellStyle(stat: FactStat | undefined, day = dayNumber()):
 /**
  * Counts over the mission's facts: the 55 distinct facts of the 1-10 times
  * table (3×4 and 4×3 are one fact), or the 55 of the 1-10 addition table
- * plus the 5 kinds of two-digit sum, or (mixed) both. Fading facts (mastered
+ * plus the 5 kinds of two-digit sum, or the 100 differences of the
+ * subtraction table plus its 5 kinds, or (mixed) both of the mission's. Fading facts (mastered
  * once, now due a check) are counted on their own, not as mastered.
  */
 export function masterySummary(mastery: Record<string, FactStat>, mission: PilotMission = 'mul', day = dayNumber()) {
   const counts = { mastered: 0, fading: 0, practice: 0, untried: 0 };
   const keys: string[] = [];
   for (const op of opsOf(mission)) {
+    if (op === 'sub') {
+      keys.push(...subtractionTable(1).map((f) => f.key), ...subtractionTable(2).map((f) => f.key), ...SUB_KINDS);
+      continue;
+    }
     for (let a = 1; a <= 10; a++) {
       for (let b = a; b <= 10; b++) keys.push(pairKey(op, a, b));
     }

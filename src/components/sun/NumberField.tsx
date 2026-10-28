@@ -44,7 +44,7 @@ const rand = (n: number) => Math.floor(Math.random() * n);
 
 function numberText(mission: PilotMission): string {
   if (Math.random() < 0.25) return String(rand(10));
-  return pickOp(mission) === 'add' ? String(2 + rand(19)) : String((1 + rand(10)) * (1 + rand(10)));
+  return pickOp(mission) !== 'mul' ? String(2 + rand(19)) : String((1 + rand(10)) * (1 + rand(10)));
 }
 
 export function NumberField({ fx, field }: { fx: React.RefObject<MonsterFx | null>; field: React.RefObject<NumberFieldFx | null> }) {

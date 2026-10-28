@@ -1,5 +1,6 @@
 import type { Fact, FactStat } from './types';
 import { dayNumber, pickWeight, review, upgradeMastery } from './memory';
+import { commutes, missionOfKey } from './mission';
 
 // Canonical pool: a <= b so "3x7" and "7x3" are the same tracked fact.
 // randomizeOrder() below still shows either order to the player.
@@ -60,7 +61,9 @@ export function pickNextFact(
   return candidates[candidates.length - 1];
 }
 
+/** a fact's numbers to show, either way round (a difference's always bigger first) */
 export function randomizeOrder(fact: Fact): { x: number; y: number } {
+  if (!commutes(missionOfKey(fact.key))) return { x: fact.a, y: fact.b };
   return Math.random() < 0.5 ? { x: fact.a, y: fact.b } : { x: fact.b, y: fact.a };
 }
 
@@ -81,5 +84,5 @@ export { isMastered } from './memory';
 
 /** "3x7" → "3 × 7", "3+4" → "3 + 4"; an addition kind needs factLabel() (it's translated) */
 export function formatFactKey(key: string): string {
-  return key.replace(/^(\d+)([x+])(\d+)$/, (_, a, op, b) => `${a} ${op === 'x' ? '×' : '+'} ${b}`);
+  return key.replace(/^(\d+)([x+-])(\d+)$/, (_, a, op, b) => `${a} ${op === 'x' ? '×' : op === '-' ? '−' : '+'} ${b}`);
 }

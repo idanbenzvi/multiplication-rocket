@@ -161,7 +161,8 @@ function MapFace() {
       <div className="ck3-minimap" dir="ltr" aria-hidden>
         {NUMBERS.map((x) =>
           NUMBERS.map((y) => {
-            const { background } = masteryCellStyle(mastery[pairKey(op, x, y)], day);
+            // (subtraction's grid is the table read backwards: x taken from x + y)
+            const { background } = masteryCellStyle(mastery[op === 'sub' ? pairKey(op, x + y, x) : pairKey(op, x, y)], day);
             return <i key={`${x}-${y}`} style={{ background }} />;
           }),
         )}

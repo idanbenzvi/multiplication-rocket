@@ -672,7 +672,7 @@ function Admiral({ name, avatar, mission, onAgain }: { name: string; avatar?: st
           </GradientText>
         </motion.h2>
         <motion.div className="boss-admiral-sub" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.6 }}>
-          <ShinyText text={mission === 'add' ? t.boss.admiralSubAdd : mission === 'mix' ? t.boss.admiralSubMix : t.boss.admiralSub} color="#ffe6a0" shineColor="#ffffff" speed={2.4} />
+          <ShinyText text={{ mul: t.boss.admiralSub, add: t.boss.admiralSubAdd, sub: t.boss.admiralSubTake, mix: t.boss.admiralSubMix, addsub: t.boss.admiralSubAddTake }[mission]} color="#ffe6a0" shineColor="#ffffff" speed={2.4} />
         </motion.div>
         <motion.div className="boss-admiral-name" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}>
           <span className="boss-admiral-avatar">{avatar}</span>

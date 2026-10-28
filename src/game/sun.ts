@@ -9,7 +9,7 @@
 // Every phone drills its own pilot's mission: × and + pilots can fight
 // side by side, and a missed fact only goes to a teammate who can solve it.
 
-import { answerOfKey, missionOfKey, type PilotMission } from './mission';
+import { answerOfKey, missionOfKey, opsOf, type PilotMission } from './mission';
 
 export const MAX_PLAYERS = 6;
 /** monsters in a fight */
@@ -137,9 +137,11 @@ export function factAnswer(fact: string): number | null {
   return answerOfKey(fact);
 }
 
-/** a + fact can go to anyone, a × fact only to someone on the × (or mixed) mission */
+/** a + fact can go to anyone, a − fact to anyone past + alone, a × fact only to someone whose mission has × */
 export function canHelpWith(p: SunPlayerInfo, fact: string): boolean {
-  return missionOfKey(fact) === 'add' || (p.mission ?? 'mul') !== 'add';
+  const op = missionOfKey(fact);
+  const mission = p.mission ?? 'mul';
+  return op === 'add' || (op === 'sub' ? mission !== 'add' : opsOf(mission).includes('mul'));
 }
 
 /** the card this player answers next, before their own questions */

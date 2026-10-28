@@ -1,8 +1,8 @@
 import type { ThinkVisual as Visual } from '../../game/thinkThrough';
 
 // The pictures the ship's computer shows (game/thinkThrough.ts): groups as
-// rows of dots, two numbers put together, tens and ones, and counting in
-// steps. Always left to right, like the math.
+// rows of dots, two numbers put together, some taken away, tens and ones,
+// and counting in steps. Always left to right, like the math.
 
 /** a colour for each group, so the groups read apart */
 const ROWS = ['#6ad7ff', '#ffd77a', '#ff9de2', '#9fe0a8', '#c9a4de', '#ff9d76', '#8fe6ff', '#ffe08a', '#b6f0c2', '#f7b6ff'];
@@ -46,6 +46,30 @@ function Join({ a, b }: { a: number; b: number }) {
   );
 }
 
+/** `a` dots in rows of ten, the last `b` taken away: faded, and crossed out */
+function TakeAway({ a, b }: { a: number; b: number }) {
+  const gap = 21;
+  const r = 7.5;
+  const rows = Math.ceil(a / 10);
+  const x = (i: number) => (i % 10) * gap + (i % 10 >= 5 ? 8 : 0) + gap / 2;
+  const w = 10 * gap + 8;
+  return (
+    <svg className="think-join" viewBox={`0 0 ${w} ${rows * gap}`} width={w} height={rows * gap} aria-hidden="true">
+      {Array.from({ length: a }, (_, i) => {
+        const cx = x(i);
+        const cy = Math.floor(i / 10) * gap + gap / 2;
+        const gone = i >= a - b;
+        return (
+          <g key={i} className={gone ? 'think-gone' : undefined} style={gone ? { animationDelay: `${(i - (a - b)) * 0.12}s` } : undefined}>
+            <circle cx={cx} cy={cy} r={r} fill={gone ? B : A} opacity={gone ? 0.35 : 1} />
+            {gone && <path d={`M${cx - r} ${cy - r}L${cx + r} ${cy + r}M${cx + r} ${cy - r}L${cx - r} ${cy + r}`} stroke="#ff8f8f" strokeWidth={2.4} strokeLinecap="round" />}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /** a number as its tens (bars) and ones (dots) */
 function TensOnes({ n, color, at }: { n: number; color: string; at: number }) {
   const tens = Math.floor(n / 10);
@@ -62,7 +86,7 @@ function TensOnes({ n, color, at }: { n: number; color: string; at: number }) {
   );
 }
 
-function Tens({ a, b }: { a: number; b: number }) {
+function Tens({ a, b, op = '+' }: { a: number; b: number; op?: '+' | '−' }) {
   const width = (n: number) => Math.floor(n / 10) * 11 + (n % 10 ? 26 : 0);
   const plus = width(a) + 10;
   const w = plus + 22 + width(b);
@@ -70,7 +94,7 @@ function Tens({ a, b }: { a: number; b: number }) {
     <svg className="think-tens" viewBox={`0 0 ${w} 78`} width={w} height={78} aria-hidden="true">
       <TensOnes n={a} color={A} at={0} />
       <text x={plus + 5} y={46} className="think-plus">
-        +
+        {op}
       </text>
       <TensOnes n={b} color={B} at={plus + 22} />
     </svg>
@@ -97,7 +121,9 @@ export function ThinkVisual({ visual }: { visual: Visual }) {
     case 'join':
       return <Join a={visual.a} b={visual.b} />;
     case 'tens':
-      return <Tens a={visual.a} b={visual.b} />;
+      return <Tens a={visual.a} b={visual.b} op={visual.op} />;
+    case 'takeAway':
+      return <TakeAway a={visual.a} b={visual.b} />;
     case 'hops':
       return <Hops values={visual.values} />;
   }

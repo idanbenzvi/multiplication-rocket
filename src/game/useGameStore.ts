@@ -5,9 +5,9 @@ import { getStrugglingFactKeys, randomizeOrder, recordAttempt } from './facts';
 import { getLevelConfig } from './levels';
 import { MAX_SPEED_FACTOR, nextPace, paceMs, speedFactor, speedZone, UNTIMED_SPEED_FACTOR } from './scoring';
 import { buildChallenge, CHALLENGE_EVERY, type Challenge } from './wormhole';
-import { nextBonusRound, type BonusKind } from './bonusRounds';
+import { nextBonusRound, rotationFor, roundOpFor, type BonusKind } from './bonusRounds';
 import { pickFact } from './questions';
-import { clampStage, stageReady } from './addition';
+import { climbStages, opStage, stageOpened, type StageStep, type Stages } from './stages';
 import { localProgressStore } from '../storage/progressStore';
 import { useSettings } from '../settings/useSettings';
 import { activeMission, activeTimedBoost, useProfiles } from '../profiles/useProfiles';
@@ -40,8 +40,8 @@ interface GameState {
   flare: number;
   lastGainPercent: number;
   justLaunched: boolean;
-  /** this launch also opened the next addition stage */
-  stageUp: boolean;
+  /** the stage this launch also opened (addition's or subtraction's), or null */
+  stageUp: StageStep | null;
   sessionMistakes: number;
   showHeatmap: boolean;
   /** the map opened by itself after a run of mistakes (vs. "Stop & Review") */
@@ -110,13 +110,12 @@ function launchFrom(progress: Progress) {
   };
 }
 
-// An addition pilot (or a mixed one: its sums) moves up a stage on a launch,
-// once enough of the stage is mastered (see addition.ts): advancing through
-// the levels, on success. The stage only changes when a new one opens (a new
-// pilot has none saved yet).
-function nextStage(progress: Progress, mastery: Record<string, FactStat>): number | undefined {
-  if (activeMission() === 'mul' || !stageReady(clampStage(progress.stage), mastery)) return progress.stage;
-  return clampStage(progress.stage) + 1;
+// An addition or subtraction pilot (or a mixed one: its sums and
+// differences) moves up a stage on a launch, once enough of the stage is
+// mastered (see stages.ts): advancing through the levels, on success. A
+// stage only changes when a new one opens (a new pilot has none saved yet).
+function nextStages(progress: Progress, mastery: Record<string, FactStat>): Stages {
+  return climbStages(activeMission(), progress, mastery);
 }
 
 // Fuel bookkeeping shared by normal answers and the wormhole boost. A full
@@ -129,14 +128,14 @@ function addFuel(progress: Progress, mastery: Record<string, FactStat>, gain: nu
   let level = progress.level;
   let launchesCompleted = progress.launchesCompleted;
   let currentStreak = progress.currentStreak;
-  let stage = progress.stage;
+  let stages: Stages = { stage: progress.stage, subStage: progress.subStage };
   let launched = false;
   if (fuel >= 100 && getStrugglingFactKeys(mastery).length === 0) {
     launched = true;
     ({ level, launchesCompleted, currentStreak, fuel } = launchFrom(progress));
-    stage = nextStage(progress, mastery);
+    stages = nextStages(progress, mastery);
   }
-  return { fuel, level, launchesCompleted, currentStreak, launched, stage, stageUp: stage !== progress.stage };
+  return { fuel, level, launchesCompleted, currentStreak, launched, ...stages, stageUp: stageOpened(progress, stages) };
 }
 
 function newQuestion(progress: Progress, avoidKey?: string): Question {
@@ -152,7 +151,7 @@ export function roundOp(): Mission {
 
 /** a bonus round begins: straight away, or (one the rocket leaves the game for) once it has flown off */
 function startBonus(kind: Exclude<BonusKind, 'wormhole'>) {
-  useGameStore.setState({ bonusOp: pickOp(activeMission()) });
+  useGameStore.setState({ bonusOp: roundOpFor(kind, pickOp(activeMission())) });
   const begin = () => useGameStore.setState((s) => ({ bonusRound: kind, departing: null, bonusNonce: s.bonusNonce + 1 }));
   if (!FLIES_OFF.has(kind) || !flyAway()) {
     begin();
@@ -172,7 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   flare: 0,
   lastGainPercent: 0,
   justLaunched: false,
-  stageUp: false,
+  stageUp: null,
   sessionMistakes: 0,
   showHeatmap: false,
   heatmapAuto: false,
@@ -196,7 +195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
       justLaunched: false,
-      stageUp: false,
+      stageUp: null,
       sessionMistakes: 0,
       showHeatmap: false,
       challenge: null,
@@ -227,9 +226,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     let launchesCompleted = progress.launchesCompleted;
     let totalCorrectAnswers = progress.totalCorrectAnswers;
     let fuel = progress.fuel;
-    let stage = progress.stage;
+    let stages: Stages = { stage: progress.stage, subStage: progress.subStage };
     let launched = false;
-    let stageUp = false;
+    let stageUp: StageStep | null = null;
     let gainPercent = 0;
     const timed = activeTimedBoost() && !helped;
     // the clock they raced is the pace they had (this answer moves it for the next one)
@@ -250,7 +249,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted = result.launchesCompleted;
       currentStreak = result.currentStreak;
       launched = result.launched;
-      stage = result.stage;
+      stages = { stage: result.stage, subStage: result.subStage };
       stageUp = result.stageUp;
     } else {
       currentStreak = 0;
@@ -270,7 +269,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       totalCorrectAnswers,
       launchesCompleted,
       mastery: nextMastery,
-      stage,
+      ...stages,
       pace: isCorrect && timed ? nextPace(progress.pace, elapsedMs) : progress.pace,
     };
 
@@ -320,11 +319,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (justLaunched || showHeatmap) return; // overlays own their own dismissal flow
     const count = questionsSinceChallenge + 1;
     if (count >= CHALLENGE_EVERY) {
-      const { kind, queue } = nextBonusRound(get().bonusQueue);
+      const { kind, queue } = nextBonusRound(get().bonusQueue, rotationFor(activeMission()));
       const next = { questionsSinceChallenge: 0, bonusQueue: queue, feedback: null, flare: 0 };
       if (kind === 'wormhole') {
         const op = pickOp(activeMission());
-        set({ ...next, bonusOp: op, challenge: buildChallenge(progress.level, op, clampStage(progress.stage)) });
+        set({ ...next, bonusOp: op, challenge: buildChallenge(progress.level, op, opStage(op, progress)) });
       } else {
         set(next);
         startBonus(kind);
@@ -356,6 +355,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted: result.launchesCompleted,
       currentStreak: result.currentStreak,
       stage: result.stage,
+      subStage: result.subStage,
     };
     localProgressStore.save(nextProgress);
     useAchievements.getState().track({ type: 'bonus', kind: 'wormhole', perfect: false }, nextProgress);
@@ -393,6 +393,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       launchesCompleted: result.launchesCompleted,
       currentStreak: result.currentStreak,
       stage: result.stage,
+      subStage: result.subStage,
     };
     localProgressStore.save(nextProgress);
     if (bonusRound) {
@@ -447,7 +448,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const clear = { justLaunched: false, showHeatmap: false, inWormhole: false, feedback: null, flare: 0 };
     if (kind === 'wormhole') {
       const op = pickOp(activeMission());
-      set({ ...clear, bonusRound: null, bonusOp: op, challenge: buildChallenge(progress.level, op, clampStage(progress.stage)) });
+      set({ ...clear, bonusRound: null, bonusOp: op, challenge: buildChallenge(progress.level, op, opStage(op, progress)) });
     } else {
       set({ ...clear, challenge: null });
       startBonus(kind);
@@ -456,11 +457,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   devLaunch: () => {
     const { progress } = get();
-    const stage = nextStage(progress, progress.mastery);
-    const nextProgress: Progress = { ...progress, ...launchFrom(progress), stage };
+    const stages = nextStages(progress, progress.mastery);
+    const nextProgress: Progress = { ...progress, ...launchFrom(progress), ...stages };
     localProgressStore.save(nextProgress);
     useAchievements.getState().track({ type: 'progress' }, nextProgress);
-    set({ progress: nextProgress, justLaunched: true, stageUp: stage !== progress.stage, challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
+    set({ progress: nextProgress, justLaunched: true, stageUp: stageOpened(progress, stages), challenge: null, bonusRound: null, question: newQuestion(nextProgress) });
   },
 
   devSetFuel: (fuel) => {
@@ -477,7 +478,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissLaunch: () => {
     const { progress } = get();
-    set({ justLaunched: false, stageUp: false, feedback: null, flare: 0, question: newQuestion(progress) });
+    set({ justLaunched: false, stageUp: null, feedback: null, flare: 0, question: newQuestion(progress) });
   },
 
   requestHeatmap: () => {
@@ -503,7 +504,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       feedback: null,
       flare: 0,
       justLaunched: false,
-      stageUp: false,
+      stageUp: null,
       sessionMistakes: 0,
       showHeatmap: false,
       challenge: null,

@@ -1,17 +1,18 @@
 import { getLevelConfig } from '../game/levels';
 import { destinationName } from '../i18n/strings';
 import { useT } from '../i18n/useLang';
+import type { StageStep } from '../game/stages';
 
 interface Props {
   level: number;
-  /** addition pilots: the stage they're on */
-  stage?: number;
+  /** addition and subtraction pilots: the stage they're on in each */
+  stages?: StageStep[];
 }
 
 // Fewer on phones, where the banner shares a narrow top bar.
 const MAX_BADGES = typeof window !== 'undefined' && window.innerWidth < 600 ? 4 : 8;
 
-export function LevelBanner({ level, stage }: Props) {
+export function LevelBanner({ level, stages = [] }: Props) {
   const t = useT();
   const config = getLevelConfig(level);
   // Only the most recent badges, so the banner stays one row however far the
@@ -24,7 +25,11 @@ export function LevelBanner({ level, stage }: Props) {
     <div className="level-banner">
       <div className="level-banner-current">
         {t.level(level)} &mdash; {t.destination} {config.destinationEmoji} {destinationName(t, config)}
-        {stage !== undefined && <span className="level-banner-stage">➕ {t.stageName(stage)}</span>}
+        {stages.map(({ op, stage }) => (
+          <span key={op} className="level-banner-stage">
+            {op === 'add' ? `➕ ${t.stageName(stage)}` : `➖ ${t.subStageName(stage)}`}
+          </span>
+        ))}
       </div>
       {collected.length > 0 && (
         <div className="level-banner-collected">

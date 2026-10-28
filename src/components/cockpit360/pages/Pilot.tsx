@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useT } from '../../../i18n/useLang';
 import { useGameStore } from '../../../game/useGameStore';
-import { MISSION_SYMBOL, PILOT_MISSIONS, type PilotMission } from '../../../game/mission';
+import { MISSION_MENU, MISSION_SYMBOL, type PilotMission } from '../../../game/mission';
 import { switchMission } from '../../../game/switchMission';
 import { pilotName, useMission, useProfiles } from '../../../profiles/useProfiles';
 import { missionStats } from '../../../storage/progressStore';
@@ -43,7 +43,7 @@ function Missions({ profileId }: { profileId: string }) {
         <span className="ck3-field-hint">{t.deck.missionsHint}</span>
       </div>
       <div className="ck3-mission-row" role="radiogroup" aria-label={t.deck.missions}>
-        {PILOT_MISSIONS.map((m) => {
+        {MISSION_MENU.map((m) => {
           const s = missionStats(profileId, m);
           const on = m === current;
           const name = missionName(t, m);

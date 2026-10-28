@@ -4,6 +4,7 @@ import { activeMission, factsKeyFor, missionOf, progressKeyFor, useProfiles } fr
 import { needsUpgrade, upgradeMastery } from '../game/memory';
 import { combineFacts, factsView, withoutMission, type Facts } from '../game/sharedFacts';
 import { clampStage, stageFor } from '../game/addition';
+import { subStageFor } from '../game/subtraction';
 import { masterySummary } from '../game/masteryStats';
 import { readLog } from '../stats/answerLog';
 
@@ -178,12 +179,16 @@ export const localProgressStore: ProgressStore = {
 
 // ---- switching missions ----
 
-/** a pilot setting off in a mission: its journey as they left it (a new one at level 1), its sums as far on as the facts they already know open */
+/** a pilot setting off in a mission: its journey as they left it (a new one at level 1), its sums and differences as far on as the facts they already know open */
 export function prepareMission(profileId: string, mission: PilotMission) {
-  if (!opsOf(mission).includes('add')) return;
+  const ops = opsOf(mission);
+  if (!ops.includes('add') && !ops.includes('sub')) return;
   const progress = loadProgressFor(profileId, mission);
-  const stage = stageFor(progress.stage, progress.mastery);
-  if (stage !== clampStage(progress.stage)) saveProgressFor(profileId, { ...progress, stage }, mission);
+  const stage = ops.includes('add') ? stageFor(progress.stage, progress.mastery) : progress.stage;
+  const subStage = ops.includes('sub') ? subStageFor(progress.subStage, progress.mastery) : progress.subStage;
+  if ((ops.includes('add') && stage !== clampStage(progress.stage)) || (ops.includes('sub') && subStage !== clampStage(progress.subStage))) {
+    saveProgressFor(profileId, { ...progress, stage, subStage }, mission);
+  }
 }
 
 export interface MissionStats {

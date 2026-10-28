@@ -3,7 +3,9 @@ import { gameNow, gameTimeout, usePause } from '../../game/gameClock';
 import { roundOp, useGameStore } from '../../game/useGameStore';
 import { getLevelConfig } from '../../game/levels';
 import { buildTraffic, TRAFFIC_DIRS, TRAFFIC_PASSES, type TrafficDir } from '../../game/bonusRounds';
-import { clampStage, STAGE_MAX_SUM } from '../../game/addition';
+import { STAGE_MAX_SUM } from '../../game/addition';
+import { opStage } from '../../game/stages';
+import { drillLabel } from '../../i18n/strings';
 import { OP_SYMBOL, type Mission } from '../../game/mission';
 import { kick } from '../../game/flight';
 import { sfx } from '../../audio/sfx';
@@ -56,8 +58,9 @@ const KEYS: Record<string, TrafficDir> = {
   d: 'right',
 };
 
-/** what the rest of the traffic has painted on: answers from the same table, or sums within the stage */
+/** what the rest of the traffic has painted on: answers from the same table, or sums or differences within the stage */
 function trafficNumbers(mission: Mission, stage: 1 | 2 | 3): number[] {
+  if (mission === 'sub') return stage < 3 ? Array.from({ length: 10 }, (_, i) => i + 1) : Array.from({ length: 70 }, (_, i) => i + 11);
   if (mission === 'add') {
     const max = STAGE_MAX_SUM[stage - 1];
     return Array.from({ length: max - 1 }, (_, i) => i + 2).filter((n) => stage < 3 || n > 20);
@@ -72,6 +75,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
   const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar);
   const run = useMemo(() => buildTraffic(useGameStore.getState().progress, roundOp()), []);
   const adding = run.mission === 'add';
+  const taking = run.mission === 'sub';
   const sym = OP_SYMBOL[run.mission];
   const base = useMemo(() => 100 / getLevelConfig(useGameStore.getState().progress.level).streakToLaunch, []);
   const scene = useMemo(() => {
@@ -81,7 +85,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       now: gameNow() / 1000,
       accent: colorForLevel(progress.level),
       avatar,
-      numbers: trafficNumbers(run.mission, clampStage(progress.stage)).filter((n) => !asked.has(n)),
+      numbers: trafficNumbers(run.mission, opStage(run.mission, progress)).filter((n) => !asked.has(n)),
       calm: !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
       admiral: isAdmiral(),
       ship: activeShip(),
@@ -295,14 +299,14 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
               {t.trafficTitle}
             </GradientText>
           </div>
-          <div className="round-card-text">{adding ? t.trafficIntroAdd : t.trafficIntro}</div>
+          <div className="round-card-text">{taking ? t.trafficIntroSub : adding ? t.trafficIntroAdd : t.trafficIntro}</div>
         </div>
       )}
 
       {playing && (
         <div className="traffic-panel" key={index}>
           <div className="traffic-ask" dir="auto" aria-live="polite">
-            {adding ? t.trafficAskAdd(pass.number) : t.trafficAsk(pass.number)}
+            {taking ? t.trafficAskSub(pass.number) : adding ? t.trafficAskAdd(pass.number) : t.trafficAsk(pass.number)}
           </div>
           <div className="traffic-pad" dir="ltr">
             {TRAFFIC_DIRS.map((d) => {
@@ -317,7 +321,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
                   className={`traffic-drill ${isWrong ? 'is-wrong' : ''} ${swerved === d ? 'is-correct' : ''} ${hint ? 'is-hint' : ''}`}
                   disabled={phase !== 'ask' || isWrong}
                   onClick={() => steer(d)}
-                  aria-label={`${t.trafficDirs[d]}: ${adding ? t.drillLabelAdd(drill.x, drill.y) : t.drillLabel(drill.x, drill.y)}`}
+                  aria-label={`${t.trafficDirs[d]}: ${drillLabel(t, run.mission, drill.x, drill.y)}`}
                 >
                   <span className="traffic-arrow" aria-hidden>
                     {ARROWS[d]}

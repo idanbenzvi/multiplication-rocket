@@ -47,7 +47,7 @@ function telemetryLine(): string {
     const op = pickOp(activeMission());
     const a = 1 + rand(10);
     const b = 1 + rand(10);
-    return op === 'add' ? `CALC  ${a}+${b}=${a + b}  ✓` : `CALC  ${a}×${b}=${a * b}  ✓`;
+    return op === 'add' ? `CALC  ${a}+${b}=${a + b}  ✓` : op === 'sub' ? `CALC  ${a + b}-${b}=${a}  ✓` : `CALC  ${a}×${b}=${a * b}  ✓`;
   }
   const lines = [
     () => `NAV   HDG ${String(rand(360)).padStart(3, '0')}°  Δv +0.0${rand(90) + 10}`,

@@ -5,22 +5,38 @@ import { distractors } from './distractors';
 import type { Mission } from './mission';
 import { pickFact } from './questions';
 import { additionTable, additionTrackKey, clampStage } from './addition';
-import { applyOp, pairKey } from './mission';
+import { applyOp, pairKey, type PilotMission } from './mission';
+import { opStage } from './stages';
 
 // Bonus rounds take the place of every CHALLENGE_EVERY-th question (see
 // wormhole.ts) and come in a random order: every kind once, then a fresh
 // shuffle, so a session sees all of them (see nextBonusRound). Every round has
-// an addition version too: see each one below.
+// an addition version too: see each one below. Only some have a subtraction
+// one so far (SUB_ROUNDS): the subtraction mission plays those, and on +−
+// the others are played with sums.
 export type BonusKind = 'wormhole' | 'meteor' | 'constellation' | 'battle' | 'stranded' | 'stardust' | 'road' | 'traffic';
 export const BONUS_ROTATION: BonusKind[] = ['wormhole', 'meteor', 'constellation', 'battle', 'stranded', 'stardust', 'road', 'traffic'];
+/** the rounds with a subtraction version */
+export const SUB_ROUNDS: BonusKind[] = ['wormhole', 'meteor', 'traffic'];
+
+/** the rounds a mission's rotation has: every one, but subtraction's alone for a − pilot */
+export function rotationFor(mission: PilotMission): BonusKind[] {
+  return mission === 'sub' ? SUB_ROUNDS : BONUS_ROTATION;
+}
+
+/** a round's operation: the one picked for it, but + for a round with no − version yet */
+export function roundOpFor(kind: BonusKind, op: Mission): Mission {
+  return op === 'sub' && !SUB_ROUNDS.includes(kind) ? 'add' : op;
+}
 
 /** The bonus round to play now, and the ones still to come: every kind once in
  *  a random order, then a fresh shuffle with the round just played moved to its
  *  back, so none comes twice in a row. An empty queue starts a new shuffle. */
-export function nextBonusRound(queue: BonusKind[]): { kind: BonusKind; queue: BonusKind[] } {
-  const [kind, ...rest] = queue.length ? queue : shuffle(BONUS_ROTATION);
+export function nextBonusRound(queue: BonusKind[], rotation: BonusKind[] = BONUS_ROTATION): { kind: BonusKind; queue: BonusKind[] } {
+  const waiting = queue.filter((k) => rotation.includes(k));
+  const [kind, ...rest] = waiting.length ? waiting : shuffle(rotation);
   if (rest.length) return { kind, queue: rest };
-  const fresh = shuffle(BONUS_ROTATION);
+  const fresh = shuffle(rotation);
   if (fresh[0] === kind) fresh.push(fresh.shift()!);
   return { kind, queue: fresh };
 }
@@ -473,6 +489,11 @@ export function trafficDecoys(mission: Mission, x: number, y: number, stage = 1)
     const steps = clampStage(stage) === 3 ? [1, 10, 2] : [1, 2, 3];
     return pickDecoys(x + y, steps.map((d) => off(d).filter(([a, b]) => a >= 1 && b >= 1)), (a, b) => a + b);
   }
+  if (mission === 'sub') {
+    // x − y: still taking from the bigger, never below 1
+    const steps = clampStage(stage) === 3 ? [1, 10, 2] : [1, 2, 3];
+    return pickDecoys(x - y, steps.map((d) => off(d).filter(([a, b]) => b >= 1 && a > b)), (a, b) => a - b);
+  }
   const inTable = ([a, b]: [number, number]) => a >= 2 && a <= 10 && b >= 2 && b <= 10;
   const both: Array<[number, number]> = [[x + 1, y + 1], [x - 1, y - 1], [x + 1, y - 1], [x - 1, y + 1]];
   return pickDecoys(x * y, [off(1), off(2), both].map((tier) => tier.filter(inTable)), (a, b) => a * b);
@@ -483,9 +504,9 @@ export function trafficDecoys(mission: Mission, x: number, y: number, stage = 1)
 // D-pad around it has that fact on the side the ship swerves to and a near
 // miss on each of the others, each drill shown either way round.
 export function buildTraffic(progress: Progress, mission: Mission = 'mul'): TrafficRun {
-  const stage = clampStage(progress.stage);
+  const stage = opStage(mission, progress);
   const facts = pool(progress).filter((f) => f.a >= 2);
-  const pick = (last?: string) => (mission === 'add' ? pickFact('add', progress, last) : pickNextFact(facts, progress.mastery, last));
+  const pick = (last?: string) => (mission === 'mul' ? pickNextFact(facts, progress.mastery, last) : pickFact(mission, progress, last));
   const used = new Set<number>();
   let last: string | undefined;
   const passes = trafficDirs().map((dir): TrafficPass => {
@@ -497,7 +518,7 @@ export function buildTraffic(progress: Progress, mission: Mission = 'mul'): Traf
     const decoys = trafficDecoys(mission, x, y, stage);
     const drills = { [dir]: { x, y, value: fact.answer } } as Record<TrafficDir, TrafficDrill>;
     shuffle(TRAFFIC_DIRS.filter((d) => d !== dir)).forEach((side, i) => {
-      const [a, b] = Math.random() < 0.5 ? decoys[i] : [decoys[i][1], decoys[i][0]];
+      const [a, b] = mission !== 'sub' && Math.random() < 0.5 ? [decoys[i][1], decoys[i][0]] : decoys[i];
       drills[side] = { x: a, y: b, value: applyOp(mission, a, b) };
     });
     return { factKey: fact.key, number: fact.answer, dir, drills };
