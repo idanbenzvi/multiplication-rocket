@@ -42,6 +42,8 @@ uniform float hasPano;
 uniform vec2 sunUV;
 uniform float sun;
 uniform vec3 flash;
+// the afterburner's loop (loop/): time frozen
+uniform float mono;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
@@ -115,6 +117,11 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     col += vec3(0.9, 0.5, 1.0) * seen * 0.1 * ghost(uv, 0.5 + axis * 0.3, 0.03, a);
   }
 
+  // time frozen: the colour drained to a cold, inked grey
+  if (mono > 0.0) {
+    float l = clamp((dot(col, vec3(0.299, 0.587, 0.114)) - 0.04) * 1.3, 0.0, 2.0);
+    col = mix(col, vec3(l) * vec3(0.78, 0.93, 1.12), mono);
+  }
   col *= 1.0 - smoothstep(0.42, 1.15, r) * vignette;
   col += (hash(uv * 913.0 + fract(time * 7.31) * 71.0) - 0.5) * grain;
   col += flash;
@@ -144,6 +151,7 @@ class LensEffect extends Effect {
         ['sunUV', new Uniform(new Vector2(0.5, 0.8))],
         ['sun', new Uniform(0)],
         ['flash', new Uniform(new Vector3())],
+        ['mono', new Uniform(0)],
       ]),
     });
   }
@@ -166,7 +174,7 @@ function Lens() {
     const ty = Math.max(-MAX_TURN, Math.min(MAX_TURN, view.vPitch * EXPOSURE * 0.5));
     (u.get('turn') as Uniform<Vector2>).value.set(tx * calm, ty * calm);
     (u.get('edge') as Uniform<number>).value = view.zoom * calm;
-    (u.get('vignette') as Uniform<number>).value = 0.32 + view.zoom * 0.38 + view.motion * 0.2;
+    (u.get('vignette') as Uniform<number>).value = 0.32 + view.zoom * 0.38 + view.motion * 0.2 + fx.vignette;
     (u.get('split') as Uniform<number>).value = 0.1 + drive.k * 0.04 + fx.split * calm;
     (u.get('time') as Uniform<number>).value = clock.elapsedTime;
     // the Canyon Run's
@@ -181,6 +189,7 @@ function Lens() {
     (u.get('sun') as Uniform<number>).value = fx.sun;
     const [r, g, b] = flashNow();
     (u.get('flash') as Uniform<Vector3>).value.set(r, g, b);
+    (u.get('mono') as Uniform<number>).value = fx.mono;
   });
   return <primitive object={effect} dispose={null} />;
 }

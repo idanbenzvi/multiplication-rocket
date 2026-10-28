@@ -9,6 +9,7 @@ import { glyphCanvas } from './glyphs';
 import { glowLights } from './lights';
 import { dirOfLook } from './geometry';
 import { drive, NOSE_PITCH, planetAngle, startDrive, stepDrive } from './drive';
+import { loopFx } from './loop/live';
 
 // Outside the cockpit's glass: the flight going on. Space streams past from
 // dead ahead (the windscreen's middle, the ship's nose): stars stretching
@@ -21,6 +22,11 @@ import { drive, NOSE_PITCH, planetAngle, startDrive, stepDrive } from './drive';
 // comet streaks across the top of the windscreen, lighting the cockpit as it goes
 // (lights.ts). Everything is beyond the cockpit's walls (10 units round),
 // so it's only ever seen through the glass.
+//
+// Pulling the afterburner (loop/), the ship loops the loop: the sky wheels
+// round past the glass (the nebula, the stars, the destination), while the
+// streaks and the numbers keep flying along the nose, faster, and all of it
+// nearly stops while a moment's frozen.
 
 const DEG = Math.PI / 180;
 
@@ -125,11 +131,11 @@ function Streaks({ calm }: { calm: boolean }) {
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.1);
+    const dt = Math.min(raw, 0.1) * loopFx.time;
     // the drive's speed, the HUD's (drive.ts)
     const s = (calm ? 0.25 : 1) * (0.25 + drive.k * 0.9);
-    const speed = 40 + s * 220;
-    const tail = 2 + s * s * 46;
+    const speed = (40 + s * 220) * loopFx.warp;
+    const tail = (2 + s * s * 46) * loopFx.warp;
     const glow = 1.4 + s * 0.9;
     const list = parts.list;
     for (let i = 0; i < STREAKS; i++) {
@@ -206,8 +212,8 @@ function Numbers({ calm }: { calm: boolean }) {
   }, [sprites]);
 
   useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.1);
-    const speed = (calm ? 8 : 26) * (0.7 + drive.k * 0.6);
+    const dt = Math.min(raw, 0.1) * loopFx.time;
+    const speed = (calm ? 8 : 26) * (0.7 + drive.k * 0.6) * loopFx.warp;
     sprites.list.forEach((g, i) => {
       g.z += speed * g.f * dt;
       if (g.z > 30) sprites.list[i] = g = sprites.spawn(Z_FAR * 0.8);
@@ -347,7 +353,7 @@ function Comet({ calm }: { calm: boolean }) {
     if (!h) return;
     if (!pass.current) {
       h.visible = false;
-      if (calm || now < next.current || document.hidden) return;
+      if (calm || now < next.current || document.hidden || loopFx.on) return;
       const css = COMET_COLORS[Math.floor(Math.random() * COMET_COLORS.length)];
       pass.current = { at: now, ms: between(3600, 4800), dir: Math.random() < 0.5 ? 1 : -1, p0: between(24, 33), p1: between(13, 19), color: new THREE.Color(css), css };
     }
@@ -407,17 +413,26 @@ function Drive() {
 }
 
 export function Space({ destination, calm }: { destination?: Destination; calm: boolean }) {
+  // (looping, the sky wheels round the other way to the ship's pitch)
+  const sky = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (sky.current) sky.current.rotation.x = -loopFx.pitch;
+  });
   return (
     <>
       <Drive />
-      <Nebula />
+      <group ref={sky}>
+        <Nebula />
+        <group rotation-x={NOSE_PITCH}>
+          <Stars radius={180} depth={120} count={4200} factor={7} saturation={0.4} fade speed={0.6} />
+          {destination && <Planet destination={destination} calm={calm} />}
+        </group>
+        <Comet calm={calm} />
+      </group>
       <group rotation-x={NOSE_PITCH}>
-        <Stars radius={180} depth={120} count={4200} factor={7} saturation={0.4} fade speed={0.6} />
         <Streaks calm={calm} />
         <Numbers calm={calm} />
-        {destination && <Planet destination={destination} calm={calm} />}
       </group>
-      <Comet calm={calm} />
     </>
   );
 }

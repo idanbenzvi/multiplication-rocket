@@ -28,6 +28,9 @@ export const fx = {
   sun: 0,
   /** more colour split (a boost's) */
   split: 0,
+  /** the afterburner's loop (loop/): time frozen, the view gone cold and colourless (0 … 1), and the g darkening its edges */
+  mono: 0,
+  vignette: 0,
   flashes: [] as Flash[],
   /** the cockpit's picture (Shell.tsx sets it), whose see-through glass the smear keeps to */
   pano: null as Texture | null,
@@ -66,4 +69,6 @@ export function resetFx() {
   fx.turn = [0, 0];
   fx.sun = 0;
   fx.split = 0;
+  fx.mono = 0;
+  fx.vignette = 0;
 }

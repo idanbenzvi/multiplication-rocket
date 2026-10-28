@@ -4,7 +4,8 @@ import { length, screenQuad, type Quad, type UV } from './geometry';
 // made from the art by scripts/cockpit-360.py, which measured these): its
 // seven screens, which the game's own screens go on, the parts of it that do
 // something when touched (the joystick, the orange buttons by it, the panel
-// overhead, the remote on the floor), and its little lit buttons, which blink.
+// overhead, the remote on the floor, and, for whoever finds it, the orange
+// lever right of the stick), and its little lit buttons, which blink.
 //
 // Round the pilot from the left: the 2 × 2 bank of screens on the left wall
 // (the pilot, their badges, the sound, the ship's systems), the windscreen
@@ -14,7 +15,7 @@ import { length, screenQuad, type Quad, type UV } from './geometry';
 export type ScreenId = 'pilot' | 'badges' | 'sound' | 'systems' | 'map' | 'modes';
 /** where the view can be turned to: a screen, or straight ahead out of the windscreen */
 export type Stop = ScreenId | 'ahead';
-export type HotspotId = 'stick' | 'manual' | 'overhead' | 'remote';
+export type HotspotId = 'stick' | 'manual' | 'overhead' | 'remote' | 'boost';
 
 export interface ScreenSpot {
   id: ScreenId;
@@ -108,6 +109,8 @@ export const HOTSPOTS: Hotspot[] = [
   { id: 'overhead', corners: [[0.469, 0.333], [0.531, 0.333], [0.531, 0.362], [0.469, 0.362]], icon: 'ℹ️' },
   // the remote on the floor by the left seat: for grown-ups (the parents' dashboard)
   { id: 'remote', corners: [[0.31, 0.852], [0.392, 0.852], [0.392, 0.93], [0.31, 0.93]], icon: '👪' },
+  // the orange lever right of the stick, its two lights blinking: the afterburner, and a loop the loop (loop/)
+  { id: 'boost', corners: [[0.5405, 0.711], [0.5575, 0.711], [0.5585, 0.772], [0.5395, 0.772]], icon: '🔥' },
 ];
 
 export const HOTSPOT_QUADS = Object.fromEntries(HOTSPOTS.map((h) => [h.id, screenQuad(h.corners, 1000)])) as Record<HotspotId, Quad>;

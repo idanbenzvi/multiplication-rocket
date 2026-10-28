@@ -5,6 +5,7 @@ import { pauseGame, resumeGame, usePause } from '../../game/gameClock';
 import { cockpitDolly, cockpitDollyAt, cockpitView, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
 import { useGameStore } from '../../game/useGameStore';
 import { useCrewStore } from '../../game/useCrewStore';
+import { useProfiles, useShip } from '../../profiles/useProfiles';
 import { getLevelConfig } from '../../game/levels';
 import { useLang, useT } from '../../i18n/useLang';
 import { isTouchDevice } from '../../settings/useSettings';
@@ -23,6 +24,7 @@ import { useLookControls } from './useLookControls';
 import { runQuality, useCanyon } from './canyon/useCanyon';
 import { CanyonGlass, CanyonVisor } from './canyon/CanyonHud';
 import { flashNow } from './canyon/fx';
+import { LoopShow, type LoopControl } from './loop/LoopShow';
 import { baseFov, HOME, lookAt, lookTo, settled, shudder, startShudders, stopShudders, view } from './view';
 import './cockpit360.css';
 
@@ -46,6 +48,9 @@ import './cockpit360.css';
 // Run (canyon/), flown from the seat, the canyon outside the glass. At a
 // level's end it can open straight into one, under the white of arriving
 // (canyon/Descent.tsx): there at once, and back out through an iris.
+//
+// And for whoever finds it, the orange lever right of the stick: the
+// afterburner, and a loop the loop explained as an anime would (loop/).
 
 /** the flight in: the cockpit fills the screen about half-way, the camera keeps going behind it */
 const OPEN_MS = 1500;
@@ -143,6 +148,13 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const canyon = useCanyon((s) => s.phase);
   const runId = useCanyon((s) => s.runId);
   const running = canyon !== 'off';
+  // the afterburner's loop playing (the pilot's ship, their animal in its window)
+  const [looping, setLooping] = useState(false);
+  const loop = useRef<LoopControl | null>(null);
+  const ownShip = useShip();
+  const ship = crewing ? 'classic' : ownShip;
+  const avatar = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId)?.avatar ?? '🚀');
+  const busy = running || looping;
 
   useEffect(() => {
     css.mount(cssHost.current);
@@ -307,7 +319,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   }, [running]);
 
   // ---- the flight's shudders: a rumble, the lights flickering, the HUD jolting ----
-  const live = !calm && !moving && !leaving && !covered && !running;
+  const live = !calm && !moving && !leaving && !covered && !busy;
   useEffect(() => {
     if (!live) return;
     startShudders((strength) => {
@@ -327,7 +339,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   const unfocus = useCockpit((s) => s.unfocus);
   const turnTo = useCockpit((s) => s.turnTo);
   const stepTo = useCockpit((s) => s.step);
-  useLookControls(rootRef, { enabled: !moving && !leaving && !covered && !running, focused: focused !== null, onUnfocus: unfocus, holding });
+  useLookControls(rootRef, { enabled: !moving && !leaving && !covered && !busy, focused: focused !== null, onUnfocus: unfocus, holding });
 
   // a screen's page opens once the view has zoomed into it
   useEffect(() => {
@@ -373,6 +385,15 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
         useCanyon.getState().start(low ? 'low' : 'high', calm, 'manual', level);
         return;
       }
+      if (id === 'boost') {
+        // the afterburner: a loop the loop
+        glowLights.hot = null;
+        hovered.current = null;
+        setHover(null);
+        if (useCockpit.getState().focused) unfocus();
+        setLooping(true);
+        return;
+      }
       if (id === 'overhead') return onAbout();
       if (id === 'remote') return onParents();
       sfx.whoosh();
@@ -382,7 +403,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
   );
 
   const onClick = (e: React.MouseEvent) => {
-    if (running) return;
+    if (busy) return;
     const face = (e.target as Element).closest<HTMLElement>('[data-face]');
     if (face?.dataset.face) {
       act(face.dataset.face as FaceId);
@@ -392,7 +413,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     if (focused && !(e.target as Element).closest('.ck3-panel, .ck3-hud-ui')) unfocus();
   };
   const onOver = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || running) return;
+    if (e.pointerType !== 'mouse' || busy) return;
     const id = ((e.target as Element).closest<HTMLElement>('[data-face]')?.dataset.face ?? null) as FaceId | null;
     if (hovered.current === id) return;
     hovered.current = id;
@@ -408,7 +429,8 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     if (c.phase === 'results') c.close();
     else c.land(false);
   }, []);
-  useBack(!covered && !leaving && (running ? endRun : focused ? unfocus : onClose));
+  const endLoop = useCallback(() => loop.current?.end(), []);
+  useBack(!covered && !leaving && (running ? endRun : looping ? endLoop : focused ? unfocus : onClose));
   // (flying, Escape ends the run; the keys are the steering's, canyon/CanyonHud.tsx)
   useEffect(() => {
     if (covered || leaving || !running) return;
@@ -420,8 +442,20 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [covered, leaving, running, endRun]);
+  // (looping, Escape ends it, and Space or Enter goes on from a frozen moment)
   useEffect(() => {
-    if (covered || leaving || running) return;
+    if (covered || leaving || !looping) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') loop.current?.end();
+      else if (e.key === ' ' || e.key === 'Enter') loop.current?.next();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [covered, leaving, looping]);
+  useEffect(() => {
+    if (covered || leaving || busy) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as Element | null;
       // (keys for a control that has them: a dial, a switch, a field)
@@ -455,12 +489,12 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
     // (before the cockpit keeps keys from the game below it)
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [covered, leaving, running, onClose, unfocus, stepTo, act, lang]);
+  }, [covered, leaving, busy, onClose, unfocus, stepTo, act, lang]);
 
   return (
     <div
       ref={rootRef}
-      className={`ck3 ${moving ? 'is-moving' : ''} ${focused ? 'is-focused' : ''} ${isTouchDevice ? 'is-touch' : ''} ${running ? 'is-canyon' : ''}`}
+      className={`ck3 ${moving ? 'is-moving' : ''} ${focused ? 'is-focused' : ''} ${isTouchDevice ? 'is-touch' : ''} ${running ? 'is-canyon' : ''} ${looping ? 'is-looping' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={t.settings}
@@ -485,11 +519,12 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
           canyon={canyon === 'flight' ? runId : null}
         />
         <div ref={cssHost} className="ck3-css-host" />
-        {running ? <CanyonVisor /> : <Hud hover={hover} onClose={onClose} />}
+        {running ? <CanyonVisor /> : <Hud hover={hover} onClose={onClose} quiet={looping} />}
         {panelFor && (
           <Panel key={panelFor} id={panelFor} onClose={unfocus} onParents={onParents} onReset={onReset} onAbout={onAbout} onPilot={onPilot} />
         )}
       </div>
+      {looping && !leaving && <LoopShow calm={calm} low={low} ship={ship} avatar={avatar} inner={innerRef} control={loop} onDone={() => setLooping(false)} />}
       {/* the pages on the screens and the windscreen, drawn on them (css3d.ts) */}
       {createPortal(running ? <CanyonGlass /> : <WindscreenFace />, css.faces.windscreen.element)}
       {SCREENS.map((s) => createPortal(<ScreenFace id={s.id} lit={hover === s.id} open={focused === s.id} rtl={lang === 'he'} />, css.faces[s.id].element, s.id))}

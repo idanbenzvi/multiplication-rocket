@@ -714,6 +714,50 @@ export const sfx = {
     tone(c, 52, t, 0.5, { type: 'sine', gain: 0.05 * strength, glideTo: 38 });
   },
 
+  // ---- the afterburner's loop (the cockpit's easter egg) ----
+
+  /** the screen slashed in two: a blade's hiss and its ring */
+  slash() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.2, 9000, 2400, 0.14);
+    tone(c, 2400, t + 0.04, 0.5, { type: 'triangle', gain: 0.04, glideTo: 3600 });
+    tone(c, 4800, t + 0.06, 0.7, { type: 'sine', gain: 0.025 });
+  },
+
+  /** the afterburner lighting: a deep boom, and a roar tearing away */
+  ignite() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    tone(c, 58, t, 0.9, { type: 'sine', gain: 0.3, glideTo: 26 });
+    noiseBurst(c, t, 0.12, 6000, 1400, 0.14);
+    noiseBurst(c, t, 1.1, 140, 3800, 0.22);
+    tone(c, 80, t + 0.05, 1.0, { type: 'sawtooth', gain: 0.05, glideTo: 680, attack: 0.12 });
+  },
+
+  /** time stopping, as an anime freezes a moment: the air sucked in, a deep bell, a shimmer hanging on */
+  timeStop() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.24, 500, 8000, 0.08);
+    tone(c, 196, t + 0.2, 1.8, { type: 'sine', gain: 0.08 });
+    tone(c, 293.66, t + 0.2, 1.5, { type: 'sine', gain: 0.04 });
+    noiseBurst(c, t + 0.22, 1.3, 9000, 12000, 0.025);
+  },
+
+  /** the loop done: a brassy ta-daa */
+  loopDone() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    brass(c, 392, t, 0.14, 0.1);
+    [523.25, 659.25, 783.99].forEach((f, i) => brass(c, f, t + 0.13, 0.9, 0.11 - i * 0.025));
+    noiseBurst(c, t + 0.13, 0.9, 4000, 11000, 0.05);
+  },
+
   // ---- the launch bay ----
 
   /** the ship on the pad flares away: a shimmer rising to a bright ping */

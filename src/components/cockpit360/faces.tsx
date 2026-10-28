@@ -238,7 +238,7 @@ export function ScreenFace({ id, lit, open, rtl }: { id: ScreenId; lit: boolean;
 /** a part of the cockpit that does something when touched: an invisible pad on it, ringed when it's under the hand */
 export function HotspotFace({ id }: { id: HotspotId }) {
   const t = useT().deck;
-  const label = id === 'stick' ? t.stick : id === 'manual' ? t.manual : id === 'overhead' ? t.overhead : t.remote;
+  const label = id === 'stick' ? t.stick : id === 'manual' ? t.manual : id === 'overhead' ? t.overhead : id === 'boost' ? t.boost : t.remote;
   return (
     <button type="button" className={`ck3-pad ck3-target is-${id}`} aria-label={label}>
       <span className="ck3-pad-ring" aria-hidden />

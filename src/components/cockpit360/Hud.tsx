@@ -91,7 +91,8 @@ function HeadingTape() {
   );
 }
 
-export function Hud({ hover, onClose }: { hover: FaceId | null; onClose: () => void }) {
+/** `quiet`: something's playing over the cockpit (the afterburner's loop): the HUD fades and the cursor's not needed */
+export function Hud({ hover, onClose, quiet = false }: { hover: FaceId | null; onClose: () => void; quiet?: boolean }) {
   const t = useT();
   const d = t.deck;
   const lang = useLang((s) => s.lang);
@@ -120,7 +121,9 @@ export function Hud({ hover, onClose }: { hover: FaceId | null; onClose: () => v
             ? d.overhead
             : hover === 'remote'
               ? d.remote
-              : `${d.screens[hover]} · ${d.clickToOpen}`;
+              : hover === 'boost'
+                ? d.boost
+                : `${d.screens[hover]} · ${d.clickToOpen}`;
 
   return (
     <div className="ck3-hud" dir={rtl ? 'rtl' : 'ltr'}>
@@ -164,7 +167,7 @@ export function Hud({ hover, onClose }: { hover: FaceId | null; onClose: () => v
         </nav>
       )}
 
-      {!isTouchDevice && !focused && <TargetCursor targetSelector=".ck3-target" cursorColor="#ffd9a8" cursorColorOnTarget="#ffb35c" spinDuration={3} size={30} cornerSize={10} thickness={2} padding={8} blendMode="normal" showLabel={false} container={null} />}
+      {!isTouchDevice && !focused && !quiet && <TargetCursor targetSelector=".ck3-target" cursorColor="#ffd9a8" cursorColorOnTarget="#ffb35c" spinDuration={3} size={30} cornerSize={10} thickness={2} padding={8} blendMode="normal" showLabel={false} container={null} />}
     </div>
   );
 }

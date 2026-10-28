@@ -99,6 +99,21 @@ the ⚙️ button instead, and with reduced motion it simply fades in, and turns
 On a computer the top bar keeps all its buttons. On a phone or a tablet it's just the pilot and
 ⚙️; everything else is in the cockpit.
 
+### The afterburner 🔥 (a secret in the cockpit)
+
+Right of the joystick there's an orange lever with two blinking lights, labelled *Afterburner ·
+do NOT pull!* Pull it and the screen is slashed in two, like a page of a manga: the cockpit on one
+side, and sliding in on the other a blueprint of your own ship as a wireframe, you in its window.
+The engine ignites (ドォン!!) and the ship flies a 360° loop in space, the stars wheeling round the
+windscreen, in bursts of anime speed lines, each stopping dead (time frozen, キラッ) while one force
+on the ship is explained with arrows: the **thrust** that speeds it up, the **turning force** that
+bends it round (there's no air in space, so the side thrusters do it), the **seat** pushing you
+towards the middle at **3 G**, and **inertia**, where it would go if the thrusters stopped. The
+numbers are a real loop's: 540 km/h round a 765 m circle. Tap (or Space) to go on, **Skip** or
+Escape to end it. The sound effects are written in Japanese as manga writes them, each with a
+small translation. ([`loop/`](src/components/cockpit360/loop/),
+[the plan](docs/plans/2026-10-28-loop.md))
+
 ### Canyon Run 🏜️ (in the cockpit)
 
 **The orange buttons by the joystick** (MANUAL) take the controls. The countdown comes up on the
