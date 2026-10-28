@@ -252,6 +252,338 @@
     inset 0 0 12px rgba(255, 140, 50, 0.3);
 }
 
+/* diving in, the glass is clear; levelled out, the HUD comes up, a piece at a time */
+.cn-glass > * {
+  transition: opacity 0.6s ease-out;
+}
+.cn-glass > .cn-speed,
+.cn-glass > .cn-pips {
+  transition-delay: 0.2s;
+}
+.cn-glass > .cn-aim {
+  transition-delay: 0.35s;
+}
+.cn-glass.is-descent > * {
+  opacity: 0;
+  transition: none;
+}
+
+/* ---- counting down, on the glass ---- */
+.cn-in-manual {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font: 800 20px var(--hud-font);
+  letter-spacing: 0.4em;
+  white-space: nowrap;
+}
+.cn-in-manual::before,
+.cn-in-manual::after {
+  content: '';
+  width: 130px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--c));
+  box-shadow: 0 0 8px rgba(255, 140, 50, 0.8);
+  transform-origin: right;
+  animation: cnLineIn 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.cn-in-manual::after {
+  background: linear-gradient(270deg, transparent, var(--c));
+  transform-origin: left;
+}
+/* (the run's name gathers out of particles flying in from all round it) */
+.cn-in-title {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  width: 820px;
+  height: 190px;
+  translate: -50% 0;
+  filter: drop-shadow(0 0 10px rgba(255, 150, 60, 0.75));
+}
+.cn-in-title .particle-text {
+  min-height: 0;
+}
+.cn-in-on {
+  position: absolute;
+  top: 152px;
+  left: 50%;
+  translate: -50% 0;
+  font: 800 22px var(--hud-font);
+  letter-spacing: 0.38em;
+  white-space: nowrap;
+  animation: cnRise 0.6s 0.8s ease-out backwards;
+}
+/* the dial at the nose: the count, and round it the thrust building */
+.cn-dial {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  translate: -50% -50%;
+}
+.cn-dial svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--c);
+}
+.cn-dial-ticks,
+.cn-dial-inner {
+  filter: drop-shadow(0 0 4px rgba(255, 140, 50, 0.9));
+  will-change: transform;
+}
+.cn-dial-ticks {
+  stroke-width: 2;
+  opacity: 0.6;
+  animation: cnBoot 0.6s 0.05s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.cn-dial-inner {
+  stroke-width: 1.6;
+  stroke-dasharray: 2 7;
+  opacity: 0.55;
+  animation: cnSpin 7s linear infinite reverse;
+}
+.cn-dial-track {
+  stroke-width: 8;
+  stroke-linecap: round;
+  opacity: 0.16;
+}
+/* (the gauge's glow: a wide faint stroke under it, as it changes every frame and a filter would be redrawn with it) */
+.cn-dial-halo {
+  stroke-width: 18;
+  stroke-linecap: round;
+  opacity: 0.22;
+}
+.cn-dial-fill {
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.cn-dial-mark {
+  stroke-width: 3;
+  opacity: 0.4;
+  transition:
+    opacity 0.2s,
+    stroke 0.2s;
+}
+.cn-dial-mark.is-on {
+  stroke: #fff4cf;
+  opacity: 1;
+}
+.cn-in.is-go .cn-dial-fill,
+.cn-in.is-go .cn-dial-halo,
+.cn-in.is-go .cn-dial-ticks {
+  stroke: #fff4cf;
+}
+/* (a shockwave at each beat) */
+.cn-dial-wave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 176px;
+  height: 176px;
+  margin: -88px 0 0 -88px;
+  border: 3px solid var(--c);
+  border-radius: 50%;
+  box-shadow:
+    0 0 16px rgba(255, 150, 60, 0.85),
+    inset 0 0 16px rgba(255, 150, 60, 0.5);
+  opacity: 0;
+  animation: cnWave 0.8s cubic-bezier(0.1, 0.7, 0.3, 1);
+}
+.cn-in.is-go .cn-dial-wave {
+  border-color: #fff4cf;
+  animation-duration: 1.1s;
+}
+.ck3-hud-glass b.cn-dial-count {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -52%;
+  color: #fff;
+  font: 900 96px / 1 var(--num-font);
+  white-space: nowrap;
+  text-shadow:
+    0 0 16px #ffb35c,
+    0 0 44px #ff7a1a;
+}
+.cn-in.is-go b.cn-dial-count {
+  font-size: 76px;
+}
+.cn-in-thrust {
+  position: absolute;
+  translate: -50% 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  animation: cnRise 0.5s 0.22s ease-out backwards;
+}
+.cn-in-thrust b {
+  min-width: 3.4em;
+  font-size: 26px;
+}
+.cn-in-brief {
+  position: absolute;
+  left: 50%;
+  width: max-content;
+  max-width: 820px;
+  margin: 0;
+  translate: -50% 0;
+  color: #ffe8c8;
+  font: 600 22px var(--ui-font);
+  text-align: center;
+  animation: cnRise 0.6s 0.42s ease-out backwards;
+}
+/* either side: the ship's systems checking in, a beat at a time, and the run */
+.cn-in-panel {
+  position: absolute;
+  top: 200px;
+  width: 280px;
+  padding: 12px 18px 14px;
+  border: 1px solid rgba(255, 179, 92, 0.5);
+  background: linear-gradient(180deg, rgba(255, 140, 50, 0.13), rgba(255, 140, 50, 0.03));
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  animation: cnPanelIn 0.6s 0.02s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.cn-in-panel.is-systems {
+  left: 92px;
+  --from: -36px;
+}
+.cn-in-panel.is-run {
+  right: 92px;
+  --from: 36px;
+}
+.cn-in-panel > em {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 14px;
+}
+.cn-in-panel ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cn-in-panel li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  transition: opacity 0.25s;
+}
+.cn-in-panel li i {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted currentColor;
+  opacity: 0.35;
+}
+.cn-in-panel li b {
+  font-size: 19px;
+}
+.cn-in-panel.is-systems li {
+  opacity: 0.4;
+}
+.cn-in-panel.is-systems li.is-on {
+  opacity: 1;
+  animation: cnLit 0.5s ease-out;
+}
+.cn-in-panel.is-systems li.is-on b {
+  color: var(--cy);
+  text-shadow: 0 0 8px rgba(92, 242, 255, 0.9);
+}
+.cn-in-panel.is-run li {
+  animation: cnRise 0.45s ease-out backwards;
+}
+.cn-in-panel.is-run li:nth-child(1) {
+  animation-delay: 0.37s;
+}
+.cn-in-panel.is-run li:nth-child(2) {
+  animation-delay: 0.57s;
+}
+.cn-in.is-go .cn-in-panel {
+  border-color: rgba(255, 244, 207, 0.9);
+}
+@keyframes cnLineIn {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+}
+@keyframes cnRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes cnBoot {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+@keyframes cnSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cnWave {
+  from {
+    opacity: 0.95;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+@keyframes cnPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--from));
+  }
+}
+@keyframes cnLit {
+  from {
+    background: rgba(92, 242, 255, 0.28);
+  }
+}
+/* (on a screen held upright, the glass's sides are out of the view) */
+@media (max-aspect-ratio: 1/1) {
+  .cn-in-panel {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-dial-inner {
+    animation: none;
+  }
+  .cn-dial-wave {
+    display: none;
+  }
+  .cn-dial-ticks,
+  .cn-in-panel,
+  .cn-in-panel li,
+  .cn-in-manual::before,
+  .cn-in-manual::after {
+    animation-name: cnFade;
+  }
+}
+@keyframes cnFade {
+  from {
+    opacity: 0;
+  }
+}
+
 /* ---- over the view ---- */
 .ck3.is-canyon:not(.is-touch) {
   cursor: crosshair;
@@ -569,27 +901,6 @@
   text-shadow: 0 1px 8px #000;
   animation: ck3HintAway 9s ease-in forwards;
 }
-.cn-intro {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 10px;
-  padding: 0 16px;
-  text-align: center;
-  background: radial-gradient(circle at 50% 45%, rgba(10, 4, 0, 0.55), rgba(10, 4, 0, 0) 70%);
-}
-.cn-intro-manual {
-  color: #ffb35c;
-  font: 800 clamp(15px, 2.2vw, 24px) var(--hud-font);
-  letter-spacing: 0.35em;
-  text-shadow: 0 0 12px rgba(255, 140, 50, 0.8);
-}
-.cn-intro-title {
-  position: relative;
-  filter: drop-shadow(0 0 10px rgba(255, 150, 60, 0.75));
-}
 .cn-intro-brief {
   max-width: 30em;
   margin: 0;
@@ -597,12 +908,28 @@
   font: 600 clamp(14px, 1.7vw, 19px) var(--ui-font);
   text-shadow: 0 2px 8px #000;
 }
-.cn-count {
-  color: #fff;
-  font: 900 clamp(64px, 13vw, 150px) / 1 var(--num-font);
-  text-shadow:
-    0 0 30px #ffb35c,
-    0 0 70px #ff7a1a;
+/* counting down and diving in: the view darkened at its edges, and a film's black bars */
+.cn-visor.is-intro {
+  background: radial-gradient(ellipse 80% 75% at 50% 40%, transparent 55%, rgba(4, 2, 0, 0.55));
+}
+.cn-letterbox i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(22px, 8vh, 84px);
+  background: #000;
+  transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.cn-letterbox i:first-child {
+  top: 0;
+  transform: translateY(-101%);
+}
+.cn-letterbox i:last-child {
+  bottom: 0;
+  transform: translateY(101%);
+}
+.cn-letterbox.is-on i {
+  transform: none;
 }
 .cn-results {
   position: absolute;

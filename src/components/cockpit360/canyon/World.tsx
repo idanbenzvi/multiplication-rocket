@@ -13,6 +13,7 @@ import { flash, fx } from './fx';
 import { RULER, type Gate } from './gates';
 import { BAND_H, BAND_W, SIGN_H, SIGN_W, rulerTexture, signTexture } from './labels';
 import { bridgeMaterial, skyMaterial, terrainMaterial } from './materials';
+import { makeFlock, makeWisps } from './decor';
 import { canyonPalette, linearToHex } from './palette';
 import { CLIMB_S, type RunEvent } from './run';
 import { live, useCanyon } from './useCanyon';
@@ -29,7 +30,9 @@ import { live, useCanyon } from './useCanyon';
 // bullseye, cyan close, violet a miss), and a ring of light bursts out round
 // the windscreen (two, for a bullseye). The canyon's on a destination,
 // its colours a little of that world's; the star low in its sky, lighting
-// it, is the next destination (palette.ts).
+// it, is the next destination (palette.ts). Coming in, wisps of cloud hang
+// over it, the dive swooping through some of them, and a flock of gliders
+// circles over the canyon ahead (decor.ts).
 //
 // The light in the cockpit follows the star: warm and bright while it
 // reaches the ship, cool and dim when the rock's shadow is over it, and its
@@ -42,6 +45,7 @@ import { live, useCanyon } from './useCanyon';
 const AHEAD = { high: 9, low: 7 };
 const FOG_END = { high: 830, low: 650 };
 const DUST = { high: 380, low: 200 };
+const WISPS = { high: 30, low: 18 };
 const SPARKS = 260;
 /** a gate's shards: how many, for each verdict */
 const SHARDS = { bullseye: 110, close: 60, miss: 28 };
@@ -130,6 +134,10 @@ export function CanyonWorld() {
     return { body, glow, textures: [texture, glowTexture] };
   }, [place]);
 
+  // the wisps of cloud over the canyon coming in, and the flock circling over it ahead
+  const wisps = useMemo(() => makeWisps(run, palette, WISPS[quality], FOG_END[quality]), [run, palette, quality]);
+  const flock = useMemo(() => makeFlock(run, palette, calm), [run, palette, calm]);
+
   // the dust in the air, and the sparks off a wall: lines, each a streak from where it is back along the ship's flight
   const dust = useMemo(() => {
     const n = DUST[quality];
@@ -216,13 +224,15 @@ export function CanyonWorld() {
         ring.mesh.geometry.dispose();
         ring.material.dispose();
       }
+      wisps.dispose();
+      flock.dispose();
       view.jolt.yaw = view.jolt.pitch = view.jolt.roll = 0;
       view.kick = 0;
       glowLights.ambient = 0.9;
       glowLights.tint = [1, 1, 1];
       glowLights.passing.k = 0;
     };
-  }, [wind, sky, ground, star, dust, sparks, rings]);
+  }, [wind, sky, ground, star, dust, sparks, rings, wisps, flock]);
 
   const dropBridge = (b: Bridge) => {
     b.group.removeFromParent();
@@ -349,6 +359,13 @@ export function CanyonWorld() {
         s.lastTick = now;
         sfx.tick(e.value);
       }
+    } else if (e.type === 'dive') {
+      // (the nose going down into the canyon)
+      sfx.whoosh();
+    } else if (e.type === 'level') {
+      // (levelling out over the floor, with a bump)
+      sfx.rumble(0.7);
+      if (!calm) s.thump = 0.008;
     } else if (e.type === 'climb') {
       s.climbing = true;
       sfx.flareOut();
@@ -369,6 +386,7 @@ export function CanyonWorld() {
       move: new THREE.Matrix4(),
       v: new THREE.Vector3(),
       sun: new THREE.Vector3(),
+      eye: new THREE.Vector3(),
     }),
     [],
   );
@@ -422,6 +440,11 @@ export function CanyonWorld() {
       wld.matrix.copy(tmp.att).multiply(tmp.move.makeTranslation(-pos[0], -pos[1], -pos[2]));
       wld.matrixWorldNeedsUpdate = true;
     }
+
+    // ---- the wisps (a puff of white on the glass going through one) and the flock ----
+    tmp.eye.set(pos[0], pos[1], pos[2]);
+    if (wisps.update(tmp.eye, ship.d) && !calm) flash([1, 0.97, 0.94], 0.14, 0.05, 0.45);
+    flock.update(clock.elapsedTime, dt, tmp.eye, ship.d);
 
     // ---- the gates' bridges ----
     run.gates.forEach((gate, i) => {
@@ -483,7 +506,8 @@ export function CanyonWorld() {
     // ---- the lens ----
     const rush = clamp01((fwd - 40) / 60);
     const boost = clamp01(ship.boost / 30);
-    fx.speed = calm ? 0 : rush * 0.05 + boost * 0.04;
+    // (diving in, the smear's less: the canyon below should read)
+    fx.speed = calm ? 0 : (rush * 0.05 + boost * 0.04) * (run.phase === 'descent' ? 0.4 : 1);
     tmp.v.set(0, Math.sin(NOSE_PITCH), -Math.cos(NOSE_PITCH)).project(camera);
     fx.heading = [tmp.v.x * 0.5 + 0.5, tmp.v.y * 0.5 + 0.5];
     const turnRate = (ship.heading - s.lastHeading) / Math.max(dt, 1e-3);
@@ -621,6 +645,8 @@ export function CanyonWorld() {
       </group>
       <group ref={world} matrixAutoUpdate={false}>
         <group ref={terrain} />
+        <primitive object={wisps.group} />
+        <primitive object={flock.mesh} />
         <primitive object={dust.lines} />
         <primitive object={sparks.lines} />
       </group>

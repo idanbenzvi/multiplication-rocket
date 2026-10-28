@@ -100,11 +100,17 @@ On a computer the top bar keeps all its buttons. On a phone or a tablet it's jus
 
 ### Canyon Run 🏜️ (in the cockpit)
 
-**The orange buttons by the joystick** (MANUAL) take the controls: a countdown, a white-out, and
-the ship dives into a canyon on the world it's flying to and races along it, at sunset, the next
-destination hanging low in the sky where the sun would be. The canyon takes a little of its world's
-colours (Mars redder, Neptune bluer, the alien planet greener) and its light a little of that
-star's. Across the canyon,
+**The orange buttons by the joystick** (MANUAL) take the controls. The countdown comes up on the
+windscreen: *MANUAL CONTROL*, *CANYON RUN* gathering out of sparks of light, the world it's on, and
+at the nose a dial counting *3, 2, 1, GO!* as the thrust builds round it, the ship's systems
+checking in a beat at a time on one side and the run on the other (where to, your best, which run
+this is). Each beat shakes the cockpit, the engines charge up, and the stars stream faster and
+faster until everything goes white. Out of the white, like the opening shot of a film, the ship
+glides high over a canyon on the world it's flying to, a flock of gliders circling over it, then
+swoops down into it through wisps of cloud, levels out over its floor and races along it, at
+sunset, the next destination hanging low in the sky where the sun would be. The canyon takes a
+little of its world's colours (Mars redder, Neptune bluer, the alien planet greener) and its light
+a little of that star's. Across the canyon,
 eight times, a **gate**: a pane of light from wall to wall with **a stretch of the number line**
 on it (21 numbers, every fifth named) and a fact over it, *7 × 8 = ?*, which comes up on the
 windscreen too. The answer is somewhere on that line, never at its very ends: **steer to where it

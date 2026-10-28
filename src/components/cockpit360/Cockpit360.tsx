@@ -22,6 +22,7 @@ import { stopLook, useCockpit } from './store';
 import { useLookControls } from './useLookControls';
 import { runQuality, useCanyon } from './canyon/useCanyon';
 import { CanyonGlass, CanyonVisor } from './canyon/CanyonHud';
+import { flashNow } from './canyon/fx';
 import { baseFov, HOME, lookAt, lookTo, settled, shudder, startShudders, stopShudders, view } from './view';
 import './cockpit360.css';
 
@@ -281,6 +282,29 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       lookTo(run.look, run.fov, 6);
     } else if (canyon === 'off') lookTo(HOME, view.base, 8);
   }, [canyon]);
+
+  // its white-outs (diving in, climbing out) cover the screens and the glass's page too, not only the
+  // 3D behind them: the pages fade into the white there (a gate's flashes, much fainter, leave them be)
+  useEffect(() => {
+    const host = cssHost.current;
+    if (!running || !host) return;
+    let raf = 0;
+    let shown = 1;
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      const a = flashNow()[3];
+      const k = Math.round((1 - clamp01((a - 0.45) / 0.5)) * 100) / 100;
+      if (k !== shown) {
+        host.style.opacity = k < 1 ? String(k) : '';
+        shown = k;
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      host.style.opacity = '';
+    };
+  }, [running]);
 
   // ---- the flight's shudders: a rumble, the lights flickering, the HUD jolting ----
   const live = !calm && !moving && !leaving && !covered && !running;

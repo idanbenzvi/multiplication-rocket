@@ -3,7 +3,7 @@ import type { Progress } from '../../../game/types';
 import { Canyon, CLAY, DUNES, GATE_HALF, HOVER, MAX_HEIGHT, sunlight, WASH } from './field';
 import { buildChunk, CHUNK, columns } from './chunk';
 import { buildGates, GATE_COUNT, gateDistances, judge, LANE, RULER, RULER_ROOM, runLength, SPAN, uOf, valueAt, windowFor } from './gates';
-import { PACE_MAX, PACE_MIN, PACE_START, Run } from './run';
+import { DESCENT_S, OVER_S, PACE_MAX, PACE_MIN, PACE_START, Run, START_HEIGHT } from './run';
 import { seeded } from './noise';
 import { canLand, nextDue, NO_CANYON } from './arrival';
 import { canyonPalette, hexToLinear, linearToHex, STRATA, tint } from './palette';
@@ -228,6 +228,43 @@ describe('Canyon Run: the flight', () => {
     // a minute and a half or two (not steered, it misses, so it slows to its gentlest)
     expect(run.time).toBeGreaterThan(50);
     expect(run.time).toBeLessThan(130);
+  });
+
+  it('dives in as a film opens: a glide high over the canyon, then a smooth swoop, its nose never far down, levelling out over the floor', () => {
+    for (const calm of [false, true]) {
+      const run = runFor(23, calm);
+      const types: string[] = [];
+      let steepest = 0;
+      let turning = 0;
+      let last = run.ship.pitch;
+      while (run.phase === 'descent') {
+        types.push(...run.step(1 / 60).map((e) => e.type));
+        const s = run.ship;
+        const h = s.y - run.canyon.floor(s.d);
+        // (gliding over it a moment after the white's cleared, looking a little down along it)
+        if (run.time < OVER_S) {
+          expect(h).toBeCloseTo(HOVER + START_HEIGHT, 0);
+          expect(s.pitch).toBeLessThan(0);
+          expect(s.pitch).toBeGreaterThan(-0.15);
+        }
+        steepest = Math.min(steepest, s.pitch);
+        turning = Math.max(turning, Math.abs(s.pitch - last) * 60);
+        last = s.pitch;
+        // (where the world sets things along its way down, the wisps of cloud: about where it goes)
+        const p = run.descentAt(run.time);
+        expect(Math.abs(p.d - s.d)).toBeLessThan(5);
+        expect(Math.abs(p.y - s.y)).toBeLessThan(1);
+      }
+      expect(types).toEqual(['dive', 'level']);
+      expect(run.time).toBeCloseTo(DESCENT_S, 1);
+      // nose down into it, but never so far it loses the canyon ahead, and turning smoothly
+      expect(steepest).toBeLessThan(-0.3);
+      expect(steepest).toBeGreaterThan(-0.55);
+      expect(turning).toBeLessThan(0.8);
+      // levelled out at the hover's height
+      expect(run.ship.y - run.canyon.floor(run.ship.d)).toBeCloseTo(HOVER, 1);
+      expect(Math.abs(run.ship.pitch)).toBeLessThan(0.02);
+    }
   });
 
   it('keeps over the floor and inside the walls all the way', () => {

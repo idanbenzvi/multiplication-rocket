@@ -279,9 +279,12 @@ void main() {
   col += albedo * uBandColor * glow * (0.35 + 0.65 * max(dot(n, toBand / max(bd, 0.001)), 0.0));
   col += albedo * uFlash;
 
-  // the air: haze with distance, and a mist low in the canyon
+  // the air: haze with distance, and a mist low in the canyon (looked down on from high over it, thinner:
+  // the way down to it is through clear air, the mist's thickness the average along it, as Quilez's height fog)
   float fog = max(1.0 - exp(-dist * 0.0016), smoothstep(uFogEnd * 0.62, uFogEnd, dist));
-  float mist = exp(-max(vWorld.y - uFloorY, 0.0) * 0.07) * (1.0 - exp(-dist * 0.005)) * 0.45;
+  float low = max(vWorld.y - uFloorY, 0.0);
+  float over = max(uEye.y - uFloorY - 12.0 - low, 0.0) * 0.07;
+  float mist = exp(-low * 0.07) * (over < 0.001 ? 1.0 : (1.0 - exp(-over)) / over) * (1.0 - exp(-dist * 0.005)) * 0.45;
   col = mix(col, haze(V), clamp(fog + mist * (1.0 - fog), 0.0, 1.0));
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>

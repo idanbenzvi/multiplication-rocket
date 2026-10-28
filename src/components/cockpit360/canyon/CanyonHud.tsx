@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { memo, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useLang, useT } from '../../../i18n/useLang';
 import { isTouchDevice } from '../../../settings/useSettings';
 import { sfx } from '../../../audio/sfx';
 import { OP_SYMBOL } from '../../../game/mission';
+import { activeMission, useProfiles } from '../../../profiles/useProfiles';
+import { loadCanyonRecord, type CanyonRecord } from '../../../storage/canyonRecord';
 import CountUp from '../../reactbits/CountUp';
 import Counter from '../../reactbits/Counter';
 import DecryptedText from '../../reactbits/DecryptedText';
@@ -13,27 +15,35 @@ import ParticleText from '../../reactbits/ParticleText';
 import ShinyText from '../../reactbits/ShinyText';
 import StarBorder from '../../reactbits/StarBorder';
 import { dirOfLook, pointOnQuad } from '../geometry';
-import { NOSE_PITCH } from '../drive';
+import { drive, NOSE_PITCH } from '../drive';
+import { glowLights } from '../lights';
 import { WINDSCREEN_PX, WINDSCREEN_QUAD } from '../screens';
+import { shudder, view } from '../view';
 import { GATE_GAP, LANE, RULER, SPAN, valueAt, type Gate, type GateResult } from './gates';
-import { live, useCanyon } from './useCanyon';
+import { INTRO_S, live, useCanyon } from './useCanyon';
 import './canyon.css';
 
 // What a Canyon Run shows the pilot. On the windscreen's glass, in the HUD's
-// amber: the gate coming up and its fact, how far to it, the speed, the
-// number the ship's aiming at (rolling up and down as it's steered, as the
-// HUD's numbers do), a pip for each gate (gold a bullseye, cyan close, dim a
-// miss), and, through a gate, what it was: BULLSEYE (and how many in a
-// row), or how close, with a little number line from the number flown
+// amber: first the countdown (MANUAL CONTROL, the run's name gathering out
+// of particles and the world it's on, a dial at the nose counting 3, 2, 1,
+// GO as the thrust builds round it, the ship's systems checking in at each
+// beat on one side and the run on the other, each beat shaking the cockpit
+// and the stars streaming faster and faster); then, once it's levelled out
+// of the dive, the gate coming up and its fact, how far to it, the speed,
+// the number the ship's aiming at (rolling up and down as it's steered, as
+// the HUD's numbers do), a pip for each gate (gold a bullseye, cyan close,
+// dim a miss), and, through a gate, what it was: BULLSEYE (and how many in
+// a row), or how close, with a little number line from the number flown
 // through to the answer, the gap between them being the difference. Over
-// the view: the countdown before diving in (or, arriving, the canyon's name
-// as the white clears), the way to steer (keys, the mouse across the
-// screen, or a finger), End run, and the run's results at its end. Along
-// the bottom while it flies, the steering rail: the next gate's numbers
-// across the screen as the mouse steers by them, the ship's place on it,
-// where it's going, and between them how many numbers it has still to go
-// (taps add up, the count popping with each); with a mouse, the reticle
-// stands for the pointer, the number under it in it and how far that is.
+// the view: a film's black bars, counting down and diving in (or,
+// arriving, the canyon's name as the white clears), the way to steer (keys,
+// the mouse across the screen, or a finger), End run, and the run's results
+// at its end. Along the bottom while it flies, the steering rail: the next
+// gate's numbers across the screen as the mouse steers by them, the ship's
+// place on it, where it's going, and between them how many numbers it has
+// still to go (taps add up, the count popping with each); with a mouse, the
+// reticle stands for the pointer, the number under it in it and how far
+// that is.
 
 /** the nose on the windscreen's page (the flight's heading) */
 const NOSE = (() => {
@@ -58,6 +68,208 @@ function useTicker(ms: number) {
 }
 
 const factOf = (g: Gate) => `${g.x} ${OP_SYMBOL[g.op]} ${g.y}`;
+
+// ---- the countdown, on the glass ----
+
+/** its beats (s): 3, 2, 1, GO, the white-out on its heels (useCanyon.ts) */
+const BEATS = [0.55, 1.3, 2.05, 2.8];
+/** how hard each beat shakes the cockpit (a shudder's strength) */
+const BEAT_SHAKE = [0.35, 0.45, 0.6, 1];
+/** the thrust building round the count (s): from just before the first beat to GO */
+const THRUST_FROM = 0.4;
+const THRUST_TO = 2.8;
+/** the engines charging up (s): from then till the white */
+const CHARGE_AT = 0.5;
+/** when the readouts round the dial come up (s): a moment after the rest, so it's not all put up in one frame */
+const LATE_S = 0.18;
+/** the dial's gauge: 300° of a circle round the count, open at the bottom, filling clockwise */
+const GAUGE_R = 88;
+const GAUGE_LEN = (300 / 360) * 2 * Math.PI * GAUGE_R;
+const GAUGE_ARC = `M ${-GAUGE_R / 2} ${GAUGE_R * Math.sin(Math.PI / 3)} A ${GAUGE_R} ${GAUGE_R} 0 1 1 ${GAUGE_R / 2} ${GAUGE_R * Math.sin(Math.PI / 3)}`;
+/** the ring of ticks round it (turning, faster as the thrust builds), a long one every sixth */
+const DIAL_TICKS = Array.from({ length: 72 }, (_, i) => {
+  const a = (i / 72) * Math.PI * 2;
+  const r0 = i % 6 === 0 ? 97 : 102;
+  return `M ${(Math.cos(a) * r0).toFixed(1)} ${(Math.sin(a) * r0).toFixed(1)} L ${(Math.cos(a) * 108).toFixed(1)} ${(Math.sin(a) * 108).toFixed(1)}`;
+}).join(' ');
+/** a mark across the gauge where it'll be at each beat */
+const BEAT_MARKS = BEATS.map((s) => {
+  const a = ((120 + (300 * (s - THRUST_FROM)) / (THRUST_TO - THRUST_FROM)) * Math.PI) / 180;
+  return { x1: Math.cos(a) * 79, y1: Math.sin(a) * 79, x2: Math.cos(a) * 97, y2: Math.sin(a) * 97 };
+});
+
+/**
+ * Counting down to the dive, on the glass: MANUAL CONTROL, the run's name
+ * gathering out of particles and the world it's on; at the nose a dial, the
+ * count in it and round it the thrust building (a gauge filling to GO, a
+ * ring of ticks turning faster and faster, a shockwave at each beat), and
+ * either side the ship's systems checking in a beat at a time and the run
+ * (where to, the best yet, which run this is). Each beat blips, shakes the
+ * cockpit a little harder, flickers its lights and kicks the view, the
+ * engines charge up under it all, and the stars outside stream faster and
+ * faster till the white (with reduced motion, none of the shaking, kicking
+ * or rushing).
+ */
+const GlassIntro = memo(function GlassIntro() {
+  const t = useT().canyon;
+  const places = useT().destinations;
+  const rtl = useLang((s) => s.lang) === 'he';
+  const [step, setStep] = useState(-1);
+  const [late, setLate] = useState(false);
+  const ticks = useRef<SVGSVGElement>(null);
+  const gauge = useRef<SVGPathElement>(null);
+  const halo = useRef<SVGPathElement>(null);
+  const thrust = useRef<HTMLElement>(null);
+  // (the run, as it stands before this one: the best yet, and so which this is)
+  const [record] = useState(() => loadCanyonRecord(useProfiles.getState().activeId, activeMission()));
+  const gates = live.run?.gates.length ?? 0;
+
+  useEffect(() => {
+    const calm = live.calm;
+    const t0 = performance.now();
+    let last = t0;
+    let beat = -1;
+    let charged = false;
+    let up = false;
+    let turned = 0;
+    let shown = -1;
+    let raf = 0;
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      const s = (now - t0) / 1000;
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      while (beat + 1 < BEATS.length && s >= BEATS[beat + 1]) {
+        beat++;
+        setStep(beat);
+        sfx.blip(beat === 3 ? 6 : beat);
+        if (!calm) {
+          shudder(BEAT_SHAKE[beat]);
+          glowLights.flicker = Math.max(glowLights.flicker, BEAT_SHAKE[beat]);
+          view.kick = Math.max(view.kick, 0.035 * BEAT_SHAKE[beat]);
+        }
+        if (beat === 3) sfx.rumble(calm ? 0.4 : 1);
+      }
+      if (!up && s >= LATE_S) {
+        up = true;
+        setLate(true);
+      }
+      if (!charged && s >= CHARGE_AT) {
+        charged = true;
+        sfx.chargeUp(INTRO_S - CHARGE_AT - 0.1);
+      }
+      const k = Math.max(0, Math.min(1, (s - THRUST_FROM) / (THRUST_TO - THRUST_FROM)));
+      const left = (GAUGE_LEN * (1 - k)).toFixed(1);
+      gauge.current?.setAttribute('stroke-dashoffset', left);
+      halo.current?.setAttribute('stroke-dashoffset', left);
+      turned = (turned + dt * (calm ? 6 : 14 + 300 * k * k)) % 360;
+      if (ticks.current) ticks.current.style.transform = `rotate(${turned.toFixed(2)}deg)`;
+      const pct = Math.round(k * 100);
+      if (pct !== shown && thrust.current) {
+        thrust.current.textContent = `${pct}%`;
+        shown = pct;
+      }
+      if (!calm) {
+        // (the stars rushing, the drive's boost held up as it builds; and the beat's kick dying away)
+        drive.boost = Math.max(drive.boost, 1.3 * k * k);
+        view.kick *= Math.exp(-dt * 4);
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const count = step < 0 ? null : step < 3 ? String(3 - step) : t.go;
+  return (
+    <div className={`cn-in ${step === 3 ? 'is-go' : ''}`}>
+      <div className="cn-in-manual">
+        <DecryptedText text={t.manual} animateOn="view" speed={40} maxIterations={10} sequential revealDirection="start" characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*" />
+      </div>
+      <div className="cn-in-title">
+        <ParticleText text={t.title} fontFamily="'Orbitron', 'Secular One', 'Fredoka', sans-serif" fontWeight={800} fontSize={80} centerY={95} fitWidth={720} color="#ffe2bd" highlightColor="#ffb35c" particleSize={1.75} density={2} maxParticles={3000} glow={false} scatter={300} gatherDuration={1100} pointerRepel={0} idleDrift={0} trigger="mount" />
+      </div>
+      <ShinyText text={t.on(places[live.place.world])} className="cn-in-on" color="#ffe2bd" shineColor="#ffffff" speed={2} />
+
+      <div className="cn-dial" style={{ left: NOSE.x, top: NOSE.y }}>
+        {/* (the rings turning are layers of their own, turned whole, so nothing's redrawn as they turn) */}
+        <svg ref={ticks} className="cn-dial-ticks" viewBox="-130 -130 260 260" aria-hidden>
+          <path d={DIAL_TICKS} />
+        </svg>
+        <svg className="cn-dial-inner" viewBox="-130 -130 260 260" aria-hidden>
+          <circle r="66" />
+        </svg>
+        <svg className="cn-dial-gauge" viewBox="-130 -130 260 260" aria-hidden>
+          <path d={GAUGE_ARC} className="cn-dial-track" />
+          <path ref={halo} d={GAUGE_ARC} className="cn-dial-halo" strokeDasharray={GAUGE_LEN.toFixed(1)} strokeDashoffset={GAUGE_LEN.toFixed(1)} />
+          <path ref={gauge} d={GAUGE_ARC} className="cn-dial-fill" strokeDasharray={GAUGE_LEN.toFixed(1)} strokeDashoffset={GAUGE_LEN.toFixed(1)} />
+          {BEAT_MARKS.map((m, i) => (
+            <line key={i} {...m} className={`cn-dial-mark ${step >= i ? 'is-on' : ''}`} />
+          ))}
+        </svg>
+        {step >= 0 && <span key={step} className="cn-dial-wave" />}
+        <AnimatePresence>
+          {count && (
+            <motion.b key={count} className="cn-dial-count" initial={{ opacity: 0, scale: 0.55 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.5, filter: 'blur(8px)' }} transition={{ type: 'spring', stiffness: 520, damping: 26, opacity: { duration: 0.15 } }}>
+              {count}
+            </motion.b>
+          )}
+        </AnimatePresence>
+      </div>
+      {late && (
+        <>
+          <div className="cn-in-thrust" style={{ left: NOSE.x, top: NOSE.y + 116 }}>
+            <em>{t.thrust}</em>
+            <b ref={thrust}>0%</b>
+          </div>
+          <p className="cn-in-brief" style={{ top: NOSE.y + 150 }}>
+            {t.brief}
+          </p>
+          <IntroPanels step={step} gates={gates} record={record} rtl={rtl} />
+        </>
+      )}
+    </div>
+  );
+});
+
+/** either side of the dial: the ship's systems checking in a beat at a time, and the run */
+function IntroPanels({ step, gates, record, rtl }: { step: number; gates: number; record: CanyonRecord; rtl: boolean }) {
+  const t = useT().canyon;
+  const places = useT().destinations;
+  const systems = [t.thrusters, t.numberLine, t.gates(gates)];
+  return (
+    <>
+      <div className="cn-in-panel is-systems" dir={rtl ? 'rtl' : 'ltr'}>
+        <em>{t.systems}</em>
+        <ul>
+          {systems.map((label, i) => (
+            <li key={i} className={step >= i ? 'is-on' : ''}>
+              <span>{label}</span>
+              <i />
+              <b>{step >= i ? 'OK' : '···'}</b>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="cn-in-panel is-run" dir={rtl ? 'rtl' : 'ltr'}>
+        <em>
+          {t.runLabel} {t.runNo(record.runs + 1)}
+        </em>
+        <ul>
+          <li>
+            <span>{t.target}</span>
+            <i />
+            <b>{places[live.place.world].toUpperCase()}</b>
+          </li>
+          <li>
+            <span>{t.record}</span>
+            <i />
+            <b>{record.best > 0 ? `${record.best}/${gates}` : '—'}</b>
+          </li>
+        </ul>
+      </div>
+    </>
+  );
+}
 
 /** from the number flown through to the answer, on a little number line */
 function Gap({ result, gate }: { result: GateResult; gate: Gate }) {
@@ -117,6 +329,13 @@ export function CanyonGlass() {
   }, [shout]);
 
   const run = live.run;
+  if (phase === 'intro') {
+    return (
+      <div className="ck3-hud-glass cn-glass" dir="ltr">
+        <GlassIntro />
+      </div>
+    );
+  }
   if (phase !== 'flight' || !run) {
     return <div className="ck3-hud-glass cn-glass" dir="ltr" />;
   }
@@ -128,7 +347,8 @@ export function CanyonGlass() {
   const shoutGate = shown ? run.gates[shown.result.gate] : null;
 
   return (
-    <div className="ck3-hud-glass cn-glass" dir="ltr">
+    // (diving in, the glass is clear: the HUD comes up once it's levelled out)
+    <div className={`ck3-hud-glass cn-glass ${run.phase === 'descent' ? 'is-descent' : ''}`} dir="ltr">
       {/* the gate coming up, and its fact (making way for what the last one was, or the canyon's name) */}
       <div className={`cn-fact ${shown || titled ? 'is-away' : ''}`}>
         {gate ? (
@@ -438,29 +658,29 @@ function SteerPad() {
   return <div className="cn-pad" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />;
 }
 
-function Countdown() {
-  const t = useT().canyon;
-  const [step, setStep] = useState(-1);
+/** a film's black bars, top and bottom: counting down, and diving in (they draw back as it levels out) */
+function Letterbox() {
+  const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // 3, 2, 1, GO, the white-out on its heels
-    const at = [0.55, 1.3, 2.05, 2.8];
-    const ids = at.map((s, i) =>
-      window.setTimeout(() => {
-        setStep(i);
-        sfx.blip(i === 3 ? 6 : i);
-      }, s * 1000),
-    );
-    return () => ids.forEach((id) => window.clearTimeout(id));
+    let raf = 0;
+    let shown: boolean | null = null;
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      const { phase } = useCanyon.getState();
+      const on = phase === 'intro' || (phase === 'flight' && live.run?.phase === 'descent');
+      if (on !== shown) {
+        root.current?.classList.toggle('is-on', on);
+        shown = on;
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
   }, []);
-  const label = step < 0 ? null : step < 3 ? String(3 - step) : t.go;
   return (
-    <AnimatePresence>
-      {label && (
-        <motion.b key={label} className="cn-count" initial={{ opacity: 0, scale: 2.2 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={{ duration: 0.28 }}>
-          {label}
-        </motion.b>
-      )}
-    </AnimatePresence>
+    <div ref={root} className="cn-letterbox" aria-hidden>
+      <i />
+      <i />
+    </div>
   );
 }
 
@@ -481,25 +701,11 @@ export function CanyonVisor() {
   useMouseSteering(phase === 'flight' && !isTouchDevice);
   const place = useT();
   const world = live.place.world;
-  const [title, setTitle] = useState({ w: 0, h: 0 });
-  useEffect(() => setTitle({ w: Math.min(window.innerWidth * 0.86, 720), h: Math.min(170, window.innerWidth * 0.2) }), []);
 
   return (
     <div className={`cn-visor is-${phase}`} dir={rtl ? 'rtl' : 'ltr'}>
+      <Letterbox />
       {phase === 'flight' && isTouchDevice && <SteerPad />}
-
-      {phase === 'intro' && (
-        <div className="cn-intro">
-          <DecryptedText text={t.manual} className="cn-intro-manual" animateOn="view" speed={40} maxIterations={10} sequential revealDirection="start" characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*" />
-          {title.w > 0 && (
-            <div className="cn-intro-title" style={{ width: title.w, height: title.h }}>
-              <ParticleText text={t.title} fontFamily="'Orbitron', 'Secular One', 'Fredoka', sans-serif" fontWeight={800} fontSize={Math.round(title.h * 0.5)} color="#ffe2bd" highlightColor="#ffb35c" particleSize={1.7} density={2} maxParticles={3200} glow={false} scatter={title.w * 0.5} gatherDuration={1100} trigger="mount" />
-            </div>
-          )}
-          <p className="cn-intro-brief">{t.brief}</p>
-          <Countdown />
-        </div>
-      )}
 
       <AnimatePresence>
         {titled && (

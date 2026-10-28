@@ -180,6 +180,7 @@ const ParticleText = ({
 
       gatherStart = now;
       gathering = true;
+      ensureRenderLoop();
     };
 
     const drawParticle = (particle: Particle): void => {
@@ -210,6 +211,8 @@ const ParticleText = ({
       pointer.smoothY += (pointer.y - pointer.smoothY) * 0.18;
 
       let complete = true;
+      // (added here) the most any particle moved this frame
+      let moved = 0;
 
       particles.forEach(particle => {
         let baseX = particle.targetX;
@@ -241,8 +244,11 @@ const ParticleText = ({
         }
 
         const follow = reducedMotion ? 1 : 0.22;
-        particle.x += (baseX - particle.x) * follow;
-        particle.y += (baseY - particle.y) * follow;
+        const stepX = (baseX - particle.x) * follow;
+        const stepY = (baseY - particle.y) * follow;
+        particle.x += stepX;
+        particle.y += stepY;
+        moved = Math.max(moved, Math.abs(stepX) + Math.abs(stepY));
 
         ctx.globalAlpha = clamp(0.35 + progress * 0.65, 0, 1);
         drawParticle(particle);
@@ -255,6 +261,14 @@ const ParticleText = ({
         gathering = false;
       }
 
+      // (changed here) gathered and still, nothing drifting it nor pushing it about: no more frames
+      // till something does (a pointer, a resize, another gather)
+      const drifting = !reducedMotion && idleDrift > 0;
+      const pushed = pointer.active && !reducedMotion && pointerRepel > 0;
+      if (!gathering && !drifting && !pushed && moved < 0.02) {
+        animationFrame = null;
+        return;
+      }
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -266,9 +280,10 @@ const ParticleText = ({
 
     const sampleText = async (): Promise<void> => {
       const currentBuild = ++buildId;
-      const rect = container.getBoundingClientRect();
-      width = Math.floor(rect.width);
-      height = Math.floor(rect.height);
+      // (changed here) the box's own size, not the one it's drawn at: on a transformed page (a
+      // 3D one, even) the box on the screen isn't the canvas's
+      width = container.clientWidth;
+      height = container.clientHeight;
 
       if (width <= 0 || height <= 0) return;
 
@@ -401,10 +416,12 @@ const ParticleText = ({
       pointer.x = event.clientX - rect.left;
       pointer.y = event.clientY - rect.top;
       pointer.active = true;
+      ensureRenderLoop();
     };
 
     const handlePointerLeave = (): void => {
       pointer.active = false;
+      ensureRenderLoop();
     };
 
     const handlePointerEnter = (event: PointerEvent): void => {

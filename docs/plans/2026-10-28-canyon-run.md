@@ -117,8 +117,8 @@ ship's moves.
   walls, beacons as a gate nears, ticks per number stepped, a chord through a gate (rising with
   the run in a row), scrapes and thuds.
 - **React Bits**: DecryptedText (MANUAL CONTROL), ParticleText (the title gathering), ShinyText
-  (BULLSEYE, NEW BEST), GradientText (in a row, the results' title), ElectricBorder (the results
-  card), CountUp (its numbers), StarBorder (Fly again).
+  (the world it's on, BULLSEYE, NEW BEST), GradientText (in a row, the results' title),
+  ElectricBorder (the results card), CountUp (its numbers), StarBorder (Fly again).
 - **Reduced motion**: slower, no shudders, no blur, no kick or ring, softer flashes; the run's the
   same.
 
@@ -166,6 +166,50 @@ control with a target reticle to choose how far to go; polish the effects; vary 
   boulder (a `ground` attribute); building them costs the same as before (~32 ms a chunk on the
   worker).
 
+## The way in, polished
+
+The user: further smooth, polish and decorate the intro scene (taken as the countdown after
+MANUAL and the dive into the canyon). Before: the countdown's text sat over the view in a grid
+that re-centred, so it jumped at every beat; each number shrank out as the next grew in over it,
+over the console's middle screen; and the dive was two seconds of pink blur, its glide over the
+canyon spent under the white and its nose 35° down into sandy haze.
+
+- **The countdown is on the windscreen's glass** (`GlassIntro`), every piece placed, so nothing
+  moves when the count changes: MANUAL CONTROL decoding between two lines; CANYON RUN gathering
+  out of particles (ParticleText now measures its own box, `clientWidth`, as on the glass's 3D
+  page the box on the screen isn't the canvas's, and stops drawing once it's gathered and still);
+  ON THE MOON in ShinyText; at the nose a **dial**: the count (the old number swells to 1.5× and
+  blurs away as the new one springs in from 0.55×), a 300° gauge filling from 0.4 s to GO, a mark
+  across it for each beat, lit as it passes, a ring of ticks turning faster as the thrust builds
+  (14 to 314°/s), a dashed ring turning back, and a shockwave at each beat (gold at GO); under it
+  THRUST 0–100%, and the brief. Either side: **SYSTEMS CHECK** (thrusters, the number line, the
+  gates, OK in cyan a beat at a time) and the **run** (RUN #3, the target world, the best yet);
+  hidden on a screen held upright, where the glass's sides are out of view. The readouts and
+  panels come up 0.18 s in, so the glass isn't all drawn in one frame.
+- **Each beat** blips, shakes the cockpit (0.35, 0.45, 0.6, then 1 at GO), flickers its lights and
+  kicks the view wider (3.5% at most); the engines charge up from 0.5 s till the white
+  (`sfx.chargeUp`), and the stars stream faster and faster (the drive's boost held up to 1.3·k²).
+  A film's black bars close in top and bottom, and the view darkens at its edges. With reduced
+  motion: no shakes, kicks or rush, no shockwaves.
+- **The white covers everything**: the screens and the glass's pages are drawn over the 3D, so
+  they used to stay dark through it; now they fade into it (the CSS layer's opacity follows the
+  lens flash's strength above 0.45, so a gate's fainter flashes leave them be).
+- **The dive** (`run.ts`): it glides 1.4 s at 125 over the floor, looking 6° down along the
+  canyon, a vista for a moment after the white has gone, then swoops down over 2.8 s; the nose
+  follows 55% of the way it's falling (35% with reduced motion) and **flares**, coming up from 45%
+  to 90% of the way down, so it peaks at 26° down (21°) and is level as it settles at the hover's
+  height. The lens smears it 0.4× as much as at that speed in the canyon. The low **mist** is
+  thinner looked down on from above: the eye's height over the floor (less 12) is clear air, and
+  the mist's thickness is its average along the way down to the point (`(1 − e^(−k·h)) / (k·h)`,
+  as Quilez's height fog), so from 125 up the floor's through an eighth of it, and in the canyon
+  it's as before. The HUD's off the glass while it dives and comes up a piece at a time as it
+  levels out (the gate, then the speed and the pips, then AIM), and the black bars draw back.
+- **Decor** (`decor.ts`): wisps of cloud, two on the dive's way down (each a puff of white on the
+  glass as it goes through, thinning from 40 units off so they're never a sheet over it), the rest
+  round it and strung along the canyon ahead; and a flock of 14 gliders circling over the canyon
+  300-odd units ahead, flapping and gliding by turns, banked into their turn, dark against the
+  haze, which scatter up and away as the ship comes.
+
 ## Arriving in a canyon
 
 `arrival.ts` counts down levels in the pilot's canyon record (`due`, 3 or 4 at random, set the
@@ -188,14 +232,20 @@ Space) jumps to the white. With reduced motion the dive's a still picture that f
 
 ## Checked
 
-27 unit tests (`canyon.test.ts`): determinism, a clear floor and walls, gates widening the canyon,
+28 unit tests (`canyon.test.ts`): determinism, a clear floor and walls, gates widening the canyon,
 spires away from gates, the floor's stretches and boulders, shadows, chunk seams, 16-bit indices,
-ruler windows, judging, the gates for ×, + and mixed, a full run that stays in bounds, a perfect
-run, taps and glides, taps adding up into one slide (and a bounce counting once), following the
-mouse, scraping, the pace, aiming, when a canyon's due (and never the asteroid belt), and the
-palette.
+ruler windows, judging, the gates for ×, + and mixed, a full run that stays in bounds, the dive
+(a glide high over the canyon, a swoop never more than 0.55 rad nose down nor turning faster than
+0.8 rad/s, level at the hover's height, `descentAt` within 5 units of it), a perfect run, taps and
+glides, taps adding up into one slide (and a bounce counting once), following the mouse, scraping,
+the pace, aiming, when a canyon's due (and never the asteroid belt), and the palette.
 In the browser: desktop, phone, Hebrew and reduced motion, flown on an autopilot through all
 eight gates to the results; manual runs on Mars, Neptune, the alien planet and Earth; an arrival
 from the level's end through the descent, the run, its results, Fly again and back to the game;
 60 fps with the CPU slowed 4× on a production build, the descent included (the cockpit's half
 second of setting up falls under the white).
+The way in, polished, frame by frame (CDP screencasts) on desktop, a phone upright and on its
+side, in English and Hebrew; with the CPU slowed 4× on a production build the countdown runs at
+55 to 57 fps (57.8 before: a frame or two dropped as MANUAL's pressed and the glass's new pages
+are first drawn), the dive at 58 (the canyon's world setting up under the white) and the canyon
+at 60.

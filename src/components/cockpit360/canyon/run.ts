@@ -20,10 +20,23 @@ import { judge, LANE, RULER, uOf, valueAt, type Gate, type GateResult } from './
 // longer to read the next gate, and one flying it well is pushed (useCanyon
 // keeps the pace for their next run). After the last gate it climbs out of
 // the canyon, into the sky.
+//
+// Its way in, a film's establishing shot: high over the canyon it glides,
+// looking a little down along it, for a moment after the white has cleared,
+// then swoops down into it, gaining speed, and levels out over its floor.
+// Its height follows a smootherstep, so it starts down, steepens and pulls
+// out with no jolt; its nose points only some of the way it's falling (it
+// keeps looking on ahead) and comes up, as a plane's flares, while it's
+// still settling.
 
-/** the dive in from high above the canyon, and the climb out (s) */
-export const DESCENT_S = 2.8;
+/** the dive in from high above the canyon (the glide over it first), and the climb out (s) */
+export const DESCENT_S = 4.2;
+export const OVER_S = 1.4;
 export const START_HEIGHT = 125;
+/** diving: the speed it gains at its steepest (units/s), how much of the way it's falling its nose points, and how far down it looks gliding over the canyon (radians) */
+const DIVE_PUSH = 30;
+const DIVE_LOOK = 0.55;
+const OVER_LOOK = -0.1;
 export const CLIMB_S = 2.6;
 /** how fast it flies (units/s), at a pace of 1 */
 const BASE = 60;
@@ -98,8 +111,16 @@ export type RunEvent =
   | { type: 'scrape'; side: -1 | 1; strength: number }
   | { type: 'spire'; side: -1 | 1 }
   | { type: 'lane'; value: number }
+  | { type: 'dive' }
+  | { type: 'level' }
   | { type: 'climb' }
   | { type: 'done' };
+
+/** 0 at 0, 1 at 1, with no speed nor push at either end (Perlin's smootherstep) */
+export const smoother = (x: number) => x * x * x * (x * (6 * x - 15) + 10);
+
+/** how far through its swoop the dive is, `t` seconds in: 0 gliding over the canyon, 1 down */
+export const swoopAt = (t: number) => Math.min(1, Math.max(0, (t - OVER_S) / (DESCENT_S - OVER_S)));
 
 export class Run {
   readonly canyon: Canyon;
@@ -131,7 +152,7 @@ export class Run {
     this.pace = Math.max(PACE_MIN, Math.min(PACE_MAX, pace));
     const y = canyon.floor(0) + HOVER + START_HEIGHT;
     this.lastY = y;
-    this.ship = { d: 0, u: 0, vu: 0, y, vy: 0, speed: this.cruise(), boost: 0, heading: 0, pitch: -0.6, bank: 0, near: 0, scrape: 0 };
+    this.ship = { d: 0, u: 0, vu: 0, y, vy: 0, speed: this.cruise(), boost: 0, heading: 0, pitch: OVER_LOOK, bank: 0, near: 0, scrape: 0 };
   }
 
   /** the speed it settles to: its pace, and bullseyes in a row on top */
@@ -363,11 +384,15 @@ export class Run {
     // ---- up and down ----
     const ground = c.floor(d) + HOVER;
     if (this.phase === 'descent') {
-      const k = Math.min(1, this.phaseTime / DESCENT_S);
-      // (falling away, then levelling out over the floor)
-      const fall = 1 - k * k * (3 - 2 * k);
-      ship.y = ground + START_HEIGHT * fall * fall;
-      if (k >= 1) this.enter('fly');
+      const x = swoopAt(this.phaseTime);
+      ship.y = ground + START_HEIGHT * (1 - smoother(x));
+      // (gaining speed as it swoops, most at its steepest)
+      ship.boost = Math.max(ship.boost, (this.calm ? DIVE_PUSH * 0.4 : DIVE_PUSH) * Math.sin(Math.PI * x));
+      if (x > 0 && this.phaseTime - dt <= OVER_S) events.push({ type: 'dive' });
+      if (this.phaseTime >= DESCENT_S) {
+        this.enter('fly');
+        events.push({ type: 'level' });
+      }
     } else if (this.phase === 'fly') {
       const bob = this.calm ? 0 : 0.35 * Math.sin(this.time * 1.7);
       ship.y += (ground + bob - ship.y) * (1 - Math.exp(-dt * 6));
@@ -388,7 +413,12 @@ export class Run {
 
     // ---- which way it points ----
     ship.heading = Math.atan2(c.slope(d) * fwd + ship.vu, fwd);
-    const pitch = Math.atan2(ship.vy, fwd);
+    let pitch = Math.atan2(ship.vy, fwd);
+    // (diving, the nose some of the way it's falling, coming up as it nears the floor; and gliding over the canyon, a little down along it)
+    if (this.phase === 'descent') {
+      const flare = 1 - smooth(0.45, 0.9, swoopAt(this.phaseTime));
+      pitch = OVER_LOOK * (1 - smoother(Math.min(1, this.phaseTime / DESCENT_S))) + pitch * (this.calm ? 0.35 : DIVE_LOOK) * flare;
+    }
     ship.pitch += (pitch - ship.pitch) * (1 - Math.exp(-dt * 7));
     // banked into a bend, and into its own slides across (the way it's going, and a little the way it's pushed)
     const swerve = (ship.vu - this.lastVu) / dt;
@@ -419,6 +449,15 @@ export class Run {
   toGate(): number {
     const g = this.ahead();
     return g ? g.d - this.ship.d : Infinity;
+  }
+
+  /** about where the ship will be (along, and its height) `t` seconds into the dive in: for the world to set things along its way */
+  descentAt(t: number): { d: number; y: number } {
+    const x = swoopAt(t);
+    const push = this.calm ? DIVE_PUSH * 0.4 : DIVE_PUSH;
+    // (its own speed, and the push swooping: ∫ sin πx over the swoop)
+    const d = this.cruise() * t + push * ((DESCENT_S - OVER_S) / Math.PI) * (1 - Math.cos(Math.PI * x));
+    return { d, y: this.canyon.floor(d) + HOVER + START_HEIGHT * (1 - smoother(x)) };
   }
 
   /** the ship's place in the world */
