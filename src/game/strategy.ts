@@ -1,5 +1,6 @@
 import type { Strings } from '../i18n/strings';
 import type { Mission } from './mission';
+import { inSubTable } from './subtraction';
 
 // `text` is translated prose; `math` is a language-neutral expression that's
 // always rendered left-to-right (so it reads correctly inside the Hebrew RTL
@@ -109,7 +110,8 @@ export function additionStrategy(x: number, y: number, t: Strings): Strategy {
 // of the sum (what goes with y to make x). Beyond it: tens like units, the
 // ones on their own, back to the ten first, or the tens then the ones.
 export function subtractionStrategy(x: number, y: number, t: Strings): Strategy {
-  if (x <= 20 && y <= 10) {
+  // (the table's own facts: 20 − 4 is beyond it, its answer past 10, and breaks a ten)
+  if (inSubTable(x, y)) {
     if (y === 1) return { text: t.hintOneLess };
     if (y === 10) return { text: t.hintMinusTen };
     if (x === 2 * y) return { text: t.hintHalfDouble(y), math: `${y} + ${y}  =  ${x}  →  ${x} − ${y}  =  ?` };

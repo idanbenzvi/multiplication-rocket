@@ -232,7 +232,8 @@ describe('wrong answers, hints and the computer', () => {
   it('a forgotten borrow (10 over) is among the choices with two-digit numbers', () => {
     let seen = 0;
     for (let i = 0; i < 100; i++) if (distractors(52, 27, 3, 'sub').includes(35)) seen++;
-    expect(seen).toBeGreaterThan(50);
+    // (half the time: it's one of the three over, and the choices' share over is random)
+    expect(seen).toBeGreaterThan(30);
   });
 
   it('hints leave the answer to work out', () => {
@@ -255,6 +256,8 @@ describe('wrong answers, hints and the computer', () => {
     }
     expect(strategyFor(13, 5, t, 'sub').math).toBe('13 − 5  →  13 − 3 − 2  →  10 − 2  →  ?');
     expect(strategyFor(52, 7, t, 'sub').math).toBe('52 − 7  →  52 − 2 − 5  →  50 − 5  →  ?');
+    // (20 − 4 is beyond the table: it breaks a ten, as 30 − 4 does)
+    expect(strategyFor(20, 4, t, 'sub').math).toBe('20 − 4  →  10 + 10 − 4  →  10 + 6  →  ?');
   });
 
   it('the ship’s computer takes away, counts back and thinks of the sum', () => {
