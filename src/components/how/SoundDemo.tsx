@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useT } from '../../i18n/useLang';
 import { useAudio } from '../../audio/useAudio';
 import { humGain, humGraph, sfx, sfxContext } from '../../audio/sfx';
+import { pixelRatio } from '../../settings/quality';
 
 // The game's sounds made from waves (audio/sfx.ts), and seen: an
 // oscilloscope listening in on them as they play. A note in each of the four
@@ -116,7 +117,7 @@ export function SoundDemo() {
     let raf = 0;
     const frame = () => {
       raf = requestAnimationFrame(frame);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = pixelRatio(2, 1);
       const w = Math.round(cv.clientWidth * dpr);
       const h = Math.round(cv.clientHeight * dpr);
       if (cv.width !== w || cv.height !== h) {

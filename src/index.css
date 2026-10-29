@@ -42,3 +42,11 @@ input {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* a device that's been struggling, drawn at its lightest (settings/quality.ts): no frosted glass behind the panels, the costliest thing the page itself draws */
+:root[data-quality='2'] *,
+:root[data-quality='2'] *::before,
+:root[data-quality='2'] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

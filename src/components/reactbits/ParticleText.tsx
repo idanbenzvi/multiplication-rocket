@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from 'react';
 import './ParticleText.css';
+import { pixelRatio } from '../../settings/quality';
 
 export interface ParticleTextProps {
   text?: string;
@@ -287,7 +288,7 @@ const ParticleText = ({
 
       if (width <= 0 || height <= 0) return;
 
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = pixelRatio(2, 1);
       canvas.width = Math.max(1, Math.floor(width * dpr));
       canvas.height = Math.max(1, Math.floor(height * dpr));
       canvas.style.width = '100%';

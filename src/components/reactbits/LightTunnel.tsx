@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle } from 'ogl';
 import './LightTunnel.css';
+import { pixelRatio } from '../../settings/quality';
 
 export type FlowDirection = 'inward' | 'outward';
 
@@ -226,7 +227,7 @@ const LightTunnel: React.FC<LightTunnelProps> = ({
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 1.5) // local change: 2 → 1.5 for tablets
+      dpr: pixelRatio(1.5) // local change: 2 → 1.5 for tablets, and less on a device that's struggling (settings/quality.ts)
     });
 
     const gl = renderer.gl;

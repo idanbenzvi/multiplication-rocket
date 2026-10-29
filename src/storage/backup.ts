@@ -10,8 +10,8 @@ import { progressKeyFor, useProfiles, type Profile } from '../profiles/useProfil
 const GAME = 'multiplication-rocket';
 const PROFILES_KEY = `${GAME}:profiles`;
 const SAVED_AT_KEY = `${GAME}:backup-saved`;
-/** this device's own, never in a backup: when it last saved one, and the scratch progress from before a pilot exists */
-const DEVICE_ONLY = [SAVED_AT_KEY, `${GAME}:progress:v1:unassigned`];
+/** this device's own, never in a backup: when it last saved one, the scratch progress from before a pilot exists, and how much it draws */
+const DEVICE_ONLY = [SAVED_AT_KEY, `${GAME}:progress:v1:unassigned`, `${GAME}:quality`];
 /** settings for the whole device: a restore takes them only for a device that has none yet */
 const DEVICE_SETTINGS = [`${GAME}:settings`, `${GAME}:lang`, `${GAME}:audio`];
 

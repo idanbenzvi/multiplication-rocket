@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { glitchArtNow, loadGlitchArt, type GlitchArt } from './glitchArt';
+import { pixelRatio } from '../../settings/quality';
 
 // The title leaving (StoryTitle.tsx): rather than shrinking and flying to the
 // top bar, the logo glitches out where it is and glitches in at its place up
@@ -138,7 +139,7 @@ export function GlitchTeleport({ from, to, onDone }: { from: Box; to: Box | null
     }
     let raf = 0;
     let alive = true;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = pixelRatio(2, 1);
     el.width = Math.round(window.innerWidth * dpr);
     el.height = Math.round(window.innerHeight * dpr);
     const run = ({ red, cyan }: GlitchArt) => {

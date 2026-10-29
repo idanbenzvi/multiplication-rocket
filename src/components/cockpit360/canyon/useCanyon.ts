@@ -11,6 +11,7 @@ import type { Quality } from './chunk';
 import { flash, resetFx } from './fx';
 import { buildGates, runLength, type Gate, type GateResult } from './gates';
 import { PACE_START, Run } from './run';
+import { qualityTier } from '../../../settings/quality';
 
 // The Canyon Run. From the cockpit, the orange buttons by the stick start
 // it (MANUAL): a countdown in the cockpit while the canyon's first stretch
@@ -88,7 +89,8 @@ export const live = {
 
 /** a phone or a small tablet: the lighter canyon */
 export function runQuality(): Quality {
-  return isTouchDevice && Math.min(window.innerWidth, window.innerHeight) < 820 ? 'low' : 'high';
+  // (a phone; or a device that's been struggling, settings/quality.ts)
+  return qualityTier() > 0 || (isTouchDevice && Math.min(window.innerWidth, window.innerHeight) < 820) ? 'low' : 'high';
 }
 
 export function calmMotion(): boolean {

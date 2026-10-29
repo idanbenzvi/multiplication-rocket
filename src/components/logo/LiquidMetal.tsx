@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import { LOGO } from './layout';
+import { pixelRatio } from '../../settings/quality';
 
 // The title's letters poured in liquid metal (StoryTitle.tsx), before the
 // rest of the logo comes. Molten chrome fills each letter from the middle of
@@ -240,7 +241,7 @@ export function LiquidMetal({ height, delay = 0, ...props }: Props) {
     // (a canvas of its own each time: a WebGL context given back can't be had again)
     let renderer: Renderer;
     try {
-      renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio || 1, 2), alpha: true, premultipliedAlpha: true, antialias: false });
+      renderer = new Renderer({ dpr: pixelRatio(2), alpha: true, premultipliedAlpha: true, antialias: false });
     } catch {
       skip();
       return;

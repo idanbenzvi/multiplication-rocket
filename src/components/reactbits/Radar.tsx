@@ -21,6 +21,7 @@
 import { useEffect, useRef, type HTMLAttributes } from 'react';
 
 import './Radar.css';
+import { pixelRatio } from '../../settings/quality';
 
 export type RadarMode = 'sweep' | 'pulse';
 
@@ -935,7 +936,7 @@ export default function Radar({
       const s = settingsRef.current;
       const width = Math.max(1, container.clientWidth);
       const height = Math.max(1, container.clientHeight);
-      const base = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      const base = Math.min(s.dpr || 2, pixelRatio(2));
       const longest = Math.max(width, height) * base;
       const ratio = longest > MAX_RENDER_DIM ? (base * MAX_RENDER_DIM) / longest : base;
       view.width = width;

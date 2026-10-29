@@ -1,6 +1,7 @@
 import { angleAt, feltG, forcesAt, poseAt, R, RUN_UP, speedAt, type BeatId, type Frame, type V3 } from './story';
 import { cutRect, type P2, type Split } from './split';
 import type { ShipModel } from './wireframe';
+import { pixelRatio } from '../../../settings/quality';
 
 // The loop's picture, drawn on one canvas over the whole cockpit
 // (LoopShow.tsx): the cockpit's side of the cut, its speed lines rushing in
@@ -320,7 +321,7 @@ export class LoopPainter {
     const key = `${st.w}x${st.h}`;
     if (this.bg && this.bgKey === key) return this.bg;
     const c = document.createElement('canvas');
-    const scale = Math.min(window.devicePixelRatio || 1, 1.5);
+    const scale = pixelRatio(1.5, 1);
     c.width = Math.round(st.w * scale);
     c.height = Math.round(st.h * scale);
     const g = c.getContext('2d')!;

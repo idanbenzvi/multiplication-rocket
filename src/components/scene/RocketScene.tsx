@@ -15,12 +15,13 @@ import { SpeedBlur } from './SpeedBlur';
 import { GradientSky } from './GradientSky';
 import { AuroraSky } from './AuroraSky';
 import { skyForLevel } from './palette';
+import { pixelRatio, useQualityTier } from '../../settings/quality';
 
 // The distant star sphere turns around the camera's horizontal axis so the
 // far stars drift downward too — slow parallax behind the fast near streaks.
 // That axis is turned onto the level's course, so they drift past the way
 // the streaks do.
-function DriftingStars() {
+function DriftingStars({ count }: { count: number }) {
   const courseRef = useRef<Group>(null);
   const ref = useRef<Group>(null);
   useFrame((_, rawDelta) => {
@@ -30,7 +31,7 @@ function DriftingStars() {
   return (
     <group ref={courseRef}>
       <group ref={ref}>
-        <Stars radius={60} depth={40} count={5000} factor={4} fade speed={0.4} />
+        <Stars radius={60} depth={40} count={count} factor={4} fade speed={0.4} />
       </group>
     </group>
   );
@@ -69,29 +70,33 @@ export function RocketScene() {
   const displayLevel = justLaunched ? progress.level - 1 : progress.level;
   const sky = skyForLevel(displayLevel);
   const destination = getLevelConfig(displayLevel).destinationIndex;
+  // a device that's been struggling draws less sharp, and at the lightest without the glow and the speed blur (passes over the whole picture, several of them) or half the stars (settings/quality.ts)
+  const tier = useQualityTier();
 
   return (
     // dpr capped at 1.5: on retina tablets/phones full resolution would cost
     // 4-9x the pixels for the bloom, blur and plume shaders, for little gain.
-    <Canvas dpr={[1, 1.5]} frameloop={paused || hidden ? 'never' : 'always'}>
+    <Canvas dpr={tier === 0 ? [1, 1.5] : pixelRatio(1.5, 0, tier)} frameloop={paused || hidden ? 'never' : 'always'}>
       <FlightController />
       <GradientSky topColor={sky.top} bottomColor={sky.bottom} />
       <AuroraSky level={displayLevel} />
       <fog attach="fog" args={[sky.fog, 10, 60]} />
-      <DriftingStars />
+      <DriftingStars count={tier < 2 ? 5000 : 2500} />
       <DestinationPlanet key={destination} destinationIndex={destination} />
       <SpeedStreaks />
       <FlyingRocket level={displayLevel} />
 
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.35}
-          luminanceSmoothing={0.9}
-          intensity={justLaunched ? 1.6 : 1.0}
-          mipmapBlur
-        />
-        <SpeedBlur />
-      </EffectComposer>
+      {tier < 2 && (
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.35}
+            luminanceSmoothing={0.9}
+            intensity={justLaunched ? 1.6 : 1.0}
+            mipmapBlur
+          />
+          <SpeedBlur />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

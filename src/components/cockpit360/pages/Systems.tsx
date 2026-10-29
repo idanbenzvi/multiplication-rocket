@@ -5,6 +5,7 @@ import { paceMs } from '../../../game/scoring';
 import { activeProfile, pilotName, useMission, useProfiles } from '../../../profiles/useProfiles';
 import { missionName } from '../../../i18n/strings';
 import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../../../settings/useSettings';
+import { useQuality, type QualityMode } from '../../../settings/quality';
 import { canVibrate, haptics } from '../../../audio/haptics';
 import { sfx } from '../../../audio/sfx';
 import SquishSwitch from '../../reactbits/SquishSwitch';
@@ -13,7 +14,8 @@ import HoldButton from '../../reactbits/HoldButton';
 // The bottom right of the bank on the left wall: the ship's systems, every
 // setting the game has. How answers are given (and, typing on a touch
 // screen, when they're checked), Orbie, the practice map opening by itself,
-// the speed boost (this pilot's own), the buzz; and for grown-ups, their
+// the speed boost (this pilot's own), the buzz, the graphics (Auto lowers
+// them on a device that struggles: settings/quality.ts); and for grown-ups, their
 // dashboard, what the game is and how it works, and starting a pilot over
 // (held down a moment, so it can't happen by accident).
 
@@ -85,6 +87,9 @@ export function SystemsPage({ onParents, onReset, onAbout }: { onParents: () => 
   const setOrbie = useSettings((s) => s.setOrbie);
   const vibration = useSettings((s) => s.vibration);
   const setVibration = useSettings((s) => s.setVibration);
+  const graphics = useQuality((s) => s.mode);
+  const lowered = useQuality((s) => s.tier > 0);
+  const setGraphics = useQuality((s) => s.setMode);
   const profile = useProfiles((s) => s.profiles.find((p) => p.id === s.activeId));
   const boost = profile?.timedBoost !== false;
   // the big boost's window, as it has followed this pilot's pace
@@ -142,6 +147,19 @@ export function SystemsPage({ onParents, onReset, onAbout }: { onParents: () => 
           />
         </Row>
       )}
+
+      <Row name={t.graphicsLabel} hint={graphics === 'high' ? t.graphicsHighHint : graphics === 'low' ? t.graphicsLowHint : lowered ? t.graphicsAutoLoweredHint : t.graphicsAutoHint}>
+        <Segments<QualityMode>
+          label={t.graphicsLabel}
+          value={graphics}
+          onChange={setGraphics}
+          choices={[
+            ['auto', t.graphicsAuto],
+            ['high', t.graphicsHigh],
+            ['low', t.graphicsLow],
+          ]}
+        />
+      </Row>
 
       <h3 className="ck3-page-section">👪 {d.grownUps}</h3>
       <div className="ck3-page-buttons">

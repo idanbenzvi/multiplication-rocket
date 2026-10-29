@@ -1,11 +1,13 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { usePause } from '../../game/gameClock';
 import StardustFluid, { type FluidApi } from './StardustFluid';
+import { qualityTier } from '../../settings/quality';
 
 // The stardust layer: the WebGL fluid when the device can run it, otherwise a
 // light 2D particle trail with the same splat() API, so the round doesn't
 // care which one it gets. ?fluid=1 forces the fluid (no speed check),
-// ?fluid=0 forces the fallback.
+// ?fluid=0 forces the fallback. A device that's been struggling
+// (settings/quality.ts) gets a coarser fluid, or at the lightest the trail.
 function override(): 'on' | 'off' | null {
   try {
     const v = new URLSearchParams(window.location.search).get('fluid');
@@ -18,16 +20,17 @@ function override(): 'on' | 'off' | null {
 // memo: the round re-renders every frame; the simulation must not
 export const Stardust = memo(function Stardust({ apiRef }: { apiRef: React.MutableRefObject<FluidApi | null> }) {
   const [forced] = useState(override);
-  const [mode, setMode] = useState<'fluid' | '2d'>(forced === 'off' ? '2d' : 'fluid');
+  const [tier] = useState(qualityTier);
+  const [mode, setMode] = useState<'fluid' | '2d'>(forced === 'off' || (tier === 2 && forced !== 'on') ? '2d' : 'fluid');
   const fallBack = useCallback(() => setMode('2d'), []);
   return mode === 'fluid' ? (
     <StardustFluid
       apiRef={apiRef}
       onFail={fallBack}
       noSpeedCheck={forced === 'on'}
-      SIM_RESOLUTION={96}
-      DYE_RESOLUTION={640}
-      PRESSURE_ITERATIONS={14}
+      SIM_RESOLUTION={tier > 0 ? 64 : 96}
+      DYE_RESOLUTION={tier > 0 ? 448 : 640}
+      PRESSURE_ITERATIONS={tier > 0 ? 10 : 14}
       DENSITY_DISSIPATION={1.3}
       VELOCITY_DISSIPATION={1.1}
       CURL={4}

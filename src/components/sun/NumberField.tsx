@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { activeMission } from '../../profiles/useProfiles';
 import { pickOp, type PilotMission } from '../../game/mission';
 import type { MonsterFx } from './MonsterCanvas';
+import { pixelRatio } from '../../settings/quality';
 
 // Numbers drifting through space behind the fight, slowly turning. When the
 // monster gets hungry (nobody has answered for a while), feed() picks one
@@ -56,7 +57,7 @@ export function NumberField({ fx, field }: { fx: React.RefObject<MonsterFx | nul
     if (!canvas || !ctx) return;
     const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const mission = activeMission();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = pixelRatio(2, 1);
     let w = 0;
     let h = 0;
     const resize = () => {

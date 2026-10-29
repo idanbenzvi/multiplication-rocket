@@ -9,6 +9,7 @@ import { haptics } from '../../audio/haptics';
 import { LAMP, PAD, SHIP_HEIGHT, type BayLayout } from './layout';
 import { launchDone, padEngine, PAD_IDLE, type Launch, type PadShipSpec } from './useBay';
 import { ShipDissolve, type Departure } from './ShipDissolve';
+import { pixelRatio } from '../../settings/quality';
 
 interface Props {
   /** the ship asked for on the pad (none: an empty pad) */
@@ -149,7 +150,7 @@ export function PadShip({ spec, launch, layout, calm }: Props) {
   useEffect(() => {
     if (!shown || !art || calm) return;
     let alive = true;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = pixelRatio(2, 1);
     const fw = Math.round(frameW * dpr);
     const window0 = art.windows[0];
     rasterizeSprite(art.svg, fw, fw * 2, shown.avatar ? { ...window0, emoji: shown.avatar } : undefined, art.picture)

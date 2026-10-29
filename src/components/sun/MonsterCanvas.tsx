@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { buildMonster, CHEER_AT, drawFriendCells, easeOut, EYE_R, GLYPHS, HEARTS, mouthSpot, N, pickOf, sparkle, type Cell } from './monsterArt';
 import { MONSTERS } from './roster';
+import { pixelRatio } from '../../settings/quality';
 
 // The monster: a creature made of characters that never sit still (a sun,
 // a rabbit, a ghost…: see roster.ts). Its body and limbs are cells on a grid,
@@ -265,7 +266,7 @@ export function MonsterCanvas({ monster, kind = monster, hp, maxHp, fx, lurk = f
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
       last = now;
       const t = (now - t0) / 1000;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = pixelRatio(2, 1);
       const size = canvas.clientWidth;
       if (canvas.width !== Math.round(size * dpr)) {
         canvas.width = Math.round(size * dpr);

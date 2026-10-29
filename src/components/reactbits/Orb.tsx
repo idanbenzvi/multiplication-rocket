@@ -18,6 +18,7 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 import { useEffect, useRef, type CSSProperties } from 'react';
 import './Orb.css';
+import { pixelRatio } from '../../settings/quality';
 
 export interface OrbProps {
   colors?: string[];
@@ -531,7 +532,7 @@ const Orb = ({
       const s = settingsRef.current;
       const width = Math.max(1, container.clientWidth);
       const height = Math.max(1, container.clientHeight);
-      const ratio = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      const ratio = Math.min(s.dpr || 2, pixelRatio(2));
       view.width = width;
       view.height = height;
       canvas.width = Math.max(1, Math.round(width * ratio));

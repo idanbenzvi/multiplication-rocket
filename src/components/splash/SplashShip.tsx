@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ROCKET_PORTHOLE, rocketSvg } from '../scene/illustrations';
 import { colorForLevel } from '../scene/palette';
 import { rasterizeSprite } from '../scene/spriteTexture';
+import { pixelRatio } from '../../settings/quality';
 
 // The splash's last flourish: the game's rocket (a deer at the porthole, of
 // course) swoops in from the bottom-left, up through the deer constellation,
@@ -119,7 +120,7 @@ export function SplashShip({ deer }: { deer: Box }) {
       })
       .catch(() => undefined);
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = pixelRatio(2, 1);
     const W = window.innerWidth;
     const H = window.innerHeight;
     canvas.width = Math.round(W * dpr);

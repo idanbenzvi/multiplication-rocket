@@ -23,6 +23,7 @@
 import { useEffect, useRef, type HTMLAttributes, type RefObject } from 'react';
 
 import './LaserFlow.css';
+import { pixelRatio } from '../../settings/quality';
 
 export interface LaserFlowProps extends Omit<HTMLAttributes<HTMLDivElement>, 'color'> {
   surfaceRef?: RefObject<HTMLElement | null>;
@@ -759,7 +760,7 @@ export const LaserFlow = ({
       const width = Math.max(1, container.clientWidth);
       const height = Math.max(1, container.clientHeight);
       const s = settingsRef.current;
-      const baseDpr = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      const baseDpr = Math.min(s.dpr || 2, pixelRatio(2));
       const longest = Math.max(width, height) * baseDpr;
       const ratio = longest > MAX_RENDER_DIM ? (baseDpr * MAX_RENDER_DIM) / longest : baseDpr;
       const pixelWidth = Math.max(1, Math.round(width * ratio));

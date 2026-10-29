@@ -4,13 +4,15 @@ import { useSunStore } from '../game/useSunStore';
 import { useSkyStore } from '../game/useSkyStore';
 import { useCrewStore } from '../game/useCrewStore';
 import { usePause } from '../game/gameClock';
+import { useQuality } from '../settings/quality';
 
 // Dev mode only (?devmode=true): watches the game for hiccups on whatever
 // device it runs on, for the dev panel to show and copy. A freeze is a frame
 // that took far longer than a frame (the picture stood still); a lost 3D
 // surface is a WebGL canvas the browser took the drawing surface away from
-// (it shows black until it's given back: "restored"). Each comes with what was
-// on screen at the time.
+// (it shows black until it's given back: "restored"); and the graphics
+// stepping down or up (settings/quality.ts). Each comes with what was on
+// screen at the time.
 
 /** a frame this long or longer is a freeze (about six frames missed) */
 const FREEZE_MS = 100;
@@ -19,9 +21,9 @@ const KEEP = 40;
 export interface PerfEvent {
   /** seconds since the page opened */
   at: number;
-  kind: 'freeze' | 'lost' | 'restored';
+  kind: 'freeze' | 'lost' | 'restored' | 'quality';
   ms?: number;
-  /** which canvas, for a lost surface */
+  /** which canvas, for a lost surface; the step drawn, for the graphics */
   what?: string;
   where: string;
 }
@@ -86,6 +88,11 @@ export function startPerfMonitor() {
     return ctx;
   } as typeof HTMLCanvasElement.prototype.getContext;
 
+  // the graphics stepping down or up
+  useQuality.subscribe((q, was) => {
+    if (q.effective !== was.effective) log({ kind: 'quality', what: `tier ${q.effective} (${q.mode})` });
+  });
+
   // frames: a freeze is a long gap between two (not while the page is hidden or the game is paused)
   let last = performance.now();
   let count = 0;
@@ -109,7 +116,12 @@ export function startPerfMonitor() {
 export function perfReport(): string {
   const s = usePerf.getState();
   const lines = s.events.map((e) =>
-    e.kind === 'freeze' ? `${e.at}s  freeze ${e.ms} ms  (${e.where})` : `${e.at}s  3D surface ${e.kind}: ${e.what}  (${e.where})`,
+    e.kind === 'freeze'
+      ? `${e.at}s  freeze ${e.ms} ms  (${e.where})`
+      : e.kind === 'quality'
+        ? `${e.at}s  graphics → ${e.what}  (${e.where})`
+        : `${e.at}s  3D surface ${e.kind}: ${e.what}  (${e.where})`,
   );
-  return [`${navigator.userAgent}`, `${s.fps} fps, ${s.freezes} freezes (worst ${s.worst} ms), ${s.lost} 3D surfaces lost`, ...lines].join('\n');
+  const q = useQuality.getState();
+  return [`${navigator.userAgent}`, `${s.fps} fps, ${s.freezes} freezes (worst ${s.worst} ms), ${s.lost} 3D surfaces lost, graphics ${q.mode} tier ${q.effective}`, ...lines].join('\n');
 }

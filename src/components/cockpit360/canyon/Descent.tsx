@@ -17,6 +17,7 @@ import { drawPlanet } from '../drawPlanet';
 import { useCockpit } from '../store';
 import { endArrival, useArrival } from './arrival';
 import './descent.css';
+import { pixelRatio } from '../../../settings/quality';
 
 // Arriving at a destination for a Canyon Run (arrival.ts): the pilot's
 // ship, seen from behind, dives into the destination's air. It grows from a
@@ -120,7 +121,7 @@ function Dive({ level }: { level: number }) {
     let W = 0;
     let H = 0;
     const size = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = pixelRatio(2, 1);
       W = window.innerWidth;
       H = window.innerHeight;
       for (const c of [back.current!, front.current!]) {

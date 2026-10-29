@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { usePause } from '../../game/gameClock';
 import { viewport } from '../viewport';
+import { pixelRatio } from '../../settings/quality';
 
 /** what an arrival draws each frame: `ms` since it began (frozen while paused), `dt` seconds since the last frame */
 export type ArrivalDraw = (ctx: CanvasRenderingContext2D, w: number, h: number, ms: number, dt: number) => void;
@@ -31,7 +32,7 @@ export function useArrivalCanvas(canvasRef: React.RefObject<HTMLCanvasElement | 
       ms += dt * 1000;
       const W = viewport.w;
       const H = viewport.h;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = pixelRatio(2, 1);
       if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);

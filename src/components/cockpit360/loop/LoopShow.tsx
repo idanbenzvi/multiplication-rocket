@@ -14,6 +14,7 @@ import { splitFor, type P2, type Split } from './split';
 import { angleAt, BEATS, BOOST_G, buildStory, feltG, forcesAt, FROZEN, holdFor, Story, turnG, type BeatId } from './story';
 import { shipModel } from './wireframe';
 import './loop.css';
+import { pixelRatio } from '../../../settings/quality';
 
 // The afterburner's loop, the cockpit's easter egg: the orange lever right of
 // the stick. Pulled, the cockpit's lights go red and the engines charge, a
@@ -145,7 +146,7 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
     let sp = splitFor(window.innerWidth, window.innerHeight);
     /** how far the cockpit moves over to keep the windscreen in its half */
     let shift: P2 = [0, 0];
-    const dpr = Math.min(window.devicePixelRatio || 1, low ? 1 : 1.35);
+    const dpr = pixelRatio(low ? 1 : 1.35, 1);
     const size = () => {
       W = window.innerWidth;
       H = window.innerHeight;

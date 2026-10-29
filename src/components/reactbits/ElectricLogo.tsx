@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Renderer, Program, Mesh, Triangle, Texture } from 'ogl';
 
 import './ElectricLogo.css';
+import { pixelRatio } from '../../settings/quality';
 
 const BOLT = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path d="M39 3 12 37h17l-4 24 27-34H35z" fill="#fff"/></svg>'
@@ -730,7 +731,7 @@ const ElectricLogo = ({
     if (!container) return undefined;
 
     const renderer = new Renderer({
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      dpr: pixelRatio(2),
       alpha: true,
       premultipliedAlpha: true,
       antialias: false
@@ -868,7 +869,7 @@ const ElectricLogo = ({
     const resize = () => {
       width = Math.max(1, container.clientWidth);
       height = Math.max(1, container.clientHeight);
-      renderer.dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / (width * height)));
+      renderer.dpr = Math.min(pixelRatio(2), Math.sqrt(PIXEL_BUDGET / (width * height)));
       renderer.setSize(width, height);
       uniforms.uResolution.value = [width, height];
     };

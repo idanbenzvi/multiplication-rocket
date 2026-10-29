@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePause } from '../../game/gameClock';
 import { useBack } from '../../native/back';
 import type { Lang } from '../../i18n/strings';
+import { pixelRatio } from '../../settings/quality';
 
 // What the story's acts share (StoryOpening, StoryLaunch, StoryTitle): a
 // canvas drawn every frame, Skip from the keyboard and Back, and the date and
@@ -27,7 +28,7 @@ export function useCanvasLoop(frame: (ctx: CanvasRenderingContext2D, w: number, 
       if (usePause.getState().away) return;
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = pixelRatio(2, 1);
       if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
         canvas.width = Math.round(w * dpr);
         canvas.height = Math.round(h * dpr);

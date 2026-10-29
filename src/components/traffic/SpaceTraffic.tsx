@@ -22,6 +22,7 @@ import { isAdmiral } from '../../game/useAchievements';
 import { warmTraffic } from './trafficArt';
 import { viewport } from '../viewport';
 import './traffic.css';
+import { pixelRatio } from '../../settings/quality';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -143,7 +144,7 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
       last = nowMs;
       const W = viewport.w;
       const H = viewport.h;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = pixelRatio(2, 1);
       if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);

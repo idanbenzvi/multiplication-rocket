@@ -5,6 +5,7 @@ import { type FC, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
 import './Hyperspeed.css';
+import { pixelRatio } from '../../settings/quality';
 
 interface Distortion {
   uniforms: Record<string, { value: any }>;
@@ -958,7 +959,7 @@ class App {
     }
     this.renderer.setSize(initW, initH, false);
     // Local change: cap at 1.5x so retina tablets/phones don't render 4-9x the pixels.
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    this.renderer.setPixelRatio(pixelRatio(1.5));
 
     this.composer = new EffectComposer(this.renderer);
     container.appendChild(this.renderer.domElement);

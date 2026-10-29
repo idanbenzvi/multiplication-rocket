@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Mesh, Program, Renderer, Triangle } from 'ogl';
 import { usePause } from '../../game/gameClock';
 import { AURORA_FRAG, auroraPaletteFor } from '../scene/auroraShader';
+import { pixelRatio } from '../../settings/quality';
 
 // The game's aurora (same shader, same per-level palette) as a backdrop for
 // Stardust Run, where the 3D scene that normally draws it is paused to give
@@ -40,7 +41,7 @@ export function AuroraBackdrop({ level }: { level: number }) {
     if (!el) return;
     let renderer: Renderer;
     try {
-      renderer = new Renderer({ webgl: 2, dpr: Math.min(1, window.devicePixelRatio || 1) * 0.5, alpha: false, antialias: false });
+      renderer = new Renderer({ webgl: 2, dpr: pixelRatio(1) * 0.5, alpha: false, antialias: false });
     } catch {
       return; // no WebGL: the starfield alone is fine
     }

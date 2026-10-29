@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { JetSmoke, type Jet } from '../reactbits/JetSmoke';
 import { PAD_JETS, SMOKE_BOX } from './layout';
 import { PAD_IDLE, padEngine } from './useBay';
+import { pixelRatio } from '../../settings/quality';
 
 interface Props {
   /** screen px for one of the picture's */
@@ -33,7 +34,7 @@ export function PadSmoke({ u }: Props) {
     }
     const width = (SMOKE_BOX.x1 - SMOKE_BOX.x0) * u;
     const height = (SMOKE_BOX.y1 - SMOKE_BOX.y0) * u;
-    smoke.resize(width, height, Math.min(window.devicePixelRatio || 1, 1.5));
+    smoke.resize(width, height, pixelRatio(1.5));
     // (the jets and their smoke grow with the picture)
     const scale = Math.min(2.2, Math.max(0.8, u * 0.62));
     let raf = 0;

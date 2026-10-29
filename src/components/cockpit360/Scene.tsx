@@ -11,6 +11,7 @@ import { glowLights } from './lights';
 import type { CssLayer } from './css3d';
 import { SCREENS, type ScreenId } from './screens';
 import { baseFov, shownLook, stepView, view } from './view';
+import { pixelRatio, useQualityTier } from '../../settings/quality';
 
 // The cockpit's 3D view: the space outside (or, flying a Canyon Run, the
 // canyon), the cockpit round it, the lens, and the pages on its screens
@@ -68,9 +69,12 @@ function Rig({ css, holding, hovered, focused }: Pick<Props, 'css' | 'holding' |
 }
 
 export function Scene({ css, destination, calm, low, holding, hovered, focused, running, canyon }: Props) {
-  // the sharpest it draws, and (should the device struggle) how far towards plain 1 it's come down
-  const top = Math.min(low ? 1.25 : 1.5, window.devicePixelRatio || 1);
-  const [dpr, setDpr] = useState(top);
+  // the sharpest it draws (less on a device that's been struggling: settings/quality.ts), and (should it struggle now) how far towards plain 1 it's come down
+  const tier = useQualityTier();
+  const top = pixelRatio(low ? 1.25 : 1.5, 0, tier);
+  const plain = Math.min(1, top);
+  const [factor, setFactor] = useState(1);
+  const dpr = Math.round((plain + (top - plain) * factor) * 20) / 20;
   return (
     <Canvas
       className="ck3-canvas"
@@ -83,13 +87,13 @@ export function Scene({ css, destination, calm, low, holding, hovered, focused, 
       camera={{ fov: 70, near: 0.1, far: 2000, position: [0, 0, 0] }}
     >
       {/* (a device that can't keep up draws a little less sharp) */}
-      <PerformanceMonitor onChange={({ factor }) => setDpr(Math.round((1 + (top - 1) * factor) * 20) / 20)} />
+      <PerformanceMonitor onChange={({ factor }) => setFactor(factor)} />
       <Rig css={css} holding={holding} hovered={hovered} focused={focused} />
       {canyon === null ? <Space destination={destination} calm={calm} /> : <CanyonWorld key={canyon} />}
       <Suspense fallback={null}>
         <Shell />
       </Suspense>
-      <Effects low={low} />
+      <Effects low={low || tier > 0} />
     </Canvas>
   );
 }

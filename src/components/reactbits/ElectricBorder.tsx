@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from 'react';
 import './ElectricBorder.css';
+import { pixelRatio } from '../../settings/quality';
 
 interface ElectricBorderProps {
   children?: ReactNode;
@@ -184,7 +185,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
       const width = rect.width + borderOffset * 2;
       const height = rect.height + borderOffset * 2;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = pixelRatio(2, 1);
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       canvas.style.width = `${width}px`;
@@ -195,12 +196,12 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
     };
 
     let { width, height } = updateSize();
-    let lastDpr = Math.min(window.devicePixelRatio || 1, 2);
+    let lastDpr = pixelRatio(2, 1);
 
     const drawElectricBorder = (currentTime: number) => {
       if (!canvas || !ctx) return;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = pixelRatio(2, 1);
       if (dpr !== lastDpr) {
         lastDpr = dpr;
         const newSize = updateSize();

@@ -8,6 +8,7 @@ import { startArrival } from './cockpit360/canyon/arrival';
 import { playTrack } from '../audio/useAudio';
 import { useRippleStatus } from '../dev/rippleStatus';
 import { perfReport, usePerf } from '../dev/perfMonitor';
+import { useQuality } from '../settings/quality';
 import { MonsterGallery } from './sun/MonsterGallery';
 
 interface Shortcut {
@@ -24,6 +25,7 @@ export function DevPanel() {
   const store = useGameStore;
   const ripple = useRippleStatus();
   const perf = usePerf();
+  const quality = useQuality();
   const [copied, setCopied] = useState(false);
   const [gallery, setGallery] = useState(false);
 
@@ -109,9 +111,14 @@ export function DevPanel() {
             ⏱ {perf.fps} fps · freezes {perf.freezes}
             {perf.worst ? ` (worst ${perf.worst} ms)` : ''} · 3D lost {perf.lost}
           </li>
+          {/* how much it draws (settings/quality.ts): 0 everything … 2 lightest */}
+          <li className="dev-status">
+            🎚 graphics {quality.mode} · tier {quality.effective}
+            {quality.mode === 'auto' ? '' : ` (auto's ${quality.tier})`}
+          </li>
           {perf.events.slice(-4).map((e, i) => (
             <li key={`${e.at}-${i}`} className="dev-status dev-perf-event">
-              {e.at}s {e.kind === 'freeze' ? `freeze ${e.ms} ms` : `3D ${e.kind}: ${e.what}`} · {e.where}
+              {e.at}s {e.kind === 'freeze' ? `freeze ${e.ms} ms` : e.kind === 'quality' ? `graphics → ${e.what}` : `3D ${e.kind}: ${e.what}`} · {e.where}
             </li>
           ))}
           <li>

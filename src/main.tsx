@@ -8,9 +8,13 @@ import { DEV_MODE } from './dev/devMode'
 import { startPerfMonitor } from './dev/perfMonitor'
 import { keepStorageOncePiloted } from './storage/backup'
 import { listenForBack } from './native/back'
+import { startQuality } from './settings/quality'
 
 // dev mode: watch for hiccups from the very start (the dev panel shows them)
 if (DEV_MODE) startPerfMonitor()
+
+// a device that can't keep up is drawn lighter, until it can (settings/quality.ts)
+startQuality()
 
 // ask the browser not to clear the pilots' progress to make room
 keepStorageOncePiloted()

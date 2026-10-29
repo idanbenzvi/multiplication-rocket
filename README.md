@@ -200,7 +200,12 @@ screen you can also choose when a typed answer is checked: **right away** (as so
 in) or **when you tap the screen** (or press ✓). On a computer, typed answers always wait for
 **Enter**, so a typo can be fixed first. On Android, right answers give a revving buzz and
 mistakes a thump; this can be switched off in Ship systems. iPhone and iPad browsers don't support
-vibration. To make it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
+vibration. On a device that can't keep up (under 30 frames a second for 3 seconds), the game draws
+itself lighter, a step at a time: less sharp, then without the glow, the speed blur and the frosted
+glass behind the panels. Once it runs smoothly again it tries the step above, and it remembers the
+level for that device. **Ship systems → Graphics** can fix it at High or Low instead of Auto
+([docs/plans/2026-10-29-adaptive-quality.md](docs/plans/2026-10-29-adaptive-quality.md)). To make
+it feel like an app, use **Share → Add to Home Screen** (iPad/iPhone) or
 **⋮ → Add to Home screen** (Android). It then opens full-screen with its own icon. On an iPad or
 iPhone this also keeps the progress safe: Safari clears a website's saved data when it isn't opened
 for 7 days, but not a Home Screen app's. The Home Screen game starts with its own, empty storage,
