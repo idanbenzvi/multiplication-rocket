@@ -227,7 +227,7 @@ export function PadShip({ spec, launch, layout, calm }: Props) {
         cue('ignite', 0, t, () => engineHum(0.5, 0.6));
         cue('lift', LIFT_AT - 0.05, t, () => {
           sfx.blastOff();
-          haptics.tick();
+          haptics.launch();
           engineHum(1, 1.6);
           // ignition: a white-hot flash and a shockwave out of the nozzle
           ship?.classList.add('is-lit');

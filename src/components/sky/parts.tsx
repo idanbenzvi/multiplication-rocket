@@ -4,6 +4,7 @@ import { useSkyStore } from '../../game/useSkyStore';
 import { useT } from '../../i18n/useLang';
 import { NumPad } from '../NumPad';
 import type { LinkError, LinkStatus } from '../../net/peerLink';
+import { TapTick } from '../../audio/TapTick';
 
 // Pieces the multi-phone games share.
 
@@ -105,6 +106,7 @@ export function Choices({ choices, onPick, misses }: { choices: number[]; onPick
           }}
         >
           {c}
+          <TapTick />
         </button>
       ))}
     </motion.div>

@@ -1,4 +1,5 @@
 import { useT } from '../i18n/useLang';
+import { TapTick } from '../audio/TapTick';
 
 interface Props {
   onDigit: (d: string) => void;
@@ -25,20 +26,24 @@ export function NumPad({ onDigit, onBackspace, onConfirm, disabled }: Props) {
       {ROWS.flat().map((d) => (
         <button key={d} type="button" className="numpad-key" onClick={() => onDigit(d)} disabled={disabled}>
           {d}
+          <TapTick />
         </button>
       ))}
       {onConfirm ? (
         <button type="button" className="numpad-key numpad-ok" onClick={onConfirm} disabled={disabled} aria-label={t.check}>
           ✓
+          <TapTick />
         </button>
       ) : (
         <span />
       )}
       <button type="button" className="numpad-key" onClick={() => onDigit('0')} disabled={disabled}>
         0
+        <TapTick />
       </button>
       <button type="button" className="numpad-key numpad-back" onClick={onBackspace} disabled={disabled} aria-label={t.deleteDigit}>
         ⌫
+        <TapTick />
       </button>
     </div>
   );

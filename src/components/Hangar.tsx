@@ -112,6 +112,7 @@ function HangarView({ pilot, first }: { pilot: Profile; first: boolean }) {
     primeBayExit();
     primeVoice();
     sfx.chargeUp(0.8);
+    haptics.charge(0.8);
     launchShip({
       onDone: () => {
         update(pilot.id, { ship: picked, shipsSeen: SHIPS.length });

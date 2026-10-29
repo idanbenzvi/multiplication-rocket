@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { canyonWind, sfx } from '../../../audio/sfx';
+import { haptics } from '../../../audio/haptics';
 import { LOOKS } from '../../scene/planetLooks';
 import { drawPlanet } from '../drawPlanet';
 import { NOSE_PITCH } from '../drive';
@@ -323,6 +324,7 @@ export function CanyonWorld() {
     if (e.type === 'gate') {
       const { verdict } = e.result;
       sfx.gate(verdict, run.combo);
+      haptics.gate(verdict, run.combo);
       useCanyon.getState().gate(e.result);
       if (verdict === 'bullseye') {
         flash(GOLD, 0.38 * soft, 0.03, 0.5);
@@ -345,10 +347,12 @@ export function CanyonWorld() {
       }
     } else if (e.type === 'scrape') {
       sfx.scrape(e.strength);
+      haptics.scrape(e.strength);
       glowLights.flicker = Math.max(glowLights.flicker, e.strength * 0.8);
       spray(e.side, e.strength);
     } else if (e.type === 'spire') {
       sfx.thud();
+      haptics.crash();
       glowLights.flicker = 1;
       s.thump = 0.014;
       flash([1, 0.6, 0.4], 0.16 * soft, 0.02, 0.35);
@@ -365,6 +369,7 @@ export function CanyonWorld() {
     } else if (e.type === 'level') {
       // (levelling out over the floor, with a bump)
       sfx.rumble(0.7);
+      haptics.bump(0.7);
       if (!calm) s.thump = 0.008;
     } else if (e.type === 'climb') {
       s.climbing = true;

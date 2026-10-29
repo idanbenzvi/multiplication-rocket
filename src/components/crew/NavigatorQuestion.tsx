@@ -7,6 +7,7 @@ import { useLang, useT } from '../../i18n/useLang';
 import { speak } from '../../audio/speech';
 import { isTouchDevice } from '../../settings/useSettings';
 import { ARROW_DIRS, ARROW_GLYPHS, arrowChoice } from '../arrowChoices';
+import { TapTick } from '../../audio/TapTick';
 
 interface Props {
   question: CrewQuestion;
@@ -139,6 +140,7 @@ export function NavigatorQuestion({ question, feedback, onAnswer, onContinue }: 
               >
                 {!isTouchDevice && <span className="choice-key">{ARROW_GLYPHS[i]}</span>}
                 {c}
+                <TapTick />
               </button>
             );
           })}

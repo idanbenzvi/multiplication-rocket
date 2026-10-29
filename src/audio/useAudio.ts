@@ -6,7 +6,9 @@ const LEGACY_MUSIC_KEY = 'multiplication-rocket:music'; // old on/off toggle
 const DEFAULT_MUSIC = 0.35;
 const DEFAULT_EFFECTS = 0.7;
 
-// The soundtracks: the theme; Monster Sun's own while that mode is open; The
+// The soundtracks: the game's own, the theme or The Little Explorer's Comet
+// (one or the other at random on each new level and back from a mode with its
+// own: playGameMusic); Monster Sun's own while that mode is open; The
 // View From Higher Ground on a crew flight; The View from the Last Lap against
 // the Black Sun, the final boss; Velvet Horizon while the About page is open;
 // Starboard View in the cockpit, while the settings are open; and Canyon
@@ -14,9 +16,10 @@ const DEFAULT_EFFECTS = 0.7;
 // cuts to another: the one playing fades out, then the next fades in. Paths
 // are relative to the page, so they resolve both on a web server and from the
 // Electron app's file:// URL.
-export type Track = 'theme' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit' | 'bay' | 'canyon';
+export type Track = 'theme' | 'comet' | 'sun' | 'crew' | 'boss' | 'about' | 'cockpit' | 'bay' | 'canyon';
 const tracks: Record<Track, HTMLAudioElement> = {
   theme: new Audio('./audio/theme.mp3'),
+  comet: new Audio('./audio/little-explorers-comet.mp3'),
   sun: new Audio('./audio/monster-sun.mp3'),
   crew: new Audio('./audio/view-from-higher-ground.mp3'),
   boss: new Audio('./audio/view-from-the-last-lap.mp3'),
@@ -25,7 +28,8 @@ const tracks: Record<Track, HTMLAudioElement> = {
   bay: new Audio('./audio/apex-ascent.mp3'),
   canyon: new Audio('./audio/canyon-sprint.mp3'),
 };
-// only fetched when someone opens Monster Sun, a crew flight, the Black Sun, the About page, the cockpit, the launch bay or a Canyon Run
+// only fetched when first needed: the game's second soundtrack, or someone opening Monster Sun, a crew flight, the Black Sun, the About page, the cockpit, the launch bay or a Canyon Run
+tracks.comet.preload = 'none';
 tracks.sun.preload = 'none';
 tracks.crew.preload = 'none';
 tracks.boss.preload = 'none';
@@ -84,12 +88,16 @@ function save(state: Saved) {
 
 const musicVolume = () => useAudio.getState().musicVolume;
 
-/** the next soundtrack takes over, silent for now (it fades in): the theme where it left off, the others from the top */
+/** the game's own soundtracks: one or the other plays in the game itself */
+const GAME_TRACKS: Track[] = ['theme', 'comet'];
+const isGameTrack = (track: Track) => GAME_TRACKS.includes(track);
+
+/** the next soundtrack takes over, silent for now (it fades in): the game's own where they left off, the others from the top */
 function takeOver() {
   tracks[sounding].pause();
   sounding = current;
   const t = tracks[sounding];
-  if (sounding !== 'theme') t.currentTime = 0;
+  if (!isGameTrack(sounding)) t.currentTime = 0;
   t.volume = 0;
   t.muted = false;
   level = 0;
@@ -197,6 +205,17 @@ export function playTrack(track: Track) {
 }
 
 /**
+ * The game's own soundtrack, the theme or The Little Explorer's Comet, at
+ * random: on a new level (`fresh`: the one playing may carry on, or the other
+ * take over), or back in the game from a mode with a soundtrack of its own
+ * (the one already picked on the way, if one was).
+ */
+export function playGameMusic(fresh = false) {
+  if (!fresh && isGameTrack(current)) return;
+  playTrack(GAME_TRACKS[Math.floor(Math.random() * GAME_TRACKS.length)]);
+}
+
+/**
  * From a tap, for a soundtrack that will start later without one (at the end
  * of an animation): a browser that only plays sound after a tap lets it then.
  * It plays a moment, muted, and stops again.
@@ -232,6 +251,8 @@ export function resumeMusic() {
 // music starts on the first click/keypress rather than on load.
 function startOnFirstGesture() {
   applyMusic();
+  // (the game's second soundtrack can start on a new level, without a tap of its own)
+  unlockTrack('comet');
   for (const type of GESTURES) window.removeEventListener(type, startOnFirstGesture);
 }
 // iOS Safari only unlocks media inside touchend/click, not pointerdown.

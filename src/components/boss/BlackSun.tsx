@@ -13,7 +13,7 @@ import { flyHome } from '../../game/flight';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
-import { playTrack } from '../../audio/useAudio';
+import { playGameMusic } from '../../audio/useAudio';
 import { DEV_ALMOST_EVENT, DEV_MISS_EVENT, DEV_SOLVE_EVENT } from '../../dev/devMode';
 import { warpTo } from '../warpTransition';
 import { useWarpCanvas } from '../useWarpCanvas';
@@ -29,6 +29,7 @@ import { AdmiralBadge } from './AdmiralBadge';
 import '../sky/sky.css';
 import './boss.css';
 import { useBack } from '../../native/back';
+import { TapTick } from '../../audio/TapTick';
 
 // The Black Sun, the final boss (game/blackSun.ts has the rules, and
 // blackSunScene.ts draws it). It opens through the warp like Monster Sun,
@@ -61,9 +62,9 @@ const centre = (el: Element | null | undefined) => {
   return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : { x: viewport.w / 2, y: viewport.h * 0.8 };
 };
 
-// Back to the game through the warp; the theme comes back from the tap (browsers only start music from one).
+// Back to the game through the warp; the game's music comes back from the tap (browsers only start music from one).
 function warpHome(e?: React.MouseEvent<HTMLElement>) {
-  playTrack('theme');
+  playGameMusic();
   warpTo(() => {
     useBossStore.getState().closeBoss();
     // the rocket flies home as the warp clears
@@ -275,6 +276,7 @@ function BossOverlay() {
     setShown({ run: 0, checkpoint: 0 });
     setStep('waking');
     sfx.monsterRise();
+    haptics.monster();
     warpKick(1.4);
     say('awakens', `⚠️ ${t.boss.awakens}`, undefined, 1700);
     scene.after(calm ? 0.4 : 2, next);
@@ -292,8 +294,14 @@ function BossOverlay() {
       // the ship wears the admiral's livery from now on (it already does if this isn't their first cure)
       scene.promote();
     });
-    scene.after(0.45, () => sfx.shatter());
-    scene.after(1.5, () => sfx.sunrise());
+    scene.after(0.45, () => {
+      sfx.shatter();
+      haptics.boom();
+    });
+    scene.after(1.5, () => {
+      sfx.sunrise();
+      haptics.cheer(true);
+    });
     scene.bloomTimes().forEach((s, i) => scene.after(s, () => sfx.bloom(i)));
   }, [scene]);
 
@@ -566,6 +574,7 @@ function BossOverlay() {
                   >
                     {!isTouchDevice && <span className="choice-key">{ARROW_GLYPHS[i]}</span>}
                     {c}
+                    <TapTick />
                   </button>
                 );
               })}

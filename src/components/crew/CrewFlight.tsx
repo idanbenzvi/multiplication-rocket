@@ -86,6 +86,7 @@ function CrewLaunch({ onContinue, onLand }: { onContinue: () => void; onLand: ()
   const level = useCrewStore((s) => s.level);
   useEffect(() => {
     sfx.launch();
+    haptics.launch();
     kick(1);
   }, []);
   return (

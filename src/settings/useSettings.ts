@@ -14,7 +14,7 @@ interface Saved {
   typedCheck: TypedCheck;
   /** open the practice map automatically after a run of mistakes */
   mistakeReview: boolean;
-  /** phone/tablet vibration feedback (where the device supports it) */
+  /** phone vibration feedback (where the device has any: audio/haptics.ts) */
   vibration: boolean;
   /** Orbie, the ship's computer, offers to help on a question the pilot is stuck on */
   orbie: boolean;

@@ -15,6 +15,7 @@ import { CannonPickup, RearShip, Saucer } from './spaceArt';
 import { useWarpCanvas } from './useWarpCanvas';
 import { calmMotion, DROP_MS, shipArrival, warpIn } from './arrival/dropOut';
 import GradientText from './reactbits/GradientText';
+import { TapTick } from '../audio/TapTick';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -322,6 +323,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
     later(() => {
       setAttackStep('orbit');
       sfx.wormhole(); // the rising whoosh of the spin-up
+      haptics.warp();
     }, ARRIVE_MS);
     later(() => {
       const shots = shotsWith(n);
@@ -582,6 +584,7 @@ export function FleetBattle({ onDone, onBurst }: Props) {
               {choices.map((c) => (
                 <button key={c} type="button" className="choice-btn" onClick={() => sendShips(c)}>
                   {c}
+                  <TapTick />
                 </button>
               ))}
             </div>

@@ -10,6 +10,7 @@ import { useGameStore } from '../../game/useGameStore';
 import { haptics } from '../../audio/haptics';
 import { useWarpCanvas } from '../useWarpCanvas';
 import { useBack } from '../../native/back';
+import { TapTick } from '../../audio/TapTick';
 
 // What both Academies share: the screen (warp in, a panel of steps with
 // Back / Read to me / Next, a celebration on the last one), and the pieces
@@ -121,6 +122,7 @@ export function Choices({ options, answer, onCorrect, t }: { options: Array<stri
             }}
           >
             {o}
+            <TapTick />
           </motion.button>
         ))}
       </div>
@@ -156,6 +158,7 @@ export function AcademyScreen({ course, menu, menuSubtitle, onBackFromStart, onC
   useEffect(() => {
     pauseGame('academy');
     sfx.wormhole();
+    haptics.wormhole();
     const id = window.setTimeout(() => {
       warpSpeed.current = 0.08; // calm drift
       setPhase('learn');
@@ -175,6 +178,7 @@ export function AcademyScreen({ course, menu, menuSubtitle, onBackFromStart, onC
     setPhase('leaving');
     warpSpeed.current = 3;
     sfx.launch();
+    haptics.launch();
     window.setTimeout(onClose, 700);
   }, [onClose]);
 
@@ -272,6 +276,7 @@ function CourseRunner({
     useAchievements.getState().track({ type: 'academy' }, useGameStore.getState().progress);
     onFinish?.();
     sfx.milestone(10);
+    haptics.cheer();
     for (let i = 0; i < 8; i++) {
       window.setTimeout(
         () => onBurst(window.innerWidth * (0.2 + Math.random() * 0.6), window.innerHeight * (0.2 + Math.random() * 0.4), ['#ffd77a', '#6ad7ff', '#ff6ad5'][i % 3]),

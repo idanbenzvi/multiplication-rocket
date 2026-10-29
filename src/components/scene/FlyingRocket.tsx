@@ -7,6 +7,7 @@ import { RocketSprite } from './RocketSprite';
 import { EngineExhaust } from './EngineExhaust';
 import { EngineGlow } from './EngineGlow';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { shipArt } from './ships';
 import { useShip } from '../../profiles/useProfiles';
 import { useCrewStore } from '../../game/useCrewStore';
@@ -125,12 +126,14 @@ export function FlyingRocket({ level }: Props) {
     if (phase && charged.current !== departure.at) {
       charged.current = departure.at;
       sfx.chargeUp(CHARGE_MS / 1000);
+      haptics.charge(CHARGE_MS / 1000);
     }
     if (phase && phase.blast > 0 && ignited.current !== departure.at) {
       ignited.current = departure.at;
       flight.ignition = 1;
       kick(1.1);
       sfx.blastOff();
+      haptics.launch();
     }
     group.rotation.z = Math.sin(t * 0.9) * 0.03 - s * 0.04 + Math.sin(t * 19) * flight.jolt * 0.06 * m + home.bank;
     group.updateMatrixWorld();

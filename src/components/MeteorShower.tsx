@@ -129,7 +129,10 @@ export function MeteorShower({ onDone, onBurst }: Props) {
         return;
       }
       setPhase('summary');
-      if (hitsSoFar >= METEOR_DRILLS - 1) sfx.milestone(10);
+      if (hitsSoFar >= METEOR_DRILLS - 1) {
+        sfx.milestone(10);
+        haptics.cheer();
+      }
       later(() => onDone({ fuelGain: hitsSoFar * fuelPerHit, answers: answers.current }), SUMMARY_MS);
     },
     [drills.length, startDrill, later, onDone, fuelPerHit],

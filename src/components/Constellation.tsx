@@ -161,6 +161,7 @@ function ProductConstellation({ onDone, onBurst }: Props) {
         } else {
           setPhase('summary');
           sfx.milestone(10);
+          haptics.cheer();
           later(() => onDone({ fuelGain: solvedNow * fuelPerTarget, answers: answers.current }), SUMMARY_MS);
         }
       }, SOLVED_MS);

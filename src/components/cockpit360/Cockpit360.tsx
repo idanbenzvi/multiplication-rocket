@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { pauseGame, resumeGame, usePause } from '../../game/gameClock';
 import { cockpitDolly, cockpitDollyAt, cockpitView, moveCockpitDolly, portholeScreen, portholeZoom } from '../../game/flight';
 import { useGameStore } from '../../game/useGameStore';
@@ -374,6 +375,7 @@ function CockpitView({ leaving, from, covered, onClose, onGone, onParents, onRes
       if (id === 'stick') {
         shudder(1.6);
         sfx.hyperdrive();
+        haptics.warp();
         return onClose();
       }
       if (id === 'manual') {

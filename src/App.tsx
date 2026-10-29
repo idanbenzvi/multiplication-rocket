@@ -31,6 +31,8 @@ import { stagesOf } from './game/stages';
 import { missionName } from './i18n/strings';
 import { isTouchDevice, useSettings } from './settings/useSettings';
 import { sfx } from './audio/sfx';
+import { playGameMusic } from './audio/useAudio';
+import { SwipeUp } from './browser/SwipeUp';
 import { haptics } from './audio/haptics';
 import { AudioControls } from './components/AudioControls';
 import { MilestoneBanner } from './components/MilestoneBanner';
@@ -169,6 +171,9 @@ function App() {
     if (!justLaunched) return;
     setShowWarp(true);
     sfx.launch();
+    haptics.launch();
+    // a new level: the game's music, the theme or The Little Explorer's Comet, at random
+    playGameMusic(true);
     const timeout = window.setTimeout(() => setShowWarp(false), 1200);
     return () => window.clearTimeout(timeout);
   }, [justLaunched]);
@@ -225,6 +230,7 @@ function App() {
 
       if (!launching && isMilestone(streak)) {
         sfx.milestone(streak);
+        haptics.cheer(streak >= 10);
         setMilestone(streak);
         window.setTimeout(() => setMilestone((m) => (m === streak ? null : m)), MILESTONE_BANNER_MS);
         // Fireworks: bursts popping all over the screen.
@@ -356,6 +362,8 @@ function App() {
           <DeepSpaceAcademy onClose={closeAcademy} onBurst={burstAt} />
         ))}
       <PauseController />
+      {/* an iPhone on its side, in Safari: a swipe up tucks its bars away */}
+      <SwipeUp />
       {DEV_MODE && <DevPanel />}
 
       {!gateOpen && !crewActive && (

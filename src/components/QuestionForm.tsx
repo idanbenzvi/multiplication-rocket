@@ -14,6 +14,7 @@ import { distractors } from '../game/distractors';
 import type { AnswerMode, TypedCheck } from '../settings/useSettings';
 import { NumPad } from './NumPad';
 import { ARROW_DIRS, ARROW_GLYPHS, arrowChoice } from './arrowChoices';
+import { TapTick } from '../audio/TapTick';
 
 interface Props {
   question: Question;
@@ -300,6 +301,7 @@ export function QuestionForm({ question, feedback, disabled, onAnswer, onContinu
                   >
                     {!touch && <span className="choice-key">{ARROW_GLYPHS[i]}</span>}
                     {c}
+                    <TapTick />
                   </button>
                 );
               })}

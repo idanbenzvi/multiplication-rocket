@@ -481,6 +481,7 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
       go('summary');
       warpSpeed.current = 0.8;
       sfx.milestone(15);
+      haptics.cheer(true);
       later(() => onDone({ fuelGain: base * 0.7 * firstTry.current, answers: answers.current }), SUMMARY_MS);
     }, BLAST_MS);
   }, [go, later, onBurst, onDone, base, w, h]);
@@ -521,6 +522,7 @@ export function AccelerationRoad({ onDone, onBurst }: Props) {
           setStep(ROAD_JUMPS);
           go('charge');
           sfx.monsterRise();
+          haptics.charge(CHARGE_MS / 1000);
           later(blastOff, CHARGE_MS);
         } else {
           setStep(step + 1);

@@ -50,3 +50,23 @@ input {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* on an iPhone, an answer's button carries an invisible switch over it: flipped under the finger, it's the one buzz a web page can have there (audio/TapTick.tsx) */
+.tap-tick {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  z-index: 10;
+  border-radius: inherit;
+  cursor: inherit;
+}
+/* (over the button, wherever it's placed: only where nothing else places it) */
+:where(button:has(> .tap-tick)) {
+  position: relative;
+}
+button:disabled > .tap-tick {
+  pointer-events: none;
+}

@@ -5,7 +5,7 @@ import { activeMission, useProfiles } from '../profiles/useProfiles';
 import { loadProgressFor } from '../storage/progressStore';
 import { loadBossRecord, saveBossRecord, type BossRecord } from '../storage/bossRecord';
 import { pauseGame, resumeGame } from './gameClock';
-import { playTrack } from '../audio/useAudio';
+import { playGameMusic, playTrack } from '../audio/useAudio';
 import { useGameStore } from './useGameStore';
 import { useAchievements } from './useAchievements';
 
@@ -75,7 +75,7 @@ export const useBossStore = create<BossStore>((set, get) => ({
   closeBoss: () => {
     set({ open: false, phase: 'intro', fight: newFight(), question: null, record: readRecord() });
     resumeGame('boss');
-    playTrack('theme');
+    playGameMusic();
     // this pilot's practice map has changed
     useGameStore.getState().init();
   },

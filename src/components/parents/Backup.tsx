@@ -16,6 +16,7 @@ import {
   type Backup,
 } from '../../storage/backup';
 import { useBack } from '../../native/back';
+import { leaveQuietly } from '../../browser/leave';
 
 // Saving and restoring backups (storage/backup.ts): a card on the parent
 // dashboard, and the restore dialog it opens (the welcome screen opens it
@@ -86,8 +87,10 @@ export function RestoreDialog({ onClose }: { onClose: () => void }) {
   };
   const restore = () => {
     if (!backup) return;
-    if (restoreBackup(backup, picked)) window.location.reload();
-    else setFailed(true);
+    if (restoreBackup(backup, picked)) {
+      leaveQuietly();
+      window.location.reload();
+    } else setFailed(true);
   };
   const pick = () => {
     if (input.current) input.current.value = '';

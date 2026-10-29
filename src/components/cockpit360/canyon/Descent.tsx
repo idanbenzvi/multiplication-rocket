@@ -6,6 +6,7 @@ import { destinationName } from '../../../i18n/strings';
 import { getLevelConfig } from '../../../game/levels';
 import { currentTrack } from '../../../audio/useAudio';
 import { canyonWind, sfx } from '../../../audio/sfx';
+import { haptics } from '../../../audio/haptics';
 import { pauseGame, resumeGame } from '../../../game/gameClock';
 import { LOOKS } from '../../scene/planetLooks';
 import { storyPilot } from '../../story/useStory';
@@ -85,6 +86,7 @@ function Dive({ level }: { level: number }) {
     const before = currentTrack();
     pauseGame('canyon');
     sfx.hyperdrive();
+    haptics.warp();
     const wind = calm ? null : canyonWind();
     let windAt = 0;
     // the canyon, built while it dives (the cockpit's own chunk with it)
@@ -176,7 +178,10 @@ function Dive({ level }: { level: number }) {
           const p = clamp01(time / dive);
           wind.set(0.25 + 0.75 * p, 0.2 + 0.7 * p);
         }
-        if (!calm && time >= RUSH_FROM && time - dt < RUSH_FROM) sfx.warp();
+        if (!calm && time >= RUSH_FROM && time - dt < RUSH_FROM) {
+          sfx.warp();
+          haptics.wormhole();
+        }
         if (time >= dive) {
           stage = 'white';
           whiteAt = now;

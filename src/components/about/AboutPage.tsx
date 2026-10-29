@@ -8,6 +8,7 @@ import { IN_APP } from '../../storage/backup';
 
 const CONTACT_EMAIL = 'falcondeergames@gmail.com';
 import { useBack } from '../../native/back';
+import { leaveQuietly } from '../../browser/leave';
 
 // About the maker and the game, over a colour-cycling pixel-art canyon
 // (CycleScene). The game is paused while it's open (the clock resumes on close).
@@ -84,7 +85,7 @@ export function AboutPage({ onClose, onHow, onStory }: { onClose: () => void; on
           {IN_APP ? (
             <bdi dir="ltr" className="about-email">{CONTACT_EMAIL}</bdi>
           ) : (
-            <a className="about-inline-link about-email" href={`mailto:${CONTACT_EMAIL}`} dir="ltr">
+            <a className="about-inline-link about-email" href={`mailto:${CONTACT_EMAIL}`} dir="ltr" onClick={leaveQuietly}>
               {CONTACT_EMAIL}
             </a>
           )}

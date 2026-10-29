@@ -6,7 +6,7 @@ import { activeProfile, pilotName, useMission, useProfiles } from '../../../prof
 import { missionName } from '../../../i18n/strings';
 import { isTouchDevice, useSettings, type AnswerMode, type TypedCheck } from '../../../settings/useSettings';
 import { useQuality, type QualityMode } from '../../../settings/quality';
-import { canVibrate, haptics } from '../../../audio/haptics';
+import { canFeel, canTick, haptics } from '../../../audio/haptics';
 import { sfx } from '../../../audio/sfx';
 import SquishSwitch from '../../reactbits/SquishSwitch';
 import HoldButton from '../../reactbits/HoldButton';
@@ -134,9 +134,9 @@ export function SystemsPage({ onParents, onReset, onAbout }: { onParents: () => 
           <Switch on={boost} onChange={(on) => useProfiles.getState().update(profile.id, { timedBoost: on })} label={t.timedBoostLabel} />
         </Row>
       )}
-      {/* only where the device can actually vibrate (not iPhone/iPad) */}
-      {canVibrate && (
-        <Row name={t.vibrationLabel} hint={t.vibrationHint}>
+      {/* only where the device has a buzz to give (an iPhone only a tick as an answer's tapped; an iPad none) */}
+      {canFeel && (
+        <Row name={t.vibrationLabel} hint={canTick ? t.vibrationTapHint : t.vibrationHint}>
           <Switch
             on={vibration}
             onChange={(on) => {

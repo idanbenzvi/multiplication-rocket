@@ -15,7 +15,7 @@ import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
 import { haptics } from '../../audio/haptics';
 import GradientText from '../reactbits/GradientText';
-import { playTrack } from '../../audio/useAudio';
+import { playGameMusic } from '../../audio/useAudio';
 import { warpTo } from '../warpTransition';
 import { flyHome } from '../../game/flight';
 import { ModeArrival } from '../arrival/ModeArrival';
@@ -24,6 +24,7 @@ import { useProfiles } from '../../profiles/useProfiles';
 import '../sky/sky.css';
 import './sun.css';
 import { useBack } from '../../native/back';
+import { TapTick } from '../../audio/TapTick';
 
 const RIGHT_PAUSE_MS = 700;
 const WRONG_PAUSE_MS = 2000;
@@ -94,10 +95,10 @@ const numberField: React.RefObject<NumberFieldFx | null> = { current: null };
 /** the fight shows a meal's strength once the number is crunched, or after this at the latest */
 const FED_BY_MS = 4000;
 
-// Back to the game through the warp; the theme music comes back from the tap
+// Back to the game through the warp; the game's music comes back from the tap
 // (browsers only start music from one).
 function warpHome(e?: React.MouseEvent<HTMLElement>) {
-  playTrack('theme');
+  playGameMusic();
   warpTo(() => {
     useSunStore.getState().closeSun();
     // the rocket flies home as the warp clears
@@ -413,6 +414,7 @@ function Question({ state }: { state: SunState }) {
             onClick={() => pick(c)}
           >
             {c}
+            <TapTick />
           </button>
         ))}
       </motion.div>
@@ -544,6 +546,7 @@ function Fight({ state }: { state: SunState }) {
     if (state.combo <= before || state.combo % COMBO_EVERY !== 0 || state.phase !== 'fight') return;
     monsterFx.current?.ring(GOLD);
     sfx.milestone(state.combo);
+    haptics.cheer();
     warpKick(1.6);
     setBlast(state.combo);
     const timer = window.setTimeout(() => setBlast(null), 1700);
@@ -561,6 +564,7 @@ function Fight({ state }: { state: SunState }) {
     if (state.phase !== 'fight') return;
     setComing(true);
     sfx.monsterRise();
+    haptics.monster();
     const timer = window.setTimeout(() => setComing(false), 1900);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -690,6 +694,7 @@ function Summary({ state }: { state: SunState }) {
   const awards = sunAwards(state.players);
   useEffect(() => {
     sfx.launch();
+    haptics.launch();
   }, []);
   return (
     <div className="sky-panel sun-panel sun-summary">

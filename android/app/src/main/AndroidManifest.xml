@@ -38,4 +38,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- the buzz for answers, launches and the big moments (navigator.vibrate, src/audio/haptics.ts) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

@@ -17,6 +17,7 @@ import GradientText from './reactbits/GradientText';
 import { SpaceRipple } from './SpaceRipple';
 import { DEV_SOLVE_EVENT } from '../dev/devMode';
 import { applyOp, OP_SYMBOL } from '../game/mission';
+import { TapTick } from '../audio/TapTick';
 
 interface Props {
   onDone: (result: { fuelGain: number; answers: Array<{ factKey: string; correct: boolean }> }) => void;
@@ -384,6 +385,7 @@ export function StrandedFleet({ onDone, onBurst }: Props) {
               {choices.map((c) => (
                 <button key={c} type="button" className="choice-btn" onClick={() => guess(c)}>
                   {c}
+                  <TapTick />
                 </button>
               ))}
             </div>

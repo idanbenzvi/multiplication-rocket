@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { calmMotion } from '../arrival/dropOut';
 import { useLang, useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { Letterbox, Slate } from './film';
 import { SLATE, useCanvasLoop, useSkip } from './filmHooks';
 import { LaunchScene } from './launchScene';
@@ -59,8 +60,14 @@ export function StoryLaunch() {
     });
     // (gone as the pictures come up: the ship lifts off where it is)
     cue('slate', 0.05, () => setSlateOn(false));
-    cue('ignite', LAUNCH.ignite, () => sfx.blastOff());
-    cue('away', LAUNCH.away[0] + 0.6, () => sfx.hyperdrive());
+    cue('ignite', LAUNCH.ignite, () => {
+      sfx.blastOff();
+      haptics.launch();
+    });
+    cue('away', LAUNCH.away[0] + 0.6, () => {
+      sfx.hyperdrive();
+      haptics.warp();
+    });
     cue('glint', LAUNCH.glint, () => sfx.flareOut());
     cue('quiet', LAUNCH.white[0], () => setCaption(false));
     scene.update(dt);

@@ -9,6 +9,7 @@ import { startPerfMonitor } from './dev/perfMonitor'
 import { keepStorageOncePiloted } from './storage/backup'
 import { listenForBack } from './native/back'
 import { startQuality } from './settings/quality'
+import { askBeforeLeaving } from './browser/leave'
 
 // dev mode: watch for hiccups from the very start (the dev panel shows them)
 if (DEV_MODE) startPerfMonitor()
@@ -21,6 +22,9 @@ keepStorageOncePiloted()
 
 // the Android app: the Back button closes what's open (or sends the app away)
 listenForBack()
+
+// on a computer, closing the tab asks first (browser/leave.ts)
+askBeforeLeaving()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

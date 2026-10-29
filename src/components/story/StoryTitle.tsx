@@ -5,6 +5,7 @@ import { LiquidMetal } from '../logo/LiquidMetal';
 import { LOGO } from '../logo/layout';
 import { calmMotion } from '../arrival/dropOut';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { useT } from '../../i18n/useLang';
 import { useSkip } from './filmHooks';
 import { GlitchTeleport, type Box } from './GlitchTeleport';
@@ -135,6 +136,7 @@ export function StoryTitle() {
           return;
         }
         sfx.teleport(!!there && there.height > 0);
+        haptics.glitch();
         setJump({ from: boxOf(here), to: there && there.height > 0 ? boxOf(there) : null });
         setStage('glitch');
       },

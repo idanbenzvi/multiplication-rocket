@@ -1,0 +1,145 @@
+/* an iPhone on its side, in Safari: a swipe up tucks the browser's bars away (SwipeUp.tsx) */
+
+/* the room to scroll into, under the game, while it asks */
+html.swipe-room body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: calc(100vh + 240px);
+  pointer-events: none;
+}
+
+.swipe-up {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: radial-gradient(ellipse 70% 80% at 50% 45%, rgba(36, 27, 63, 0.82), rgba(12, 8, 26, 0.94));
+  color: #fdf3e7;
+  text-align: center;
+  /* (a swipe on it scrolls the page) */
+  touch-action: pan-y;
+  animation: swipe-up-in 0.3s ease-out both;
+}
+
+@keyframes swipe-up-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.swipe-up-hand {
+  position: relative;
+  width: 72px;
+  height: 96px;
+}
+
+.swipe-up-chevrons {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.swipe-up-chevrons i {
+  width: 22px;
+  height: 22px;
+  border-top: 4px solid #6ad7ff;
+  border-left: 4px solid #6ad7ff;
+  border-radius: 3px;
+  rotate: 45deg;
+  filter: drop-shadow(0 0 6px rgba(106, 215, 255, 0.8));
+  opacity: 0.25;
+  animation: swipe-up-chevron 1.4s ease-in-out infinite;
+}
+
+.swipe-up-chevrons i:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+.swipe-up-chevrons i:nth-child(3) {
+  animation-delay: -0.3s;
+}
+
+/* (lit from the bottom one up, as the finger goes) */
+@keyframes swipe-up-chevron {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.swipe-up-finger {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 40px;
+  line-height: 1;
+  animation: swipe-up-finger 1.4s cubic-bezier(0.55, 0, 0.3, 1) infinite;
+}
+
+@keyframes swipe-up-finger {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(-46px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-56px);
+    opacity: 0;
+  }
+}
+
+.swipe-up-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  text-shadow: 0 0 18px rgba(106, 215, 255, 0.55);
+}
+
+.swipe-up-later {
+  margin-top: 6px;
+  padding: 8px 18px;
+  border: 1px solid rgba(253, 243, 231, 0.35);
+  border-radius: 999px;
+  background: rgba(253, 243, 231, 0.08);
+  color: rgba(253, 243, 231, 0.85);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-up,
+  .swipe-up-chevrons i,
+  .swipe-up-finger {
+    animation: none;
+  }
+  .swipe-up-chevrons i {
+    opacity: 0.8;
+  }
+  .swipe-up-finger {
+    transform: translateY(-28px);
+  }
+}

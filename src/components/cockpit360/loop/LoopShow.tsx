@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { canyonWind, sfx, type Wind } from '../../../audio/sfx';
+import { haptics } from '../../../audio/haptics';
 import { useLang, useT } from '../../../i18n/useLang';
 import type { ShipId } from '../../scene/ships';
 import { flash, fx, resetFx } from '../canyon/fx';
@@ -171,6 +172,7 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
     // the lever pulled: a clunk, the engines charging, the view widening a little (the anime's fisheye)
     sfx.clunk(true);
     sfx.chargeUp(0.6);
+    haptics.charge(0.6);
     lookTo({ yaw: 0, pitch: HOME.pitch + 2 * DEG }, view.base * 1.1, 7);
     if (!calm) shudder(0.8);
 
@@ -193,6 +195,7 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
       const c = sp.cockpit;
       if (seg.kind === 'slash') {
         sfx.slash();
+        haptics.slash();
         slashAt = now;
         const mid: P2 = [(sp.a[0] + sp.b[0]) / 2 - sp.n[0] * 90, (sp.a[1] + sp.b[1]) / 2 - sp.n[1] * 90];
         spawn('slash', mid, -14, clamp(min() * 0.11, 46, 96));
@@ -200,6 +203,7 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
         sfx.whoosh();
       } else if (seg.kind === 'ignite') {
         sfx.ignite();
+        haptics.boom();
         spawn('boom', [c[0], c[1] + min() * 0.16], -9, clamp(min() * 0.17, 64, 150));
         wind = canyonWind();
         drive.boost = 1.3;
@@ -210,7 +214,10 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
         }
       } else if (seg.kind === 'move') {
         setCaption(false);
-        if (index > 4) sfx.whoosh();
+        if (index > 4) {
+          sfx.whoosh();
+          haptics.bump(0.8);
+        }
         // (into the loop itself: the turn kicks in)
         if (seg.s0 < 0 && seg.s1 > 0) spawn('zoom', [c[0] - min() * 0.1, c[1] - min() * 0.2], 8, clamp(min() * 0.1, 40, 92));
         if (!calm) shudder(1.2);
@@ -219,9 +226,11 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
         setCaption(true);
         if (seg.beat === 'done') {
           sfx.loopDone();
+          haptics.cheer(true);
           spawn('done', [sp.box.cx, sp.box.cy - sp.box.h * 0.24], -6, clamp(min() * 0.12, 48, 110));
         } else {
           sfx.timeStop();
+          haptics.freeze();
           // (by the ship, where the camera's closing in on it)
           spawn('shine', [sp.box.cx + sp.box.w * 0.2, sp.box.cy - sp.box.h * 0.2], 0, clamp(min() * 0.06, 28, 56));
         }

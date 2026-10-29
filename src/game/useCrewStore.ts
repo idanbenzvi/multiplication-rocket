@@ -26,7 +26,7 @@ import { loadProgressFor, saveProgressFor } from '../storage/progressStore';
 import { appendToLog } from '../stats/answerLog';
 import { nextPace, paceMs } from './scoring';
 import { useGameStore } from './useGameStore';
-import { playTrack } from '../audio/useAudio';
+import { playGameMusic, playTrack } from '../audio/useAudio';
 
 // A Crew Flight session (see game/crew.ts for the rules). Answers go into
 // each pilot's own mastery map and answer history, so crew play counts as
@@ -345,7 +345,7 @@ export const useCrewStore = create<CrewState>((set, get) => {
 
     close: () => {
       set({ ...freshMission, active: false, members: null });
-      playTrack('theme');
+      playGameMusic();
       // the solo pilot's progress may have changed (if they were in the crew)
       useGameStore.getState().init();
     },

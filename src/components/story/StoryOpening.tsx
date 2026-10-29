@@ -4,6 +4,7 @@ import Orb from '../reactbits/Orb';
 import { calmMotion } from '../arrival/dropOut';
 import { useLang, useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { Letterbox, Slate } from './film';
 import { SLATE, today, useCanvasLoop, useSkip } from './filmHooks';
 import { OpeningScene } from './openingScene';
@@ -51,9 +52,13 @@ export function StoryOpening() {
     let swallows = 0;
     scene.onEvent = (what) => {
       if (what === 'turn') sfx.flareOut();
-      else if (what === 'awaken') sfx.monsterRise();
-      else if (what === 'sputter') sfx.rumble(0.6);
-      else if (what === 'orbie') sfx.blip(6);
+      else if (what === 'awaken') {
+        sfx.monsterRise();
+        haptics.monster();
+      } else if (what === 'sputter') {
+        sfx.rumble(0.6);
+        haptics.bump(0.6);
+      } else if (what === 'orbie') sfx.blip(6);
     };
     scene.sun.onSwallow = () => {
       swallows++;

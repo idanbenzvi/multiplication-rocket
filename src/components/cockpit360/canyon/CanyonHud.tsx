@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useLang, useT } from '../../../i18n/useLang';
 import { isTouchDevice } from '../../../settings/useSettings';
 import { sfx } from '../../../audio/sfx';
+import { haptics } from '../../../audio/haptics';
 import { OP_SYMBOL } from '../../../game/mission';
 import { activeMission, useProfiles } from '../../../profiles/useProfiles';
 import { loadCanyonRecord, type CanyonRecord } from '../../../storage/canyonRecord';
@@ -143,6 +144,9 @@ const GlassIntro = memo(function GlassIntro() {
         beat++;
         setStep(beat);
         sfx.blip(beat === 3 ? 6 : beat);
+        // (3, 2, 1: a knock each, GO: the roar)
+        if (beat === 3) haptics.launch();
+        else haptics.bump(BEAT_SHAKE[beat]);
         if (!calm) {
           shudder(BEAT_SHAKE[beat]);
           glowLights.flicker = Math.max(glowLights.flicker, BEAT_SHAKE[beat]);

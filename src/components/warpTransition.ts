@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Variants } from 'motion/react';
 import { sfx } from '../audio/sfx';
+import { haptics } from '../audio/haptics';
 import { CHARGE_MS, flyAway } from '../game/flight';
 
 // Going from the game into a game mode (and back) is one continuous flight,
@@ -55,6 +56,7 @@ export function warpTo(action: () => void, from?: Element | null, delayMs = 0) {
   const origin = originOf(from);
   const go = () => {
     sfx.warp();
+    haptics.warp();
     useModeWarp.setState({ run: { id: performance.now(), origin, action }, due: false });
   };
   if (delayMs <= 0) {

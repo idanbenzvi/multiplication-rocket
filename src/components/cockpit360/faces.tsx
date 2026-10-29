@@ -8,7 +8,7 @@ import { dayNumber } from '../../game/memory';
 import { MISSION_SYMBOL, opsOf, pairKey } from '../../game/mission';
 import { pilotName, useMission, useProfiles } from '../../profiles/useProfiles';
 import { isTouchDevice, useSettings } from '../../settings/useSettings';
-import { canVibrate } from '../../audio/haptics';
+import { canFeel } from '../../audio/haptics';
 import { useAudio } from '../../audio/useAudio';
 import { missionName, shipName } from '../../i18n/strings';
 import { BadgeArt } from '../badges/BadgeArt';
@@ -133,7 +133,7 @@ function SystemsFace() {
     { name: t.orbieLabel, on: orbie },
     { name: t.mistakeReviewLabel, on: review },
     { name: t.timedBoostLabel, on: boost },
-    ...(canVibrate ? [{ name: t.vibrationLabel, on: vibration }] : []),
+    ...(canFeel ? [{ name: t.vibrationLabel, on: vibration }] : []),
   ];
   return (
     <ul className="ck3-pv-systems">

@@ -179,7 +179,10 @@ export function SpaceTraffic({ onDone, onBurst }: Props) {
 
   // the round opens with a whoosh out of hyperspace; the first slow ship pulls in once the ship is in its lane
   useEffect(() => {
-    const cancels = [gameTimeout(() => sfx.warp(), 0), gameTimeout(() => startPass(0), INTRO_MS)];
+    const cancels = [gameTimeout(() => {
+        sfx.warp();
+        haptics.warp();
+      }, 0), gameTimeout(() => startPass(0), INTRO_MS)];
     return () => {
       cancels.forEach((cancel) => cancel());
       blips.current.forEach((cancel) => cancel());

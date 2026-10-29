@@ -5,6 +5,7 @@ import { BADGE_BY_ID, RANK_ICONS } from '../../game/achievements';
 import { useMission } from '../../profiles/useProfiles';
 import { useT } from '../../i18n/useLang';
 import { sfx } from '../../audio/sfx';
+import { haptics } from '../../audio/haptics';
 import { BadgeArt } from './BadgeArt';
 import { badgeText } from '../../i18n/strings';
 import ShinyText from '../reactbits/ShinyText';
@@ -23,6 +24,7 @@ export function BadgeToast() {
   useEffect(() => {
     if (!unlock) return;
     sfx.milestone(unlock.promotedTo !== null ? 20 : 10);
+    haptics.cheer(unlock.promotedTo !== null);
     // (longer for a promotion, or the news that the final boss is waiting)
     const id = window.setTimeout(shiftQueue, unlock.promotedTo !== null || unlock.badgeId === 'grandMaster' ? PROMOTION_MS : SHOW_MS);
     return () => window.clearTimeout(id);

@@ -198,9 +198,14 @@ The browser version is made for touch. Answers are multiple choice by default (t
 or switch **⚙️ → Ship systems → Answer by → Typing** for a big on-screen number pad. On the same
 screen you can also choose when a typed answer is checked: **right away** (as soon as all its digits are
 in) or **when you tap the screen** (or press ✓). On a computer, typed answers always wait for
-**Enter**, so a typo can be fixed first. On Android, right answers give a revving buzz and
-mistakes a thump; this can be switched off in Ship systems. iPhone and iPad browsers don't support
-vibration. On a device that can't keep up (under 30 frames a second for 3 seconds), the game draws
+**Enter**, so a typo can be fixed first. On Android, every big moment has its own buzz: a revving
+buzz for a right answer and a thump for a mistake, the engines charging and a rumble building to a
+roar at a launch, a swell for a warp or a wormhole, a slow wobble when a monster wakes, a boom, a
+ta-da for a milestone or a badge, and the Canyon Run's gates, scrapes and crashes. No iPhone browser
+lets a page vibrate on its own, so on an iPhone the answer buttons and the number pad's keys give a
+little tick under the finger as they're tapped (an invisible switch over each, the one thing Safari
+ticks for since iOS 26.5); iPads have nothing to vibrate with. **Ship systems → Vibration** switches
+it off. On a device that can't keep up (under 30 frames a second for 3 seconds), the game draws
 itself lighter, a step at a time: less sharp, then without the glow, the speed blur and the frosted
 glass behind the panels. Once it runs smoothly again it tries the step above, and it remembers the
 level for that device. **Ship systems → Graphics** can fix it at High or Low instead of Auto
@@ -213,7 +218,13 @@ though, so first save a backup in the parent dashboard and restore it there (see
 [Backups](#backups-)).
 
 A phone works on its side too: the rocket flies on the left with the question beside it, and the
-pilot and ⚙️ wait in the top right corner.
+pilot and ⚙️ wait in the top right corner. On an iPhone in Safari, where no page can go full screen,
+the game asks for a swipe up while the browser's bars are showing: the swipe tucks them away and the
+game has the whole screen (from the Home Screen there are no bars at all).
+
+On a computer, closing the tab or the window asks first, so a stray click doesn't end a flight (the
+browser words the question itself, and asks only once the game's been clicked). Details:
+[docs/plans/2026-10-29-leave-fullscreen-haptics.md](docs/plans/2026-10-29-leave-fullscreen-haptics.md).
 
 ## How it works
 
@@ -714,7 +725,9 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 
 ## Sound
 
-The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. Monster Sun
+The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. The game has a
+second soundtrack too, *The Little Explorer's Comet*: each new level, and each return from a mode
+with music of its own, plays one or the other at random (each carries on where it left off). Monster Sun
 has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; the
 Black Sun, the final boss, plays *The View from the Last Lap*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to

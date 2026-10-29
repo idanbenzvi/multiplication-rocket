@@ -8,6 +8,7 @@ import { missionStats } from '../../../storage/progressStore';
 import { missionName, shipName } from '../../../i18n/strings';
 import { useAdmiral } from '../../../game/useAchievements';
 import { sfx } from '../../../audio/sfx';
+import { haptics } from '../../../audio/haptics';
 import { colorForLevel } from '../../scene/palette';
 import { ShipPicture } from '../../ShipPicture';
 import Counter from '../../reactbits/Counter';
@@ -32,6 +33,7 @@ function Missions({ profileId }: { profileId: string }) {
   const fly = (mission: PilotMission) => {
     if (mission === current) return;
     sfx.hyperdrive();
+    haptics.warp();
     // (out of the cockpit first: the music back, the game running, and then the new mission's start)
     useCockpit.getState().dismiss();
     switchMission(profileId, mission);
