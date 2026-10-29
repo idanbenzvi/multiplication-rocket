@@ -73,9 +73,11 @@ export function StoryLaunch() {
     cue('blast', LAUNCH.blast, () => {
       sfx.ignite();
       sfx.hyperdrive();
+    });
+    cue('flash', LAUNCH.flash, () => {
+      sfx.flareOut();
       haptics.boom();
     });
-    cue('glint', LAUNCH.glint, () => sfx.flareOut());
     cue('quiet', LAUNCH.white[0], () => setCaption(false));
     scene.update(dt);
     scene.draw(ctx, w, h);

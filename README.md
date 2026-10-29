@@ -33,10 +33,11 @@ its night side below, its edge a line of light from the top of the
 screen to the bottom with a purple haze and a bloom where the Black Sun hangs over it, the ship
 turning some 40° towards it and gathering its power as the game's rocket does, its engines
 burning with the game's own plume, swelling and heating from ion blue to hot pink, sparks curling
-in to them, as space holds its breath, then ignition (a white flash and a shockwave ring) and a
-blast into warp, as an anime's ships go: gone in a blink, a trail of afterimages behind it, the
+in to them, as space holds its breath, then a jump to warp as a starship's: it stretches out
+towards where it's going, its bow leaping into the distance and its stern snapping after it, the
 stars smeared into streaks across the screen along its heading, speed lines flickering alongside,
-and a white-out into the **SPACE TIMES** title: its letters poured in liquid metal, then the rest of the
+and where it's gone the warp flash, a burst of blue-white light with a long flare across it, then
+a white-out into the **SPACE TIMES** title: its letters poured in liquid metal, then the rest of the
 logo opening out round them, and then it glitches out and back in again in the top bar as the game
 begins ([docs/plans/2026-10-29-title-logo.md](docs/plans/2026-10-29-title-logo.md)). It
 plays once per device (each new pilot gets the launch), and About has **▶ Watch the story**.

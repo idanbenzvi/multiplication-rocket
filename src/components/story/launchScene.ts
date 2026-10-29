@@ -22,13 +22,13 @@ import { LAUNCH, circleThrough } from './timeline';
 // plume swelling and heating from ion blue to hot pink, the glow at its
 // nozzles and the aura round its hull pulsing faster and faster, sparks
 // curling in to them, as it edges towards where it's going and space holds
-// its breath (the stars all but still); then ignition, a white flash and a
-// shockwave ring, and it's gone into the distance in a blink, as an anime's
-// ships go to warp, leaving a trail of fading afterimages, its plume
-// stretched back along the way it went; the stars smeared at once into
-// streaks across the screen along its heading, speed lines flickering
-// alongside, Earth falling away; a glint where it went, and the screen washes
-// out to white.
+// its breath (the stars all but still); then it jumps to warp as a
+// starship does: it stretches out towards where it's going, its bow leaping
+// into the distance and its stern snapping after it, the stars smeared at once
+// into streaks across the screen along its heading, speed lines flickering
+// alongside, Earth falling away; where it's gone, the warp flash, a burst of
+// blue-white light with a long flare across it; and the screen washes out to
+// white.
 
 const STARS = 420;
 /** how far a star drifts back past the ship a second (of the screen's diagonal), at its nearest: as it lifts off, and in the warp */
@@ -42,7 +42,13 @@ const HOT = '#ff6ad5';
 const GOLD_COOL = '#ffd77a';
 const GOLD_HOT = '#ffb84d';
 const SPARKS = 44;
-const RING_S = 0.55;
+/** the jump (s after the blast): how long its bow takes to reach the distance, and its stern, setting off after it */
+const BOW_S = 0.14;
+const STERN: [number, number] = [0.1, 0.3];
+/** how many copies of it make up the stretch */
+const STRETCH = 28;
+/** how long the warp flash lasts (s) */
+const FLASH_S = 0.9;
 /** the game's rocket, a world unit across in its scene, is this much of the ship's width here */
 const UNIT = 0.42;
 /** the ship's heading, once it has turned (degrees right of straight up; on a narrow screen a little steeper, to stay on it) */
@@ -154,6 +160,15 @@ export class LaunchScene {
     return Math.min(0.1 + 0.35 * lift + build + this.ignition(t) * 0.6 + (t >= LAUNCH.blast ? 0.6 : 0), 1.9);
   }
 
+  /** how far into the distance its stern is (0 to 1) at `t`, and its bow */
+  private stern(t: number): number {
+    return easeIn(clamp01((t - LAUNCH.blast - STERN[0]) / (STERN[1] - STERN[0])));
+  }
+
+  private bow(t: number): number {
+    return easeOut(clamp01((t - LAUNCH.blast) / BOW_S));
+  }
+
   /** 1 at the blast, fading, as the game's ignition does (FlyingRocket) */
   private ignition(t: number): number {
     return t < LAUNCH.blast ? 0 : Math.exp(-3.2 * (t - LAUNCH.blast));
@@ -175,7 +190,7 @@ export class LaunchScene {
     const rise = { x: start.x + u * 0.16 * Math.sin(heading) * turn, y: start.y - u * 0.16 * lift };
     // gathering its power, it edges a little towards where it's going; then the blast, and it's gone into the distance in a blink
     const c = this.charged(t);
-    const b = clamp01((t - LAUNCH.blast) / (this.calm ? 1.4 : 0.3));
+    const b = this.calm ? clamp01((t - LAUNCH.blast) / 1.4) : this.stern(t);
     const depth = this.calm ? b * 6 : 0.14 * easeInOut(c) + 90 * b ** 2.4;
     const near = 1 / (1 + depth);
     const shake = this.calm ? 0 : Math.max(0, 1 - Math.abs(t - LAUNCH.ignite - 0.4) / 0.9) * u * 0.006 + (b > 0 ? 0 : c * c * u * 0.004);
@@ -230,11 +245,10 @@ export class LaunchScene {
     this.sun.draw(ctx, w, h, undefined, { x: pose.x, y: pose.y });
 
     this.drawEarth(ctx, w, h, e, s);
-    this.drawAfterimages(ctx, w, h);
-    this.drawShip(ctx, pose, u, w, h);
-    this.drawBlast(ctx, w, h);
+    this.drawShip(ctx, pose, u);
+    this.drawStretch(ctx, w, h);
     this.drawSpeedLines(ctx, w, h);
-    this.drawGlint(ctx, pose, u);
+    this.drawFlash(ctx, w, h, v);
 
     // washing out to white
     const white = clamp01((t - LAUNCH.white[0]) / (LAUNCH.white[1] - LAUNCH.white[0]));
@@ -409,7 +423,7 @@ export class LaunchScene {
   }
 
   /** the pilot's ship from behind, burning with the game's plume, gathering its power as the game's rocket does */
-  private drawShip(ctx: CanvasRenderingContext2D, p: ReturnType<LaunchScene['shipPose']>, u: number, w: number, h: number) {
+  private drawShip(ctx: CanvasRenderingContext2D, p: ReturnType<LaunchScene['shipPose']>, u: number) {
     if (p.alpha <= 0.01 || p.w < 0.5) return;
     const img = sprite(this.shipSvg, 384, 384, this.ship.avatar ? { emoji: this.ship.avatar, ...pilotCanopy(this.ship.ship) } : undefined);
     ctx.save();
@@ -433,7 +447,8 @@ export class LaunchScene {
     const engines = pilotEngines(this.ship.ship);
     const c = p.charge;
     const t = this.t;
-    const ig = this.ignition(t);
+    // (a touch of it: the hull stays in sight as it stretches out)
+    const ig = this.ignition(t) * 0.3;
     const gold = !!this.ship.admiral;
     // as the game's blast-off glows (EngineGlow.tsx): cool to hot as it builds, the pulse quickening
     const color = mix(gold ? GOLD_COOL : COOL, gold ? GOLD_HOT : HOT, c);
@@ -451,13 +466,11 @@ export class LaunchScene {
     }
     ctx.globalAlpha = p.alpha;
     if (this.plume) {
-      // the game's own plume out of each nozzle, swelling with the charge; in the blast, stretched back along the way it went
+      // the game's own plume out of each nozzle, swelling with the charge
       const s = this.power(t, c);
       const img = this.plume.frame(t, s, 0);
-      const back = t > LAUNCH.blast ? this.shipPose(w, h, t - 0.05) : null;
-      const trail = back ? Math.hypot(back.x - p.x, back.y - p.y) : 0;
       const pw = p.w * (0.8 + 0.25 * Math.min(s, 1)) * (engines.length > 1 ? 0.8 : 1);
-      const ph = Math.max(p.w * (0.9 + 1.1 * s), trail * 1.25);
+      const ph = p.w * (0.9 + 1.1 * s);
       for (const e of engines) ctx.drawImage(img, (e.x - 0.5) * p.w - pw / 2, (e.y - 0.5) * p.w - BEAM_TOP_FRACTION * ph, pw, ph);
     } else {
       // (without WebGL: glowing flames)
@@ -495,58 +508,51 @@ export class LaunchScene {
     ctx.restore();
   }
 
-  /** the blast, as the game's ignition: a white flash and a shockwave ring off its engines where it was, and the screen flaring white for a moment */
-  private drawBlast(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    const age = this.t - LAUNCH.blast;
-    if (age <= 0 || this.calm) return;
-    const ig = this.ignition(this.t);
-    const k = age / RING_S;
-    if (ig < 0.01 && k >= 1) return;
-    const at = this.shipPose(w, h, LAUNCH.blast);
-    const unit = at.w * UNIT;
-    const gold = !!this.ship.admiral;
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const flash = unit * (0.4 + 3.4 * ig) * 1.4;
-    ctx.globalAlpha = ig ** 1.5;
-    ctx.drawImage(glow('#ffffff'), at.x - flash / 2, at.y - flash / 2, flash, flash);
-    if (k < 1) {
-      const r = (unit * (0.6 + 7 * easeOut(k))) / 2;
-      ctx.globalAlpha = (1 - k) ** 2;
-      ctx.strokeStyle = mix(gold ? GOLD_HOT : HOT, '#ffffff', 0.4);
-      ctx.lineWidth = Math.max(1.5, unit * 0.12 * (1 - k));
-      ctx.beginPath();
-      ctx.arc(at.x, at.y, r, 0, TAU);
-      ctx.stroke();
-    }
-    ctx.restore();
-    // (an impact frame: a flash of white over everything)
-    if (age < 0.11) {
-      ctx.fillStyle = `rgba(240, 248, 255, ${0.55 * (1 - age / 0.11)})`;
-      ctx.fillRect(0, 0, w, h);
-    }
+  /** where it is when it's `k` of the way into the distance (as its stern will be when it's got that far) */
+  private poseAt(w: number, h: number, k: number) {
+    return this.shipPose(w, h, LAUNCH.blast + STERN[0] + (STERN[1] - STERN[0]) * Math.sqrt(clamp01(k)));
   }
 
-  /** where it went in the blast: its image left behind, again and again, smaller and smaller, each fading */
-  private drawAfterimages(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    if (this.calm || this.t < LAUNCH.blast) return;
+  /** the jump: it stretched out from its stern, where it is, to its bow, far off where it's going, copy after copy of it adding up to a streak of light in its colours */
+  private drawStretch(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const t = this.t;
+    if (this.calm || t <= LAUNCH.blast) return;
+    const from = this.stern(t);
+    const to = this.bow(t);
+    if (to - from < 0.002) return;
     const img = sprite(this.shipSvg, 384, 384, this.ship.avatar ? { emoji: this.ship.avatar, ...pilotCanopy(this.ship.ship) } : undefined);
     if (!img) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 8; i++) {
-      const at = LAUNCH.blast + i * 0.032;
-      const age = (this.t - at) / 0.7;
-      if (age < 0 || age >= 1) continue;
-      const p = this.shipPose(w, h, at);
-      if (p.w < 2) continue;
-      ctx.globalAlpha = 0.5 * (1 - age) * (1 - i / 9);
+    let last = this.poseAt(w, h, from);
+    for (let i = 1; i <= STRETCH; i++) {
+      const p = this.poseAt(w, h, lerp(from, to, i / STRETCH));
+      // (each as bright as it's far from the last, so where they bunch up near its stern they don't blow out)
+      const gap = Math.hypot(p.x - last.x, p.y - last.y);
+      last = p;
+      const a = (0.16 + 0.2 * (1 - i / STRETCH)) * clamp01(gap / (p.w * 0.3));
+      if (p.w < 0.5 || a < 0.03) continue;
+      ctx.globalAlpha = a;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate((p.rot * Math.PI) / 180);
       ctx.drawImage(img, -p.w / 2, -p.w / 2, p.w, p.w);
       ctx.restore();
     }
+    // and a line of light down the middle of it, from its stern to its bow
+    const a = this.poseAt(w, h, from);
+    const b = this.poseAt(w, h, to);
+    const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+    g.addColorStop(0, rgba('#9fe6ff', 0.5));
+    g.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = g;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(1.5, a.w * 0.18);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -583,36 +589,74 @@ export class LaunchScene {
     ctx.restore();
   }
 
-  /** as it's gone: a glint, a star of light where it went */
-  private drawGlint(ctx: CanvasRenderingContext2D, p: ReturnType<LaunchScene['shipPose']>, u: number) {
-    const k = (this.t - LAUNCH.glint) / 0.7;
+  /** as its stern catches up with its bow: the warp flash, where it's gone, a burst of blue-white light, a long flare across it, rays, and a ring of light spreading */
+  private drawFlash(ctx: CanvasRenderingContext2D, w: number, h: number, v: Point) {
+    const k = (this.t - LAUNCH.flash) / FLASH_S;
     if (k <= 0 || k >= 1 || this.calm) return;
-    const f = Math.sin(Math.PI * k);
+    const u = Math.min(w, h);
+    const d = this.heading(w, h);
+    // (in a blink, then dying away)
+    const f = k < 0.08 ? easeOut(k / 0.08) : (1 - (k - 0.08) / 0.92) ** 2;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.translate(p.x, p.y);
-    const size = u * 0.35 * f;
-    ctx.drawImage(glow('#e6f6ff'), -size / 2, -size / 2, size, size);
-    for (let i = 0; i < 4; i++) {
-      ctx.rotate(i ? Math.PI / 4 : 0);
-      const L = u * (i % 2 ? 0.18 : 0.34) * f;
-      const g = ctx.createLinearGradient(0, 0, L, 0);
-      g.addColorStop(0, `rgba(255, 255, 255, ${0.95 * f})`);
-      g.addColorStop(1, 'rgba(200, 180, 255, 0)');
+    ctx.translate(v.x, v.y);
+    // its burst
+    const core = u * (0.12 + 0.3 * f);
+    ctx.globalAlpha = f;
+    ctx.drawImage(glow('#9fd8ff'), -core * 1.6, -core * 1.6, core * 3.2, core * 3.2);
+    ctx.drawImage(glow('#ffffff'), -core / 2, -core / 2, core, core);
+    ctx.globalAlpha = 1;
+    // the long flare, level across the screen, as a lens catches it
+    const L = Math.max(w, h) * (0.5 + 0.7 * f);
+    for (const [thick, color, a] of [
+      [u * 0.018, '#6ab8ff', 0.5],
+      [u * 0.005, '#ffffff', 0.95],
+    ] as Array<[number, string, number]>) {
+      const g = ctx.createLinearGradient(-L, 0, L, 0);
+      g.addColorStop(0, rgba(color, 0));
+      g.addColorStop(0.5, rgba(color, a * f));
+      g.addColorStop(1, rgba(color, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(-L, 0);
-      ctx.lineTo(0, -u * 0.004);
-      ctx.lineTo(L, 0);
-      ctx.lineTo(0, u * 0.004);
-      ctx.closePath();
+      ctx.ellipse(0, 0, L, thick, 0, 0, TAU);
       ctx.fill();
     }
+    // rays, along its heading and across it
+    ctx.rotate(Math.atan2(d.y, d.x));
+    for (let i = 0; i < 4; i++) {
+      const R = u * (i % 2 ? 0.12 : 0.28) * f;
+      const g = ctx.createLinearGradient(0, 0, R, 0);
+      g.addColorStop(0, `rgba(255, 255, 255, ${0.9 * f})`);
+      g.addColorStop(1, 'rgba(160, 200, 255, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-R, 0);
+      ctx.lineTo(0, -u * 0.005);
+      ctx.lineTo(R, 0);
+      ctx.lineTo(0, u * 0.005);
+      ctx.closePath();
+      ctx.fill();
+      ctx.rotate(Math.PI / 4);
+    }
     ctx.restore();
+    // a ring of light, spreading
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = (1 - k) ** 2 * 0.7;
+    ctx.strokeStyle = '#bfe4ff';
+    ctx.lineWidth = Math.max(1, u * 0.006 * (1 - k));
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, u * (0.05 + 0.45 * easeOut(k)), 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+    // (and the screen catching it, for a moment)
+    if (k < 0.12) {
+      ctx.fillStyle = `rgba(225, 240, 255, ${0.35 * (1 - k / 0.12)})`;
+      ctx.fillRect(0, 0, w, h);
+    }
   }
 }
 
-/** a star `a` of the way along its room (1: just ahead of the screen, to stream past it) */
 function newStar(a: number): Star {
   return { a, c: Math.random(), near: 0.2 + 0.8 * Math.random() ** 1.6, size: 0.6 + Math.random() * 1.3, tint: HYPER_TINTS[Math.floor(Math.random() * HYPER_TINTS.length)], phase: Math.random() * TAU };
 }

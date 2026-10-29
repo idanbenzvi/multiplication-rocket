@@ -36,10 +36,10 @@ export const LAUNCH = {
   turn: [0.9, 2.6],
   /** it gathers its power: its engines' glow swelling, light pulled into them, edging towards where it's going, space holding its breath */
   charge: [2.4, 4.2],
-  /** then a blast, and it's gone into the warp in a blink, the stars smeared past it */
+  /** then it jumps to warp, as a starship does: stretching out towards where it's going, its bow first, the stars smeared past it */
   blast: 4.2,
-  /** a glint where it went */
-  glint: 4.55,
+  /** its stern catching up with its bow, and the warp flash where it's gone */
+  flash: 4.5,
   /** washing out to white */
   white: [5.5, 6.5],
   end: 6.6,

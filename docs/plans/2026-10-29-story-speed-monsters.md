@@ -98,3 +98,17 @@ before. With the CPU slowed 4× the story runs as it did (55–60 fps).
   of up to 0.6 of the diagonal, and the speed lines are slivers along it too. Without WebGL, and
   with reduced motion, the engines are glowing flames as before. The launch holds 56–60 fps with
   the CPU slowed 4× (58–60 on a phone-sized screen).
+- Then the jump itself, on "make it resemble Star Trek's warp launches": the afterimages, the
+  ignition's big flash and ring and the impact frame are gone, and so is the plume stretched
+  back. It jumps as a starship does: its bow reaches the distance in 0.14 s (easing out) and its
+  stern sets off 0.1 s after the blast and gets there at 0.3 s (easing in), and between them it's
+  drawn 28 times, each as far into the distance as its stern will be there (a √ of the way, so
+  they spread), added together into a streak in its own colours with a line of light down it,
+  each copy as bright as it is far from the last (bunched near the stern, they'd blow out) and
+  skipped if that's next to nothing; the ignition's glow at the nozzles is a third of the game's,
+  so the hull stays in sight. When its stern gets there (`LAUNCH.flash`, 4.5 s, replacing the
+  glint) the warp flash goes off at the vanishing point: a blue-white burst in 0.07 s dying away
+  over 0.9 s, a long flare level across the screen as a lens's, four rays along and across its
+  heading, a ring of light spreading and the screen catching it for a moment; `flareOut` and the
+  boom's buzz (moved there from the blast, which keeps `ignite` and `hyperdrive`). With the CPU
+  slowed 4× the launch holds 54–57 fps (57–58 on a phone-sized screen).
