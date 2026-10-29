@@ -5,6 +5,7 @@ import { Effect, EffectAttribute } from 'postprocessing';
 import { Matrix4, Uniform, Vector2, Vector3, type Texture } from 'three';
 import { drive } from './drive';
 import { flashNow, fx } from './canyon/fx';
+import { loopFx } from './loop/live';
 import { view } from './view';
 
 // The camera's own effects in the cockpit. Glowing things bloom (the stars,
@@ -22,6 +23,11 @@ import { view } from './view';
 // as it turns; the sun, when it's ahead and in view, flares (a glare round
 // it, a streak across and ghosts along the line through the middle); and the
 // run's flashes (the white-out diving in, a bullseye's gold) light it all.
+//
+// Looping the loop (loop/), the sky wheels past the glass: each point of it
+// smears back along its arc round the wheel's hubs (loop/live.ts), straight
+// down under the nose and curving round towards each side, as a long
+// exposure of the stars would through an anime's wide lens.
 
 const FRAGMENT = /* glsl */ `
 uniform float rush;      // the zoom's smear: a share of the way to the middle (signed: in or out)
@@ -35,6 +41,7 @@ uniform float time;
 uniform float speed;     // the rock rushing past: a smear in from where the ship's heading
 uniform vec2 heading;
 uniform vec2 glide;      // a turn's smear past the glass
+uniform mat4 proj;
 uniform mat4 projInv;
 uniform mat4 camWorld;
 uniform sampler2D pano;  // the cockpit's picture: its alpha is its glass
@@ -42,16 +49,45 @@ uniform float hasPano;
 uniform vec2 sunUV;
 uniform float sun;
 uniform vec3 flash;
-// the afterburner's loop (loop/): time frozen
+// the afterburner's loop (loop/): time frozen, and the sky wheeling past (how far round the wheel while the shutter's open, and its hubs)
 uniform float mono;
+uniform float wheel;
+uniform float hub;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
-// how much of the view at p is through the glass (1) rather than the cockpit (0)
+// the ray through p, in the camera's own space
+vec3 rayAt(vec2 p) {
+  vec4 v = projInv * vec4(p * 2.0 - 1.0, 1.0, 1.0);
+  return normalize(v.xyz / v.w);
+}
+
+// the view's tangents (x right, y up) of a point on the screen, and back
+vec2 tangentsAt(vec2 p) {
+  vec3 r = rayAt(p);
+  return r.xy / -r.z;
+}
+vec2 screenAt(vec2 t) {
+  vec4 q = proj * vec4(t, -1.0, 1.0);
+  return q.xy / q.w * 0.5 + 0.5;
+}
+vec2 cmul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+vec2 cdiv(vec2 a, vec2 b) { return cmul(a, vec2(b.x, -b.y)) / dot(b, b); }
+// a point (tangents from the nose) turned a round the wheel, along its circle round the hubs (loop/live.ts's wheelAt)
+vec2 wheeled(vec2 z, float a) {
+  vec2 h = vec2(hub, 0.0);
+  vec2 w = cmul(cdiv(z - h, z + h), vec2(cos(a), sin(a)));
+  return hub * cdiv(vec2(1.0, 0.0) + w, vec2(1.0, 0.0) - w);
+}
+
+// how much of the view at p is through the glass (1) rather than the cockpit (0):
+// where the ray meets the cockpit's walls (10 round; the head may be off its middle), and what's painted there
 float glassAt(vec2 p) {
   if (hasPano < 0.5) return 1.0;
-  vec4 v = projInv * vec4(p * 2.0 - 1.0, 1.0, 1.0);
-  vec3 d = normalize((camWorld * vec4(normalize(v.xyz / v.w), 0.0)).xyz);
+  vec3 d = normalize((camWorld * vec4(rayAt(p), 0.0)).xyz);
+  vec3 o = camWorld[3].xyz;
+  float b = dot(o, d);
+  d = normalize(o + d * (sqrt(max(0.0, b * b - dot(o, o) + 100.0)) - b));
   vec2 q = vec2(0.5 + atan(d.x, -d.z) / 6.2831853, 0.5 + asin(clamp(d.y, -1.0, 1.0)) / 3.14159265);
   return 1.0 - texture2D(pano, q).a;
 }
@@ -88,20 +124,35 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   }
 
   // the Canyon Run: the rock rushing past, smeared through the glass only, in towards where the ship's heading
-  if (speed + abs(glide.x) + abs(glide.y) > 0.0) {
+  // (and looping, the sky wheeling past: back along the way it turned)
+  if (speed + abs(glide.x) + abs(glide.y) + abs(wheel) > 0.0) {
     float g = glassAt(uv);
     if (g > 0.02) {
       vec2 dir = uv - heading;
       vec2 o = dir * speed * smoothstep(0.04, 0.5, length(dir * vec2(aspect, 1.0))) + glide;
       vec2 ca = o * split * 0.6;
       vec3 acc = vec3(0.0);
-      for (int i = 0; i < 8; i++) {
-        float t = (float(i) + jitter + 0.5) / 8.0;
-        acc.r += texture2D(inputBuffer, uv - o * t + ca).r;
-        acc.g += texture2D(inputBuffer, uv - o * t).g;
-        acc.b += texture2D(inputBuffer, uv - o * t - ca).b;
+      if (wheel != 0.0) {
+        // (round the wheel: more taps, the arcs being long)
+        vec2 nose = tangentsAt(heading);
+        vec2 z = tangentsAt(uv) - nose;
+        for (int i = 0; i < 12; i++) {
+          float t = (float(i) + jitter + 0.5) / 12.0;
+          vec2 p = screenAt(nose + wheeled(z, wheel * t)) - o * t;
+          acc.r += texture2D(inputBuffer, p + ca).r;
+          acc.g += texture2D(inputBuffer, p).g;
+          acc.b += texture2D(inputBuffer, p - ca).b;
+        }
+        col = mix(col, acc / 12.0, g);
+      } else {
+        for (int i = 0; i < 8; i++) {
+          float t = (float(i) + jitter + 0.5) / 8.0;
+          acc.r += texture2D(inputBuffer, uv - o * t + ca).r;
+          acc.g += texture2D(inputBuffer, uv - o * t).g;
+          acc.b += texture2D(inputBuffer, uv - o * t - ca).b;
+        }
+        col = mix(col, acc / 8.0, g);
       }
-      col = mix(col, acc / 8.0, g);
     }
   }
   // the sun's glare, when it's in view through the glass: a bloom round it, a streak across, and ghosts back through the middle
@@ -144,6 +195,7 @@ class LensEffect extends Effect {
         ['speed', new Uniform(0)],
         ['heading', new Uniform(new Vector2(0.5, 0.6))],
         ['glide', new Uniform(new Vector2())],
+        ['proj', new Uniform(new Matrix4())],
         ['projInv', new Uniform(new Matrix4())],
         ['camWorld', new Uniform(new Matrix4())],
         ['pano', new Uniform<Texture | null>(null)],
@@ -152,6 +204,8 @@ class LensEffect extends Effect {
         ['sun', new Uniform(0)],
         ['flash', new Uniform(new Vector3())],
         ['mono', new Uniform(0)],
+        ['wheel', new Uniform(0)],
+        ['hub', new Uniform(1)],
       ]),
     });
   }
@@ -181,6 +235,7 @@ function Lens() {
     (u.get('speed') as Uniform<number>).value = fx.speed * calm;
     (u.get('heading') as Uniform<Vector2>).value.set(...fx.heading);
     (u.get('glide') as Uniform<Vector2>).value.set(fx.turn[0] * calm, fx.turn[1] * calm);
+    (u.get('proj') as Uniform<Matrix4>).value.copy(camera.projectionMatrix);
     (u.get('projInv') as Uniform<Matrix4>).value.copy(camera.projectionMatrixInverse);
     (u.get('camWorld') as Uniform<Matrix4>).value.copy(camera.matrixWorld);
     (u.get('pano') as Uniform<Texture | null>).value = fx.pano;
@@ -190,6 +245,8 @@ function Lens() {
     const [r, g, b] = flashNow();
     (u.get('flash') as Uniform<Vector3>).value.set(r, g, b);
     (u.get('mono') as Uniform<number>).value = fx.mono;
+    (u.get('wheel') as Uniform<number>).value = fx.wheel * calm;
+    (u.get('hub') as Uniform<number>).value = loopFx.hub;
   });
   return <primitive object={effect} dispose={null} />;
 }

@@ -11,7 +11,7 @@ import { HOME, lookTo, shownLook, shudder, view } from '../view';
 import { loopFx, resetLoopFx } from './live';
 import { LoopPainter, type PaintState, type Words } from './paint';
 import { splitFor, type P2, type Split } from './split';
-import { angleAt, BEATS, buildStory, feltG, forcesAt, FROZEN, holdFor, Story, type BeatId } from './story';
+import { angleAt, BEATS, BOOST_G, buildStory, feltG, forcesAt, FROZEN, holdFor, Story, turnG, type BeatId } from './story';
 import { shipModel } from './wireframe';
 import './loop.css';
 
@@ -29,6 +29,14 @@ import './loop.css';
 // sooner; Escape (or Skip) ends it. Out of the loop, a ta-daa, and the
 // blueprint slides away. With reduced motion there are no impact frames,
 // shakes, smears or speed lines, and the panels slide gently.
+//
+// The pilot's thrown about in the seat as it goes: the engine pushes their
+// head back, the turning force (towards the loop's middle, overhead) presses
+// it down, harder in a burst, and it springs past and back as the push
+// changes (into the loop, out of it); the cockpit moves against the stars
+// as it does (the camera itself moves: view.head), and freezes mid-sway when
+// time stops. Outside, the streaks' trails bend round the loop's middle, and
+// the sky smears back along the way it's wheeling.
 
 export interface LoopControl {
   /** a tap: a frozen moment goes on */
@@ -70,6 +78,21 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 const easeOutBack = (u: number) => 1 + 2.4 * (u - 1) ** 3 + 1.4 * (u - 1) ** 2;
 const easeOut = (u: number) => 1 - (1 - u) ** 3;
 const easeIn = (u: number) => u ** 3;
+
+/** the head thrown about in the seat: how far a g moves it (units; the cockpit's 10 round), and its spring (rad/s, damping) */
+const HEAD_PER_G = 0.13;
+const HEAD_OMEGA = 9;
+const HEAD_DAMP = 0.36;
+/** and how much it tips with it (radians per unit): forwards pressed down, back pushed back */
+const HEAD_TILT = 0.05;
+/** the sky wheeling past (live.ts): its pitch rate that counts as a full spin (rad/s), how far round the wheel the lens smears it at that, and at most */
+const SPIN_RATE = 4;
+const LENS_WHEEL = 0.3;
+const MAX_LENS_WHEEL = 0.55;
+/** the streaks' trails: how far round the wheel they turn at a full spin, round the loop even frozen, and at most */
+const STREAK_WHEEL = 0.5;
+const STREAK_TURNING = 0.25;
+const MAX_STREAK_WHEEL = 1.3;
 
 /** where the cut's x is at height y (a screen wider than tall) */
 const cutX = (sp: Split, y: number) => sp.a[0] + (sp.b[0] - sp.a[0]) * ((y - sp.a[1]) / (sp.b[1] - sp.a[1]));
@@ -158,6 +181,10 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
     let seen = -1;
     let slashAt = -Infinity;
     let lastPitch = 0;
+    // the head in the seat: where (down is less than 0, back more than 0) and how fast
+    const head = { y: 0, z: 0, vy: 0, vz: 0 };
+    // how fast the sky's wheeling past (a share of a full spin), smoothed, and frozen with the flight's time
+    let spin = 0;
 
     const enter = (index: number) => {
       const seg = story.segs[index];
@@ -255,16 +282,38 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
       loopFx.pitch = pitch;
       loopFx.time = f.time;
       loopFx.warp = 1 + (calm ? 0.3 : 2.2) * Math.max(f.rush, thrust * 0.5);
-      fx.speed = calm ? 0 : 0.14 * f.rush;
+      // the wheel the sky's turning on: its hubs just beyond the windscreen's sides (on a wide screen, in the cockpit's half)
+      const across = Math.tan((view.fov * (1 + view.kick)) / 2) * (W / H);
+      loopFx.hub = Math.max(0.45, across * (sp.portrait ? 1.05 : 0.62));
+      spin += (Math.abs(rate) / SPIN_RATE - spin) * (1 - Math.exp((-dt / 1000) * 14 * f.time));
+      loopFx.wheel = Math.min(MAX_STREAK_WHEEL, STREAK_TURNING * turn + (calm ? 0 : STREAK_WHEEL * spin));
+      fx.speed = calm ? 0 : 0.14 * f.rush * (1 - 0.6 * turn);
       fx.split = calm ? 0 : 0.22 * f.rush + (impact ? 0.6 : 0);
-      fx.turn = [0, calm ? 0 : clamp(rate * 0.004, -0.045, 0.045)];
+      fx.wheel = calm ? 0 : Math.min(MAX_LENS_WHEEL, LENS_WHEEL * spin);
       fx.mono = hold ? 0.82 * clamp(1 - (f.time - FROZEN) / (1 - FROZEN), 0, 1) : 0;
       fx.vignette = calm ? 0 : Math.max(0, g - 1) * 0.16;
       drive.boost = Math.max(drive.boost, thrust > 0 ? 1.2 : 0.5);
+      // the head thrown against the push: back by the engine, down by the turn (away from the loop's middle),
+      // harder in a burst, springing past and back as the push changes; its time stopping with the flight's
+      if (!calm) {
+        const push = (0.4 + 0.6 * f.rush) * (f.kind === 'close' ? 1 - f.u : 1);
+        const goalY = -HEAD_PER_G * turn * turnG() * push;
+        const goalZ = HEAD_PER_G * thrust * BOOST_G * push;
+        const steps = Math.ceil(dt / 16);
+        const h = (dt / 1000 / steps) * f.time;
+        for (let i = 0; i < steps; i++) {
+          head.vy += (HEAD_OMEGA * HEAD_OMEGA * (goalY - head.y) - 2 * HEAD_DAMP * HEAD_OMEGA * head.vy) * h;
+          head.vz += (HEAD_OMEGA * HEAD_OMEGA * (goalZ - head.z) - 2 * HEAD_DAMP * HEAD_OMEGA * head.vz) * h;
+          head.y += head.vy * h;
+          head.z += head.vz * h;
+        }
+        view.head.y = head.y;
+        view.head.z = head.z;
+      }
       const k = calm ? 0 : (0.002 + 0.006 * f.rush + 0.002 * thrust) * f.time;
       const s = now / 1000;
       view.jolt.yaw = k * Math.sin(s * 41.3);
-      view.jolt.pitch = k * Math.sin(s * 53.1 + 1) - (calm ? 0 : (g - 1) * 0.008);
+      view.jolt.pitch = k * Math.sin(s * 53.1 + 1) + HEAD_TILT * (head.y + head.z);
       view.jolt.roll = k * 0.8 * Math.sin(s * 37.7 + 2);
       view.kick *= Math.exp((-dt / 1000) * 4);
       // the engine's fire lighting the cockpit from behind, the side thrusters' from under it
@@ -306,6 +355,7 @@ export function LoopShow({ calm, low, ship, avatar, inner, control, onDone }: Pr
       resetLoopFx();
       resetFx();
       view.jolt.yaw = view.jolt.pitch = view.jolt.roll = 0;
+      view.head.x = view.head.y = view.head.z = 0;
       view.kick = 0;
       glowLights.hot = null;
       if (shifted) shifted.style.transform = '';

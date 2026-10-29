@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { wheelAt } from './live';
 import { area, cutRect, splitFor } from './split';
 import { angleAt, BEATS, buildStory, feltG, forcesAt, FROZEN, holdFor, poseAt, R, speedAt, SPEED, SPEED_START, Story, turnG, type BeatId } from './story';
 import { LENGTH, shipModel } from './wireframe';
@@ -157,4 +158,52 @@ describe('the loop: the ships as wireframes', () => {
       for (const b of m.belly) expect(b[1]).toBeLessThan(0);
     });
   }
+});
+
+describe('the loop: the sky wheeling past, round its hubs', () => {
+  const hub = 0.8;
+  /** how far round the hubs a point is: the same all along its circle */
+  const circle = ([x, y]: [number, number]) => Math.hypot(x - hub, y) / Math.hypot(x + hub, y);
+
+  it('goes straight down under the nose', () => {
+    const [x, y] = wheelAt(0, 0, 0.4, hub);
+    expect(x).toBeCloseTo(0);
+    expect(y).toBeCloseTo(-hub * Math.tan(0.2));
+    for (const y0 of [-0.5, 0.3, 0.9]) expect(wheelAt(0, y0, 0.3, hub)[0]).toBeCloseTo(0);
+  });
+
+  it('keeps each point on its circle round the hubs, and turning back undoes it', () => {
+    for (const p of [
+      [0.3, 0.2],
+      [-0.5, -0.4],
+      [0.7, 0.6],
+      [-0.1, 0.8],
+    ] as Array<[number, number]>) {
+      const q = wheelAt(p[0], p[1], 0.5, hub);
+      expect(circle(q)).toBeCloseTo(circle(p));
+      const back = wheelAt(q[0], q[1], -0.5, hub);
+      expect(back[0]).toBeCloseTo(p[0]);
+      expect(back[1]).toBeCloseTo(p[1]);
+    }
+    // (the hubs themselves stay put)
+    expect(wheelAt(hub, 0, 0.5, hub)[0]).toBeCloseTo(hub);
+  });
+
+  it('sweeps down round each side, as a ) and a (: in towards the nose above the middle, out below it, more the further out', () => {
+    const tilt = (x: number) => {
+      const [nx, ny] = wheelAt(x, 0.3, 0.05, hub);
+      return Math.abs((nx - x) / (ny - 0.3));
+    };
+    for (const x of [0.2, -0.2]) {
+      const [ax, ay] = wheelAt(x, 0.3, 0.05, hub);
+      expect(ay).toBeLessThan(0.3);
+      expect(Math.sign(ax - x)).toBe(-Math.sign(x));
+      const [bx, by] = wheelAt(x, -0.3, 0.05, hub);
+      expect(by).toBeLessThan(-0.3);
+      expect(Math.sign(bx - x)).toBe(Math.sign(x));
+    }
+    expect(tilt(0.5)).toBeGreaterThan(tilt(0.2));
+    // (the same either side)
+    expect(wheelAt(-0.4, 0.3, 0.2, hub)[0]).toBeCloseTo(-wheelAt(0.4, 0.3, 0.2, hub)[0]);
+  });
 });

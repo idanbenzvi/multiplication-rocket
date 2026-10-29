@@ -31,6 +31,8 @@ export const fx = {
   /** the afterburner's loop (loop/): time frozen, the view gone cold and colourless (0 … 1), and the g darkening its edges */
   mono: 0,
   vignette: 0,
+  /** and the sky wheeling past the glass: how far round the wheel it turns while the shutter's open (loop/live.ts's wheelAt; more than 0 pitching up, the stars going down) */
+  wheel: 0,
   flashes: [] as Flash[],
   /** the cockpit's picture (Shell.tsx sets it), whose see-through glass the smear keeps to */
   pano: null as Texture | null,
@@ -71,4 +73,5 @@ export function resetFx() {
   fx.split = 0;
   fx.mono = 0;
   fx.vignette = 0;
+  fx.wheel = 0;
 }

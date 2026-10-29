@@ -43,6 +43,7 @@ function Rig({ css, holding, hovered, focused }: Pick<Props, 'css' | 'holding' |
     stepView(dt, performance.now(), holding.current ?? false);
     const look = shownLook();
     camera.rotation.set(look.pitch, -look.yaw, look.roll, 'YXZ');
+    camera.position.set(view.head.x, view.head.y, view.head.z);
     camera.fov = (view.fov * (1 + view.kick) * 180) / Math.PI;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();

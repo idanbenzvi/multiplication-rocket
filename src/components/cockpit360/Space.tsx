@@ -9,7 +9,7 @@ import { glyphCanvas } from './glyphs';
 import { glowLights } from './lights';
 import { dirOfLook } from './geometry';
 import { drive, NOSE_PITCH, planetAngle, startDrive, stepDrive } from './drive';
-import { loopFx } from './loop/live';
+import { loopFx, wheelAt } from './loop/live';
 
 // Outside the cockpit's glass: the flight going on. Space streams past from
 // dead ahead (the windscreen's middle, the ship's nose): stars stretching
@@ -26,7 +26,10 @@ import { loopFx } from './loop/live';
 // Pulling the afterburner (loop/), the ship loops the loop: the sky wheels
 // round past the glass (the nebula, the stars, the destination), while the
 // streaks and the numbers keep flying along the nose, faster, and all of it
-// nearly stops while a moment's frozen.
+// nearly stops while a moment's frozen. Round the loop the streaks' trails
+// sweep round the wheel the sky's turning on (loop/live.ts): each goes back
+// along its way and turns down round the hubs either side, as the sky
+// smeared through the lens does.
 
 const DEG = Math.PI / 180;
 
@@ -104,14 +107,16 @@ function Nebula() {
 // ---- the streaks ----
 
 const STREAKS = 700;
+/** each streak's trail, in this many straight pieces (curving round the wheel, looping) */
+const PIECES = 5;
 const Z_FAR = -800;
 const Z_NEAR = 60;
 const PALETTE = ['#ffe1a8', '#c9a4de', '#7ec4b0', '#f2a6c0', '#bfe6f5', '#ffffff', '#ffffff'].map((c) => new THREE.Color(c));
 
 function Streaks({ calm }: { calm: boolean }) {
   const { geometry, positions, colors, parts } = useMemo(() => {
-    const positions = new Float32Array(STREAKS * 6);
-    const colors = new Float32Array(STREAKS * 6);
+    const positions = new Float32Array(STREAKS * PIECES * 6);
+    const colors = new Float32Array(STREAKS * PIECES * 6);
     const spawn = (z: number) => {
       // (round the nose, never through the cockpit: from just past its walls out)
       const r = 16 + 150 * Math.random() ** 1.5;
@@ -129,6 +134,7 @@ function Streaks({ calm }: { calm: boolean }) {
     [],
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
+  const turned = useRef<[number, number]>([0, 0]);
 
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.1) * loopFx.time;
@@ -137,24 +143,51 @@ function Streaks({ calm }: { calm: boolean }) {
     const speed = (40 + s * 220) * loopFx.warp;
     const tail = (2 + s * s * 46) * loopFx.warp;
     const glow = 1.4 + s * 0.9;
+    // looping: how far round the wheel the trails turn (none: straight back)
+    const wheel = loopFx.wheel;
+    const hub = loopFx.hub;
+    const at = turned.current;
     const list = parts.list;
     for (let i = 0; i < STREAKS; i++) {
       let p = list[i];
       p.z += speed * p.f * dt;
       if (p.z > Z_NEAR) p = list[i] = parts.spawn(Z_FAR + Math.random() * 40);
-      const o = i * 6;
-      positions[o] = p.x;
-      positions[o + 1] = p.y;
-      positions[o + 2] = p.z;
-      positions[o + 3] = p.x;
-      positions[o + 4] = p.y;
-      positions[o + 5] = p.z - tail * p.f;
       // fading in out of the distance; the head bright (past white, to bloom), the tail dark
       const k = Math.min(1, (p.z - Z_FAR) / 220) * p.b * glow;
-      colors[o] = p.color.r * k;
-      colors[o + 1] = p.color.g * k;
-      colors[o + 2] = p.color.b * k;
-      colors[o + 3] = colors[o + 4] = colors[o + 5] = 0;
+      const len = tail * p.f;
+      let x = p.x;
+      let y = p.y;
+      let z = p.z;
+      for (let j = 0; j < PIECES; j++) {
+        const o = (i * PIECES + j) * 6;
+        // back along its way, and (looping) turned round the wheel, further the further back: where it was a moment before
+        const u = (j + 1) / PIECES;
+        const nz = p.z - len * u;
+        let nx = p.x;
+        let ny = p.y;
+        if (wheel && nz < -4) {
+          wheelAt(p.x / -nz, p.y / -nz, -wheel * u, hub, at);
+          nx = at[0] * -nz;
+          ny = at[1] * -nz;
+        }
+        positions[o] = x;
+        positions[o + 1] = y;
+        positions[o + 2] = z;
+        positions[o + 3] = nx;
+        positions[o + 4] = ny;
+        positions[o + 5] = nz;
+        const k0 = k * (1 - j / PIECES);
+        const k1 = k * (1 - (j + 1) / PIECES);
+        colors[o] = p.color.r * k0;
+        colors[o + 1] = p.color.g * k0;
+        colors[o + 2] = p.color.b * k0;
+        colors[o + 3] = p.color.r * k1;
+        colors[o + 4] = p.color.g * k1;
+        colors[o + 5] = p.color.b * k1;
+        x = nx;
+        y = ny;
+        z = nz;
+      }
     }
     geometry.attributes.position.needsUpdate = true;
     geometry.attributes.color.needsUpdate = true;

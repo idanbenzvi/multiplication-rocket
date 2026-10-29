@@ -59,6 +59,8 @@ export const view = {
   jolt: { yaw: 0, pitch: 0, roll: 0 },
   /** a boost's kick: the field of view widened by this share, dying away */
   kick: 0,
+  /** the pilot's head thrown about in the seat (units; the cockpit's 10 round): the afterburner's loop presses it back and down, and the cockpit moves against the stars */
+  head: { x: 0, y: 0, z: 0 },
   /** how fast the view's moving, 0 … 1 (the blur) */
   motion: 0,
   /** how far into a screen, 0 … 1 (its edges blur and darken) */

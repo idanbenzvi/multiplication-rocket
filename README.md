@@ -108,7 +108,10 @@ The engine ignites (ドォン!!) and the ship flies a 360° loop in space, the s
 windscreen, in bursts of anime speed lines, each stopping dead (time frozen, キラッ) while one force
 on the ship is explained with arrows: the **thrust** that speeds it up, the **turning force** that
 bends it round (there's no air in space, so the side thrusters do it), the **seat** pushing you
-towards the middle at **3 G**, and **inertia**, where it would go if the thrusters stopped. The
+towards the middle at **3 G**, and **inertia**, where it would go if the thrusters stopped. You're
+thrown about in the seat as it goes (pushed back by the engine, pressed down by the turn, the
+cockpit lurching against the stars), and the stars smear in arcs round the axis the ship's turning
+on, as a long exposure through a wide lens would. The
 numbers are a real loop's: 540 km/h round a 765 m circle. Tap (or Space) to go on, **Skip** or
 Escape to end it. The sound effects are written in Japanese as manga writes them, each with a
 small translation. ([`loop/`](src/components/cockpit360/loop/),
