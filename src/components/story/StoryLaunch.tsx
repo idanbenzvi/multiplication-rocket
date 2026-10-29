@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { calmMotion } from '../arrival/dropOut';
 import { useLang, useT } from '../../i18n/useLang';
@@ -21,6 +21,8 @@ export function StoryLaunch() {
   const pilot = useStory((s) => s.pilot);
   const [calm] = useState(calmMotion);
   const scene = useMemo(() => (pilot ? new LaunchScene(calm, pilot) : null), [calm, pilot]);
+  // (the Sun's face is WebGL: given back as it goes)
+  useEffect(() => () => scene?.dispose(), [scene]);
   const [slate] = useState(() => (pilot ? t.story.slateLaunch(pilot.name) : []));
   /** how long the dark lasts, the where and when typed in on it (seconds) */
   const prelude = calm ? 2.2 : SLATE.delay + typeTime(slate) + SLATE.after;

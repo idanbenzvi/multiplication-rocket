@@ -183,6 +183,11 @@ export class LaunchScene {
     }
   }
 
+  /** its WebGL given back */
+  dispose() {
+    this.sun.dispose();
+  }
+
   get done(): boolean {
     return this.t >= LAUNCH.end;
   }

@@ -45,3 +45,22 @@ flickering, its mouth chomping, its limbs swaying as Monster Sun's do, gone by a
 has `sfx.spawn` (a gloopy pop and a chirp) and a little buzz. With reduced motion they fade in
 where they'd be, still. They cost nothing measurable: the opening holds 56–60 fps (4× slower
 CPU), 59–60 on a phone-sized screen at 3×.
+
+## The Sun as an orb
+
+The user pointed at ThreeUI's Energy Orb (threeui.com/backgrounds/energy-orb). It's in the MIT
+Community set (`public/community-sync-report.json`), so it could be used, but ours was preferred:
+`sunOrb.ts` is our own shader in its manner (smoke of two layers of noise on a sphere, the second
+bent by the first, light round the rim, a glow out into space), with what the turn needs as
+uniforms: its colours (deep, middle, hot smoke, rim, veins and their glow), the smoke's scale,
+strength and speed (its own clock, so a change of speed never jumps), the glow, saturation,
+brightness, and veins (ridges of a slower smoke creeping in from the rim). It's drawn by ogl on a
+canvas of its own, at most 1024 px across (640 and 448 at the lighter graphics steps), and stamped
+onto the story's canvas.
+
+`StorySun` draws it as the Sun's face before it turns (`drawBright`, the face drawn on it) and as
+the Black Sun's disc after (`drawDisc`, under its eyes and grin; the launch's Black Sun too).
+`turning(k)` takes it from `WARM` to `EVIL`, halfway draining its colour and churning its smoke
+hardest; the opening runs `k` from 10.2 s to 13.2 s, its glow flickering with the Sun's. After
+the turn the warm corona dies away round the orb, not over it. Without WebGL the Sun's drawn as
+before. With the CPU slowed 4× the story runs as it did (55–60 fps).

@@ -47,6 +47,9 @@ export function StoryOpening() {
   };
   useSkip(finish);
 
+  // (the Sun's face is WebGL: given back as it goes)
+  useEffect(() => () => scene.sun.dispose(), [scene]);
+
   // its sounds
   useEffect(() => {
     let swallows = 0;

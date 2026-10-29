@@ -3,6 +3,7 @@ import { hex, type Point, type RGB } from '../arrival/eclipse';
 import { glow, rgba } from '../traffic/trafficArt';
 import { bloomNumber } from './bloom';
 import { AsciiFlares, GlyphSplash } from './corruption';
+import { EVIL, ORB_REACH, SunOrb, type OrbLook } from './sunOrb';
 import { TAU, clamp01 } from './storyMath';
 
 // The story's Sun (StoryOpening, StoryLaunch): the Black Sun's own scene
@@ -13,7 +14,9 @@ import { TAU, clamp01 } from './storyMath';
 // (Monster Sun's: the diamond ring flashing, the angry eyes opening), which
 // then becomes the black hole, whirlpool and all, and swallows the numbers,
 // each with a little bloom, splashing glyphs as it goes in, and spits out what
-// it's corrupted them into (corruption.ts).
+// it's corrupted them into (corruption.ts). Its face, as it was and as the
+// Black Sun's, is a ball of churning light (sunOrb.ts) wherever WebGL is to
+// be had: the story says how it looks as it turns (`look`).
 
 /** the Sun as it was: near its rim, further out, furthest */
 const WARM: RGB[] = [hex('#fffbe6'), hex('#ffd36b'), hex('#ff9f4a')];
@@ -36,6 +39,8 @@ export interface BrightLook {
   shine: number;
   /** how much of it is still alight, from the middle out (1: all of it, 0: dark) */
   core: number;
+  /** its face drawn here (before it turns; after, its eclipse's disc is the orb) */
+  disc: boolean;
   /** its mouth: 1 a smile, -1 a frown */
   smile: number;
   /** how far the dark veins have crept in, 0 to 1 */
@@ -50,6 +55,12 @@ export class StorySun extends BlackSunScene {
   private readonly ascii = new AsciiFlares();
   /** when it became the Black Sun (its own time) */
   private awokeAt = Infinity;
+  /** how its face looks (sunOrb.ts): the Black Sun's, unless the story's turning it */
+  look: OrbLook = EVIL;
+  /** its face (undefined: not made yet; null: no WebGL, drawn as before), its smoke's own clock, and how far it's turned */
+  private orb: SunOrb | null | undefined;
+  private smoke = 0;
+  private spin = 0;
 
   constructor(calm: boolean) {
     super(calm, 'mul');
@@ -93,6 +104,8 @@ export class StorySun extends BlackSunScene {
   override update(dt: number) {
     super.update(dt);
     if (this.calm) return;
+    this.smoke += dt * this.look.speed;
+    this.spin += dt * 0.12;
     // (arcs of it leaping off, once it's a black hole)
     this.ascii.rate = this.t - this.awokeAt > 0.8 ? 0.9 : 0;
     this.ascii.step(dt);
@@ -105,12 +118,42 @@ export class StorySun extends BlackSunScene {
     this.splash.draw(ctx, this.at);
   }
 
+  /** its WebGL given back (made again if it's drawn again) */
+  dispose() {
+    this.orb?.dispose();
+    this.orb = undefined;
+  }
+
+  /** its face, the ball of light, at `s` with radius `R`; false if there's no WebGL for it */
+  private drawOrb(ctx: CanvasRenderingContext2D, s: Point, R: number): boolean {
+    if (this.orb === undefined) this.orb = SunOrb.make();
+    if (!this.orb) return false;
+    const m = ctx.getTransform();
+    const reach = R * ORB_REACH;
+    const pic = this.orb.render(reach * 2 * (Math.hypot(m.a, m.b) || 1), this.look, this.smoke, this.spin);
+    if (!pic) return false;
+    ctx.drawImage(pic, s.x - reach, s.y - reach, reach * 2, reach * 2);
+    return true;
+  }
+
+  /** the Black Sun's disc: the orb, dark */
+  protected override drawDisc(ctx: CanvasRenderingContext2D, s: Point, R: number, t: number, b: number) {
+    if (!this.drawOrb(ctx, s, R)) super.drawDisc(ctx, s, R, t, b);
+  }
+
   /** the Sun as it was, warm, shining and smiling, at `time` (seconds, for its corona's motion) */
   drawBright(ctx: CanvasRenderingContext2D, time: number, look: BrightLook) {
     const s = this.at;
     const R = s.r;
     if (look.shine > 0.01) {
       ctx.save();
+      // (turned, the orb's already drawn, its eyes on it: its light dies away round it, not over it)
+      if (!look.disc && this.orb) {
+        ctx.beginPath();
+        ctx.rect(s.x - R * 8, s.y - R * 8, R * 16, R * 16);
+        ctx.arc(s.x, s.y, R, 0, TAU);
+        ctx.clip('evenodd');
+      }
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = look.shine;
       const halo = R * 6;
@@ -120,6 +163,16 @@ export class StorySun extends BlackSunScene {
       ctx.restore();
     }
     if (look.core <= 0.01) return;
+    // its face, the orb: as it was, turning (its veins and its colour are the orb's own); then, turned, it's the eclipse's disc
+    if (this.orb !== null && (!look.disc || this.drawOrb(ctx, s, R))) {
+      if (look.core > 0.8) {
+        ctx.save();
+        ctx.globalAlpha = clamp01((look.core - 0.8) / 0.2);
+        this.drawWarmFace(ctx, look.smile);
+        ctx.restore();
+      }
+      return;
+    }
     const r = R * look.core;
     ctx.save();
     // the face of it, white-hot in the middle

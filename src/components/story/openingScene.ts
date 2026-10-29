@@ -5,6 +5,7 @@ import { bloomNumber } from './bloom';
 import { drawGlobe, turned, unit } from './earth';
 import { LittleMonsters } from './littleMonsters';
 import { StorySun } from './storySun';
+import { turning } from './sunOrb';
 import { TAU, clamp01, easeInOut, lerp, seeded } from './storyMath';
 import { BEATS, OPENING, beatAt } from './timeline';
 
@@ -283,15 +284,20 @@ export class OpeningScene {
     const s = this.screen(0, 0);
     this.sun.at = { x: s.x, y: s.y, r: this.cam.z };
     const look = t > BEATS[3] ? this.screen(EARTH.x, EARTH.y) : { x: s.x, y: s.y + this.cam.z * 3 };
-    if (t >= OPENING.turn) this.sun.draw(ctx, w, h, undefined, look);
     const caving = clamp01((t - OPENING.turn) / 1.3);
+    const f = clamp01((t - OPENING.flicker) / (OPENING.turn - OPENING.flicker));
+    // (flickering, more and more, as it turns)
+    const flick = f > 0 && !this.calm ? 1 - f * 0.55 * (0.5 + 0.5 * Math.sin(time * 37) * Math.sin(time * 23.7)) : 1;
+    // its face turning, from the frown till well after its light's caved in: its smoke churning, its colour draining, veins creeping in, then dark (sunOrb.ts)
+    const face = turning(easeInOut(clamp01((t - OPENING.frown + 0.3) / (OPENING.turn + 2.2 - OPENING.frown + 0.3))));
+    if (t < OPENING.turn + 0.4) face.glow *= flick;
+    this.sun.look = face;
+    if (t >= OPENING.turn) this.sun.draw(ctx, w, h, undefined, look);
     if (caving < 1) {
-      const f = clamp01((t - OPENING.flicker) / (OPENING.turn - OPENING.flicker));
-      // (flickering, more and more, as it turns)
-      const flick = f > 0 && !this.calm ? 1 - f * 0.55 * (0.5 + 0.5 * Math.sin(time * 37) * Math.sin(time * 23.7)) : 1;
       this.sun.drawBright(ctx, time, {
         shine: (1 - caving) * flick,
         core: 1 - caving,
+        disc: t < OPENING.turn,
         smile: t < OPENING.frown ? 1 : lerp(1, -1, clamp01((t - OPENING.frown) / 0.4)),
         veins: clamp01((t - OPENING.frown) / (OPENING.turn - OPENING.frown + 0.4)),
       });
