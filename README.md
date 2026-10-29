@@ -738,8 +738,10 @@ formulas stay left-to-right, as in Israeli school workbooks. All text lives in
 ## Sound
 
 The theme song, *Gliding Past the Rim*, was made for this game with Google Gemini. The game has a
-second soundtrack too, *The Little Explorer's Comet*: each new level, and each return from a mode
-with music of its own, plays one or the other at random (each carries on where it left off). Monster Sun
+second soundtrack too, *The Little Explorer's Comet*, and in the game the two take turns: a visit
+starts with one or the other at random, and each time one ends the next is one or the other at
+random again, from the top. Back from a mode with music of its own, it's one or the other at random
+too (where it left off). Monster Sun
 has its own soundtrack, *The Final Lap*; a crew flight plays *The View From Higher Ground*; the
 Black Sun, the final boss, plays *The View from the Last Lap*; and the
 About page (ⓘ) plays *Velvet Horizon*. Each starts from the top when it opens and hands back to

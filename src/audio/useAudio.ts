@@ -6,9 +6,9 @@ const LEGACY_MUSIC_KEY = 'multiplication-rocket:music'; // old on/off toggle
 const DEFAULT_MUSIC = 0.35;
 const DEFAULT_EFFECTS = 0.7;
 
-// The soundtracks: the game's own, the theme or The Little Explorer's Comet
-// (one or the other at random on each new level and back from a mode with its
-// own: playGameMusic); Monster Sun's own while that mode is open; The
+// The soundtracks: the game's own, the theme and The Little Explorer's Comet,
+// taking turns (each time one ends, the next is one or the other at random,
+// as is the first: see GAME_TRACKS); Monster Sun's own while that mode is open; The
 // View From Higher Ground on a crew flight; The View from the Last Lap against
 // the Black Sun, the final boss; Velvet Horizon while the About page is open;
 // Starboard View in the cockpit, while the settings are open; and Canyon
@@ -39,12 +39,32 @@ tracks.bay.preload = 'none';
 tracks.canyon.preload = 'none';
 for (const t of Object.values(tracks)) t.loop = true;
 
+/** the game's own soundtracks: they take turns, each time one ends the next one or the other at random */
+const GAME_TRACKS: Track[] = ['theme', 'comet'];
+const isGameTrack = (track: Track) => GAME_TRACKS.includes(track);
+const pickGameTrack = (): Track => GAME_TRACKS[Math.floor(Math.random() * GAME_TRACKS.length)];
+for (const track of GAME_TRACKS) {
+  tracks[track].loop = false;
+  tracks[track].addEventListener('ended', () => {
+    // (one that's ended while another's taking over: never mind)
+    if (track !== current || track !== sounding) return;
+    // (straight in from the top, fading in: there's nothing to fade out)
+    const next = pickGameTrack();
+    current = sounding = next;
+    tracks[next].currentTime = 0;
+    tracks[next].volume = 0;
+    level = 0;
+    applyMusic();
+  });
+}
+
 /** changing soundtracks, the one playing fades out over this long, then the next fades in over this long (and the music fades in starting, or back from a pause) */
 const FADE_MS = 500;
-/** the soundtrack asked for */
-let current: Track = 'theme';
+/** the soundtrack asked for (the game's own, to start with) */
+let current: Track = pickGameTrack();
 /** the one heard now: the one before, until it has faded out */
-let sounding: Track = 'theme';
+let sounding: Track = current;
+tracks[current].preload = 'auto';
 /** how far in `sounding` has faded (a share of the music volume) */
 let level = 0;
 let fader = 0;
@@ -87,10 +107,6 @@ function save(state: Saved) {
 }
 
 const musicVolume = () => useAudio.getState().musicVolume;
-
-/** the game's own soundtracks: one or the other plays in the game itself */
-const GAME_TRACKS: Track[] = ['theme', 'comet'];
-const isGameTrack = (track: Track) => GAME_TRACKS.includes(track);
 
 /** the next soundtrack takes over, silent for now (it fades in): the game's own where they left off, the others from the top */
 function takeOver() {
@@ -205,14 +221,13 @@ export function playTrack(track: Track) {
 }
 
 /**
- * The game's own soundtrack, the theme or The Little Explorer's Comet, at
- * random: on a new level (`fresh`: the one playing may carry on, or the other
- * take over), or back in the game from a mode with a soundtrack of its own
- * (the one already picked on the way, if one was).
+ * The game's own soundtrack, back in the game from a mode with a soundtrack of
+ * its own: the theme or The Little Explorer's Comet, at random (or the one
+ * already picked on the way, if one was). In the game itself they take turns.
  */
-export function playGameMusic(fresh = false) {
-  if (!fresh && isGameTrack(current)) return;
-  playTrack(GAME_TRACKS[Math.floor(Math.random() * GAME_TRACKS.length)]);
+export function playGameMusic() {
+  if (isGameTrack(current)) return;
+  playTrack(pickGameTrack());
 }
 
 /**
@@ -251,8 +266,8 @@ export function resumeMusic() {
 // music starts on the first click/keypress rather than on load.
 function startOnFirstGesture() {
   applyMusic();
-  // (the game's second soundtrack can start on a new level, without a tap of its own)
-  unlockTrack('comet');
+  // (the game's other soundtrack can take over when this one ends, without a tap of its own)
+  for (const track of GAME_TRACKS) unlockTrack(track);
   for (const type of GESTURES) window.removeEventListener(type, startOnFirstGesture);
 }
 // iOS Safari only unlocks media inside touchend/click, not pointerdown.
