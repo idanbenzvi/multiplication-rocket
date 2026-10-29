@@ -13,9 +13,13 @@ import { LAUNCH, circleThrough } from './timeline';
 // with its air glowing pink to violet beyond it, a purple haze, and a bloom
 // of light on the edge where the Black Sun hangs above it (after React Bits
 // Pro's Horizon Bloom, its Edge preset, on its side; ours). The pilot's own
-// ship lifts off at the bottom left, turns some 40° towards the Black Sun and
-// is away: the stars stretch out past it from where it's heading, longer and
-// brighter, blooming, as it shrinks to a glint and a dot, and the screen
+// ship lifts off at the bottom left and turns some 40° towards the Black Sun.
+// It gathers its power, its engines' glow swelling and pulsing faster, specks
+// of light spiralling into them, edging towards where it's going as space
+// holds its breath (the stars all but still); then a blast, and it's gone into
+// the distance in a blink, as an anime's ships go to warp, leaving a trail of
+// fading afterimages, the stars smeared at once into streaks, speed lines
+// flickering round, Earth falling away; a glint where it went, and the screen
 // washes out to white.
 
 const STARS = 260;
@@ -92,18 +96,23 @@ export class LaunchScene {
     this.t += dt;
     this.sun.update(dt);
     const t = this.t;
-    this.warp = this.calm ? 0 : easeIn(clamp01((t - LAUNCH.away[0]) / (LAUNCH.away[1] - LAUNCH.away[0] - 1)));
-    // the stars come at it, faster with the warp; past the camera, they start again far off
-    const speed = 0.04 + this.warp * 1.6;
+    // (in a blink, at the blast)
+    this.warp = this.calm ? 0 : easeOut(clamp01((t - LAUNCH.blast) / 0.15));
+    // the stars come at it, all but still as it gathers its power, and rushing past once it's away; past the camera, they start again far off
+    const speed = (0.04 - 0.035 * this.charged(t)) * (1 - this.warp) + this.warp * 2.6;
     for (const s of this.stars) {
       s.z -= dt * speed;
       if (s.z <= 0.02) Object.assign(s, newStar(1));
     }
   }
 
-  /** the ship: where it is, how wide (px), its heading (degrees) and how hard it burns */
-  private shipPose(w: number, h: number): { x: number; y: number; w: number; rot: number; burn: number; alpha: number } {
-    const t = this.t;
+  /** how far it's gathered its power (0 to 1) */
+  private charged(t: number): number {
+    return clamp01((t - LAUNCH.charge[0]) / (LAUNCH.charge[1] - LAUNCH.charge[0]));
+  }
+
+  /** the ship at `t`: where it is, how wide (px), its heading (degrees), how hard it burns and how charged it is */
+  private shipPose(w: number, h: number, t = this.t): { x: number; y: number; w: number; rot: number; burn: number; charge: number; alpha: number } {
     const u = Math.min(w, h);
     const { start, v, heading } = this.path(w, h);
     const size = Math.min(u * 0.3, 220);
@@ -111,18 +120,20 @@ export class LaunchScene {
     const turn = easeInOut(clamp01((t - LAUNCH.turn[0]) / (LAUNCH.turn[1] - LAUNCH.turn[0])));
     // up off the bottom, curving over on to its heading
     const rise = { x: start.x + u * 0.16 * Math.sin(heading) * turn, y: start.y - u * 0.16 * lift };
-    // then away: into the distance, towards the vanishing point, smaller and smaller
-    const k = clamp01((t - LAUNCH.away[0]) / (LAUNCH.away[1] - LAUNCH.away[0]));
-    const depth = this.calm ? k * 6 : easeIn(k) * 60 + k * 4;
+    // gathering its power, it edges a little towards where it's going; then the blast, and it's gone into the distance in a blink
+    const c = this.charged(t);
+    const b = clamp01((t - LAUNCH.blast) / (this.calm ? 1.4 : 0.3));
+    const depth = this.calm ? b * 6 : 0.14 * easeInOut(c) + 90 * b ** 2.4;
     const near = 1 / (1 + depth);
-    const shake = this.calm ? 0 : Math.max(0, 1 - Math.abs(t - LAUNCH.ignite - 0.4) / 0.9) * u * 0.006;
+    const shake = this.calm ? 0 : Math.max(0, 1 - Math.abs(t - LAUNCH.ignite - 0.4) / 0.9) * u * 0.006 + (b > 0 ? 0 : c * c * u * 0.004);
     return {
       x: lerp(v.x, rise.x, near) + Math.sin(t * 70) * shake,
       y: lerp(v.y, rise.y, near) + Math.cos(t * 53) * shake,
       w: size * near,
       rot: ((Math.atan2(v.x - rise.x, rise.y - v.y) * 180) / Math.PI) * turn,
-      burn: clamp01((t - LAUNCH.ignite) / 0.4) * (0.5 + 0.5 * k),
-      alpha: this.calm ? 1 - clamp01((k - 0.6) / 0.4) : 1,
+      burn: clamp01((t - LAUNCH.ignite) / 0.4) * (0.5 + 0.5 * b),
+      charge: this.calm || b >= 1 ? 0 : c,
+      alpha: this.calm ? 1 - clamp01((b - 0.6) / 0.4) : 1,
     };
   }
 
@@ -166,7 +177,10 @@ export class LaunchScene {
     this.sun.draw(ctx, w, h, undefined, { x: pose.x, y: pose.y });
 
     this.drawEarth(ctx, w, h, e, s);
+    this.drawAfterimages(ctx, w, h);
     this.drawShip(ctx, pose, u);
+    this.drawBlast(ctx, w, h);
+    this.drawSpeedLines(ctx, w, h, v);
     this.drawGlint(ctx, pose, u);
 
     // washing out to white
@@ -209,7 +223,7 @@ export class LaunchScene {
       const bright = clamp01(0.25 + near * 0.9) * (this.calm ? 0.8 : 0.7 + 0.3 * Math.sin(this.t * 3 + s.phase));
       if (warp > 0.02) {
         // a streak back along its way: the faster, the longer
-        const r0 = (s.d * reach * 0.18) / Math.min(1, s.z + 0.04 + warp * 0.5);
+        const r0 = (s.d * reach * 0.18) / Math.min(1, s.z + 0.04 + warp * 0.9);
         const x0 = v.x + Math.cos(s.a) * r0;
         const y0 = v.y + Math.sin(s.a) * r0;
         const width = Math.max(1, s.size * (0.8 + near * 2.4) * (1 + warp));
@@ -237,7 +251,7 @@ export class LaunchScene {
     const t = this.t;
     const u = Math.min(w, h);
     // as the warp takes it, Earth falls away behind
-    const away = this.calm ? 0 : easeIn(clamp01((t - LAUNCH.away[0] - 1) / 4));
+    const away = this.calm ? 0 : easeIn(clamp01((t - LAUNCH.blast) / 0.8));
     const r = e.r * (1 - 0.08 * away);
     const cx = e.x - u * 0.3 * away;
     const cy = e.y + u * 0.3 * away;
@@ -366,19 +380,107 @@ export class LaunchScene {
     }
     ctx.globalCompositeOperation = 'lighter';
     const flick = 1 + Math.sin(this.t * 43) * 0.08 + Math.sin(this.t * 27) * 0.05;
-    for (const e of pilotEngines(this.ship.ship)) {
+    // gathering its power: its engines' glow swelling, pulsing faster and faster, and specks of light spiralling into them
+    const c = p.charge;
+    const swell = 1 + c * (1.3 + 0.25 * Math.sin(this.t * (8 + 34 * c)));
+    const engines = pilotEngines(this.ship.ship);
+    if (c > 0) {
+      const mx = (engines.reduce((a, e) => a + e.x, 0) / engines.length - 0.5) * p.w;
+      const my = (engines.reduce((a, e) => a + e.y, 0) / engines.length - 0.5) * p.w;
+      const charge = p.w * (0.9 + 0.9 * c);
+      ctx.globalAlpha = p.alpha * Math.min(1, c * 1.5) * 0.8;
+      ctx.drawImage(glow('#9fe6ff'), mx - charge / 2, my - charge / 2, charge, charge);
+      for (let i = 0; i < 28; i++) {
+        const k = (this.t * (0.9 + 0.8 * c) + i / 28) % 1;
+        const a = i * 2.39996 + k * 2.6;
+        const r = p.w * 1.5 * (1 - k) ** 1.5;
+        const size = p.w * (0.05 + 0.07 * k);
+        ctx.globalAlpha = p.alpha * c * Math.sin(Math.PI * k);
+        ctx.drawImage(glow(i % 3 ? '#9fe6ff' : '#e6d9ff'), mx + Math.cos(a) * r - size / 2, my + Math.sin(a) * r * 0.8 - size / 2, size, size);
+      }
+      ctx.globalAlpha = p.alpha;
+    }
+    for (const e of engines) {
       const ex = (e.x - 0.5) * p.w;
       const ey = (e.y - 0.5) * p.w;
-      const fw = e.r * p.w * 3.4 * flick;
+      const fw = e.r * p.w * 3.4 * flick * swell;
       const fh = fw * (1.4 + p.burn * 4.6) * flick;
       ctx.drawImage(glow('#6ad7ff'), ex - fw / 2, ey - fw * 0.3, fw, fh);
       ctx.drawImage(glow('#b18cff'), ex - fw * 0.35, ey + fh * 0.2, fw * 0.7, fh * 0.9);
-      const core = e.r * p.w * 2.6;
+      const core = e.r * p.w * 2.6 * swell;
       ctx.drawImage(glow('#ffffff'), ex - core / 2, ey - core / 2, core, core);
     }
     ctx.globalCompositeOperation = 'source-over';
     // (tiny now: a point of light is all that's left of it)
     if (img && p.w > u * 0.012) ctx.drawImage(img, -p.w / 2, -p.w / 2, p.w, p.w);
+    ctx.restore();
+  }
+
+  /** the blast: a flash off its engines as it goes, and the screen flaring white for a moment */
+  private drawBlast(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const k = (this.t - LAUNCH.blast) / 0.45;
+    if (k <= 0 || k >= 1 || this.calm) return;
+    const at = this.shipPose(w, h, LAUNCH.blast);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 1 - k;
+    const size = at.w * (2 + 6 * easeOut(k));
+    ctx.drawImage(glow('#e6f6ff'), at.x - size / 2, at.y - size / 2, size, size);
+    ctx.drawImage(glow('#9fe6ff'), at.x - size, at.y - size, size * 2, size * 2);
+    ctx.restore();
+    // (an impact frame: a flash of white over everything)
+    if (k < 0.25) {
+      ctx.fillStyle = `rgba(240, 248, 255, ${0.55 * (1 - k / 0.25)})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  /** where it went in the blast: its image left behind, again and again, smaller and smaller, each fading */
+  private drawAfterimages(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    if (this.calm || this.t < LAUNCH.blast) return;
+    const img = sprite(this.shipSvg, 384, 384, this.ship.avatar ? { emoji: this.ship.avatar, ...pilotCanopy(this.ship.ship) } : undefined);
+    if (!img) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 8; i++) {
+      const at = LAUNCH.blast + i * 0.032;
+      const age = (this.t - at) / 0.7;
+      if (age < 0 || age >= 1) continue;
+      const p = this.shipPose(w, h, at);
+      if (p.w < 2) continue;
+      ctx.globalAlpha = 0.5 * (1 - age) * (1 - i / 9);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rot * Math.PI) / 180);
+      ctx.drawImage(img, -p.w / 2, -p.w / 2, p.w, p.w);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  /** as it goes to warp: manga's speed lines, flickering round where it went */
+  private drawSpeedLines(ctx: CanvasRenderingContext2D, w: number, h: number, v: Point) {
+    const k = this.t - LAUNCH.blast;
+    if (k <= 0 || this.calm) return;
+    const strength = Math.min(1, k / 0.08) * (0.55 + 0.45 * Math.exp(-k * 3));
+    const reach = Math.hypot(Math.max(v.x, w - v.x), Math.max(v.y, h - v.y));
+    // (drawn afresh a few times a second, as a hand-drawn frame is)
+    let seed = Math.floor(this.t * 24) * 7919;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 64; i++) {
+      const a = rnd() * TAU;
+      const r0 = reach * (0.22 + rnd() * 0.4);
+      const half = (0.002 + rnd() * 0.006) * (1 + strength);
+      ctx.globalAlpha = strength * (0.25 + rnd() * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(v.x + Math.cos(a) * r0, v.y + Math.sin(a) * r0);
+      ctx.lineTo(v.x + Math.cos(a - half) * reach * 1.3, v.y + Math.sin(a - half) * reach * 1.3);
+      ctx.lineTo(v.x + Math.cos(a + half) * reach * 1.3, v.y + Math.sin(a + half) * reach * 1.3);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.restore();
   }
 

@@ -34,13 +34,15 @@ export const LAUNCH = {
   ignite: 0.5,
   /** it turns towards the Black Sun */
   turn: [0.9, 2.6],
-  /** it accelerates away, the stars streaking past */
-  away: [2.4, 7.4],
-  /** a glint as it's gone */
-  glint: 7.2,
+  /** it gathers its power: its engines' glow swelling, light pulled into them, edging towards where it's going, space holding its breath */
+  charge: [2.4, 4.2],
+  /** then a blast, and it's gone into the warp in a blink, the stars smeared past it */
+  blast: 4.2,
+  /** a glint where it went */
+  glint: 4.55,
   /** washing out to white */
-  white: [7.3, 8.5],
-  end: 8.6,
+  white: [5.5, 6.5],
+  end: 6.6,
 } as const;
 
 /** the where-and-when typed in before a scene (film.tsx's Slate), a character at a time, a pause between its lines (seconds) */

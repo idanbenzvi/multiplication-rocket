@@ -19,6 +19,11 @@
   height: 100%;
 }
 
+/* space rippling over the picture as the Sun becomes the Black Sun (spaceRipple.ts): shown only while it runs */
+.story-ripple {
+  pointer-events: none;
+}
+
 /* the film's bars, sliding in as it starts */
 .story-bar {
   position: absolute;

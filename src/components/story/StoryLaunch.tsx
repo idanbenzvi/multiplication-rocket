@@ -66,9 +66,14 @@ export function StoryLaunch() {
       sfx.blastOff();
       haptics.launch();
     });
-    cue('away', LAUNCH.away[0] + 0.6, () => {
+    cue('charge', LAUNCH.charge[0], () => {
+      sfx.chargeUp(LAUNCH.charge[1] - LAUNCH.charge[0]);
+      haptics.charge(LAUNCH.charge[1] - LAUNCH.charge[0]);
+    });
+    cue('blast', LAUNCH.blast, () => {
+      sfx.ignite();
       sfx.hyperdrive();
-      haptics.warp();
+      haptics.boom();
     });
     cue('glint', LAUNCH.glint, () => sfx.flareOut());
     cue('quiet', LAUNCH.white[0], () => setCaption(false));

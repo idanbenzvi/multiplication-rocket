@@ -283,7 +283,8 @@ export class BlackSunScene extends EclipseScene {
   private blasts: Blast[] = [];
   private bolts: Bolt[] = [];
   private shards: Shard[] = [];
-  private rings: Ring[] = [];
+  /** (the story's own Black Sun sends space rippling instead of its awakening's two: story/storySun.ts) */
+  protected rings: Ring[] = [];
   private embers: Ember[] = [];
   private fireball: Fireball | null = null;
 

@@ -80,7 +80,12 @@ export class StorySun extends BlackSunScene {
   override awaken() {
     super.awaken();
     this.awokeAt = this.t;
+    // (space ripples instead, in the opening: StoryOpening's SpaceRipple; with reduced motion, the rings stay)
+    if (!this.calm && this.rippling) this.rings.length = 0;
   }
+
+  /** the opening's space ripples as it awakens, in place of its rings */
+  rippling = false;
 
   protected override numberArt(text: string, color: string): HTMLCanvasElement {
     return bloomNumber(text, color);

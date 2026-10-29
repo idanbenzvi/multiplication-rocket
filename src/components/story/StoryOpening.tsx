@@ -8,6 +8,7 @@ import { haptics } from '../../audio/haptics';
 import { Letterbox, Slate } from './film';
 import { SLATE, today, useCanvasLoop, useSkip } from './filmHooks';
 import { OpeningScene } from './openingScene';
+import { SpaceRipple } from './spaceRipple';
 import { clamp01 } from './storyMath';
 import { StoryClock, beatAt, OPENING_END, typeTime } from './timeline';
 import { hush, narrate, primeVoice, speaking } from './narrate';
@@ -50,6 +51,20 @@ export function StoryOpening() {
   // (the Sun's face is WebGL: given back as it goes)
   useEffect(() => () => scene.sun.dispose(), [scene]);
 
+  // space rippling out from the Black Sun as it awakens, over the story's canvas (none with reduced motion: its rings instead)
+  const rippleCanvas = useRef<HTMLCanvasElement | null>(null);
+  const ripple = useRef<SpaceRipple | null>(null);
+  useEffect(() => {
+    if (calm || !rippleCanvas.current) return;
+    const made = SpaceRipple.make(rippleCanvas.current);
+    ripple.current = made;
+    scene.sun.rippling = !!made;
+    return () => {
+      made?.dispose();
+      ripple.current = null;
+    };
+  }, [calm, scene]);
+
   // its sounds
   useEffect(() => {
     let swallows = 0;
@@ -61,6 +76,7 @@ export function StoryOpening() {
         haptics.bump(0.4);
       }
       else if (what === 'awaken') {
+        ripple.current?.start(state.current.time);
         sfx.monsterRise();
         haptics.monster();
       } else if (what === 'sputter') {
@@ -106,6 +122,8 @@ export function StoryOpening() {
       ctx.fillStyle = `rgba(0, 0, 0, ${dark})`;
       ctx.fillRect(0, 0, w, h);
     }
+    const sun = scene.sun.at;
+    if (canvas.current) ripple.current?.frame(canvas.current, sun.x, sun.y, sun.r, w, h, canvas.current.width / w, s.time);
     const o = scene.orbie(T);
     if (orbie.current) {
       const size = 160;
@@ -133,6 +151,7 @@ export function StoryOpening() {
       transition={{ duration: 0.8 }}
     >
       <canvas ref={canvas} className="story-canvas" />
+      <canvas ref={rippleCanvas} className="story-canvas story-ripple" aria-hidden="true" />
       {rolling && beat >= 3 && (
         <div ref={orbie} className="story-orbie" aria-hidden="true">
           <Orb hue={0} hoverIntensity={0.6} rotateOnHover forceHoverState backgroundColor="#000000" />

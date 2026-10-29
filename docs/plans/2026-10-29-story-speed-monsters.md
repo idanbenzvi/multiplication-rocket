@@ -64,3 +64,22 @@ the Black Sun's disc after (`drawDisc`, under its eyes and grin; the launch's Bl
 hardest; the opening runs `k` from 10.2 s to 13.2 s, its glow flickering with the Sun's. After
 the turn the warm corona dies away round the orb, not over it. Without WebGL the Sun's drawn as
 before. With the CPU slowed 4× the story runs as it did (55–60 fps).
+
+### Second pass (the user's notes)
+
+- The veins looked naive and the 3 s colour fade was slow and unconvincing: both are gone. The
+  turn is now a front: the dark eats the light from the rim in over 1.2 s (from 10.85 s), ragged
+  with the smoke, glowing hot pink where it meets the gold, the last of the gold in the middle, the
+  smoke surging as it goes (`turning(k)`, `uCorrupt`). Three octaves of noise instead of four and
+  no vein noise make it a third cheaper; it's at most 768 px across (512, 384).
+- The Black Sun's two shock circles are space rippling instead (`spaceRipple.ts`, our own, after
+  the three.js forum's shockwave VFX): a WebGL canvas over the story's, shown only while it runs,
+  draws the story's picture bent by two waves (the second 0.3 s after) racing out from the Sun over
+  2.2 s, a lens's bend (pushed out ahead of the front and in behind it), the colours split a
+  little. `StorySun.rippling` drops its awakening's rings; with reduced motion the rings stay.
+- The launch charges then blasts (`LAUNCH.charge`, `blast`): from 2.4 s the engines' glow swells
+  and pulses faster, specks of light spiral into them, the ship trembles and edges in (a seventh
+  of the way) and the stars all but stop; at 4.2 s a flash and an impact frame, the ship's gone to
+  the vanishing point in 0.3 s leaving eight fading afterimages, the stars are streaks in 0.15 s,
+  manga speed lines flicker round (redrawn 24 times a second) and Earth falls away. Sounds:
+  `chargeUp` and the charge buzz, then `ignite`, `hyperdrive` and a boom. It's 2 s shorter.

@@ -288,8 +288,8 @@ export class OpeningScene {
     const f = clamp01((t - OPENING.flicker) / (OPENING.turn - OPENING.flicker));
     // (flickering, more and more, as it turns)
     const flick = f > 0 && !this.calm ? 1 - f * 0.55 * (0.5 + 0.5 * Math.sin(time * 37) * Math.sin(time * 23.7)) : 1;
-    // its face turning, from the frown till well after its light's caved in: its smoke churning, its colour draining, veins creeping in, then dark (sunOrb.ts)
-    const face = turning(easeInOut(clamp01((t - OPENING.frown + 0.3) / (OPENING.turn + 2.2 - OPENING.frown + 0.3))));
+    // its face turning as its light caves in: the dark eating in from its rim, its smoke surging (sunOrb.ts)
+    const face = turning(clamp01((t - OPENING.turn + 0.15) / 1.2));
     if (t < OPENING.turn + 0.4) face.glow *= flick;
     this.sun.look = face;
     if (t >= OPENING.turn) this.sun.draw(ctx, w, h, undefined, look);
