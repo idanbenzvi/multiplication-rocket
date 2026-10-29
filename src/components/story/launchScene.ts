@@ -1,4 +1,6 @@
+import { BEAM_TOP_FRACTION } from '../scene/plume';
 import { glow, pilotCanopy, pilotEngines, rearShipSvg, rgba, sprite } from '../traffic/trafficArt';
+import { TrafficPlume } from '../traffic/trafficPlume';
 import { HYPER_TINTS, hyperStreak } from '../arrival/dropOut';
 import type { Point } from '../arrival/eclipse';
 import type { PadShipSpec } from '../bay/useBay';
@@ -14,15 +16,35 @@ import { LAUNCH, circleThrough } from './timeline';
 // of light on the edge where the Black Sun hangs above it (after React Bits
 // Pro's Horizon Bloom, its Edge preset, on its side; ours). The pilot's own
 // ship lifts off at the bottom left and turns some 40° towards the Black Sun.
-// It gathers its power, its engines' glow swelling and pulsing faster, specks
-// of light spiralling into them, edging towards where it's going as space
-// holds its breath (the stars all but still); then a blast, and it's gone into
-// the distance in a blink, as an anime's ships go to warp, leaving a trail of
-// fading afterimages, the stars smeared at once into streaks, speed lines
-// flickering round, Earth falling away; a glint where it went, and the screen
-// washes out to white.
+// Its engines burn with the main game's own plume (scene/plume.ts, through
+// traffic/trafficPlume.ts), and it blasts off as the rocket does there
+// (scene/EngineGlow.tsx, its numbers here in 2D): it gathers its power, the
+// plume swelling and heating from ion blue to hot pink, the glow at its
+// nozzles and the aura round its hull pulsing faster and faster, sparks
+// curling in to them, as it edges towards where it's going and space holds
+// its breath (the stars all but still); then ignition, a white flash and a
+// shockwave ring, and it's gone into the distance in a blink, as an anime's
+// ships go to warp, leaving a trail of fading afterimages, its plume
+// stretched back along the way it went; the stars smeared at once into
+// streaks across the screen along its heading, speed lines flickering
+// alongside, Earth falling away; a glint where it went, and the screen washes
+// out to white.
 
-const STARS = 260;
+const STARS = 420;
+/** how far a star drifts back past the ship a second (of the screen's diagonal), at its nearest: as it lifts off, and in the warp */
+const DRIFT = 0.03;
+const WARP_SPEED = 4.5;
+/** how long a star's streak is at its nearest in the warp (of the diagonal) */
+const STREAK = 0.6;
+/** the game's blast-off (EngineGlow.tsx): its glow's colours as it builds, cool to hot, an admiral's gold; its sparks, and its shockwave's time (s) */
+const COOL = '#6ad7ff';
+const HOT = '#ff6ad5';
+const GOLD_COOL = '#ffd77a';
+const GOLD_HOT = '#ffb84d';
+const SPARKS = 44;
+const RING_S = 0.55;
+/** the game's rocket, a world unit across in its scene, is this much of the ship's width here */
+const UNIT = 0.42;
 /** the ship's heading, once it has turned (degrees right of straight up; on a narrow screen a little steeper, to stay on it) */
 const HEADING = 41;
 const HEADING_NARROW = 30;
@@ -30,10 +52,10 @@ const HEADING_NARROW = 30;
 const BELOW_BLOOM: [number, number] = [14, 46];
 
 interface Star {
-  /** where it is round the vanishing point (angle) and how far out, near to the camera (z from 1 far to 0 at the camera) */
+  /** where it is along the ship's heading and across it (0 to 1 of the room for them), and how near (0.2 far to 1) */
   a: number;
-  d: number;
-  z: number;
+  c: number;
+  near: number;
   size: number;
   tint: string;
   phase: number;
@@ -46,8 +68,17 @@ export class LaunchScene {
   private readonly ship: PadShipSpec;
   private readonly stars: Star[];
   private t = 0;
-  /** how fast the stars come at it (0 to 1, the warp) */
+  /** how far into the warp (0 to 1) */
   private warp = 0;
+  /** the game's plume, a frame at a time; without WebGL (or with reduced motion), glowing flames */
+  private readonly plume: TrafficPlume | null;
+  private readonly sparks = Array.from({ length: SPARKS }, (_, i) => ({
+    angle: (i / SPARKS) * TAU + Math.random() * 0.4,
+    radius: 1.1 + Math.random() * 1.5,
+    rate: 0.9 + Math.random() * 0.9,
+    offset: Math.random(),
+    curl: (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random()),
+  }));
 
   constructor(calm: boolean, ship: PadShipSpec) {
     this.calm = calm;
@@ -60,6 +91,9 @@ export class LaunchScene {
     this.shipSvg = rearShipSvg(ship.accent, ship.admiral, ship.ship);
     sprite(this.shipSvg, 384, 384, ship.avatar ? { emoji: ship.avatar, ...pilotCanopy(ship.ship) } : undefined);
     this.stars = Array.from({ length: STARS }, () => newStar(Math.random()));
+    this.plume = calm ? null : TrafficPlume.create(!!ship.admiral);
+    // (drawn once now, so its shader's built before it lights)
+    this.plume?.frame(0, 0, 0);
   }
 
   /** where the ship lifts off (the bottom left), and where it's heading off to (the vanishing point) */
@@ -98,12 +132,31 @@ export class LaunchScene {
     const t = this.t;
     // (in a blink, at the blast)
     this.warp = this.calm ? 0 : easeOut(clamp01((t - LAUNCH.blast) / 0.15));
-    // the stars come at it, all but still as it gathers its power, and rushing past once it's away; past the camera, they start again far off
-    const speed = (0.04 - 0.035 * this.charged(t)) * (1 - this.warp) + this.warp * 2.6;
+    // the stars drift back past it, all but still as it gathers its power, and rushing by once it's away (the nearer, the faster)
+    const speed = DRIFT * (1 - 0.9 * this.charged(t)) * (1 - this.warp) + this.warp * WARP_SPEED;
     for (const s of this.stars) {
-      s.z -= dt * speed;
-      if (s.z <= 0.02) Object.assign(s, newStar(1));
+      s.a -= (dt * speed * s.near) / 2.4;
+      if (s.a < 0) Object.assign(s, newStar(1 + s.a));
     }
+  }
+
+  /** the way it's going on screen: from where it lifted off to the vanishing point */
+  private heading(w: number, h: number): Point {
+    const { start, v } = this.path(w, h);
+    const d = Math.hypot(v.x - start.x, v.y - start.y) || 1;
+    return { x: (v.x - start.x) / d, y: (v.y - start.y) / d };
+  }
+
+  /** the engines' power, as the game's plume takes it (0 idle, 1 flat out, up to 1.9 in a blast-off) */
+  private power(t: number, charge: number): number {
+    const lift = clamp01((t - LAUNCH.ignite) / 0.6);
+    const build = charge * (0.62 + 0.08 * Math.sin(t * 34));
+    return Math.min(0.1 + 0.35 * lift + build + this.ignition(t) * 0.6 + (t >= LAUNCH.blast ? 0.6 : 0), 1.9);
+  }
+
+  /** 1 at the blast, fading, as the game's ignition does (FlyingRocket) */
+  private ignition(t: number): number {
+    return t < LAUNCH.blast ? 0 : Math.exp(-3.2 * (t - LAUNCH.blast));
   }
 
   /** how far it's gathered its power (0 to 1) */
@@ -154,7 +207,7 @@ export class LaunchScene {
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    this.drawStars(ctx, w, h, v);
+    this.drawStars(ctx, w, h);
 
     // the tunnel glowing round where it's heading, as the warp builds
     if (this.warp > 0.01) {
@@ -178,9 +231,9 @@ export class LaunchScene {
 
     this.drawEarth(ctx, w, h, e, s);
     this.drawAfterimages(ctx, w, h);
-    this.drawShip(ctx, pose, u);
+    this.drawShip(ctx, pose, u, w, h);
     this.drawBlast(ctx, w, h);
-    this.drawSpeedLines(ctx, w, h, v);
+    this.drawSpeedLines(ctx, w, h);
     this.drawGlint(ctx, pose, u);
 
     // washing out to white
@@ -200,43 +253,42 @@ export class LaunchScene {
   /** its WebGL given back */
   dispose() {
     this.sun.dispose();
+    this.plume?.dispose();
   }
 
   get done(): boolean {
     return this.t >= LAUNCH.end;
   }
 
-  /** the stars: points far off; with the warp, streaks rushing out of the vanishing point, blooming as they come */
-  private drawStars(ctx: CanvasRenderingContext2D, w: number, h: number, v: Point) {
-    const reach = Math.hypot(Math.max(v.x, w - v.x), Math.max(v.y, h - v.y));
+  /** the stars: points far off, drifting back past it; in the warp, streaks smeared across the screen along its heading */
+  private drawStars(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const d = this.heading(w, h);
+    const diag = Math.hypot(w, h);
+    // the room for them: the screen, turned to the heading, and room ahead for a streak's length
+    const across = Math.abs(w * d.y) + Math.abs(h * d.x);
+    const along = Math.abs(w * d.x) + Math.abs(h * d.y);
+    const room = along + STREAK * diag;
     const warp = this.warp;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     for (const s of this.stars) {
-      // seen from the camera: further out the nearer it is
-      const r = (s.d * reach * 0.18) / s.z;
-      if (r > reach * 1.2) continue;
-      const x = v.x + Math.cos(s.a) * r;
-      const y = v.y + Math.sin(s.a) * r;
-      const near = clamp01(1 - s.z);
-      const bright = clamp01(0.25 + near * 0.9) * (this.calm ? 0.8 : 0.7 + 0.3 * Math.sin(this.t * 3 + s.phase));
+      const at = s.a * room - along / 2;
+      const off = (s.c - 0.5) * across;
+      const x = w / 2 + d.x * at - d.y * off;
+      const y = h / 2 + d.y * at + d.x * off;
+      const bright = clamp01(0.2 + s.near * 0.85) * (this.calm ? 0.8 : 0.7 + 0.3 * Math.sin(this.t * 3 + s.phase));
       if (warp > 0.02) {
-        // a streak back along its way: the faster, the longer
-        const r0 = (s.d * reach * 0.18) / Math.min(1, s.z + 0.04 + warp * 0.9);
-        const x0 = v.x + Math.cos(s.a) * r0;
-        const y0 = v.y + Math.sin(s.a) * r0;
-        const width = Math.max(1, s.size * (0.8 + near * 2.4) * (1 + warp));
+        // a streak back along where it came from: the nearer, the longer and the wider
+        const len = diag * STREAK * warp * s.near ** 1.5 + 2;
+        const x0 = x + d.x * len;
+        const y0 = y + d.y * len;
+        if (Math.max(x, x0) < -8 || Math.min(x, x0) > w + 8 || Math.max(y, y0) < -8 || Math.min(y, y0) > h + 8) continue;
+        const width = Math.max(1, s.size * (0.6 + s.near * 1.8) * (1 + 0.6 * warp));
         hyperStreak(ctx, x0, y0, x, y, width, s.tint, Math.min(1, bright * (0.5 + warp)));
-        // blooming as it nears
-        if (near > 0.5) {
-          const b = width * (3 + warp * 5) * near;
-          ctx.globalAlpha = Math.min(1, warp * near);
-          ctx.drawImage(glow(s.tint), x - b / 2, y - b / 2, b, b);
-          ctx.globalAlpha = 1;
-        }
       } else {
-        const size = s.size * (0.6 + near * 1.4);
+        if (x < -4 || x > w + 4 || y < -4 || y > h + 4) continue;
+        const size = s.size * (0.5 + s.near * 1.1);
         ctx.fillStyle = `rgba(255, 255, 255, ${bright})`;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, TAU);
@@ -356,8 +408,8 @@ export class LaunchScene {
     ctx.restore();
   }
 
-  /** the pilot's ship from behind, its flames growing as it goes */
-  private drawShip(ctx: CanvasRenderingContext2D, p: ReturnType<LaunchScene['shipPose']>, u: number) {
+  /** the pilot's ship from behind, burning with the game's plume, gathering its power as the game's rocket does */
+  private drawShip(ctx: CanvasRenderingContext2D, p: ReturnType<LaunchScene['shipPose']>, u: number, w: number, h: number) {
     if (p.alpha <= 0.01 || p.w < 0.5) return;
     const img = sprite(this.shipSvg, 384, 384, this.ship.avatar ? { emoji: this.ship.avatar, ...pilotCanopy(this.ship.ship) } : undefined);
     ctx.save();
@@ -378,59 +430,99 @@ export class LaunchScene {
       ctx.stroke();
       ctx.restore();
     }
-    ctx.globalCompositeOperation = 'lighter';
-    const flick = 1 + Math.sin(this.t * 43) * 0.08 + Math.sin(this.t * 27) * 0.05;
-    // gathering its power: its engines' glow swelling, pulsing faster and faster, and specks of light spiralling into them
-    const c = p.charge;
-    const swell = 1 + c * (1.3 + 0.25 * Math.sin(this.t * (8 + 34 * c)));
     const engines = pilotEngines(this.ship.ship);
-    if (c > 0) {
-      const mx = (engines.reduce((a, e) => a + e.x, 0) / engines.length - 0.5) * p.w;
-      const my = (engines.reduce((a, e) => a + e.y, 0) / engines.length - 0.5) * p.w;
-      const charge = p.w * (0.9 + 0.9 * c);
-      ctx.globalAlpha = p.alpha * Math.min(1, c * 1.5) * 0.8;
-      ctx.drawImage(glow('#9fe6ff'), mx - charge / 2, my - charge / 2, charge, charge);
-      for (let i = 0; i < 28; i++) {
-        const k = (this.t * (0.9 + 0.8 * c) + i / 28) % 1;
-        const a = i * 2.39996 + k * 2.6;
-        const r = p.w * 1.5 * (1 - k) ** 1.5;
-        const size = p.w * (0.05 + 0.07 * k);
-        ctx.globalAlpha = p.alpha * c * Math.sin(Math.PI * k);
-        ctx.drawImage(glow(i % 3 ? '#9fe6ff' : '#e6d9ff'), mx + Math.cos(a) * r - size / 2, my + Math.sin(a) * r * 0.8 - size / 2, size, size);
-      }
-      ctx.globalAlpha = p.alpha;
+    const c = p.charge;
+    const t = this.t;
+    const ig = this.ignition(t);
+    const gold = !!this.ship.admiral;
+    // as the game's blast-off glows (EngineGlow.tsx): cool to hot as it builds, the pulse quickening
+    const color = mix(gold ? GOLD_COOL : COOL, gold ? GOLD_HOT : HOT, c);
+    const pulse = 0.82 + 0.18 * Math.sin(t * (7 + 26 * c));
+    const unit = p.w * UNIT;
+    const mx = (engines.reduce((a, e) => a + e.x, 0) / engines.length - 0.5) * p.w;
+    const my = (engines.reduce((a, e) => a + e.y, 0) / engines.length - 0.5) * p.w;
+    ctx.globalCompositeOperation = 'lighter';
+    // the aura round its hull, behind it
+    const aura = unit * ((1.5 + 1.2 * c) * pulse + 1.4 * ig) * 1.6;
+    const auraA = 0.48 * c * pulse + 0.3 * ig;
+    if (auraA > 0.01) {
+      ctx.globalAlpha = p.alpha * Math.min(1, auraA);
+      ctx.drawImage(glow(color), -aura / 2, -aura / 2, aura, aura);
     }
-    for (const e of engines) {
-      const ex = (e.x - 0.5) * p.w;
-      const ey = (e.y - 0.5) * p.w;
-      const fw = e.r * p.w * 3.4 * flick * swell;
-      const fh = fw * (1.4 + p.burn * 4.6) * flick;
-      ctx.drawImage(glow('#6ad7ff'), ex - fw / 2, ey - fw * 0.3, fw, fh);
-      ctx.drawImage(glow('#b18cff'), ex - fw * 0.35, ey + fh * 0.2, fw * 0.7, fh * 0.9);
-      const core = e.r * p.w * 2.6 * swell;
-      ctx.drawImage(glow('#ffffff'), ex - core / 2, ey - core / 2, core, core);
+    ctx.globalAlpha = p.alpha;
+    if (this.plume) {
+      // the game's own plume out of each nozzle, swelling with the charge; in the blast, stretched back along the way it went
+      const s = this.power(t, c);
+      const img = this.plume.frame(t, s, 0);
+      const back = t > LAUNCH.blast ? this.shipPose(w, h, t - 0.05) : null;
+      const trail = back ? Math.hypot(back.x - p.x, back.y - p.y) : 0;
+      const pw = p.w * (0.8 + 0.25 * Math.min(s, 1)) * (engines.length > 1 ? 0.8 : 1);
+      const ph = Math.max(p.w * (0.9 + 1.1 * s), trail * 1.25);
+      for (const e of engines) ctx.drawImage(img, (e.x - 0.5) * p.w - pw / 2, (e.y - 0.5) * p.w - BEAM_TOP_FRACTION * ph, pw, ph);
+    } else {
+      // (without WebGL: glowing flames)
+      const flick = 1 + Math.sin(t * 43) * 0.08 + Math.sin(t * 27) * 0.05;
+      for (const e of engines) {
+        const ex = (e.x - 0.5) * p.w;
+        const ey = (e.y - 0.5) * p.w;
+        const fw = e.r * p.w * 3.4 * flick * (1 + c);
+        const fh = fw * (1.4 + p.burn * 4.6) * flick;
+        ctx.drawImage(glow('#6ad7ff'), ex - fw / 2, ey - fw * 0.3, fw, fh);
+        ctx.drawImage(glow('#b18cff'), ex - fw * 0.35, ey + fh * 0.2, fw * 0.7, fh * 0.9);
+      }
     }
     ctx.globalCompositeOperation = 'source-over';
     // (tiny now: a point of light is all that's left of it)
     if (img && p.w > u * 0.012) ctx.drawImage(img, -p.w / 2, -p.w / 2, p.w, p.w);
+    ctx.globalCompositeOperation = 'lighter';
+    // the glow at its nozzles, over it, white-hot at ignition
+    for (const e of engines) {
+      const n = unit * ((0.35 + 2.3 * c) * pulse + 2.2 * ig) * (engines.length > 1 ? 0.7 : 1) + e.r * p.w * 2.4;
+      ctx.globalAlpha = p.alpha * Math.min(1, 0.55 + 0.95 * c * pulse + ig);
+      ctx.drawImage(glow(ig > 0.3 ? '#ffffff' : color), (e.x - 0.5) * p.w - n / 2, (e.y - 0.5) * p.w - n / 2, n, n);
+    }
+    // sparks drawn in to the engines, curling as they go, brightest as they arrive
+    if (c > 0) {
+      const size = unit * 0.22;
+      for (const sp of this.sparks) {
+        const q = (t * sp.rate + sp.offset) % 1;
+        const r = unit * sp.radius * (1 - q) ** 1.6;
+        const a = sp.angle + sp.curl * q * 2.2;
+        ctx.globalAlpha = p.alpha * Math.min(1, c * Math.sin(Math.PI * q) * 2.2);
+        ctx.drawImage(glow(color), mx + Math.cos(a) * r - size / 2, my + Math.sin(a) * r * 0.75 - size / 2, size, size);
+      }
+    }
     ctx.restore();
   }
 
-  /** the blast: a flash off its engines as it goes, and the screen flaring white for a moment */
+  /** the blast, as the game's ignition: a white flash and a shockwave ring off its engines where it was, and the screen flaring white for a moment */
   private drawBlast(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    const k = (this.t - LAUNCH.blast) / 0.45;
-    if (k <= 0 || k >= 1 || this.calm) return;
+    const age = this.t - LAUNCH.blast;
+    if (age <= 0 || this.calm) return;
+    const ig = this.ignition(this.t);
+    const k = age / RING_S;
+    if (ig < 0.01 && k >= 1) return;
     const at = this.shipPose(w, h, LAUNCH.blast);
+    const unit = at.w * UNIT;
+    const gold = !!this.ship.admiral;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 1 - k;
-    const size = at.w * (2 + 6 * easeOut(k));
-    ctx.drawImage(glow('#e6f6ff'), at.x - size / 2, at.y - size / 2, size, size);
-    ctx.drawImage(glow('#9fe6ff'), at.x - size, at.y - size, size * 2, size * 2);
+    const flash = unit * (0.4 + 3.4 * ig) * 1.4;
+    ctx.globalAlpha = ig ** 1.5;
+    ctx.drawImage(glow('#ffffff'), at.x - flash / 2, at.y - flash / 2, flash, flash);
+    if (k < 1) {
+      const r = (unit * (0.6 + 7 * easeOut(k))) / 2;
+      ctx.globalAlpha = (1 - k) ** 2;
+      ctx.strokeStyle = mix(gold ? GOLD_HOT : HOT, '#ffffff', 0.4);
+      ctx.lineWidth = Math.max(1.5, unit * 0.12 * (1 - k));
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, r, 0, TAU);
+      ctx.stroke();
+    }
     ctx.restore();
     // (an impact frame: a flash of white over everything)
-    if (k < 0.25) {
-      ctx.fillStyle = `rgba(240, 248, 255, ${0.55 * (1 - k / 0.25)})`;
+    if (age < 0.11) {
+      ctx.fillStyle = `rgba(240, 248, 255, ${0.55 * (1 - age / 0.11)})`;
       ctx.fillRect(0, 0, w, h);
     }
   }
@@ -458,26 +550,33 @@ export class LaunchScene {
     ctx.restore();
   }
 
-  /** as it goes to warp: manga's speed lines, flickering round where it went */
-  private drawSpeedLines(ctx: CanvasRenderingContext2D, w: number, h: number, v: Point) {
+  /** as it goes to warp: manga's speed lines, flickering across the screen along its heading */
+  private drawSpeedLines(ctx: CanvasRenderingContext2D, w: number, h: number) {
     const k = this.t - LAUNCH.blast;
     if (k <= 0 || this.calm) return;
     const strength = Math.min(1, k / 0.08) * (0.55 + 0.45 * Math.exp(-k * 3));
-    const reach = Math.hypot(Math.max(v.x, w - v.x), Math.max(v.y, h - v.y));
+    const d = this.heading(w, h);
+    const diag = Math.hypot(w, h);
+    const across = Math.abs(w * d.y) + Math.abs(h * d.x);
     // (drawn afresh a few times a second, as a hand-drawn frame is)
-    let seed = Math.floor(this.t * 24) * 7919;
+    let seed = Math.floor(this.t * 24) * 7919 + 1;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     ctx.save();
     ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 64; i++) {
-      const a = rnd() * TAU;
-      const r0 = reach * (0.22 + rnd() * 0.4);
-      const half = (0.002 + rnd() * 0.006) * (1 + strength);
-      ctx.globalAlpha = strength * (0.25 + rnd() * 0.5);
+    for (let i = 0; i < 48; i++) {
+      const off = (rnd() - 0.5) * across;
+      const mid = (rnd() - 0.5) * diag;
+      const len = diag * (0.25 + rnd() * 0.6);
+      const half = (0.6 + rnd() * 2.2) * (1 + strength);
+      const cx = w / 2 - d.y * off + d.x * mid;
+      const cy = h / 2 + d.x * off + d.y * mid;
+      ctx.globalAlpha = strength * (0.2 + rnd() * 0.45);
+      // a sliver, thickest in its middle, pointed at both ends
       ctx.beginPath();
-      ctx.moveTo(v.x + Math.cos(a) * r0, v.y + Math.sin(a) * r0);
-      ctx.lineTo(v.x + Math.cos(a - half) * reach * 1.3, v.y + Math.sin(a - half) * reach * 1.3);
-      ctx.lineTo(v.x + Math.cos(a + half) * reach * 1.3, v.y + Math.sin(a + half) * reach * 1.3);
+      ctx.moveTo(cx - (d.x * len) / 2, cy - (d.y * len) / 2);
+      ctx.lineTo(cx - d.y * half, cy + d.x * half);
+      ctx.lineTo(cx + (d.x * len) / 2, cy + (d.y * len) / 2);
+      ctx.lineTo(cx + d.y * half, cy - d.x * half);
       ctx.closePath();
       ctx.fill();
     }
@@ -513,6 +612,16 @@ export class LaunchScene {
   }
 }
 
-function newStar(z: number): Star {
-  return { a: Math.random() * TAU, d: 0.05 + Math.random() ** 0.7, z: z * (0.3 + Math.random() * 0.7), size: 0.6 + Math.random() * 1.3, tint: HYPER_TINTS[Math.floor(Math.random() * HYPER_TINTS.length)], phase: Math.random() * TAU };
+/** a star `a` of the way along its room (1: just ahead of the screen, to stream past it) */
+function newStar(a: number): Star {
+  return { a, c: Math.random(), near: 0.2 + 0.8 * Math.random() ** 1.6, size: 0.6 + Math.random() * 1.3, tint: HYPER_TINTS[Math.floor(Math.random() * HYPER_TINTS.length)], phase: Math.random() * TAU };
+}
+
+/** a colour `k` of the way from `a` to `b` (in eighths, so the glows stay few) */
+function mix(a: string, b: string, k: number): string {
+  const q = Math.round(clamp01(k) * 8) / 8;
+  const x = parseInt(a.slice(1), 16);
+  const y = parseInt(b.slice(1), 16);
+  const ch = (shift: number) => Math.round(lerp((x >> shift) & 255, (y >> shift) & 255, q));
+  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`;
 }

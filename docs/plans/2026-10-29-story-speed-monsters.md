@@ -83,3 +83,18 @@ before. With the CPU slowed 4× the story runs as it did (55–60 fps).
   the vanishing point in 0.3 s leaving eight fading afterimages, the stars are streaks in 0.15 s,
   manga speed lines flicker round (redrawn 24 times a second) and Earth falls away. Sounds:
   `chargeUp` and the charge buzz, then `ignite`, `hyperdrive` and a boom. It's 2 s shorter.
+- Then the engines and the stars, on feedback ("don't reinvent the wheel"): the ship's engines
+  burn with the main game's plume (scene/plume.ts's LaserFlow beam, through
+  traffic/trafficPlume.ts, as Space Traffic and the bay's ship do), its power climbing from about
+  0.45 at lift-off to 1.9 with the charge (EngineExhaust's build: 0.62 of the charge, flickering,
+  and 0.6 of the ignition), so it heats from ion blue to hot pink; in the blast it's stretched back
+  to where the ship was 50 ms before. The hand-made glow and specks are gone: the build-up is
+  EngineGlow.tsx's in 2D, its numbers kept (the aura round the hull and the glow at the nozzles,
+  cool to hot, pulsing at 7 + 26 × the charge; 44 sparks curling in; at ignition, decaying as
+  e^(−3.2 t), a white flash and a shockwave ring over 0.55 s). The stars are no longer flung out
+  of the vanishing point at the camera: they lie across the screen, turned to the ship's heading
+  on screen (lift-off to vanishing point), and drift back past it, slower as it charges; in the
+  warp they rush back along that heading, 4.5 diagonals a second at their nearest, each a streak
+  of up to 0.6 of the diagonal, and the speed lines are slivers along it too. Without WebGL, and
+  with reduced motion, the engines are glowing flames as before. The launch holds 56–60 fps with
+  the CPU slowed 4× (58–60 on a phone-sized screen).
