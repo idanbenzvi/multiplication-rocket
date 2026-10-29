@@ -15,8 +15,10 @@ reach the destination planet, which grows in the sky as you get closer, and warp
 The first time the game opens, a short film tells why. It opens as films do, the date and time
 and *LOCATION: NEAR EARTH ORBIT* typed in, in a terminal's glowing green, on the dark. Everything in
 space runs on numbers, each with a little bloom, until the Sun turns bad. Dark veins creep across
-it, its light caves in, angry eyes open and it becomes the **Black Sun**, a black hole that
-swallows every number in the universe: each one splashes a crown of glyph tiles as it goes in, and
+it, its light caves in, angry eyes open and it becomes the **Black Sun**. It spits out five of
+Monster Sun's little monsters, their letters flying out of its corrupted liquid and coming
+together into a ghost, a bat, an octopus, an alien and a slime that wobble off into space. Then,
+a black hole, it swallows every number in the universe: each one splashes a crown of glyph tiles as it goes in, and
 the Sun spits out what's left of them as liquid made of glowing characters, heavier where it's
 thicker. The ships' engines sputter out and space traffic stops. Earth (drawn the way Kurzgesagt
 draws it: flat colours, rounded lands, its night side in soft bands, its cities' lights going
@@ -32,7 +34,9 @@ logo opening out round them, and then it glitches out and back in again in the t
 begins ([docs/plans/2026-10-29-title-logo.md](docs/plans/2026-10-29-title-logo.md)). It
 plays once per device (each new pilot gets the launch), and About has **▶ Watch the story**.
 [`src/components/story/`](src/components/story/), and the plan,
-[docs/plans/2026-10-27-story-intro.md](docs/plans/2026-10-27-story-intro.md).
+[docs/plans/2026-10-27-story-intro.md](docs/plans/2026-10-27-story-intro.md) (and how it was made
+smooth again, with the little monsters:
+[docs/plans/2026-10-29-story-speed-monsters.md](docs/plans/2026-10-29-story-speed-monsters.md)).
 
 The logo, **SPACE TIMES**, is a Gemini picture cut into layers
 ([`scripts/space-times-logo.py`](scripts/space-times-logo.py)): its background taken out, the

@@ -1213,6 +1213,9 @@ const slime: Design = {
   }),
 };
 
+/** the little ones the Black Sun spits out as it turns, in the story (story/littleMonsters.ts) */
+export const LITTLE_ONES: Design[] = [ghost, bat, octopus, alien, slime];
+
 export const MONSTERS: Design[] = [
   ...CLASSICS,
   rabbit,

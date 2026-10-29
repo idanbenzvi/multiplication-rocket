@@ -237,6 +237,8 @@ function drawCities(ctx: CanvasRenderingContext2D, c: Point, r: number, m: M3, s
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   const lamp = glow('#ffc86a');
+  // (each lamp's own transform set outright: hundreds of saves, turns and restores a frame cost more than the lamps)
+  const base = ctx.getTransform();
   CITIES().forEach((city, i) => {
     const v = apply(m, city.at);
     if (v[2] <= 0) return;
@@ -251,14 +253,15 @@ function drawCities(ctx: CanvasRenderingContext2D, c: Point, r: number, m: M3, s
     const s = size * city.size * tw * on;
     if (s < 0.4) return;
     ctx.globalAlpha = Math.min(1, k * 1.4);
-    // (squashed towards the edge, as everything on it is)
-    const out = Math.atan2(-v[1], v[0]);
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(out);
-    ctx.scale(Math.max(0.25, v[2]), 1);
+    // (squashed towards the edge, as everything on it is: along the way out from its middle)
+    const len = Math.hypot(v[0], v[1]) || 1;
+    const cos = v[0] / len;
+    const sin = -v[1] / len;
+    const squash = Math.max(0.25, v[2]);
+    const a = cos * squash;
+    const b = sin * squash;
+    ctx.setTransform(base.a * a + base.c * b, base.b * a + base.d * b, base.c * cos - base.a * sin, base.d * cos - base.b * sin, base.a * x + base.c * y + base.e, base.b * x + base.d * y + base.f);
     ctx.drawImage(lamp, -s, -s, s * 2, s * 2);
-    ctx.restore();
   });
   ctx.restore();
 }

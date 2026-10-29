@@ -81,6 +81,15 @@ export class StorySun extends BlackSunScene {
     this.ascii.gush(at, text);
   }
 
+  /** a little monster spat out (littleMonsters.ts) `way` (radians, from its middle): a gush of its liquid that way, and a splash at its rim */
+  spit(way: number) {
+    if (this.calm) return;
+    const rim = { x: Math.cos(way), y: Math.sin(way) };
+    // (the liquid gushes out of the far side from where it's given)
+    this.ascii.gush({ x: -rim.x, y: -rim.y }, '');
+    this.splash.splash(rim, '');
+  }
+
   override update(dt: number) {
     super.update(dt);
     if (this.calm) return;
@@ -92,7 +101,7 @@ export class StorySun extends BlackSunScene {
 
   override draw(ctx: CanvasRenderingContext2D, w: number, h: number, t?: number, look?: Point | null) {
     super.draw(ctx, w, h, t, look);
-    this.ascii.draw(ctx, this.at);
+    this.ascii.draw(ctx, this.at, w, h);
     this.splash.draw(ctx, this.at);
   }
 

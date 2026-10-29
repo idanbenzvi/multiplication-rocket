@@ -526,6 +526,18 @@ export const sfx = {
     tone(c, 520, t + 0.22, 0.5, { type: 'triangle', gain: 0.04, glideTo: 160 });
   },
 
+  /** the story: a little monster spat out of the Black Sun, a gloopy pop, then a cheeky chirp as its letters come together (`i`: which one, each a little higher) */
+  spawn(i: number) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 0.3, 2400, 320, 0.05);
+    tone(c, 130, t, 0.22, { type: 'sine', gain: 0.09, glideTo: 460 });
+    const f = noteFreq(8 + (i % 5) * 2);
+    tone(c, f, t + 0.6, 0.1, { type: 'square', gain: 0.02, glideTo: f * 1.5 });
+    tone(c, f * 1.25, t + 0.72, 0.14, { type: 'square', gain: 0.02, glideTo: f * 0.75 });
+  },
+
   /** the story's where and when, typed in: a terminal's key, a tiny click */
   type() {
     const c = audio();

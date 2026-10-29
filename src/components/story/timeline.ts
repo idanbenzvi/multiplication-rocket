@@ -16,6 +16,8 @@ export const OPENING = {
   turn: 11,
   /** it becomes the Black Sun */
   awaken: 13.4,
+  /** the little monsters are spat out, the first then, and one after another this far apart */
+  spawn: [14.3, 0.55],
   /** the numbers are pulled in, from here to there */
   pull: [17.6, 24.4],
   /** the ships' engines sputter, from here to there, and go out */

@@ -50,8 +50,13 @@ export function StoryOpening() {
   // its sounds
   useEffect(() => {
     let swallows = 0;
+    let spawns = 0;
     scene.onEvent = (what) => {
       if (what === 'turn') sfx.flareOut();
+      else if (what === 'spawn') {
+        sfx.spawn(spawns++);
+        haptics.bump(0.4);
+      }
       else if (what === 'awaken') {
         sfx.monsterRise();
         haptics.monster();

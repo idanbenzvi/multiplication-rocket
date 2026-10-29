@@ -3,6 +3,7 @@ import { glow, HULLS, IONS, rgba, SHIP_KINDS, trafficSprite } from '../traffic/t
 import type { Point } from '../arrival/eclipse';
 import { bloomNumber } from './bloom';
 import { drawGlobe, turned, unit } from './earth';
+import { LittleMonsters } from './littleMonsters';
 import { StorySun } from './storySun';
 import { TAU, clamp01, easeInOut, lerp, seeded } from './storyMath';
 import { BEATS, OPENING, beatAt } from './timeline';
@@ -42,6 +43,10 @@ const SHOTS: Array<{ t: number; x: number; y: number; z: number }> = [
   // and in on it
   { t: 41.5, x: -5.4, y: 3.7, z: 0.52 },
 ];
+/** how far out from its middle Earth's haze reaches (its radii); its picture's made this often (a second), and no bigger than this (device px) */
+const EARTH_REACH = 1.3;
+const EARTH_REFRESH = 20;
+const EARTH_PIC_MAX = 1400;
 /** with reduced motion, each beat's shot, held (the camera cuts between them) */
 const CALM_SHOTS = [0, 2, 4, 6, 7];
 
@@ -85,22 +90,27 @@ interface Ship {
 export class OpeningScene {
   readonly sun: StorySun;
   private readonly calm: boolean;
+  /** the little monsters it spits out as it turns */
+  private readonly monsters: LittleMonsters;
   private readonly numbers: SkyNumber[];
   private readonly ships: Ship[];
   private readonly stars: Array<{ x: number; y: number; size: number; phase: number; rate: number; depth: number }>;
   /** what has happened (each once) */
   private done = new Set<string>();
   private shake = 0;
+  /** Earth's picture, while it's not too big: when it was made, for how big an Earth (px), how big it is (px) */
+  private earthPic: { canvas: HTMLCanvasElement | null; at: number; r: number; px: number } = { canvas: null, at: -Infinity, r: 0, px: 0 };
   /** the camera as of the last frame, and the screen */
   private cam = { x: 0, y: 0, z: 1 };
   private w = 0;
   private h = 0;
   /** someone listening: the Sun turns, becomes the Black Sun, a number is pulled in, an engine sputters out */
-  onEvent?: (what: 'flicker' | 'turn' | 'awaken' | 'pull' | 'sputter' | 'orbie') => void;
+  onEvent?: (what: 'flicker' | 'turn' | 'awaken' | 'spawn' | 'pull' | 'sputter' | 'orbie') => void;
 
   constructor(calm: boolean) {
     this.calm = calm;
     this.sun = new StorySun(calm);
+    this.monsters = new LittleMonsters(calm);
     // (the sky is laid out the same for everyone)
     const rnd = seeded(20261027);
     // the numbers all round, none on the Sun, more near it; pulled in nearest first
@@ -198,6 +208,14 @@ export class OpeningScene {
       this.onEvent?.('awaken');
     });
     this.once('orbie', t, OPENING.orbie, () => this.onEvent?.('orbie'));
+    // the little monsters, spat out one after another
+    for (let i = 0; i < LittleMonsters.count; i++) {
+      this.once(`spawn${i}`, t, OPENING.spawn[0] + i * OPENING.spawn[1], () => {
+        sun.spit(this.monsters.spawn(time));
+        this.onEvent?.('spawn');
+      });
+    }
+    this.monsters.update(dt, time);
 
     // the numbers, pulled in
     for (const n of this.numbers) {
@@ -279,6 +297,7 @@ export class OpeningScene {
       });
     }
 
+    this.monsters.draw(ctx, (x, y) => this.screen(x, y), this.cam.z, w, h, time);
     this.drawNumbers(ctx, t, time);
     this.drawShips(ctx, time);
     this.drawOrbieGlow(ctx, t, time);
@@ -411,7 +430,7 @@ export class OpeningScene {
     const toSun = Math.atan2(0 - EARTH.y, 0 - EARTH.x);
     const light = unit([Math.cos(toSun), -Math.sin(toSun), 0.18]);
     const spin = -0.35 + (this.calm ? 0 : time * 0.018);
-    drawGlobe(ctx, c, r, {
+    const look = {
       lands: turned(spin, 0.32, -0.4),
       clouds: turned(spin * 1.3 + 0.5, 0.32, -0.4),
       light,
@@ -419,6 +438,34 @@ export class OpeningScene {
       time,
       outage: clamp01((t - OPENING.pull[0]) / 6),
       calm: this.calm,
-    });
+    };
+    // close up, it's drawn as it is
+    const m = ctx.getTransform();
+    const scale = Math.hypot(m.a, m.b) || 1;
+    const pic = this.earthPic;
+    const side = Math.ceil(r * 2 * EARTH_REACH * scale);
+    if (side > EARTH_PIC_MAX) {
+      pic.r = 0;
+      drawGlobe(ctx, c, r, look);
+      return;
+    }
+    // further off, its picture's made again a terminal's refresh at a time (its cities' lights are the most there is to draw), and moved with the camera
+    if (time - pic.at >= 1 / EARTH_REFRESH || !pic.r || Math.abs(r / pic.r - 1) > 0.04 || !pic.canvas) {
+      const canvas = (pic.canvas ??= document.createElement('canvas'));
+      if (canvas.width < side || canvas.width > side * 1.5) canvas.width = canvas.height = side;
+      const g = canvas.getContext('2d');
+      if (!g) return;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, canvas.width, canvas.height);
+      g.setTransform(scale, 0, 0, scale, 0, 0);
+      drawGlobe(g, { x: r * EARTH_REACH, y: r * EARTH_REACH }, r, look);
+      pic.r = r;
+      pic.at = time;
+      pic.px = canvas.width / scale;
+    }
+    if (!pic.canvas) return;
+    const k = r / pic.r;
+    const half = pic.r * EARTH_REACH * k;
+    ctx.drawImage(pic.canvas, c.x - half, c.y - half, pic.px * k, pic.px * k);
   }
 }

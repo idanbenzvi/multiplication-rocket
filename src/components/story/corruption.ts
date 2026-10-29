@@ -1,6 +1,6 @@
 import type { Point } from '../arrival/eclipse';
 import { css, hex, mix } from '../arrival/eclipse';
-import { glyphSprite, tileSprite } from './bloom';
+import { drawSprite, glyphSprite, tileSprite } from './bloom';
 import { TAU, clamp01 } from './storyMath';
 
 // What the Black Sun does to the numbers it swallows, in the story
@@ -54,16 +54,7 @@ const TAIL = hex('#ff8ae0');
 const SHADES = 6;
 const SHADE = Array.from({ length: SHADES }, (_, i) => css(mix(HEAD, TAIL, i / (SHADES - 1)), 1));
 
-/** sprites by colour, then character (looked up every frame, so kept apart from bloom.ts's own) */
-function sprites(colors: string[], make: (ch: string, color: string) => HTMLCanvasElement) {
-  const byColor = colors.map(() => new Map<string, HTMLCanvasElement>());
-  return (ch: string, i: number) => {
-    let c = byColor[i].get(ch);
-    if (!c) byColor[i].set(ch, (c = make(ch, colors[i])));
-    return c;
-  };
-}
-const tile = sprites(SHADE, tileSprite);
+const tile = (ch: string, shade: number) => tileSprite(ch, SHADE[shade]);
 
 interface Drop extends Mote {
   ch: string;
@@ -143,7 +134,7 @@ export class GlyphSplash {
     ctx.save();
     for (const c of cells.values()) {
       ctx.globalAlpha = c.a;
-      ctx.drawImage(tile(c.ch, c.shade), s.x + c.gx * cell - cell / 2, s.y + c.gy * cell - cell / 2, cell, cell);
+      drawSprite(ctx, tile(c.ch, c.shade), s.x + c.gx * cell - cell / 2, s.y + c.gy * cell - cell / 2, cell);
     }
     ctx.restore();
   }
@@ -157,7 +148,7 @@ const RAMP = '.:-~=+*#%@';
 const GLITCH = '#%@&?!$*/\\<>';
 /** its colours, from its thin edges to its thick middles */
 const HUES = ['#6b3cff', '#a64dff', '#e04dff', '#ff6fd8'];
-const glyph = sprites(HUES, glyphSprite);
+const glyph = (ch: string, hue: number) => glyphSprite(ch, HUES[hue]);
 /** how often the liquid's picture is made again (a second): a terminal's refresh, between them it's just moved and scaled with the sun */
 const REFRESH = 30;
 /** how far out it's seen (sun radii) */
@@ -179,7 +170,7 @@ export class AsciiFlares {
   /** (the grid, kept from frame to frame) */
   private dens = new Float32Array(0);
   private owner = new Int16Array(0);
-  /** its picture: when it was made, for a sun how big, and where the sun's middle is in it (px) */
+  /** its picture (only what's on screen of it): when it was made, for a sun how big, and where the sun's middle is in it (px) */
   private picture: HTMLCanvasElement | null = null;
   private made = { at: -Infinity, r: 1, x: 0, y: 0, w: 0, h: 0 };
 
@@ -224,11 +215,11 @@ export class AsciiFlares {
     this.blobs = this.blobs.filter((b) => t < b.born || (t - b.born < b.life && b.x * b.x + b.y * b.y > 0.92 && b.x * b.x + b.y * b.y < FAR * FAR));
   }
 
-  /** on the sun at `s` (its middle on screen, and its radius) */
-  draw(ctx: CanvasRenderingContext2D, s: Point & { r: number }) {
+  /** on the sun at `s` (its middle on screen, and its radius), on a screen `w` by `h` */
+  draw(ctx: CanvasRenderingContext2D, s: Point & { r: number }, w: number, h: number) {
     const m = ctx.getTransform();
     const scale = Math.hypot(m.a, m.b) || 1;
-    if (this.t - this.made.at >= 1 / REFRESH || Math.abs(s.r / this.made.r - 1) > 0.12) this.make(s.r, scale);
+    if (this.t - this.made.at >= 1 / REFRESH || Math.abs(s.r / this.made.r - 1) > 0.12) this.make(s, scale, w, h);
     const pic = this.picture;
     if (!pic || !this.made.w) return;
     const k = s.r / this.made.r;
@@ -238,8 +229,9 @@ export class AsciiFlares {
     ctx.restore();
   }
 
-  /** its picture, round a sun of radius `r` (px), at `scale` device pixels to the px */
-  private make(r: number, scale: number) {
+  /** its picture, round a sun at `s` (px), at `scale` device pixels to the px: as much of it as is on a screen `sw` by `sh` */
+  private make(s: Point & { r: number }, scale: number, sw: number, sh: number) {
+    const r = s.r;
     const t = this.t;
     this.made.at = t;
     this.made.r = r;
@@ -255,8 +247,15 @@ export class AsciiFlares {
     far = Math.min(far, FAR + 0.3);
     const nx = Math.ceil((far * r) / cw);
     const ny = Math.ceil((far * r) / ch);
-    const cols = nx * 2 + 1;
-    const rows = ny * 2 + 1;
+    // (only the cells on screen, and a little way off it: the picture's moved with the sun till it's made again)
+    const margin = 0.08 * Math.max(sw, sh);
+    const x0 = Math.max(-nx, Math.floor((-s.x - margin) / cw));
+    const x1 = Math.min(nx, Math.ceil((sw - s.x + margin) / cw));
+    const y0 = Math.max(-ny, Math.floor((-s.y - margin) / ch));
+    const y1 = Math.min(ny, Math.ceil((sh - s.y + margin) / ch));
+    if (x1 < x0 || y1 < y0) return;
+    const cols = x1 - x0 + 1;
+    const rows = y1 - y0 + 1;
     if (this.dens.length < cols * rows) {
       this.dens = new Float32Array(cols * rows);
       this.owner = new Int16Array(cols * rows);
@@ -270,17 +269,17 @@ export class AsciiFlares {
     live.forEach((b, i) => {
       const age = (t - b.born) / b.life;
       const thin = 1.4 * b.mass * (1 - age * age) * Math.min(1, (t - b.born) / 0.15);
-      const gx = (b.x * r) / cw + nx;
-      const gy = (b.y * r) / ch + ny;
+      const gx = (b.x * r) / cw - x0;
+      const gy = (b.y * r) / ch - y0;
       const px = reach * (0.8 + 0.5 * age);
       const rx = px / cw;
       const ry = px / ch;
-      const x0 = Math.max(0, Math.floor(gx - rx));
-      const x1 = Math.min(cols - 1, Math.ceil(gx + rx));
-      const y0 = Math.max(0, Math.floor(gy - ry));
-      const y1 = Math.min(rows - 1, Math.ceil(gy + ry));
-      for (let y = y0; y <= y1; y++) {
-        for (let x = x0; x <= x1; x++) {
+      const left = Math.max(0, Math.floor(gx - rx));
+      const right = Math.min(cols - 1, Math.ceil(gx + rx));
+      const top = Math.max(0, Math.floor(gy - ry));
+      const bottom = Math.min(rows - 1, Math.ceil(gy + ry));
+      for (let y = top; y <= bottom; y++) {
+        for (let x = left; x <= right; x++) {
           const d2 = ((x - gx) / rx) ** 2 + ((y - gy) / ry) ** 2;
           if (d2 >= 1) continue;
           const w = (1 - d2) * (1 - d2) * thin;
@@ -312,21 +311,27 @@ export class AsciiFlares {
       for (let x = 0; x < cols; x++) {
         const k = y * cols + x;
         // (its surface shimmering, sloshing)
-        const d = dens[k] * (0.85 + 0.15 * Math.sin(x * 0.55 + t * 4.1) * Math.sin(y * 0.7 - t * 3.3));
+        const ax = x + x0;
+        const ay = y + y0;
+        const d = dens[k] * (0.85 + 0.15 * Math.sin(ax * 0.55 + t * 4.1) * Math.sin(ay * 0.7 - t * 3.3));
         if (d < 0.18) continue;
         const level = Math.min(1, (d - 0.18) / 1.4);
         const b = live[owner[k]];
         // a number's digits still in it, fresh out, and flickering corrupt
         const fresh = b && b.digits && t - b.born < 0.7;
-        const flick = (x * 13 + y * 7 + Math.floor(t * 10)) % 5;
-        const c = fresh ? (flick < 2 ? b.digits[(x + y) % b.digits.length] : GLITCH[(x * 7 + y * 3 + Math.floor(t * 12)) % GLITCH.length]) : RAMP[Math.min(RAMP.length - 1, Math.floor(level * RAMP.length))];
+        const flick = (((ax * 13 + ay * 7 + Math.floor(t * 10)) % 5) + 5) % 5;
+        const c = fresh
+          ? flick < 2
+            ? b.digits[(((ax + ay) % b.digits.length) + b.digits.length) % b.digits.length]
+            : GLITCH[(((ax * 7 + ay * 3 + Math.floor(t * 12)) % GLITCH.length) + GLITCH.length) % GLITCH.length]
+          : RAMP[Math.min(RAMP.length - 1, Math.floor(level * RAMP.length))];
         g.globalAlpha = Math.min(1, 0.35 + level);
-        g.drawImage(glyph(c, Math.min(HUES.length - 1, Math.floor(level * HUES.length + (fresh ? 1 : 0)))), x * cw, y * ch, size, size);
+        drawSprite(g, glyph(c, Math.min(HUES.length - 1, Math.floor(level * HUES.length + (fresh ? 1 : 0)))), x * cw, y * ch, size);
       }
     }
     // (where the sun's middle is in it, and how big it is, in px)
-    this.made.x = nx * cw + size / 2;
-    this.made.y = ny * ch + size / 2;
+    this.made.x = -x0 * cw + size / 2;
+    this.made.y = -y0 * ch + size / 2;
     this.made.w = w;
     this.made.h = h;
   }
