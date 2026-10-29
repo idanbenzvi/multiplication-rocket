@@ -53,7 +53,9 @@ Kurzgesagt's.
    - The stars stretch out from where it's heading, longer and brighter, glowing.
    - The ship becomes a glint, then a dot. The screen washes out to white.
 6. **The title**: out of the white, the SPACE TIMES logo, animated. It holds, then flies to its
-   place in the top bar as the game appears, and the pilot's ship flies in (`flyHome`).
+   place in the top bar as the game appears, and the pilot's ship flies in (`flyHome`). (Since
+   2026-10-29 the letters pour in first, in liquid metal, the rest of the logo comes after, and it
+   glitches to the top bar rather than flying: docs/plans/2026-10-29-title-logo.md.)
 
 The game is paused under all of it. With reduced motion, the camera cuts from shot to shot and
 nothing streaks or shakes. The words are always on screen, and narration reads them aloud (the

@@ -758,6 +758,33 @@ export const sfx = {
     noiseBurst(c, t + 0.13, 0.9, 4000, 11000, 0.05);
   },
 
+  // ---- the title ----
+
+  /** the title's letters poured in molten metal: a heavy rush rising, the metal ringing, and a ting as the gleam runs across */
+  metalPour() {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    noiseBurst(c, t, 1.5, 260, 1600, 0.05);
+    tone(c, 98, t, 1.7, { type: 'triangle', gain: 0.06, glideTo: 196, attack: 0.35 });
+    [0, 0.3, 0.62, 0.95].forEach((d, i) => tone(c, 1320 + i * 190, t + d, 1.0, { type: 'sine', gain: 0.018 }));
+    tone(c, noteFreq(14), t + 1.95, 1.3, { gain: 0.06 });
+    tone(c, noteFreq(19), t + 2.01, 1.1, { gain: 0.035 });
+  },
+
+  /** the logo glitching out (a digital stutter, a fizz) and, `there`, zipping to the top bar and stuttering in */
+  teleport(there: boolean) {
+    const c = audio();
+    if (!c || volume() === 0) return;
+    const t = c.currentTime + 0.01;
+    [7, 3, 9, 1, 6, 10, 2, 8].forEach((n, i) => tone(c, 160 + n * 130, t + i * 0.048, 0.04, { type: 'square', gain: 0.028 }));
+    noiseBurst(c, t, 0.44, 1500, 9000, 0.05);
+    if (!there) return;
+    tone(c, 280, t + 0.44, 0.15, { type: 'sawtooth', gain: 0.035, glideTo: 3400 });
+    [4, 9, 2, 7, 5].forEach((n, i) => tone(c, 200 + n * 150, t + 0.62 + i * 0.045, 0.035, { type: 'square', gain: 0.022 }));
+    tone(c, noteFreq(12), t + 0.9, 0.5, { gain: 0.05 });
+  },
+
   // ---- the launch bay ----
 
   /** the ship on the pad flares away: a shimmer rising to a bright ping */

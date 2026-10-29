@@ -27,7 +27,9 @@ take-off is a launch from Earth (the launch pad, the pilot's name and the missio
 its night side below, its edge a line of light from the top of the
 screen to the bottom with a purple haze and a bloom where the Black Sun hangs over it, the ship
 turning some 40° towards it, the stars stretching into hyperspace as it shrinks to a dot, and a
-white-out into the **SPACE TIMES** title, which flies up into the top bar as the game begins. It
+white-out into the **SPACE TIMES** title: its letters poured in liquid metal, then the rest of the
+logo opening out round them, and then it glitches out and back in again in the top bar as the game
+begins ([docs/plans/2026-10-29-title-logo.md](docs/plans/2026-10-29-title-logo.md)). It
 plays once per device (each new pilot gets the launch), and About has **▶ Watch the story**.
 [`src/components/story/`](src/components/story/), and the plan,
 [docs/plans/2026-10-27-story-intro.md](docs/plans/2026-10-27-story-intro.md).

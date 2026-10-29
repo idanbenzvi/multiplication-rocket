@@ -200,7 +200,38 @@
   pointer-events: none;
 }
 .story-title-logo {
-  will-change: transform;
+  position: relative;
+}
+/* the letters first, poured (LiquidMetal.tsx); the rest of the logo after */
+.story-title-logo.is-metal .st-logo,
+.story-title-logo.is-glitch {
+  visibility: hidden;
+}
+.st-liquid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+/* the ring of light the globe opens out behind */
+.story-title-ring {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(160, 245, 255, 0.95);
+  box-shadow:
+    0 0 18px 4px rgba(0, 220, 255, 0.55),
+    inset 0 0 18px 4px rgba(255, 60, 200, 0.4);
+  opacity: 0;
+  pointer-events: none;
+}
+/* the logo glitching from here to the top bar (GlitchTeleport.tsx) */
+.story-glitch {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

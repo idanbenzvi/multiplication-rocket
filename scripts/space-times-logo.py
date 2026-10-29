@@ -6,6 +6,8 @@ into the layers SpaceTimesLogo.tsx animates, in public/brand/space-times/:
                  taken out of it (the tokens' places on the ring filled in)
   plate.webp     where the letters' plate is (alpha only): the letters drawn
                  again over what passes behind them
+  letters.webp   the letters themselves, their outline and all (alpha only):
+                 the title's liquid metal pours into them (LiquidMetal.tsx)
   shine.webp     the letters' chrome (alpha: how bright), for a shine to sweep
   globe.webp     the globe's lines (alpha), for a light to scan down them
   sparks.webp    the lightning (alpha), to flicker
@@ -88,6 +90,27 @@ def ring_band(shape, ctr, long_r, short_r, u):
         a = k + a * (1 - k)
         c = c / np.maximum(a, 1e-4)[..., None]
     return c, a
+
+
+def letter_shapes(lum):
+    """The letters alone, their neon tubes and all. Each is ringed by the plate's
+    dark navy, so what's lighter than it inside that ring is the letter, and the
+    background's light runs on out of the words' boxes; at which brightness a
+    letter comes apart from the background differs, so each is taken at any."""
+    h, w = lum.shape
+    boxes = [(x0 - 24, y0 - 24, x1 + 24, y1 + 24) for x0, y0, x1, y1 in WORDS]
+    inside = lambda st: any(st[0] >= x0 and st[1] >= y0 and st[0] + st[2] <= x1 and st[1] + st[3] <= y1 for x0, y0, x1, y1 in boxes)
+    shapes = np.zeros((h, w), bool)
+    for thr in np.arange(0.36, 0.7, 0.02):
+        n, lab, stats, _ = cv2.connectedComponentsWithStats((lum > thr).astype(np.uint8), connectivity=4)
+        shapes |= np.isin(lab, [i for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= 200 and inside(stats[i])])
+    # (the dark lines across a letter's face closed over; the chrome's horizon, a line across each word, a word at a time, so the two don't join)
+    shapes = cv2.morphologyEx(shapes.astype(np.uint8), cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+    split = (WORDS[0][3] + WORDS[1][1]) // 2 - 2
+    for y0, y1 in ((0, split), (split, h)):
+        shapes[y0:y1] = cv2.morphologyEx(shapes[y0:y1], cv2.MORPH_CLOSE, np.ones((11, 1), np.uint8))
+    # (and the slivers that leaves in the gaps, and the tubes' thin ends, gone)
+    return cv2.morphologyEx(shapes, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
 
 
 def fit_orbit():
@@ -241,6 +264,7 @@ def main():
 
     soft_plate = cv2.GaussianBlur(plate.astype(np.float32), (0, 0), 1.2)
     save_mask('plate.webp', soft_plate)
+    save_mask('letters.webp', cv2.GaussianBlur(letter_shapes(lum).astype(np.float32), (0, 0), 1.0))
     save_mask('shine.webp', plate * smoothstep(0.45, 1.0, lum) ** 1.5)
     lines = globe & ~cv2.dilate(plate.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool)
     save_mask('globe.webp', lines * smoothstep(0.55, 0.95, lum))
